@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
@@ -17,33 +18,33 @@ import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/utils/time_utils.dart';
-import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
-import 'package:ringdrill/views/widgets/ringdrill_text.dart';
-import 'package:ringdrill/views/widgets/station_scope.dart';
-import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
-import 'package:ringdrill/views/widgets/schedule_card.dart';
-import 'package:ringdrill/views/widgets/schedule_table.dart';
+import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/team_form_screen.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
-import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/exercise_mini_map.dart'
+    show exerciseStationMarkers, ExerciseMapSheetHeader;
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/notification_permission_help.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
+import 'package:ringdrill/views/widgets/ringdrill_text.dart';
+import 'package:ringdrill/views/widgets/schedule_card.dart';
+import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
-import 'package:ringdrill/views/shell/window_size_class.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'exercise_form_screen.dart';
@@ -540,8 +541,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           },
         ),
         Positioned(
-          top: 4,
-          right: 4,
+          top: -4,
+          right: 0,
           child: Tooltip(
             message: localizations.exerciseCopyTooltip,
             child: IconButton(
@@ -754,56 +755,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// the expanded body's pane, which fills whatever height its `Expanded`
   /// ancestor gives it instead.
   Widget? _buildExercisePositionMap(ExerciseEvent event, {double? height}) {
-    final markers = <MapMarkerSpec<int>>[];
-    final format =
-        ProgramService().activeProgram?.stationNumberFormat ??
-        StationNumberFormat.dotted;
-    final exNum =
-        ProgramService().loadExercises().indexWhere(
-          (e) => e.uuid == _exercise!.uuid,
-        ) +
-        1;
-    final exerciseNumber = exNum < 1 ? 1 : exNum;
-    for (
-      var stationIndex = 0;
-      stationIndex < _exercise!.stations.length;
-      stationIndex++
-    ) {
-      final station = _exercise!.stations[stationIndex];
-      if (!station.position.isFiniteOrNull) continue;
-      // Same "live" test as the station list: the current round assigns a
-      // team to this station. Live pins switch to the orange live accent so
-      // the map matches the highlighted rows in the player.
-      final isLive =
-          event.isRunning &&
-          _exercise!.teamIndex(stationIndex, event.currentRound) >= 0;
-      markers.add(
-        MapMarkerSpec<int>(
-          id: station.index,
-          label:
-              resolveScopedField(
-                context,
-                station.numberAndName(format, exerciseNumber: exerciseNumber),
-                overrides: _overridesFor(_exercise!, station: station),
-              ) ??
-              station.numberAndName(format, exerciseNumber: exerciseNumber),
-          point: station.position!,
-          highlighted: isLive,
-          child: Icon(
-            Icons.place,
-            color: isLive ? RingDrillColors.brandAccent : Colors.green,
-            size: 32,
-          ),
-          onTap: () => ContextSheet.of(context).show(
-            context,
-            StationSheetTarget(
-              exerciseUuid: widget.uuid,
-              stationIndex: station.index,
-            ),
-          ),
-        ),
-      );
-    }
+    final markers = exerciseStationMarkers(context, _exercise!, liveEvent: event);
     if (markers.isEmpty) return null;
 
     final points = markers.map((marker) => marker.point).toList();
@@ -818,10 +770,18 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           withToggle: true,
           withClustering: false,
           interactionFlags: MapConfig.interactive,
-          initialZoom: 15,
+          // No initialZoom/initialFit: MapView computes its own defaults
+          // from `markers`, using its own real render size within this
+          // card (including the single-marker full-label zoom).
           initialCenter: points.average(MapConfig.initialCenter),
-          initialFit: points.fit(const EdgeInsets.all(72)),
           markers: markers,
+          // Built-in expand-to-fullscreen command — sized from the same
+          // local commandSize every other internal MapView command uses
+          // (unlike the ad-hoc topRightCommands FAB this replaced, which
+          // resolved its size from the full window and could visibly
+          // mismatch the rest of the stack in a narrower embedding).
+          withFullscreen: true,
+          fullscreenHeader: ExerciseMapSheetHeader(exercise: _exercise!),
         ),
       ),
     );
@@ -1537,52 +1497,52 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       child: Padding(
         padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
         child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (description != null && description.isNotEmpty)
-            InkWell(
-              onTap: () => ContextSheet.of(context).show(
-                context,
-                StationSheetTarget(
-                  exerciseUuid: widget.uuid,
-                  stationIndex: stationIndex,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (description != null && description.isNotEmpty)
+              InkWell(
+                onTap: () => ContextSheet.of(context).show(
+                  context,
+                  StationSheetTarget(
+                    exerciseUuid: widget.uuid,
+                    stationIndex: stationIndex,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                  child: RingDrillText.rich(
+                    description,
+                    overrides: _overridesFor(_exercise!, station: station),
+                  ),
                 ),
               ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-                child: RingDrillText.rich(
-                  description,
-                  overrides: _overridesFor(_exercise!, station: station),
+            // Shared panel handles both the "Posisjon ... pin coords"
+            // label row and the tappable mini-map (which opens the
+            // interactive variant in a bottom sheet). The ValueKey on
+            // the embedded mini-map keeps each station's MapView state
+            // isolated — without it, expanding station A and then B
+            // would briefly share camera state. PageStorageKey would
+            // collide with SelectableText scroll-state, hence ValueKey.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+              child: StationPositionPanel(
+                exercise: _exercise!,
+                station: station,
+                miniMapKey: ValueKey<String>(
+                  'coordinator-station-map-$stationIndex',
                 ),
               ),
             ),
-          // Shared panel handles both the "Posisjon ... pin coords"
-          // label row and the tappable mini-map (which opens the
-          // interactive variant in a bottom sheet). The ValueKey on
-          // the embedded mini-map keeps each station's MapView state
-          // isolated — without it, expanding station A and then B
-          // would briefly share camera state. PageStorageKey would
-          // collide with SelectableText scroll-state, hence ValueKey.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-            child: StationPositionPanel(
-              exercise: _exercise!,
-              station: station,
-              miniMapKey: ValueKey<String>(
-                'coordinator-station-map-$stationIndex',
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+              child: StationRoleSummary(
+                exercise: _exercise!,
+                stationIndex: stationIndex,
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-            child: StationRoleSummary(
-              exercise: _exercise!,
-              stationIndex: stationIndex,
-            ),
-          ),
-        ],
-          ),
+          ],
         ),
+      ),
     );
   }
 

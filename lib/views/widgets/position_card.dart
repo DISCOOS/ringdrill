@@ -156,7 +156,6 @@ class PositionCard<K> extends StatelessWidget {
               layers: MapConfig.layers,
               withToggle: false,
               withClustering: false,
-              initialZoom: 15,
               initialCenter: here,
               markers: markers,
             ),

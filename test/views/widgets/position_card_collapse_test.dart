@@ -172,11 +172,20 @@ void main() {
       expect(mapHeight(tester), greaterThan(0));
 
       // The thumbnail is the one affordance that opens the interactive
-      // sheet, regardless of the bar's collapse/onTap wiring.
+      // map surface, regardless of the bar's collapse/onTap wiring. This
+      // harness's default (non-fillHeight) 200px map height is below
+      // MapConfig.minInteractiveHeight, so the map stays a static
+      // tap-to-expand preview even at this (medium) test width —
+      // flutter_test's default ~800x600 MediaQuery reads as
+      // WindowSizeClass.medium (hasMasterDetail) — and its tap opens a
+      // bottom sheet, not a dialog (see station_position_panel_test.dart's
+      // "fillHeight + wide window" test for the genuinely interactive,
+      // wide-and-tall case).
       await tester.tap(find.byType(StationMiniMap));
       await tester.pumpAndSettle();
 
       expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.byType(Dialog), findsNothing);
     },
   );
 

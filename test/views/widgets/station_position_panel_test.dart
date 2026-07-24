@@ -66,8 +66,99 @@ void main() {
       await tester.tap(find.byType(StationMiniMap));
       await tester.pumpAndSettle();
 
-      // openStationMapSheet opens the interactive map in a modal sheet.
+      // The default (non-fillHeight) 200px map height is below
+      // MapConfig.minInteractiveHeight, so StationMiniMap stays a static
+      // tap-to-expand preview even at this (medium) test width —
+      // flutter_test's default ~800x600 MediaQuery reads as
+      // WindowSizeClass.medium (hasMasterDetail), but there isn't room
+      // here for the interactive command stack. openStationMapSheet is
+      // reachable only from that static preview now, so it always opens a
+      // bottom sheet (see the "fillHeight + wide window" test below for
+      // the genuinely interactive, wide-and-tall case).
       expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.byType(Dialog), findsNothing);
+
+      // The header mirrors StationExerciseScreen's own AppBar exactly:
+      // MasterDetailLeading always renders a close-X in `leading` (there is
+      // no MasterDetailScope reachable from a sheet's Overlay, so it never
+      // shows the sidebar-toggle branch instead).
+      expect(find.byIcon(Icons.close), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'fillHeight + wide window: the map is directly interactive with its '
+    'own FAB stack (no tap needed), and its built-in expand command opens '
+    'a genuine full-screen route — not a dialog, not a bottom sheet',
+    (tester) async {
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        position: const LatLng(58.99, 10.43),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: StationPositionPanel(
+              exercise: exercise(),
+              station: station,
+              fillHeight: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Directly interactive — the GestureDetector+IgnorePointer wrapper
+      // from the static path is gone; the FAB stack is already on screen,
+      // no tap needed to reach it.
+      expect(find.byIcon(Icons.center_focus_strong_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.open_in_full), findsOneWidget);
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.open_in_full));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.byIcon(Icons.close), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.close), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'compact width opens the map as a bottom sheet, header still has the '
+    'same close-X as the dialog',
+    (tester) async {
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        position: const LatLng(58.99, 10.43),
+      );
+      await pump(tester, station);
+
+      await tester.tap(find.byType(StationMiniMap));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
     },
   );
 

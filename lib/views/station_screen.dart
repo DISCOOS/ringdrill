@@ -406,8 +406,8 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       miniMapKey: ValueKey<String>(
         'station-screen-map-${_exercise.uuid}-${station.index}',
       ),
-      markers: stationScenarioMarkers(context, station),
-      legend: StationScenarioLegend(station: station),
+      markers: stationScenarioMarkers(context, _exercise, station),
+      legend: StationScenarioLegend(exercise: _exercise, station: station),
       onTap: () => _editStation(context, initialSectionId: 'id'),
     );
   }

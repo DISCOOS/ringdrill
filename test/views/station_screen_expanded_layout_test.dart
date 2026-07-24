@@ -292,4 +292,35 @@ void main() {
       expect(panelRect.height, lessThan(350));
     },
   );
+
+  testWidgets(
+    'the expanded map pane is directly interactive with its own FAB '
+    'commands, even at a pane width just past the 840px split threshold',
+    (tester) async {
+      await _seedAndInit();
+      // Deliberately close to (not far past) the 840px expanded threshold:
+      // WideDetailMapSplit's own fixed-width left column (440px) plus its
+      // 16px gutter leaves the map pane itself only ~410px wide here — a
+      // real regression left the map static in exactly this range, because
+      // an earlier version of the mini-maps' interactive gate re-checked
+      // WindowSizeClass off that narrower *local* map-pane width instead
+      // of trusting fillHeight (already only ever true once the screen
+      // itself committed to its expanded layout) plus a height check.
+      tester.view.physicalSize = const Size(900, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        _harness(
+          const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byIcon(Icons.center_focus_strong_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.open_in_full), findsOneWidget);
+      expect(find.byIcon(Icons.layers), findsOneWidget);
+    },
+  );
 }

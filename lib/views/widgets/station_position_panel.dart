@@ -12,15 +12,18 @@ import 'package:ringdrill/views/widgets/station_mini_map.dart';
 /// Reusable "position panel" for a single station detail surface
 /// (docs/prompts/position-panel-read-alignment.md).
 ///
-/// Renders [PositionCardShell]: a bordered card with the static
-/// [StationMiniMap] preview on top and a coordinate bar below (the
-/// "Position" label, the UTM coordinate). [StationMiniMap]'s own tap
-/// affordance always opens the interactive `openStationMapSheet`; the bar
-/// itself only does so when the caller passes [onTap] for that purpose —
-/// station_screen.dart instead wires it to open the station editor, and
-/// every other call site leaves it null (bar tap is then a no-op; the
-/// thumbnail remains the one affordance). This stays read-only either
-/// way — never the [PositionCard] picker.
+/// Renders [PositionCardShell]: a bordered card with [StationMiniMap] on
+/// top and a coordinate bar below (the "Position" label, the UTM
+/// coordinate). [StationMiniMap] is a static tap-to-expand preview by
+/// default; this panel forwards its own [fillHeight] straight through as
+/// [StationMiniMap.interactive], since `fillHeight: true` is only ever
+/// passed once the caller (station_screen.dart's expanded body) has
+/// already decided this panel sits in a spacious enough pane — the exact
+/// moment to make the map directly interactive instead. The bar itself
+/// only opens anything when the caller passes [onTap] for that purpose —
+/// station_screen.dart wires it to open the station editor, and every
+/// other call site leaves it null (bar tap is then a no-op). This stays
+/// read-only either way — never the [PositionCard] picker.
 ///
 /// When the station has no [Station.position] the card is omitted
 /// entirely and the row shows the "no location" fallback text instead.
@@ -153,6 +156,12 @@ class StationPositionPanel extends StatelessWidget {
         exercise: exercise,
         station: station,
         height: mapHeight,
+        // fillHeight is only ever true once the caller (station_screen.dart's
+        // _buildExpandedBody, building a WideDetailMapSplit) has already
+        // decided this panel sits in a spacious expanded pane — the exact
+        // moment to make the map directly interactive instead of a static
+        // tap-to-expand preview.
+        interactive: fillHeight,
         markers: markers,
         // Square bottom corners: the map sits flush above the
         // coordinate bar, and PositionCardShell's own outer

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/widgets/border_shell.dart';
@@ -9,46 +12,69 @@ import 'package:ringdrill/views/widgets/role_mini_map.dart';
 
 /// Reusable position panel for a single role's detail surface
 /// (docs/prompts/position-panel-read-alignment.md). Mirrors
-/// [StationPositionPanel] but accepts a [LatLng] directly rather than a
-/// Station/Exercise pair, keeping it domain-agnostic.
+/// [StationPositionPanel]: takes the domain objects directly (exercise,
+/// roleplay, and the station it's placed at) rather than pre-computed
+/// label/subtitle strings — [RoleMiniMap] derives the marker label, the map
+/// sheet header's numbering and its exercise subtitle from those objects.
 ///
-/// Renders [PositionCardShell]: the static [RoleMiniMap] preview on top,
-/// a coordinate bar below (label, UTM coordinate). [RoleMiniMap]'s own tap
-/// affordance opens the interactive bottom sheet; the bar itself has no
-/// `onTap` to forward, so tapping it is a no-op — read-only either way,
-/// never the [PositionCard] picker.
+/// Renders [PositionCardShell]: [RoleMiniMap] on top, a coordinate bar
+/// below (label, UTM coordinate). [RoleMiniMap] is a static tap-to-expand
+/// preview by default; this panel forwards its own [fillHeight] straight
+/// through as [RoleMiniMap.interactive], since `fillHeight: true` is only
+/// ever passed once the caller (roleplay_screen.dart's expanded body) has
+/// already decided this panel sits in a spacious enough pane — the exact
+/// moment to make the map directly interactive instead. The bar itself
+/// has no `onTap` to forward, so tapping it is a no-op — read-only either
+/// way, never the [PositionCard] picker.
 class RolePositionPanel extends StatelessWidget {
   const RolePositionPanel({
     super.key,
+    required this.exercise,
+    required this.rolePlay,
+    this.station,
     this.label,
     this.legend,
-    this.position,
     this.sectionId,
     this.mapHeight = 200,
     this.asCard = false,
     this.fillHeight = false,
     this.extraMarkers = const [],
+    this.overrides = const {},
     this.onTap,
     this.withTitle = false,
     this.withBorder = false,
     this.padding = EdgeInsets.zero,
   });
 
+  final Exercise exercise;
+  final RolePlay rolePlay;
+
+  /// The station [rolePlay] is placed at, if any — forwarded to
+  /// [RoleMiniMap] to resolve the person-location fallback position and to
+  /// number the role in the map sheet's header.
+  final Station? station;
+
   final bool withTitle;
   final bool withBorder;
-  final LatLng? position;
   final double mapHeight;
   final VoidCallback? onTap;
   final EdgeInsetsGeometry padding;
 
-  /// Role name — used as the map marker label and bottom-sheet title.
+  /// Field-name text for the coordinate bar (e.g. "Plassering") — names
+  /// *what this row is*, not who/where it's about. Defaults to
+  /// `l10n.position` ("Posisjon"), matching [StationPositionPanel].
   final String? label;
 
   /// Additional read-only markers shown on the map beside the role's own
   /// central marker (Del B: the parent post's position and the portrayed
   /// person's location, only when they sit at a distinct spot). The
-  /// coordinate bar still reads only [position].
+  /// coordinate bar still reads only the role's own central position.
   final List<MapMarkerSpec<int>> extraMarkers;
+
+  /// Effective plan-variable overrides (ADR-0046) at this role's scope —
+  /// forwarded to [RoleMiniMap] for the marker's and the map sheet header's
+  /// substitution.
+  final Map<String, String> overrides;
 
   /// Forwarded to [PositionCardShell.legend]: the wrapping dot + label strip
   /// under the map (a [MapLegend]) naming the markers present — the Spill
@@ -80,10 +106,11 @@ class RolePositionPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final position = roleCentralPosition(rolePlay, station);
 
     final content = position == null
         ? _buildNoPositionRow(l10n, theme)
-        : _buildPositionCard(l10n, theme, position!);
+        : _buildPositionCard(l10n, theme, position);
 
     final positioned = withBorder ? BorderShell(child: content) : content;
     return Padding(
@@ -139,10 +166,18 @@ class RolePositionPanel extends StatelessWidget {
     return PositionCardShell(
       asCard: asCard,
       thumbnail: RoleMiniMap(
-        position: position,
-        label: label ?? l10n.position,
+        exercise: exercise,
+        rolePlay: rolePlay,
+        station: station,
         height: mapHeight,
+        // fillHeight is only ever true once the caller (roleplay_screen.dart's
+        // _buildExpandedBody, building a WideDetailMapSplit) has already
+        // decided this panel sits in a spacious expanded pane — the exact
+        // moment to make the map directly interactive instead of a static
+        // tap-to-expand preview.
+        interactive: fillHeight,
         extraMarkers: extraMarkers,
+        overrides: overrides,
       ),
       thumbnailHeight: mapHeight,
       fillHeight: fillHeight,
