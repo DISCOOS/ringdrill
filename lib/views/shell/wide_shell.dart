@@ -87,47 +87,64 @@ class WideShell extends StatelessWidget {
     final unselectedIconColor = isDark
         ? RingDrillColors.darkOnSurfaceVariant
         : RingDrillColors.lightOnSurfaceVariant;
+    final navigationRail = NavigationRail(
+      // Explicit so the rail body paints with the same tone as the
+      // surrounding ColoredBox in `wrapInRailPadding`. The selection
+      // indicator picks up `masterAccent` so the selected tab visually
+      // extends into the master pane on the right.
+      backgroundColor: panelColor,
+      indicatorColor: masterAccent,
+      // Narrower than the M3 default (80). The rail shows icons only
+      // (labelType none), so 72 is ample and keeps the left side compact;
+      // `railWidth` above matches this so the column reserves exactly the
+      // rail's width in both states.
+      minWidth: 72,
+      selectedIconTheme: IconThemeData(color: selectedIconColor),
+      unselectedIconTheme: IconThemeData(color: unselectedIconColor),
+      selectedIndex: currentTab,
+      onDestinationSelected: onDestinationSelected,
+      leading: Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 4),
+        child: IconButton(
+          // Hamburger doesn't sit on the indicator pill but it lives
+          // on the same rail panel, so it uses the unselected tone.
+          icon: Icon(Icons.menu, color: unselectedIconColor),
+          tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
+          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+        ),
+      ),
+      destinations: destinations
+          .map<NavigationRailDestination>((d) {
+            return NavigationRailDestination(
+              icon: Icon(d.icon),
+              label: Text(d.label),
+              padding: EdgeInsets.symmetric(vertical: 8),
+            );
+          })
+          .toList(),
+      // The exercises FAB no longer lives in the rail trailing slot — in
+      // the wide layout it floats at the bottom-right of the master pane
+      // (see the Stack below). The rail just keeps a little bottom padding.
+      trailing: const SizedBox(height: 16),
+    );
     final rail = wrapInRailPadding(
       context: context,
-      child: NavigationRail(
-        // Explicit so the rail body paints with the same tone as the
-        // surrounding ColoredBox in `wrapInRailPadding`. The selection
-        // indicator picks up `masterAccent` so the selected tab visually
-        // extends into the master pane on the right.
-        backgroundColor: panelColor,
-        indicatorColor: masterAccent,
-        // Narrower than the M3 default (80). The rail shows icons only
-        // (labelType none), so 72 is ample and keeps the left side compact;
-        // `railWidth` above matches this so the column reserves exactly the
-        // rail's width in both states.
-        minWidth: 72,
-        selectedIconTheme: IconThemeData(color: selectedIconColor),
-        unselectedIconTheme: IconThemeData(color: unselectedIconColor),
-        selectedIndex: currentTab,
-        onDestinationSelected: onDestinationSelected,
-        leading: Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 4),
-          child: IconButton(
-            // Hamburger doesn't sit on the indicator pill but it lives
-            // on the same rail panel, so it uses the unselected tone.
-            icon: Icon(Icons.menu, color: unselectedIconColor),
-            tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
-            onPressed: () => scaffoldKey.currentState?.openDrawer(),
+      // NavigationRail lays its leading + destinations + trailing out in a
+      // non-scrolling, min-sized Column, so on a short viewport (a landscape
+      // phone that still reads as the medium/expanded shell by width) the
+      // items are taller than the available height and the rail overflows.
+      // Make it scrollable: the ConstrainedBox floors the height at the full
+      // available height (so the rail fills and its background/indicator lay
+      // out normally when there is room), and IntrinsicHeight lets the rail
+      // grow to its natural height and scroll instead of overflowing when
+      // there is not.
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(child: navigationRail),
           ),
         ),
-        destinations: destinations
-            .map<NavigationRailDestination>((d) {
-              return NavigationRailDestination(
-                icon: Icon(d.icon),
-                label: Text(d.label),
-                padding: EdgeInsets.symmetric(vertical: 8),
-              );
-            })
-            .toList(),
-        // The exercises FAB no longer lives in the rail trailing slot — in
-        // the wide layout it floats at the bottom-right of the master pane
-        // (see the Stack below). The rail just keeps a little bottom padding.
-        trailing: const SizedBox(height: 16),
       ),
     );
 
