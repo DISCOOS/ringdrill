@@ -3,73 +3,73 @@
 // reference these constants without importing main_screen.dart (which
 // would create cyclic imports back into the router setup).
 
-const String routeProgram = '/program';
+const String routePlan = '/plan';
 
-String programPath(String programUuid) => '$routeProgram/$programUuid';
+String planPath(String planUuid) => '$routePlan/$planUuid';
 
-/// Path slugs for the four Program-tab segments (ADR-0032 *Canonical scheme*).
+/// Path slugs for the four Plan-tab segments (ADR-0032 *Canonical scheme*).
 /// Kept here so the router and the segment switcher share one canonical list
-/// without dragging the [ProgramSegment] enum into [app_routes.dart].
-const String programSegmentExercisesSlug = 'exercises';
-const String programSegmentStationsSlug = 'stations';
-const String programSegmentScriptSlug = 'script';
-const String programSegmentTeamsSlug = 'teams';
+/// without dragging the [PlanSegment] enum into [app_routes.dart].
+const String planSegmentExercisesSlug = 'exercises';
+const String planSegmentStationsSlug = 'stations';
+const String planSegmentScriptSlug = 'script';
+const String planSegmentTeamsSlug = 'teams';
 
-const List<String> programSegmentSlugs = [
-  programSegmentExercisesSlug,
-  programSegmentStationsSlug,
-  programSegmentScriptSlug,
-  programSegmentTeamsSlug,
+const List<String> planSegmentSlugs = [
+  planSegmentExercisesSlug,
+  planSegmentStationsSlug,
+  planSegmentScriptSlug,
+  planSegmentTeamsSlug,
 ];
 
-/// Default segment when only the program UUID is present in the URL.
-const String programSegmentDefaultSlug = programSegmentExercisesSlug;
+/// Default segment when only the plan UUID is present in the URL.
+const String planSegmentDefaultSlug = planSegmentExercisesSlug;
 
-String programSegmentPath(String programUuid, String segmentSlug) =>
-    '${programPath(programUuid)}/$segmentSlug';
+String planSegmentPath(String planUuid, String segmentSlug) =>
+    '${planPath(planUuid)}/$segmentSlug';
 
-String programMapPath(String programUuid) => '${programPath(programUuid)}/map';
+String planMapPath(String planUuid) => '${planPath(planUuid)}/map';
 
-String programExercisePath(String programUuid, String exerciseUuid) =>
-    '${programPath(programUuid)}/exercise/$exerciseUuid';
+String planExercisePath(String planUuid, String exerciseUuid) =>
+    '${planPath(planUuid)}/exercise/$exerciseUuid';
 
-String programStationPath(
-  String programUuid,
+String planStationPath(
+  String planUuid,
   String exerciseUuid,
   int stationIndex,
-) => '${programExercisePath(programUuid, exerciseUuid)}/station/$stationIndex';
+) => '${planExercisePath(planUuid, exerciseUuid)}/station/$stationIndex';
 
-String programTeamPath(String programUuid, int teamIndex) =>
-    '${programPath(programUuid)}/team/$teamIndex';
+String planTeamPath(String planUuid, int teamIndex) =>
+    '${planPath(planUuid)}/team/$teamIndex';
 
-String programRolePlayPath(String programUuid, String rolePlayUuid) =>
-    '${programPath(programUuid)}/roleplay/$rolePlayUuid';
+String planRolePlayPath(String planUuid, String rolePlayUuid) =>
+    '${planPath(planUuid)}/roleplay/$rolePlayUuid';
 
-String programBriefPath(String programUuid) =>
-    '${programPath(programUuid)}/brief';
+String planBriefPath(String planUuid) =>
+    '${planPath(planUuid)}/brief';
 
-String programExerciseBriefPath(String programUuid, String exerciseUuid) =>
-    '${programExercisePath(programUuid, exerciseUuid)}/brief';
+String planExerciseBriefPath(String planUuid, String exerciseUuid) =>
+    '${planExercisePath(planUuid, exerciseUuid)}/brief';
 
-String programRosterPath(String programUuid) =>
-    '${programPath(programUuid)}/roster';
+String planRosterPath(String planUuid) =>
+    '${planPath(planUuid)}/roster';
 
-/// Legacy Map tab path. New navigation uses [programMapPath].
+/// Legacy Map tab path. New navigation uses [planMapPath].
 const String routeMap = '/map';
 
-/// Legacy Roster tab path. New navigation uses [programRosterPath].
+/// Legacy Roster tab path. New navigation uses [planRosterPath].
 const String routeRoster = '/roster';
 
-/// Legacy Stations tab path. Redirected into the matching Program segment or
+/// Legacy Stations tab path. Redirected into the matching Plan segment or
 /// canonical station detail route.
 const String routeStations = '/stations';
 
-/// Legacy Teams tab path. Redirected into the Program tab.
+/// Legacy Teams tab path. Redirected into the Plan tab.
 const String routeTeams = '/teams';
 
-/// Legacy RolePlays tab path. Redirected into the Program tab.
+/// Legacy RolePlays tab path. Redirected into the Plan tab.
 const String routeRolePlays = '/roleplays';
 
-/// Legacy Brief route prefix. New navigation uses [programBriefPath] and
-/// [programExerciseBriefPath].
+/// Legacy Brief route prefix. New navigation uses [planBriefPath] and
+/// [planExerciseBriefPath].
 const String routeBrief = '/brief';

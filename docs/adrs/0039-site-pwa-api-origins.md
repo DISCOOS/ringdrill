@@ -372,3 +372,7 @@ This ADR originally put `ringdrill.app` on Cloudflare Pages (project `ringdrill-
 * Future ADRs referenced: ADR-0040 (catalog feed schema extension), ADR-0041 (brief pre-rendering port)
 * Related code: `netlify/functions/_shared.js`, `netlify/functions/deep-link.js`, `netlify/functions/market-feed.js`, `netlify/functions/drills-upload.js`, `netlify.toml`, `web/index.html`, `web/manifest.json`, `.github/workflows/deploy-origins.yml`, `lib/web/mobile_app_nudge.dart`
 * External references: Cloudflare Pages `_redirects` proxy syntax, Astro i18n routing, Netlify Functions Blobs API
+
+## Addendum (2026-07-25): `/brief/program/<uuid>` renamed to `/brief/plan/<uuid>`
+
+The `Program` → `Plan` Dart model rename (see the addendum on [ADR-0032](./0032-program-scoped-routing.md), and `docs/prompts/refactor-program-to-plan-and-person-description.md`) carries the interim brief redirect along with it: the `netlify.toml` rule and the route table above (`/brief/program/<uuid>` → `web.ringdrill.app/brief/program/<uuid>`) are now `/brief/plan/<uuid>` → `web.ringdrill.app/brief/plan/<uuid>`. No permanent links existed against the old path, so this is a clean rename, not a new redirect layer. This is still the same interim 302 this ADR describes — full brief pre-rendering remains deferred to ADR-0041, which should use the `/brief/plan/` path (not `/brief/program/`) whenever it lands.

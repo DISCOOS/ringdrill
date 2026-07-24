@@ -35,7 +35,7 @@ change. The tables below are the human-readable summary.
 | `GET` | `/d/{slug}@{version}` | Downloads a specific version |
 | `GET` | `/i/{slug}` | HTML install/preview page for a shared drill |
 | `GET` | `/brief/{uuid}` | `302` to `web.ringdrill.app/brief/{uuid}` (interim, ADR-0041) |
-| `GET` | `/brief/program/{uuid}` | `302` to `web.ringdrill.app/brief/program/{uuid}` |
+| `GET` | `/brief/plan/{uuid}` | `302` to `web.ringdrill.app/brief/plan/{uuid}` |
 
 ### Admin
 

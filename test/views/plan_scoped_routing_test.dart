@@ -8,13 +8,13 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _programUuid = 'routing-program';
-const _otherProgramUuid = 'routing-other-program';
+const _planUuid = 'routing-plan';
+const _otherPlanUuid = 'routing-other-plan';
 const _exerciseUuid = 'routing-exercise';
 const _roleUuid = 'routing-role';
 
@@ -66,15 +66,15 @@ Map<String, Object> _prefs() {
   };
 
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode(shell(_programUuid, 'Routing Program')),
-    'p:$_otherProgramUuid': jsonEncode(
-      shell(_otherProgramUuid, 'Other Routing Program'),
+    'p:$_planUuid': jsonEncode(shell(_planUuid, 'Routing Plan')),
+    'p:$_otherPlanUuid': jsonEncode(
+      shell(_otherPlanUuid, 'Other Routing Plan'),
     ),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(_exercise.toJson()),
-    'pt:$_programUuid:${_team.uuid}': jsonEncode(_team.toJson()),
-    'pr:$_programUuid:$_roleUuid': jsonEncode(_role.toJson()),
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(_exercise.toJson()),
+    'pt:$_planUuid:${_team.uuid}': jsonEncode(_team.toJson()),
+    'pr:$_planUuid:$_roleUuid': jsonEncode(_role.toJson()),
   };
 }
 
@@ -109,48 +109,48 @@ Future<void> _go(WidgetTester tester, GoRouter router, String location) async {
 void main() {
   setUpAll(() async {
     SharedPreferences.setMockInitialValues(_prefs());
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   setUp(() async {
-    await ProgramService().setActive(_programUuid);
+    await PlanService().setActive(_planUuid);
   });
 
-  testWidgets('canonical program path activates its program', (tester) async {
+  testWidgets('canonical plan path activates its plan', (tester) async {
     final router = await _pumpRouter(tester);
 
-    await _go(tester, router, programPath(_otherProgramUuid));
+    await _go(tester, router, planPath(_otherPlanUuid));
 
-    expect(ProgramService().activeProgramUuid, _otherProgramUuid);
-    // Bare `/program/:uuid` redirects to the default segment per ADR-0032
-    // *Canonical scheme*. Every Program-tab view has a stable URL.
+    expect(PlanService().activePlanUuid, _otherPlanUuid);
+    // Bare `/plan/:uuid` redirects to the default segment per ADR-0032
+    // *Canonical scheme*. Every Plan-tab view has a stable URL.
     expect(
       _location(router),
-      programSegmentPath(_otherProgramUuid, programSegmentDefaultSlug),
+      planSegmentPath(_otherPlanUuid, planSegmentDefaultSlug),
     );
   });
 
-  testWidgets('unknown program uuid falls back to active program', (
+  testWidgets('unknown plan uuid falls back to active plan', (
     tester,
   ) async {
     final router = await _pumpRouter(tester);
 
-    await _go(tester, router, programPath('does-not-exist'));
+    await _go(tester, router, planPath('does-not-exist'));
 
     expect(
       _location(router),
-      programSegmentPath(_programUuid, programSegmentDefaultSlug),
+      planSegmentPath(_planUuid, planSegmentDefaultSlug),
     );
-    expect(ProgramService().activeProgramUuid, _programUuid);
+    expect(PlanService().activePlanUuid, _planUuid);
   });
 
-  testWidgets('legacy tab roots redirect to canonical program paths', (
+  testWidgets('legacy tab roots redirect to canonical plan paths', (
     tester,
   ) async {
     final router = await _pumpRouter(tester);
 
     for (final legacy in [
-      routeProgram,
+      routePlan,
       routeStations,
       routeTeams,
       routeRolePlays,
@@ -158,44 +158,44 @@ void main() {
       await _go(tester, router, legacy);
       expect(
         _location(router),
-        programSegmentPath(_programUuid, programSegmentDefaultSlug),
+        planSegmentPath(_planUuid, planSegmentDefaultSlug),
       );
     }
     await _go(tester, router, routeMap);
-    expect(_location(router), programMapPath(_programUuid));
+    expect(_location(router), planMapPath(_planUuid));
   });
 
   test('legacy detail links redirect to canonical detail paths', () {
     final cases = {
-      '$routeProgram/$_exerciseUuid': programExercisePath(
-        _programUuid,
+      '$routePlan/$_exerciseUuid': planExercisePath(
+        _planUuid,
         _exerciseUuid,
       ),
-      '$routeStations/$_exerciseUuid/0': programStationPath(
-        _programUuid,
+      '$routeStations/$_exerciseUuid/0': planStationPath(
+        _planUuid,
         _exerciseUuid,
         0,
       ),
-      '$routeTeams/0': programTeamPath(_programUuid, 0),
-      '$routeRolePlays/$_roleUuid': programRolePlayPath(
-        _programUuid,
+      '$routeTeams/0': planTeamPath(_planUuid, 0),
+      '$routeRolePlays/$_roleUuid': planRolePlayPath(
+        _planUuid,
         _roleUuid,
       ),
-      '$routeBrief/program/$_programUuid': programBriefPath(_programUuid),
-      '$routeBrief/$_exerciseUuid': programExerciseBriefPath(
-        _programUuid,
+      '$routeBrief/plan/$_planUuid': planBriefPath(_planUuid),
+      '$routeBrief/$_exerciseUuid': planExerciseBriefPath(
+        _planUuid,
         _exerciseUuid,
       ),
     };
 
     for (final MapEntry(key: legacy, value: canonical) in cases.entries) {
-      expect(legacyProgramRedirect(legacy), canonical);
+      expect(legacyPlanRedirect(legacy), canonical);
     }
   });
 
   testWidgets('canonical detail deep links resolve', (tester) async {
     final router = await _pumpRouter(tester);
-    final location = programStationPath(_programUuid, _exerciseUuid, 0);
+    final location = planStationPath(_planUuid, _exerciseUuid, 0);
 
     router.go(location);
     await tester.pump();
@@ -204,7 +204,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('shell renders Program, Map and Roster destinations', (
+  testWidgets('shell renders Plan, Map and Roster destinations', (
     tester,
   ) async {
     final router = await _pumpRouter(tester);
@@ -215,7 +215,7 @@ void main() {
     expect(navigationBar.destinations, hasLength(3));
     expect(
       _location(router),
-      programSegmentPath(_programUuid, programSegmentDefaultSlug),
+      planSegmentPath(_planUuid, planSegmentDefaultSlug),
     );
   });
 
@@ -241,9 +241,9 @@ void main() {
   ) async {
     final router = await _pumpRouter(tester);
 
-    for (final slug in programSegmentSlugs) {
-      await _go(tester, router, programSegmentPath(_programUuid, slug));
-      expect(_location(router), programSegmentPath(_programUuid, slug));
+    for (final slug in planSegmentSlugs) {
+      await _go(tester, router, planSegmentPath(_planUuid, slug));
+      expect(_location(router), planSegmentPath(_planUuid, slug));
     }
   });
 
@@ -256,7 +256,7 @@ void main() {
 
     expect(
       _location(router),
-      programSegmentPath(_programUuid, programSegmentScriptSlug),
+      planSegmentPath(_planUuid, planSegmentScriptSlug),
     );
   });
 }

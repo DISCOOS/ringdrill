@@ -20,7 +20,7 @@ const STRINGS = {
         moreAt:         "Mer på",
         // Plan-content language display names (ADR-0007 addendum), scoped to
         // the app's currently supported UI locales — extend alongside
-        // lib/views/program_form_screen.dart's kPlanLanguageNames and
+        // lib/views/plan_form_screen.dart's kPlanLanguageNames and
         // site/src/lib/languages.ts's LANGUAGE_NAMES.
         languageNames:  { nb: "Norsk", en: "Engelsk" },
     },

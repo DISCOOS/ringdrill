@@ -144,8 +144,8 @@
     status = 200
 
 [[redirects]]
-    from = "/brief/program/*"
-    to = "https://web.ringdrill.app/brief/program/:splat"
+    from = "/brief/plan/*"
+    to = "https://web.ringdrill.app/brief/plan/:splat"
     status = 302
 
 [[redirects]]

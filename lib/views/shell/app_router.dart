@@ -4,7 +4,7 @@
 //
 // Public entry points:
 //   - [buildRouter] — the only call main.dart needs
-//   - [legacyProgramRedirect] — `@visibleForTesting` for the redirect
+//   - [legacyPlanRedirect] — `@visibleForTesting` for the redirect
 //     mapping table tests
 
 import 'package:flutter/foundation.dart';
@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as path;
 import 'package:ringdrill/data/drill_file.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/concept_primer_screen.dart';
 import 'package:ringdrill/views/install_link_handler.dart';
@@ -28,104 +28,104 @@ import 'package:ringdrill/web/platform_widget.dart'
     if (dart.library.io) 'package:ringdrill/views/platform_widget.dart';
 import 'package:universal_io/io.dart';
 
-String _activeProgramPath() {
-  final uuid = ProgramService().activeProgramUuid;
-  return uuid == null ? routeProgram : programPath(uuid);
+String _activePlanPath() {
+  final uuid = PlanService().activePlanUuid;
+  return uuid == null ? routePlan : planPath(uuid);
 }
 
 @visibleForTesting
-String? legacyProgramRedirect(String location) {
+String? legacyPlanRedirect(String location) {
   final segments = Uri.parse(location).pathSegments;
-  final service = ProgramService();
-  final activeUuid = service.activeProgramUuid;
+  final service = PlanService();
+  final activeUuid = service.activePlanUuid;
   if (activeUuid == null) return null;
 
-  if (segments.isEmpty) return programPath(activeUuid);
+  if (segments.isEmpty) return planPath(activeUuid);
   if (segments.length == 1) {
     return switch (segments.first) {
-      'program' => programPath(activeUuid),
-      'map' => programMapPath(activeUuid),
-      'roster' => programRosterPath(activeUuid),
-      'stations' || 'teams' || 'roleplays' => programPath(activeUuid),
+      'plan' => planPath(activeUuid),
+      'map' => planMapPath(activeUuid),
+      'roster' => planRosterPath(activeUuid),
+      'stations' || 'teams' || 'roleplays' => planPath(activeUuid),
       _ => null,
     };
   }
-  if (segments.first == 'program' &&
-      service.loadProgram(segments[1]) == null &&
+  if (segments.first == 'plan' &&
+      service.loadPlan(segments[1]) == null &&
       service.getExercise(segments[1]) != null) {
     if (segments.length == 2) {
-      return programExercisePath(activeUuid, segments[1]);
+      return planExercisePath(activeUuid, segments[1]);
     }
     if (segments.length == 4 && segments[2] == 'station') {
       final stationIndex = int.tryParse(segments[3]);
       return stationIndex == null
           ? null
-          : programStationPath(activeUuid, segments[1], stationIndex);
+          : planStationPath(activeUuid, segments[1], stationIndex);
     }
     if (segments.length == 4 && segments[2] == 'team') {
       final teamIndex = int.tryParse(segments[3]);
-      return teamIndex == null ? null : programTeamPath(activeUuid, teamIndex);
+      return teamIndex == null ? null : planTeamPath(activeUuid, teamIndex);
     }
   }
   if (segments.first == 'stations' && segments.length == 3) {
     final stationIndex = int.tryParse(segments[2]);
     return stationIndex == null
         ? null
-        : programStationPath(activeUuid, segments[1], stationIndex);
+        : planStationPath(activeUuid, segments[1], stationIndex);
   }
   if (segments.first == 'teams' && segments.length == 2) {
     final teamIndex = int.tryParse(segments[1]);
-    return teamIndex == null ? null : programTeamPath(activeUuid, teamIndex);
+    return teamIndex == null ? null : planTeamPath(activeUuid, teamIndex);
   }
   if (segments.first == 'roleplays' && segments.length == 2) {
-    return programRolePlayPath(activeUuid, segments[1]);
+    return planRolePlayPath(activeUuid, segments[1]);
   }
   if (segments.first == 'brief') {
-    if (segments.length == 3 && segments[1] == 'program') {
-      return programBriefPath(segments[2]);
+    if (segments.length == 3 && segments[1] == 'plan') {
+      return planBriefPath(segments[2]);
     }
     if (segments.length == 2) {
-      return programExerciseBriefPath(activeUuid, segments[1]);
+      return planExerciseBriefPath(activeUuid, segments[1]);
     }
   }
   return null;
 }
 
-String? _activateCanonicalProgramPath(String location) {
+String? _activateCanonicalPlanPath(String location) {
   final segments = Uri.parse(location).pathSegments;
-  if (segments.length < 2 || segments.first != 'program') return null;
+  if (segments.length < 2 || segments.first != 'plan') return null;
 
   final candidateUuid = segments[1];
-  final service = ProgramService();
-  if (service.loadProgram(candidateUuid) == null) {
-    return _activeProgramPath();
+  final service = PlanService();
+  if (service.loadPlan(candidateUuid) == null) {
+    return _activePlanPath();
   }
   // Activation is a side effect, not a routing decision. Awaiting setActive
-  // inside the redirect mutated ProgramService and rebuilt the shell during
+  // inside the redirect mutated PlanService and rebuilt the shell during
   // SchedulerPhase.midFrameMicrotasks, which tripped
   // RenderParagraph._scheduleSystemFontsUpdate ("called during
   // SchedulerPhase.midFrameMicrotasks"). Defer it to a post-frame callback so
   // setActive's listeners fire when the scheduler is idle: the page renders
-  // against the current active program for one frame, then the activation
+  // against the current active plan for one frame, then the activation
   // triggers a clean rebuild. The redirect itself stays synchronous and pure.
-  if (service.activeProgramUuid != candidateUuid) {
+  if (service.activePlanUuid != candidateUuid) {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final s = ProgramService();
-      // Re-check inside the callback: the active program may have changed
-      // (or the program been removed) between scheduling and the frame.
-      if (s.activeProgramUuid != candidateUuid &&
-          s.loadProgram(candidateUuid) != null) {
+      final s = PlanService();
+      // Re-check inside the callback: the active plan may have changed
+      // (or the plan been removed) between scheduling and the frame.
+      if (s.activePlanUuid != candidateUuid &&
+          s.loadPlan(candidateUuid) != null) {
         await s.setActive(candidateUuid);
       }
     });
   }
-  // Bare `/program/:uuid` has no canonical landing — promote it to the
-  // default segment so every Program-tab view has a stable URL (ADR-0032
+  // Bare `/plan/:uuid` has no canonical landing — promote it to the
+  // default segment so every Plan-tab view has a stable URL (ADR-0032
   // *Canonical scheme*). MainScreen reads the segment back out of the URL
-  // in `_initTab` and writes it to `ProgramPageController.activeSegment`,
+  // in `_initTab` and writes it to `PlanPageController.activeSegment`,
   // so segment selection flows URL → state, never the other way around.
   if (segments.length == 2) {
-    return programSegmentPath(candidateUuid, programSegmentDefaultSlug);
+    return planSegmentPath(candidateUuid, planSegmentDefaultSlug);
   }
   return null;
 }
@@ -156,7 +156,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
             handleInstallLink(context, slug);
           }
         });
-        return _activeProgramPath();
+        return _activePlanPath();
       }
       if (location.startsWith('/o/')) {
         final filePath = Uri.decodeComponent(location.replaceFirst('/o', ''));
@@ -167,15 +167,15 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
             _showOpenFileBottomSheet(
               context,
               filePath: filePath,
-              location: _activeProgramPath(),
+              location: _activePlanPath(),
             );
           }
         });
         // OpenFileWidget requires a
-        // ProgramPageController instance
+        // PlanPageController instance
         // to exist in widget tree. Always
-        // redirect to programs page!
-        return _activeProgramPath();
+        // redirect to plans page!
+        return _activePlanPath();
       }
       // `?import=guide` (ADR-0045): the /migrate exporter sends users here
       // after downloading their library bundle. Web-only, same as /install
@@ -187,21 +187,21 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
             showOpenPlanDialog(context, initialTab: LibraryTab.fromFile);
           }
         });
-        return _activeProgramPath();
+        return _activePlanPath();
       }
       // Primer gate: redirect root path to /welcome on first launch, before
-      // the legacy redirect can absorb '/' → programPath(uuid).
+      // the legacy redirect can absorb '/' → planPath(uuid).
       if (!isOnboardingSeen && location == '/') {
         return '/welcome';
       }
-      final legacyRedirect = legacyProgramRedirect(location);
+      final legacyRedirect = legacyPlanRedirect(location);
       if (legacyRedirect != null && legacyRedirect != location) {
         return legacyRedirect;
       }
-      return _activateCanonicalProgramPath(location);
+      return _activateCanonicalPlanPath(location);
     },
     routes: [
-      GoRoute(path: '/i/:slug', redirect: (_, _) => _activeProgramPath()),
+      GoRoute(path: '/i/:slug', redirect: (_, _) => _activePlanPath()),
       // Concept primer — shown once on first launch when the onboarding seen
       // flag is unset. Lives over the root navigator (parentNavigatorKey: key)
       // so it does not fight the IndexedStack shell.
@@ -231,11 +231,11 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
         ),
       ],
       // Brief routes — not tabs; pushed over the root navigator as a
-      // fullscreen modal bottom sheet. The program variant is listed first so
-      // go_router matches the more specific `program/` path before the bare
+      // fullscreen modal bottom sheet. The plan variant is listed first so
+      // go_router matches the more specific `plan/` path before the bare
       // `:exerciseUuid` catch-all.
       GoRoute(
-        path: '$routeBrief/program/:programUuid',
+        path: '$routeBrief/plan/:planUuid',
         parentNavigatorKey: key,
         pageBuilder: (BuildContext context, GoRouterState state) =>
             CustomTransitionPage(
@@ -244,9 +244,9 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
               transitionsBuilder: (_, _, _, child) => child,
               child: BriefDeepLinkLauncher(
                 target: BriefSheetTarget(
-                  programUuid: state.pathParameters['programUuid']!,
+                  planUuid: state.pathParameters['planUuid']!,
                 ),
-                fallbackRoute: routeProgram,
+                fallbackRoute: routePlan,
               ),
             ),
       ),
@@ -262,7 +262,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                 target: BriefSheetTarget(
                   exerciseUuid: state.pathParameters['exerciseUuid']!,
                 ),
-                fallbackRoute: routeProgram,
+                fallbackRoute: routePlan,
               ),
             ),
       ),
@@ -274,7 +274,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
               navigatorKey: key,
               router: GoRouter.of(context),
               location: state.matchedLocation,
-              routes: [routeProgram, routeMap, routeRoster],
+              routes: [routePlan, routeMap, routeRoster],
               // The shell's nested Navigator (identified by
               // [shellNavigatorKey]). MainScreen mounts it offstage so the
               // GlobalKey gets attached — see the comment on
@@ -284,43 +284,43 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
           );
         },
         routes: [
-          GoRoute(path: '/', redirect: (_, _) => _activeProgramPath()),
+          GoRoute(path: '/', redirect: (_, _) => _activePlanPath()),
           GoRoute(
-            path: routeProgram,
+            path: routePlan,
             // ShellRoute's child is ignored by MainScreen (IndexedStack).
-            // Stub builder avoids constructing a second ProgramPageController
+            // Stub builder avoids constructing a second PlanPageController
             // that would only ever be mounted inside the offstage shell
-            // sentinel and would double-subscribe to ProgramService events.
+            // sentinel and would double-subscribe to PlanService events.
             builder: (BuildContext context, GoRouterState state) =>
                 const SizedBox.shrink(),
             routes: [
               GoRoute(
-                path: ':programUuid',
+                path: ':planUuid',
                 builder: (BuildContext context, GoRouterState state) =>
                     const SizedBox.shrink(),
                 routes: [
-                  // Program-tab segments (ADR-0032 *Canonical scheme*). The
+                  // Plan-tab segments (ADR-0032 *Canonical scheme*). The
                   // visible UI is the IndexedStack in MainScreen, so the
                   // builders return a stub — MainScreen reads the segment slug
                   // out of `state.matchedLocation` and writes it to
-                  // `ProgramPageController.activeSegment` in `_initTab`.
+                  // `PlanPageController.activeSegment` in `_initTab`.
                   GoRoute(
-                    path: programSegmentExercisesSlug,
+                    path: planSegmentExercisesSlug,
                     builder: (BuildContext context, GoRouterState state) =>
                         const SizedBox.shrink(),
                   ),
                   GoRoute(
-                    path: programSegmentStationsSlug,
+                    path: planSegmentStationsSlug,
                     builder: (BuildContext context, GoRouterState state) =>
                         const SizedBox.shrink(),
                   ),
                   GoRoute(
-                    path: programSegmentScriptSlug,
+                    path: planSegmentScriptSlug,
                     builder: (BuildContext context, GoRouterState state) =>
                         const SizedBox.shrink(),
                   ),
                   GoRoute(
-                    path: programSegmentTeamsSlug,
+                    path: planSegmentTeamsSlug,
                     builder: (BuildContext context, GoRouterState state) =>
                         const SizedBox.shrink(),
                   ),
@@ -346,10 +346,10 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                           transitionsBuilder: (_, _, _, child) => child,
                           child: BriefDeepLinkLauncher(
                             target: BriefSheetTarget(
-                              programUuid: state.pathParameters['programUuid']!,
+                              planUuid: state.pathParameters['planUuid']!,
                             ),
-                            fallbackRoute: programPath(
-                              state.pathParameters['programUuid']!,
+                            fallbackRoute: planPath(
+                              state.pathParameters['planUuid']!,
                             ),
                           ),
                         ),
@@ -365,15 +365,15 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                               state.pathParameters['stationIndex']!,
                             ),
                           ),
-                          fallbackRoute: programPath(
-                            state.pathParameters['programUuid']!,
+                          fallbackRoute: planPath(
+                            state.pathParameters['planUuid']!,
                           ),
                         ),
                   ),
                   GoRoute(
                     path: 'exercise/:exerciseId/team/:teamIndex',
-                    redirect: (context, state) => programTeamPath(
-                      state.pathParameters['programUuid']!,
+                    redirect: (context, state) => planTeamPath(
+                      state.pathParameters['planUuid']!,
                       int.parse(state.pathParameters['teamIndex']!),
                     ),
                   ),
@@ -389,8 +389,8 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                             target: BriefSheetTarget(
                               exerciseUuid: state.pathParameters['exerciseId']!,
                             ),
-                            fallbackRoute: programPath(
-                              state.pathParameters['programUuid']!,
+                            fallbackRoute: planPath(
+                              state.pathParameters['planUuid']!,
                             ),
                           ),
                         ),
@@ -403,8 +403,8 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                           target: ExerciseSheetTarget(
                             exerciseUuid: state.pathParameters['exerciseId']!,
                           ),
-                          fallbackRoute: programPath(
-                            state.pathParameters['programUuid']!,
+                          fallbackRoute: planPath(
+                            state.pathParameters['planUuid']!,
                           ),
                         ),
                   ),
@@ -415,7 +415,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                       final teamIndex = int.parse(
                         state.pathParameters['teamIndex']!,
                       );
-                      if (ProgramService().getTeam(teamIndex) == null) {
+                      if (PlanService().getTeam(teamIndex) == null) {
                         return const SizedBox.shrink();
                       }
                       // Open the cross-exercise team overview, not a single
@@ -423,8 +423,8 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                       // exercise itself, so no running/first guess is needed.
                       return ContextSheetDeepLinkLauncher(
                         target: TeamOverviewSheetTarget(teamIndex: teamIndex),
-                        fallbackRoute: programPath(
-                          state.pathParameters['programUuid']!,
+                        fallbackRoute: planPath(
+                          state.pathParameters['planUuid']!,
                         ),
                       );
                     },
@@ -437,8 +437,8 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                           target: RoleSheetTarget(
                             rolePlayUuid: state.pathParameters['roleUuid']!,
                           ),
-                          fallbackRoute: programPath(
-                            state.pathParameters['programUuid']!,
+                          fallbackRoute: planPath(
+                            state.pathParameters['planUuid']!,
                           ),
                         ),
                   ),
@@ -505,7 +505,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                   final teamIndex = int.parse(
                     state.pathParameters['teamIndex']!,
                   );
-                  if (ProgramService().getTeam(teamIndex) == null) {
+                  if (PlanService().getTeam(teamIndex) == null) {
                     return const SizedBox.shrink();
                   }
                   // Open the cross-exercise team overview (TeamScreen), which
@@ -550,15 +550,15 @@ void _showOpenFileBottomSheet(
   required String location,
   required String filePath,
 }) {
-  // REMEMBER! OpenFileWidget requires a ProgramPageController instance to
+  // REMEMBER! OpenFileWidget requires a PlanPageController instance to
   // exist in the widget tree.
   showOpenFileBottomSheet(
     context,
     OpenFileWidget(
       fileName: path.basename(filePath),
       loadFile: () async => DrillFile.fromFile(File(filePath)),
-      openProgram: (file) =>
-          ProgramService().installFromFile(file, activate: true),
+      openPlan: (file) =>
+          PlanService().installFromFile(file, activate: true),
       location: location,
       isOnline: false,
     ),
