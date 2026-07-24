@@ -1289,6 +1289,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryDownloadPlan => 'Download plan';
 
   @override
+  String get downloadTitle => 'Download';
+
+  @override
   String get selectExercisesAction => 'CHOOSE...';
 
   @override

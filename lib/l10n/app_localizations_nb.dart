@@ -1285,6 +1285,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryDownloadPlan => 'Last ned plan';
 
   @override
+  String get downloadTitle => 'Last ned';
+
+  @override
   String get selectExercisesAction => 'VELG...';
 
   @override

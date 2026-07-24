@@ -1276,6 +1276,10 @@
   "libraryDownloadAction": "Download…",
   "libraryDownloadAll": "Download all",
   "libraryDownloadPlan": "Download plan",
+  "downloadTitle": "Download",
+  "@downloadTitle": {
+    "description": "Title of the picker that lets the user choose between downloading all plans or just the active plan."
+  },
   "selectExercisesAction": "CHOOSE...",
   "selectExercisesDisabledTooltip": "No exercises to choose from yet",
   "selectPlansDisabledTooltip": "No plans to choose from yet",

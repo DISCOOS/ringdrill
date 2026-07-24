@@ -24,7 +24,7 @@ import 'package:ringdrill/views/export_plan_dialog.dart';
 import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/publish_plan_dialog.dart';
-import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/web/trigger_download_web.dart'
     if (dart.library.io) 'package:ringdrill/web/trigger_download_stub.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -325,23 +325,25 @@ Future<void> downloadAllPlans(BuildContext context) async {
 /// instead of only ever offering the latter.
 Future<void> downloadActivePlan(BuildContext context) async {
   final localizations = AppLocalizations.of(context)!;
-  final choice = await showRingdrillActionSheet<String>(
+  // Use the shared "pick one" primitive so this is a bottom sheet on
+  // compact and a dialog on medium/expanded (the same adaptive split every
+  // other picker uses), instead of always a bottom sheet.
+  final choice = await showRingdrillPicker<String>(
     context: context,
-    builder: (context) => Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ListTile(
-          leading: const Icon(Icons.folder_zip_outlined),
-          title: Text(localizations.libraryDownloadAll),
-          onTap: () => Navigator.pop(context, 'all'),
-        ),
-        ListTile(
-          leading: const Icon(Icons.description_outlined),
-          title: Text(localizations.libraryDownloadPlan),
-          onTap: () => Navigator.pop(context, 'plan'),
-        ),
-      ],
-    ),
+    title: localizations.downloadTitle,
+    items: const ['all', 'plan'],
+    itemBuilder: (context, item, onTap) => switch (item) {
+      'all' => ListTile(
+        leading: const Icon(Icons.folder_zip_outlined),
+        title: Text(localizations.libraryDownloadAll),
+        onTap: onTap,
+      ),
+      _ => ListTile(
+        leading: const Icon(Icons.description_outlined),
+        title: Text(localizations.libraryDownloadPlan),
+        onTap: onTap,
+      ),
+    },
   );
   if (!context.mounted) return;
   switch (choice) {

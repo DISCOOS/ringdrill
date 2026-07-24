@@ -2150,6 +2150,12 @@ abstract class AppLocalizations {
   /// **'Download plan'**
   String get libraryDownloadPlan;
 
+  /// Title of the picker that lets the user choose between downloading all plans or just the active plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get downloadTitle;
+
   /// No description provided for @selectExercisesAction.
   ///
   /// In en, this message translates to:

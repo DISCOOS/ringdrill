@@ -357,6 +357,7 @@
   "libraryDownloadAction": "Last ned…",
   "libraryDownloadAll": "Last ned alle",
   "libraryDownloadPlan": "Last ned plan",
+  "downloadTitle": "Last ned",
   "selectExercisesAction": "VELG...",
   "selectExercisesDisabledTooltip": "Ingen øvelser å velge blant enda",
   "selectPlansDisabledTooltip": "Ingen planer å velge blant enda",
