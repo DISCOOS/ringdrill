@@ -1,9 +1,9 @@
 {{^isSingleExercise}}
-# {{program.name}}
+# {{plan.name}}
 
-{{#program.description}}_{{program.description}}_
+{{#plan.description}}_{{plan.description}}_
 
-{{/program.description}}
+{{/plan.description}}
 {{#if_in_doc_toc}}
 ## Table of contents
 
@@ -12,18 +12,18 @@
 {{/stations}}{{/exercises}}
 
 {{/if_in_doc_toc}}
-{{#program.briefIntroMd}}
+{{#plan.briefIntroMd}}
 ## General notes on play and exercise control
 
-{{{program.briefIntroMd}}}
+{{{plan.briefIntroMd}}}
 
-{{/program.briefIntroMd}}
-{{#program.commsMd}}
+{{/plan.briefIntroMd}}
+{{#plan.commsMd}}
 ## Talk groups
 
-{{{program.commsMd}}}
+{{{plan.commsMd}}}
 
-{{/program.commsMd}}
+{{/plan.commsMd}}
 ---
 
 {{/isSingleExercise}}

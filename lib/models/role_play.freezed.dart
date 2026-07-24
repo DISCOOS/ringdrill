@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$RolePlay {
 
- String get uuid; int get index; String get exerciseUuid; String get name; int? get age; String? get gender; String? get signalement;@JsonKey(includeFromJson: false, includeToJson: false) String? get background;@JsonKey(includeFromJson: false, includeToJson: false) String? get behavior; int? get stationIndex;@NullableLatLngJsonConverter() LatLng? get position; String? get actorUuid;/// Slug of a [Person] on this roleplay's station (ADR-0047,
+ String get uuid; int get index; String get exerciseUuid; String get name; int? get age; String? get gender; String? get description;@JsonKey(includeFromJson: false, includeToJson: false) String? get background;@JsonKey(includeFromJson: false, includeToJson: false) String? get behavior; int? get stationIndex;@NullableLatLngJsonConverter() LatLng? get position; String? get actorUuid;/// Slug of a [Person] on this roleplay's station (ADR-0047,
 /// DESIGN-009). Nullable on the wire: "mandatory" is an editor-level
 /// invariant for newly authored/edited roleplays, not a wire
 /// constraint — a legacy roleplay with `personRef == null` still
@@ -36,16 +36,16 @@ $RolePlayCopyWith<RolePlay> get copyWith => _$RolePlayCopyWithImpl<RolePlay>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RolePlay&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.index, index) || other.index == index)&&(identical(other.exerciseUuid, exerciseUuid) || other.exerciseUuid == exerciseUuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.age, age) || other.age == age)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.signalement, signalement) || other.signalement == signalement)&&(identical(other.background, background) || other.background == background)&&(identical(other.behavior, behavior) || other.behavior == behavior)&&(identical(other.stationIndex, stationIndex) || other.stationIndex == stationIndex)&&(identical(other.position, position) || other.position == position)&&(identical(other.actorUuid, actorUuid) || other.actorUuid == actorUuid)&&(identical(other.personRef, personRef) || other.personRef == personRef)&&(identical(other.propsMd, propsMd) || other.propsMd == propsMd));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RolePlay&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.index, index) || other.index == index)&&(identical(other.exerciseUuid, exerciseUuid) || other.exerciseUuid == exerciseUuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.age, age) || other.age == age)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.description, description) || other.description == description)&&(identical(other.background, background) || other.background == background)&&(identical(other.behavior, behavior) || other.behavior == behavior)&&(identical(other.stationIndex, stationIndex) || other.stationIndex == stationIndex)&&(identical(other.position, position) || other.position == position)&&(identical(other.actorUuid, actorUuid) || other.actorUuid == actorUuid)&&(identical(other.personRef, personRef) || other.personRef == personRef)&&(identical(other.propsMd, propsMd) || other.propsMd == propsMd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,uuid,index,exerciseUuid,name,age,gender,signalement,background,behavior,stationIndex,position,actorUuid,personRef,propsMd);
+int get hashCode => Object.hash(runtimeType,uuid,index,exerciseUuid,name,age,gender,description,background,behavior,stationIndex,position,actorUuid,personRef,propsMd);
 
 @override
 String toString() {
-  return 'RolePlay(uuid: $uuid, index: $index, exerciseUuid: $exerciseUuid, name: $name, age: $age, gender: $gender, signalement: $signalement, background: $background, behavior: $behavior, stationIndex: $stationIndex, position: $position, actorUuid: $actorUuid, personRef: $personRef, propsMd: $propsMd)';
+  return 'RolePlay(uuid: $uuid, index: $index, exerciseUuid: $exerciseUuid, name: $name, age: $age, gender: $gender, description: $description, background: $background, behavior: $behavior, stationIndex: $stationIndex, position: $position, actorUuid: $actorUuid, personRef: $personRef, propsMd: $propsMd)';
 }
 
 
@@ -56,7 +56,7 @@ abstract mixin class $RolePlayCopyWith<$Res>  {
   factory $RolePlayCopyWith(RolePlay value, $Res Function(RolePlay) _then) = _$RolePlayCopyWithImpl;
 @useResult
 $Res call({
- String uuid, int index, String exerciseUuid, String name, int? age, String? gender, String? signalement,@JsonKey(includeFromJson: false, includeToJson: false) String? background,@JsonKey(includeFromJson: false, includeToJson: false) String? behavior, int? stationIndex,@NullableLatLngJsonConverter() LatLng? position, String? actorUuid, String? personRef,@JsonKey(includeFromJson: false, includeToJson: false) String? propsMd
+ String uuid, int index, String exerciseUuid, String name, int? age, String? gender, String? description,@JsonKey(includeFromJson: false, includeToJson: false) String? background,@JsonKey(includeFromJson: false, includeToJson: false) String? behavior, int? stationIndex,@NullableLatLngJsonConverter() LatLng? position, String? actorUuid, String? personRef,@JsonKey(includeFromJson: false, includeToJson: false) String? propsMd
 });
 
 
@@ -73,7 +73,7 @@ class _$RolePlayCopyWithImpl<$Res>
 
 /// Create a copy of RolePlay
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? uuid = null,Object? index = null,Object? exerciseUuid = null,Object? name = null,Object? age = freezed,Object? gender = freezed,Object? signalement = freezed,Object? background = freezed,Object? behavior = freezed,Object? stationIndex = freezed,Object? position = freezed,Object? actorUuid = freezed,Object? personRef = freezed,Object? propsMd = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? uuid = null,Object? index = null,Object? exerciseUuid = null,Object? name = null,Object? age = freezed,Object? gender = freezed,Object? description = freezed,Object? background = freezed,Object? behavior = freezed,Object? stationIndex = freezed,Object? position = freezed,Object? actorUuid = freezed,Object? personRef = freezed,Object? propsMd = freezed,}) {
   return _then(_self.copyWith(
 uuid: null == uuid ? _self.uuid : uuid // ignore: cast_nullable_to_non_nullable
 as String,index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
@@ -81,7 +81,7 @@ as int,exerciseUuid: null == exerciseUuid ? _self.exerciseUuid : exerciseUuid //
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,age: freezed == age ? _self.age : age // ignore: cast_nullable_to_non_nullable
 as int?,gender: freezed == gender ? _self.gender : gender // ignore: cast_nullable_to_non_nullable
-as String?,signalement: freezed == signalement ? _self.signalement : signalement // ignore: cast_nullable_to_non_nullable
+as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,background: freezed == background ? _self.background : background // ignore: cast_nullable_to_non_nullable
 as String?,behavior: freezed == behavior ? _self.behavior : behavior // ignore: cast_nullable_to_non_nullable
 as String?,stationIndex: freezed == stationIndex ? _self.stationIndex : stationIndex // ignore: cast_nullable_to_non_nullable
@@ -171,10 +171,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  int index,  String exerciseUuid,  String name,  int? age,  String? gender,  String? signalement, @JsonKey(includeFromJson: false, includeToJson: false)  String? background, @JsonKey(includeFromJson: false, includeToJson: false)  String? behavior,  int? stationIndex, @NullableLatLngJsonConverter()  LatLng? position,  String? actorUuid,  String? personRef, @JsonKey(includeFromJson: false, includeToJson: false)  String? propsMd)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  int index,  String exerciseUuid,  String name,  int? age,  String? gender,  String? description, @JsonKey(includeFromJson: false, includeToJson: false)  String? background, @JsonKey(includeFromJson: false, includeToJson: false)  String? behavior,  int? stationIndex, @NullableLatLngJsonConverter()  LatLng? position,  String? actorUuid,  String? personRef, @JsonKey(includeFromJson: false, includeToJson: false)  String? propsMd)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RolePlay() when $default != null:
-return $default(_that.uuid,_that.index,_that.exerciseUuid,_that.name,_that.age,_that.gender,_that.signalement,_that.background,_that.behavior,_that.stationIndex,_that.position,_that.actorUuid,_that.personRef,_that.propsMd);case _:
+return $default(_that.uuid,_that.index,_that.exerciseUuid,_that.name,_that.age,_that.gender,_that.description,_that.background,_that.behavior,_that.stationIndex,_that.position,_that.actorUuid,_that.personRef,_that.propsMd);case _:
   return orElse();
 
 }
@@ -192,10 +192,10 @@ return $default(_that.uuid,_that.index,_that.exerciseUuid,_that.name,_that.age,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  int index,  String exerciseUuid,  String name,  int? age,  String? gender,  String? signalement, @JsonKey(includeFromJson: false, includeToJson: false)  String? background, @JsonKey(includeFromJson: false, includeToJson: false)  String? behavior,  int? stationIndex, @NullableLatLngJsonConverter()  LatLng? position,  String? actorUuid,  String? personRef, @JsonKey(includeFromJson: false, includeToJson: false)  String? propsMd)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  int index,  String exerciseUuid,  String name,  int? age,  String? gender,  String? description, @JsonKey(includeFromJson: false, includeToJson: false)  String? background, @JsonKey(includeFromJson: false, includeToJson: false)  String? behavior,  int? stationIndex, @NullableLatLngJsonConverter()  LatLng? position,  String? actorUuid,  String? personRef, @JsonKey(includeFromJson: false, includeToJson: false)  String? propsMd)  $default,) {final _that = this;
 switch (_that) {
 case _RolePlay():
-return $default(_that.uuid,_that.index,_that.exerciseUuid,_that.name,_that.age,_that.gender,_that.signalement,_that.background,_that.behavior,_that.stationIndex,_that.position,_that.actorUuid,_that.personRef,_that.propsMd);}
+return $default(_that.uuid,_that.index,_that.exerciseUuid,_that.name,_that.age,_that.gender,_that.description,_that.background,_that.behavior,_that.stationIndex,_that.position,_that.actorUuid,_that.personRef,_that.propsMd);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -209,10 +209,10 @@ return $default(_that.uuid,_that.index,_that.exerciseUuid,_that.name,_that.age,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  int index,  String exerciseUuid,  String name,  int? age,  String? gender,  String? signalement, @JsonKey(includeFromJson: false, includeToJson: false)  String? background, @JsonKey(includeFromJson: false, includeToJson: false)  String? behavior,  int? stationIndex, @NullableLatLngJsonConverter()  LatLng? position,  String? actorUuid,  String? personRef, @JsonKey(includeFromJson: false, includeToJson: false)  String? propsMd)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  int index,  String exerciseUuid,  String name,  int? age,  String? gender,  String? description, @JsonKey(includeFromJson: false, includeToJson: false)  String? background, @JsonKey(includeFromJson: false, includeToJson: false)  String? behavior,  int? stationIndex, @NullableLatLngJsonConverter()  LatLng? position,  String? actorUuid,  String? personRef, @JsonKey(includeFromJson: false, includeToJson: false)  String? propsMd)?  $default,) {final _that = this;
 switch (_that) {
 case _RolePlay() when $default != null:
-return $default(_that.uuid,_that.index,_that.exerciseUuid,_that.name,_that.age,_that.gender,_that.signalement,_that.background,_that.behavior,_that.stationIndex,_that.position,_that.actorUuid,_that.personRef,_that.propsMd);case _:
+return $default(_that.uuid,_that.index,_that.exerciseUuid,_that.name,_that.age,_that.gender,_that.description,_that.background,_that.behavior,_that.stationIndex,_that.position,_that.actorUuid,_that.personRef,_that.propsMd);case _:
   return null;
 
 }
@@ -224,7 +224,7 @@ return $default(_that.uuid,_that.index,_that.exerciseUuid,_that.name,_that.age,_
 @JsonSerializable()
 
 class _RolePlay implements RolePlay {
-  const _RolePlay({required this.uuid, required this.index, required this.exerciseUuid, required this.name, this.age, this.gender, this.signalement, @JsonKey(includeFromJson: false, includeToJson: false) this.background, @JsonKey(includeFromJson: false, includeToJson: false) this.behavior, this.stationIndex, @NullableLatLngJsonConverter() this.position, this.actorUuid, this.personRef, @JsonKey(includeFromJson: false, includeToJson: false) this.propsMd});
+  const _RolePlay({required this.uuid, required this.index, required this.exerciseUuid, required this.name, this.age, this.gender, this.description, @JsonKey(includeFromJson: false, includeToJson: false) this.background, @JsonKey(includeFromJson: false, includeToJson: false) this.behavior, this.stationIndex, @NullableLatLngJsonConverter() this.position, this.actorUuid, this.personRef, @JsonKey(includeFromJson: false, includeToJson: false) this.propsMd});
   factory _RolePlay.fromJson(Map<String, dynamic> json) => _$RolePlayFromJson(json);
 
 @override final  String uuid;
@@ -233,7 +233,7 @@ class _RolePlay implements RolePlay {
 @override final  String name;
 @override final  int? age;
 @override final  String? gender;
-@override final  String? signalement;
+@override final  String? description;
 @override@JsonKey(includeFromJson: false, includeToJson: false) final  String? background;
 @override@JsonKey(includeFromJson: false, includeToJson: false) final  String? behavior;
 @override final  int? stationIndex;
@@ -263,16 +263,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RolePlay&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.index, index) || other.index == index)&&(identical(other.exerciseUuid, exerciseUuid) || other.exerciseUuid == exerciseUuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.age, age) || other.age == age)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.signalement, signalement) || other.signalement == signalement)&&(identical(other.background, background) || other.background == background)&&(identical(other.behavior, behavior) || other.behavior == behavior)&&(identical(other.stationIndex, stationIndex) || other.stationIndex == stationIndex)&&(identical(other.position, position) || other.position == position)&&(identical(other.actorUuid, actorUuid) || other.actorUuid == actorUuid)&&(identical(other.personRef, personRef) || other.personRef == personRef)&&(identical(other.propsMd, propsMd) || other.propsMd == propsMd));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RolePlay&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.index, index) || other.index == index)&&(identical(other.exerciseUuid, exerciseUuid) || other.exerciseUuid == exerciseUuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.age, age) || other.age == age)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.description, description) || other.description == description)&&(identical(other.background, background) || other.background == background)&&(identical(other.behavior, behavior) || other.behavior == behavior)&&(identical(other.stationIndex, stationIndex) || other.stationIndex == stationIndex)&&(identical(other.position, position) || other.position == position)&&(identical(other.actorUuid, actorUuid) || other.actorUuid == actorUuid)&&(identical(other.personRef, personRef) || other.personRef == personRef)&&(identical(other.propsMd, propsMd) || other.propsMd == propsMd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,uuid,index,exerciseUuid,name,age,gender,signalement,background,behavior,stationIndex,position,actorUuid,personRef,propsMd);
+int get hashCode => Object.hash(runtimeType,uuid,index,exerciseUuid,name,age,gender,description,background,behavior,stationIndex,position,actorUuid,personRef,propsMd);
 
 @override
 String toString() {
-  return 'RolePlay(uuid: $uuid, index: $index, exerciseUuid: $exerciseUuid, name: $name, age: $age, gender: $gender, signalement: $signalement, background: $background, behavior: $behavior, stationIndex: $stationIndex, position: $position, actorUuid: $actorUuid, personRef: $personRef, propsMd: $propsMd)';
+  return 'RolePlay(uuid: $uuid, index: $index, exerciseUuid: $exerciseUuid, name: $name, age: $age, gender: $gender, description: $description, background: $background, behavior: $behavior, stationIndex: $stationIndex, position: $position, actorUuid: $actorUuid, personRef: $personRef, propsMd: $propsMd)';
 }
 
 
@@ -283,7 +283,7 @@ abstract mixin class _$RolePlayCopyWith<$Res> implements $RolePlayCopyWith<$Res>
   factory _$RolePlayCopyWith(_RolePlay value, $Res Function(_RolePlay) _then) = __$RolePlayCopyWithImpl;
 @override @useResult
 $Res call({
- String uuid, int index, String exerciseUuid, String name, int? age, String? gender, String? signalement,@JsonKey(includeFromJson: false, includeToJson: false) String? background,@JsonKey(includeFromJson: false, includeToJson: false) String? behavior, int? stationIndex,@NullableLatLngJsonConverter() LatLng? position, String? actorUuid, String? personRef,@JsonKey(includeFromJson: false, includeToJson: false) String? propsMd
+ String uuid, int index, String exerciseUuid, String name, int? age, String? gender, String? description,@JsonKey(includeFromJson: false, includeToJson: false) String? background,@JsonKey(includeFromJson: false, includeToJson: false) String? behavior, int? stationIndex,@NullableLatLngJsonConverter() LatLng? position, String? actorUuid, String? personRef,@JsonKey(includeFromJson: false, includeToJson: false) String? propsMd
 });
 
 
@@ -300,7 +300,7 @@ class __$RolePlayCopyWithImpl<$Res>
 
 /// Create a copy of RolePlay
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? uuid = null,Object? index = null,Object? exerciseUuid = null,Object? name = null,Object? age = freezed,Object? gender = freezed,Object? signalement = freezed,Object? background = freezed,Object? behavior = freezed,Object? stationIndex = freezed,Object? position = freezed,Object? actorUuid = freezed,Object? personRef = freezed,Object? propsMd = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? uuid = null,Object? index = null,Object? exerciseUuid = null,Object? name = null,Object? age = freezed,Object? gender = freezed,Object? description = freezed,Object? background = freezed,Object? behavior = freezed,Object? stationIndex = freezed,Object? position = freezed,Object? actorUuid = freezed,Object? personRef = freezed,Object? propsMd = freezed,}) {
   return _then(_RolePlay(
 uuid: null == uuid ? _self.uuid : uuid // ignore: cast_nullable_to_non_nullable
 as String,index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
@@ -308,7 +308,7 @@ as int,exerciseUuid: null == exerciseUuid ? _self.exerciseUuid : exerciseUuid //
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,age: freezed == age ? _self.age : age // ignore: cast_nullable_to_non_nullable
 as int?,gender: freezed == gender ? _self.gender : gender // ignore: cast_nullable_to_non_nullable
-as String?,signalement: freezed == signalement ? _self.signalement : signalement // ignore: cast_nullable_to_non_nullable
+as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,background: freezed == background ? _self.background : background // ignore: cast_nullable_to_non_nullable
 as String?,behavior: freezed == behavior ? _self.behavior : behavior // ignore: cast_nullable_to_non_nullable
 as String?,stationIndex: freezed == stationIndex ? _self.stationIndex : stationIndex // ignore: cast_nullable_to_non_nullable

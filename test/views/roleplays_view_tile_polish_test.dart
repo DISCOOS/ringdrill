@@ -8,7 +8,7 @@ import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/widgets/cast_pill.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
@@ -60,7 +60,7 @@ RolePlay _rolePlay() => const RolePlay(
   stationIndex: 0,
   position: _rolePosition,
   actorUuid: 'actor-role-tile-polish',
-  signalement: 'UTM: {{station.position}} STED: {{station.loc.entry.place}}',
+  description: 'UTM: {{station.position}} STED: {{station.loc.entry.place}}',
 );
 
 Widget _harness(Widget sliver) => MaterialApp(
@@ -81,12 +81,12 @@ void main() {
 
   setUp(() async {
     await initActivePlan('Role tile polish plan');
-    await ProgramService().saveExercise(l10n, _exercise());
-    await ProgramService().saveActor(l10n, _actor);
-    await ProgramService().saveRolePlay(l10n, _rolePlay());
+    await PlanService().saveExercise(l10n, _exercise());
+    await PlanService().saveActor(l10n, _actor);
+    await PlanService().saveRolePlay(l10n, _rolePlay());
   });
 
-  tearDown(() => ProgramService().clearAllForTest());
+  tearDown(() => PlanService().clearAllForTest());
 
   Future<void> expandFirstRole(WidgetTester tester) async {
     await tester.pumpWidget(
@@ -103,7 +103,7 @@ void main() {
     (tester) async {
       await expandFirstRole(tester);
 
-      // Signalement, position and cast are all present, one gap between
+      // Description, position and cast are all present, one gap between
       // each pair of adjacent sections.
       final descriptionRect = tester.getRect(
         find.byType(RolePlayDescriptionRollup),
@@ -162,7 +162,7 @@ void main() {
     await expandFirstRole(tester);
 
     expect(find.textContaining('{{station.'), findsNothing);
-    // The signalement renders via RingDrillText.rich, so the resolved
+    // The description renders via RingDrillText.rich, so the resolved
     // position/address render as their own action/copy chips rather than
     // flat text — the "UTM:"/"STED:" labels stay in the surrounding prose
     // (only found via `findRichText`) while each resolved value is its own

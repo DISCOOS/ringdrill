@@ -76,7 +76,7 @@ void main() {
       name: 'Anne Glemsk',
       age: 47,
       gender: 'woman',
-      signalement: 'Rød jakke',
+      description: 'Rød jakke',
       locSlug: 'loc',
     );
     const loc = Location(slug: 'loc', place: 'Hjemme');
@@ -87,7 +87,7 @@ void main() {
       expect(resolvePersonFacet(person, null, const [loc], ['age']), '47');
       expect(resolvePersonFacet(person, null, const [loc], ['gender']), 'woman');
       expect(
-        resolvePersonFacet(person, null, const [loc], ['signalement']),
+        resolvePersonFacet(person, null, const [loc], ['description']),
         'Rød jakke',
       );
       expect(

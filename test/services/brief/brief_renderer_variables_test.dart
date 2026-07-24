@@ -4,7 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations_nb.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
@@ -21,13 +21,13 @@ final _l10n = AppLocalizationsNb();
 final _start = SimpleTimeOfDay(hour: 8, minute: 0);
 final _end = SimpleTimeOfDay(hour: 9, minute: 0);
 
-Program _emptyProgram() {
+Plan _emptyPlan() {
   final now = DateTime(2026);
-  return Program(
+  return Plan(
     uuid: 'prog-vars',
-    name: 'Variables Program',
+    name: 'Variables Plan',
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -46,7 +46,7 @@ void main() {
 
   group('BriefRenderer — plan variables', () {
     test(
-      'cascades station override, exercise override and program default',
+      'cascades station override, exercise override and plan default',
       () async {
         final stationOverride = Station(
           index: 0,
@@ -74,19 +74,19 @@ void main() {
           methodMd: 'Metode kanal {{var.frekvens}}',
           variableOverrides: const {'frekvens': 'Kanal 8'},
         );
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           exercises: [exercise],
           variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
-          briefIntroMd: 'Program kanal {{var.frekvens}}',
+          briefIntroMd: 'Plan kanal {{var.frekvens}}',
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
 
-        expect(result, contains('Program kanal Kanal 6'));
+        expect(result, contains('Plan kanal Kanal 6'));
         expect(result, contains('Metode kanal Kanal 8'));
         expect(result, contains('PostA kanal Kanal 9'));
         expect(
@@ -121,23 +121,23 @@ void main() {
         methodMd: 'Metode kanal {{var.frekvens}}',
         variableOverrides: const {'frekvens': 'Kanal 8'},
       );
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [exercise],
         variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
-        briefIntroMd: 'Program kanal {{var.frekvens}}',
+        briefIntroMd: 'Plan kanal {{var.frekvens}}',
       );
 
       for (final audience in BriefAudience.values) {
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: audience,
           l10n: _l10n,
         );
 
         expect(
           result,
-          contains('Program kanal Kanal 6'),
-          reason: 'program default, audience: $audience',
+          contains('Plan kanal Kanal 6'),
+          reason: 'plan default, audience: $audience',
         );
         expect(
           result,
@@ -167,10 +167,10 @@ void main() {
         schedule: const [],
         methodMd: 'Bruk {{var.mangler}}',
       );
-      final program = _emptyProgram().copyWith(exercises: [exercise]);
+      final plan = _emptyPlan().copyWith(exercises: [exercise]);
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -196,13 +196,13 @@ void main() {
           schedule: const [],
           methodMd: 'Verdi:[{{var.tom}}] slutt',
         );
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           exercises: [exercise],
           variables: const [DrillVariable(name: 'tom')],
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
@@ -230,13 +230,13 @@ void main() {
           methodMd: 'Kanal {{var.frekvens}}',
           variableOverrides: const {'ukjent': 'Skal ikke vises'},
         );
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           exercises: [exercise],
           variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
@@ -271,13 +271,13 @@ void main() {
           ],
           schedule: const [],
         );
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           exercises: [exercise],
           variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
@@ -287,7 +287,7 @@ void main() {
     );
 
     test(
-      'resolves a variable in program, exercise, station and roleplay fields',
+      'resolves a variable in plan, exercise, station and roleplay fields',
       () async {
         final station = Station(
           index: 0,
@@ -316,7 +316,7 @@ void main() {
           schedule: const [],
           methodMd: 'Metode {{var.frekvens}}',
         );
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           exercises: [exercise],
           rolePlays: [rolePlay],
           variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
@@ -324,7 +324,7 @@ void main() {
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.director,
           l10n: _l10n,
         );
@@ -341,32 +341,32 @@ void main() {
   /// names and descriptions (reading path only), on top of Stage 2's
   /// markdown-field resolution above.
   group('BriefRenderer — plan variables in names and descriptions', () {
-    test('a variable in program.name resolves in the H1', () async {
-      final program = _emptyProgram().copyWith(
-        name: 'Program {{var.frekvens}}',
+    test('a variable in plan.name resolves in the H1', () async {
+      final plan = _emptyPlan().copyWith(
+        name: 'Plan {{var.frekvens}}',
         variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
 
-      expect(result, contains('# Program Kanal 6'));
+      expect(result, contains('# Plan Kanal 6'));
       expect(result, isNot(contains('{{var.frekvens}}')));
     });
 
     test(
-      'a variable in program.description resolves in the subtitle',
+      'a variable in plan.description resolves in the subtitle',
       () async {
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           description: 'Beskrivelse {{var.frekvens}}',
           variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
@@ -392,13 +392,13 @@ void main() {
           stations: const [Station(index: 0, name: 'Post')],
           schedule: const [],
         );
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           exercises: [exercise],
           variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
@@ -411,7 +411,7 @@ void main() {
 
     test(
       'a variable in station.name and roleplay.name resolves at station '
-      'scope, with an exercise/station override shadowing the program default',
+      'scope, with an exercise/station override shadowing the plan default',
       () async {
         final rolePlay = RolePlay(
           uuid: 'rp-1',
@@ -439,14 +439,14 @@ void main() {
           schedule: const [],
           variableOverrides: const {'frekvens': 'Kanal 8'},
         );
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           exercises: [exercise],
           rolePlays: [rolePlay],
           variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.director,
           l10n: _l10n,
         );
@@ -456,7 +456,7 @@ void main() {
           contains('Post Kanal 9'),
           reason:
               "the station's own override shadows the exercise's and "
-              "the program's default",
+              "the plan's default",
         );
         expect(result, contains('Markørspill (Rollespiller Kanal 9)'));
       },
@@ -478,10 +478,10 @@ void main() {
           stations: const [Station(index: 0, name: 'Post')],
           schedule: const [],
         );
-        final program = _emptyProgram().copyWith(exercises: [exercise]);
+        final plan = _emptyPlan().copyWith(exercises: [exercise]);
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
@@ -507,13 +507,13 @@ void main() {
           stations: const [Station(index: 0, name: 'Post')],
           schedule: const [],
         );
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           exercises: [exercise],
           variables: const [DrillVariable(name: 'tom')],
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
@@ -551,20 +551,20 @@ void main() {
           name: 'Anne Glemsk',
           stationIndex: 0,
         );
-        final program = _emptyProgram().copyWith(
-          name: 'Test Program',
+        final plan = _emptyPlan().copyWith(
+          name: 'Test Plan',
           description: 'En beskrivelse',
           exercises: [exercise],
           rolePlays: [rolePlay],
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.director,
           l10n: _l10n,
         );
 
-        expect(result, contains('# Test Program'));
+        expect(result, contains('# Test Plan'));
         expect(result, contains('_En beskrivelse_'));
         expect(result, contains('## Øvelse 1'));
         expect(result, contains('Post A'));
@@ -582,16 +582,16 @@ void main() {
   /// these deeper layers resolve, instead of stopping at the innermost layer
   /// already present in the raw text.
   group('BriefRenderer — nested token resolution', () {
-    test('a variable inside program.name resolves when the name is reached '
-        'through {{program.name}} in a markdown field', () async {
-      final program = _emptyProgram().copyWith(
+    test('a variable inside plan.name resolves when the name is reached '
+        'through {{plan.name}} in a markdown field', () async {
+      final plan = _emptyPlan().copyWith(
         name: 'LSOR Eidene {{var.year}}',
         variables: const [DrillVariable(name: 'year', value: '2026')],
-        briefIntroMd: 'Velkommen til {{program.name}}!',
+        briefIntroMd: 'Velkommen til {{plan.name}}!',
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -602,18 +602,18 @@ void main() {
     });
 
     test(
-      'a three-level chain field -> {{program.description}} -> {{program.name}} '
+      'a three-level chain field -> {{plan.description}} -> {{plan.name}} '
       '-> {{var.year}} resolves fully',
       () async {
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           name: 'LSOR Eidene {{var.year}}',
-          description: 'Se planen {{program.name}}',
+          description: 'Se planen {{plan.name}}',
           variables: const [DrillVariable(name: 'year', value: '2026')],
-          commsMd: 'Detaljer: {{program.description}}.',
+          commsMd: 'Detaljer: {{plan.description}}.',
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
@@ -625,21 +625,21 @@ void main() {
 
     test('a circular cross-reference terminates and leaves a literal token '
         'instead of hanging', () async {
-      final program = _emptyProgram().copyWith(
-        name: '{{program.description}}',
-        description: '{{program.name}}',
-        commsMd: 'Intro: {{program.name}}',
+      final plan = _emptyPlan().copyWith(
+        name: '{{plan.description}}',
+        description: '{{plan.name}}',
+        commsMd: 'Intro: {{plan.name}}',
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
 
       // Reaching here at all proves the fixpoint loop terminated; the cap's
       // fail-safe leaves the unresolvable cycle as a visible literal token.
-      expect(result, contains('{{program.'));
+      expect(result, contains('{{plan.'));
     });
   });
 
@@ -650,7 +650,7 @@ void main() {
       await initializeDateFormatting('nb');
     });
 
-    Program typedProgram() => _emptyProgram().copyWith(
+    Plan typedPlan() => _emptyPlan().copyWith(
       variables: const [
         DrillVariable(name: 'tid', type: VariableType.time, value: '12:00'),
         DrillVariable(
@@ -685,7 +685,7 @@ void main() {
 
     test('formats each type canonically for display in the brief', () async {
       final result = await renderer.render(
-        program: typedProgram(),
+        plan: typedPlan(),
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -701,7 +701,7 @@ void main() {
       'resolves location facets, with the brief\'s inline-code UTM styling',
       () async {
         final result = await renderer.render(
-          program: typedProgram(),
+          plan: typedPlan(),
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
@@ -738,10 +738,10 @@ void main() {
           stations: [station],
           schedule: const [],
         );
-        final program = typedProgram().copyWith(exercises: [exercise]);
+        final plan = typedPlan().copyWith(exercises: [exercise]);
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
         );

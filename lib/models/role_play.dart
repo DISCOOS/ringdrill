@@ -15,7 +15,7 @@ sealed class RolePlay with _$RolePlay {
     required String name,
     int? age,
     String? gender,
-    String? signalement,
+    String? description,
     @JsonKey(includeFromJson: false, includeToJson: false) String? background,
     @JsonKey(includeFromJson: false, includeToJson: false) String? behavior,
     int? stationIndex,
@@ -41,7 +41,7 @@ extension RolePlayNumbering on RolePlay {
   /// This role's formatted number ([Numbering.role]), scoped to the station
   /// it is placed at — e.g. `1.1-1` (dotted) or `1a-1` (alpha). [roleNumber]
   /// is the role's 1-based ordinal among the roles placed at that station
-  /// (`ProgramService.roleNumberAtStation`); ignored when [stationIndex] is
+  /// (`PlanService.roleNumberAtStation`); ignored when [stationIndex] is
   /// null (a roleplay not yet assigned to a post), which renders the
   /// sub-index as `?` instead — mirrors the badge label roleplay list rows
   /// already show, so every surface naming a role agrees on its number.

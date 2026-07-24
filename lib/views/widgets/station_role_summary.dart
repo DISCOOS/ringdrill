@@ -3,7 +3,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/widgets/cast_pill.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
@@ -22,7 +22,7 @@ import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 /// affordance the Spill tile's cast chip already offers, unified here so
 /// the Poster tile's marker icon no longer opens the Spill viewer instead.
 /// Left null (the default) for every call site but the Poster tile
-/// (`station_list_view.dart`) — `program_view.dart`'s and
+/// (`station_list_view.dart`) — `plan_view.dart`'s and
 /// `coordinator_screen.dart`'s station detail stay exactly as read-only as
 /// before, with no cast affordance and no overflow menu.
 class StationRoleSummary extends StatelessWidget {
@@ -46,7 +46,7 @@ class StationRoleSummary extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final service = ProgramService();
+    final service = PlanService();
     final roles = service
         .loadRolePlays()
         .where(
@@ -112,7 +112,7 @@ class _RoleSummaryRow extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     // Title: effective name · age · gender (role.* already carries the
-    // effective identity). Subtitle: signalement — the person info, now that
+    // effective identity). Subtitle: description — the person info, now that
     // cast status has moved into the trailing pill.
     final genderLabel = genderLabelFor(role.gender, localizations);
     final metaParts = [
@@ -120,7 +120,7 @@ class _RoleSummaryRow extends StatelessWidget {
       if (role.age != null) '${role.age}',
       ?genderLabel,
     ];
-    final signalement = role.signalement ?? '';
+    final description = role.description ?? '';
 
     return InkWell(
       onTap: () => ContextSheet.of(
@@ -145,9 +145,9 @@ class _RoleSummaryRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (signalement.isNotEmpty)
+                  if (description.isNotEmpty)
                     Text(
-                      signalement,
+                      description,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -160,7 +160,7 @@ class _RoleSummaryRow extends StatelessWidget {
             const SizedBox(width: 8),
             // Cast state as the shared pill — tappable (opens the cast picker)
             // only where the caller wires [onTapMarker]; a bare, non-interactive
-            // indicator on the read-only surfaces (program/coordinator detail).
+            // indicator on the read-only surfaces (plan/coordinator detail).
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 150),
               child: CastPill(

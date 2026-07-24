@@ -9,13 +9,13 @@ import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 
-/// DESIGN-009 follow-up 4e — `PersonFormScreen`'s `name`/`signalement`/
+/// DESIGN-009 follow-up 4e — `PersonFormScreen`'s `name`/`description`/
 /// `notes` fields: token-aware chip rendering, the insertion menu (plan
 /// variables and `station.loc/person.*` cross-references), the
 /// self-reference rule (`name` withholds its own `station.person` name
-/// facet and bare default for the entity it is editing; `signalement`
+/// facet and bare default for the entity it is editing; `description`
 /// withholds only its own
-/// `signalement` facet; `notes` has no matching facet to withhold in the
+/// `description` facet; `notes` has no matching facet to withhold in the
 /// first place), and the save-time unresolved-reference block (ADR-0047).
 /// No preview toggle exists on this plain (non-section-navigated) form, so
 /// resolution is checked via `resolveScopedField` directly, mirroring
@@ -154,7 +154,7 @@ void main() {
   );
 
   testWidgets(
-    'the signalement field withholds only its own signalement facet, not '
+    'the description field withholds only its own description facet, not '
     'its own bare default (self-reference rule, DESIGN-009)',
     (tester) async {
       final captured = _Captured();
@@ -165,17 +165,17 @@ void main() {
         stationPersons: const [Person(slug: 'anne', name: 'Anne Glemsk')],
       );
 
-      final signalementField = find.widgetWithText(
+      final descriptionField = find.widgetWithText(
         TextFormField,
-        l.roleSignalement,
+        l.roleDescription,
       );
-      await tester.ensureVisible(signalementField);
+      await tester.ensureVisible(descriptionField);
 
       // No dot yet: the bare browsing list -- unlike the name field, the
-      // signalement field never withholds its own bare entry (the bare
-      // default reads the person's *name*, not their signalement, so there
+      // description field never withholds its own bare entry (the bare
+      // default reads the person's *name*, not their description, so there
       // is no recursion risk).
-      await tester.enterText(signalementField, '{{station.person.');
+      await tester.enterText(descriptionField, '{{station.person.');
       await tester.pump();
       await tester.pump();
 
@@ -185,14 +185,14 @@ void main() {
         findsWidgets,
       );
 
-      // One dot: only the `signalement` facet itself is withheld; other
+      // One dot: only the `description` facet itself is withheld; other
       // facets of the same (self) entity stay offered.
-      await tester.enterText(signalementField, '{{station.person.anne.');
+      await tester.enterText(descriptionField, '{{station.person.anne.');
       await tester.pump();
       await tester.pump();
 
       expect(
-        find.descendant(of: menu, matching: find.text(l.roleSignalement)),
+        find.descendant(of: menu, matching: find.text(l.roleDescription)),
         findsNothing,
       );
       expect(

@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
@@ -83,7 +83,7 @@ Future<T?> openFormSurface<T>(
   // when the re-opened sheet is *dismissed*, so awaiting it here parks this
   // function before `return result`. The caller's
   // `await openFormSurface(...)` then never resolves and its
-  // `ProgramService.save*` call never runs — the edit silently vanishes
+  // `PlanService.save*` call never runs — the edit silently vanishes
   // (the editor save-loss regression). The re-open is cosmetic; fire it and
   // hand the result back immediately.
   if (savedTarget != null && sheetController != null && rootNavigator.mounted) {
@@ -96,7 +96,7 @@ Future<T?> openFormSurface<T>(
 /// Wraps [builder] so the pushed surface sees the same resolve scopes
 /// (whichever were present) as the calling context did — re-provided from
 /// scratch since the push lands outside the ancestor `InheritedWidget` tree.
-/// [planScope] falls back to the active program's variables (no program
+/// [planScope] falls back to the active plan's variables (no plan
 /// facets) when absent, matching this choke point's pre-DESIGN-010
 /// behaviour for callers with no ambient `PlanScope` at all.
 WidgetBuilder _reprovideScopes(
@@ -116,7 +116,7 @@ WidgetBuilder _reprovideScopes(
       child = RoleplayScope(
         name: roleplayScope.name,
         age: roleplayScope.age,
-        signalement: roleplayScope.signalement,
+        description: roleplayScope.description,
         position: roleplayScope.position,
         child: child,
       );
@@ -144,10 +144,10 @@ WidgetBuilder _reprovideScopes(
     return PlanScope(
       variables:
           planScope?.variables ??
-          ProgramService().activeProgram?.variables ??
+          PlanService().activePlan?.variables ??
           const [],
-      programName: planScope?.programName,
-      programDescription: planScope?.programDescription,
+      planName: planScope?.planName,
+      planDescription: planScope?.planDescription,
       child: child,
     );
   };

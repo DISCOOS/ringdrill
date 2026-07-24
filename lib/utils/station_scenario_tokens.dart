@@ -109,8 +109,8 @@ String resolvePersonFacet(
       return age == null ? '' : '$age';
     case 'gender':
       return _effectiveField(portrayer?.gender, person.gender) ?? '';
-    case 'signalement':
-      return _effectiveField(portrayer?.signalement, person.signalement) ??
+    case 'description':
+      return _effectiveField(portrayer?.description, person.description) ??
           '';
     case 'loc':
       final locSlug = person.locSlug;
@@ -135,13 +135,13 @@ class EffectivePersonIdentity {
     this.name,
     this.age,
     this.gender,
-    this.signalement,
+    this.description,
   });
 
   final String? name;
   final int? age;
   final String? gender;
-  final String? signalement;
+  final String? description;
 }
 
 /// The portraying roleplay's value when non-empty, otherwise null (falls

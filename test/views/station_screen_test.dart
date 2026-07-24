@@ -10,7 +10,7 @@ import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/location_form_screen.dart';
 import 'package:ringdrill/views/person_form_screen.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
@@ -26,7 +26,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // shown inline via `personRef`), not a flat RolePlay list.
 // ---------------------------------------------------------------------------
 
-const _programUuid = 'prog-x';
+const _planUuid = 'prog-x';
 const _exerciseUuid = 'ex-x';
 
 // Station 0 has two persons: one enacted (Hilde, personRef'd by a RolePlay),
@@ -36,7 +36,7 @@ const _hilde = Person(
   name: 'Hilde',
   age: 34,
   gender: 'female',
-  signalement: 'Gul regnjakke',
+  description: 'Gul regnjakke',
 );
 const _kari = Person(slug: 'kari', name: 'Kari Fiskeløs', age: 71);
 
@@ -87,11 +87,11 @@ Exercise _exercise() => Exercise(
 Map<String, Object> _basePrefs() {
   final ex = _exercise();
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Test Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Test Plan',
       'description': '',
       'metadata': {
         'created': '2024-01-01T00:00:00.000Z',
@@ -104,11 +104,11 @@ Map<String, Object> _basePrefs() {
       'rolePlays': [],
       'actors': [],
     }),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
-    'pr:$_programUuid:${_roleForHilde.uuid}': jsonEncode(
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
+    'pr:$_planUuid:${_roleForHilde.uuid}': jsonEncode(
       _roleForHilde.toJson(),
     ),
-    'pa:$_programUuid:${_actorForHilde.uuid}': jsonEncode(
+    'pa:$_planUuid:${_actorForHilde.uuid}': jsonEncode(
       _actorForHilde.toJson(),
     ),
   };
@@ -116,11 +116,11 @@ Map<String, Object> _basePrefs() {
 
 Future<void> _seedAndInit() async {
   SharedPreferences.setMockInitialValues(_basePrefs());
-  await ProgramService().init();
+  await PlanService().init();
 }
 
 /// Wraps [StationScreen] in a GoRouter so [context.push] works
-/// while still allowing the ProgramService to be ready before rendering.
+/// while still allowing the PlanService to be ready before rendering.
 Widget _buildScreen({int stationIndex = 0}) {
   final router = GoRouter(
     routes: [

@@ -63,7 +63,7 @@ Future<BuildContext> _pumpScoped(WidgetTester tester) async {
         variables: const [DrillVariable(name: 'year', value: '2026')],
         // Contains a nested {{var.year}} — only resolves through the
         // fixpoint loop's second pass, exactly like the brief.
-        programName: 'Program {{var.year}}',
+        planName: 'Plan {{var.year}}',
         child: ExerciseScope(
           exercise: _exercise(),
           variableOverrides: const {},
@@ -90,7 +90,7 @@ Future<BuildContext> _pumpScoped(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('resolves {{var.*}}, {{program.*}}, {{exercise.*}}, {{station.*}}, '
+  testWidgets('resolves {{var.*}}, {{plan.*}}, {{exercise.*}}, {{station.*}}, '
       '{{station.loc/person.*}} and {{roleplay.*}} together the same way the '
       'brief would, and leaves an undeclared variable as the brief\'s '
       'unknown-variable placeholder', (tester) async {
@@ -105,7 +105,7 @@ void main() {
     // single token whose scope a surface forgot to provide throws and drags
     // every *other* token back to literal too.
     const content =
-        'P={{program.name}} E={{exercise.name}} S={{station.name}} '
+        'P={{plan.name}} E={{exercise.name}} S={{station.name}} '
         'UTM={{station.position}} LOC={{station.loc.lkp.place}} '
         'PERSON={{station.person.kari.name}} '
         'RP={{roleplay.name}} RPAGE={{roleplay.age}} '
@@ -113,9 +113,9 @@ void main() {
 
     final resolved = resolveScopedField(context, content);
 
-    // {{program.name}} itself contains {{var.year}} — only resolves after
+    // {{plan.name}} itself contains {{var.year}} — only resolves after
     // a second fixpoint pass, exactly like BriefRenderer's own resolver.
-    expect(resolved, contains('P=Program 2026'));
+    expect(resolved, contains('P=Plan 2026'));
     expect(resolved, contains('E=Exercise 1'));
     expect(resolved, contains('S=Station A'));
     // The app resolvers pass ActionChipFormatter (ADR-0050): a position
@@ -152,7 +152,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: PlanScope(
             variables: const [],
-            programName: 'Program One',
+            planName: 'Plan One',
             child: Builder(
               builder: (context) {
                 captured = context;
@@ -167,7 +167,7 @@ void main() {
       onResolveFieldError = (error, _) => errors.add(error);
       addTearDown(() => onResolveFieldError = null);
 
-      const content = 'P={{program.name}} S={{station.name}}';
+      const content = 'P={{plan.name}} S={{station.name}}';
       final resolved = resolveScopedField(captured, content);
 
       // No StationScope ancestor — the 'station' key is absent entirely
@@ -185,7 +185,7 @@ void main() {
   );
 
   testWidgets(
-    'a field with only a program-scope cross-reference resolves fine with '
+    'a field with only a plan-scope cross-reference resolves fine with '
     'no ExerciseScope/StationScope in context',
     (tester) async {
       late BuildContext captured;
@@ -195,7 +195,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: PlanScope(
             variables: const [],
-            programName: 'Program One',
+            planName: 'Plan One',
             child: Builder(
               builder: (context) {
                 captured = context;
@@ -206,9 +206,9 @@ void main() {
         ),
       );
 
-      final resolved = resolveScopedField(captured, 'P={{program.name}}');
+      final resolved = resolveScopedField(captured, 'P={{plan.name}}');
 
-      expect(resolved, 'P=Program One');
+      expect(resolved, 'P=Plan One');
     },
   );
 
@@ -225,7 +225,7 @@ void main() {
           locale: const Locale('nb'),
           home: PlanScope(
             variables: const [DrillVariable(name: 'year', value: '2026')],
-            programName: 'Program {{var.year}}',
+            planName: 'Plan {{var.year}}',
             child: Builder(
               builder: (context) {
                 captured = context;
@@ -241,7 +241,7 @@ void main() {
       addTearDown(() => onResolveFieldError = null);
 
       const content =
-          'P={{program.name}} E={{exercise.name}} S={{station.name}} '
+          'P={{plan.name}} E={{exercise.name}} S={{station.name}} '
           'RP={{roleplay.name}} VAR={{var.year}}';
 
       final resolved = resolveModelField(
@@ -253,7 +253,7 @@ void main() {
         overrides: const {},
       );
 
-      expect(resolved, contains('P=Program 2026'));
+      expect(resolved, contains('P=Plan 2026'));
       expect(resolved, contains('E=Exercise 1'));
       expect(resolved, contains('S=Station A'));
       expect(resolved, contains('RP=Nordmann'));

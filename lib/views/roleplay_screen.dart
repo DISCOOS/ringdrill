@@ -14,7 +14,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart'
     show ActionChipFormatter, formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
@@ -51,7 +51,7 @@ import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 
 /// Read-only view of a single [RolePlay]. Shows the publishable scenario
-/// fields (name, age, signalement, background, behavior, station, position).
+/// fields (name, age, description, background, behavior, station, position).
 ///
 /// The Cast section (Actor assignment) is intentionally absent here because
 /// this view represents the publishable role, not the local cast record.
@@ -78,7 +78,7 @@ enum _RolePlayDetailView { info, map }
 
 class _RolePlayScreenState extends State<RolePlayScreen>
     with SubscriptionBag<RolePlayScreen> {
-  final _programService = ProgramService();
+  final _planService = PlanService();
 
   _RolePlayDetailView _view = _RolePlayDetailView.info;
 
@@ -88,16 +88,16 @@ class _RolePlayScreenState extends State<RolePlayScreen>
   void initState() {
     super.initState();
     _load();
-    // Refresh on any program mutation (cast/edit from the roster or another
+    // Refresh on any plan mutation (cast/edit from the roster or another
     // pane, not just this viewer's own actions) — mirrors CoordinatorScreen.
-    listen(_programService.events, (_) {
+    listen(_planService.events, (_) {
       if (mounted) _load();
     });
   }
 
   void _load() {
     setState(() {
-      _rolePlay = _programService.getRolePlay(widget.rolePlayUuid);
+      _rolePlay = _planService.getRolePlay(widget.rolePlayUuid);
     });
   }
 
@@ -118,13 +118,13 @@ class _RolePlayScreenState extends State<RolePlayScreen>
     final localizations = AppLocalizations.of(context)!;
     final rolePlay = _rolePlay;
     if (rolePlay == null) return;
-    final exercise = _programService.getExercise(rolePlay.exerciseUuid);
+    final exercise = _planService.getExercise(rolePlay.exerciseUuid);
     final result = await openFormSurface<RolePlayFormResult>(
       context,
       builder: (_) => RolePlayFormScreen(
         rolePlay: rolePlay,
         exercise: exercise,
-        variables: _programService.activeProgram?.variables ?? const [],
+        variables: _planService.activePlan?.variables ?? const [],
         initialSectionId: initialSectionId,
         isExisting: true,
       ),
@@ -134,15 +134,15 @@ class _RolePlayScreenState extends State<RolePlayScreen>
         return;
       case RolePlayFormSave(:final rolePlay, :final additions):
         await applyRolePlayAdditions(
-          _programService,
+          _planService,
           localizations,
           rolePlay,
           additions,
         );
-        await _programService.saveRolePlay(localizations, rolePlay);
+        await _planService.saveRolePlay(localizations, rolePlay);
         if (mounted) _load();
       case RolePlayFormDelete(:final rolePlay):
-        await _programService.deleteRolePlay(rolePlay.uuid);
+        await _planService.deleteRolePlay(rolePlay.uuid);
         if (!mounted) return;
         // The roleplay this viewer showed is gone — close the viewer.
         if (MasterDetailScope.maybeOf(context) != null) {
@@ -159,7 +159,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
     final rolePlay = _rolePlay;
     if (rolePlay == null) return;
     if (!await confirmDeleteRolePlay(context, rolePlay) || !mounted) return;
-    await _programService.deleteRolePlay(rolePlay.uuid);
+    await _planService.deleteRolePlay(rolePlay.uuid);
     if (!mounted) return;
     if (MasterDetailScope.maybeOf(context) != null) {
       ContextSheet.of(context).close();
@@ -175,10 +175,10 @@ class _RolePlayScreenState extends State<RolePlayScreen>
     Exercise? exercise, {
     Station? station,
   }) {
-    final program = _programService.activeProgram;
-    if (program == null) return const {};
+    final plan = _planService.activePlan;
+    if (plan == null) return const {};
     return effectivePlanVariables(
-      program,
+      plan,
       exercise: exercise,
       station: station,
     );
@@ -218,7 +218,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
       );
     }
 
-    final exercise = _programService.getExercise(rolePlay.exerciseUuid);
+    final exercise = _planService.getExercise(rolePlay.exerciseUuid);
     // RolePlay resolves at its station scope (ADR-0046, DESIGN-008
     // follow-up 07): the station it's assigned to, or just the exercise
     // when unassigned/out of range.
@@ -237,17 +237,17 @@ class _RolePlayScreenState extends State<RolePlayScreen>
     // sheet's header (built in _buildPositionPanel) both name "which role
     // this is", not just its (possibly reused) display name.
     final stationNumberFormat =
-        _programService.activeProgram?.stationNumberFormat ??
+        _planService.activePlan?.stationNumberFormat ??
         StationNumberFormat.dotted;
     final exerciseNumber = exercise == null
         ? 1
-        : _programService.loadExercises().indexWhere(
+        : _planService.loadExercises().indexWhere(
                 (e) => e.uuid == exercise.uuid,
               ) +
               1;
     final roleNumber = stationIndex == null
         ? 0
-        : _programService.roleNumberAtStation(rolePlay, stationIndex);
+        : _planService.roleNumberAtStation(rolePlay, stationIndex);
     final roleLabel = rolePlay.numberLabel(
       stationNumberFormat,
       exerciseNumber: exerciseNumber < 1 ? 1 : exerciseNumber,
@@ -421,7 +421,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
         location: _personLocation(station, rolePlay),
         actor: rolePlay.actorUuid == null
             ? null
-            : _programService.getActor(rolePlay.actorUuid!),
+            : _planService.getActor(rolePlay.actorUuid!),
         overrides: roleOverrides,
         onEditCast: () => _openCastPicker(rolePlay),
         onEditSection: (id) => _openRolePlayForm(initialSectionId: id),
@@ -452,7 +452,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
   }) {
     final central = _markerMapCentral(rolePlay, station);
     if (central == null) return null;
-    final exercise = _programService.getExercise(rolePlay.exerciseUuid);
+    final exercise = _planService.getExercise(rolePlay.exerciseUuid);
     if (exercise == null) return null;
 
     // A Builder, not the outer `build` context: the resolve-context scopes
@@ -731,10 +731,10 @@ class _StationContextCard extends StatelessWidget {
     // collapsed header and the body's title line.
     final postLabel = (station != null && exercise != null)
         ? station.numberAndName(
-            ProgramService().activeProgram?.stationNumberFormat ??
+            PlanService().activePlan?.stationNumberFormat ??
                 StationNumberFormat.dotted,
             exerciseNumber:
-                ProgramService().loadExercises().indexWhere(
+                PlanService().loadExercises().indexWhere(
                   (e) => e.uuid == exercise.uuid,
                 ) +
                 1,
@@ -803,12 +803,12 @@ class _StationContextCard extends StatelessWidget {
 }
 
 /// The "Spill" card — the whole play in one section card: the effective
-/// identity (age · gender, signalement), the script sections
+/// identity (age · gender, description), the script sections
 /// (behavior/background/props, kept as markdown), the person's notes and
 /// linked [Location], and a muted "Spilles av …" footer naming the cast
 /// actor. Replaces the former separate identity + Markørordre cards.
 ///
-/// Identity/signalement each use the linked [Person]'s own value unless
+/// Identity/description each use the linked [Person]'s own value unless
 /// [rolePlay] overrides it non-empty (ADR-0047's effective-identity rule —
 /// the same rule `resolvePersonFacet` applies for `{{station.person.*}}`
 /// tokens and the brief itself). Notes/location are not subject to that rule
@@ -841,7 +841,7 @@ class _PlayCard extends StatelessWidget {
   final VoidCallback onEditCast;
 
   /// Opens the roleplay form at the given form section id (roleplay-owned
-  /// sections: signalement/behavior/background/props) — wired by
+  /// sections: description/behavior/background/props) — wired by
   /// [RolePlayScreen] to `_openRolePlayForm`.
   final void Function(String sectionId) onEditSection;
 
@@ -867,7 +867,7 @@ class _PlayCard extends StatelessWidget {
     final location = this.location;
     final age = rolePlay.age ?? person?.age;
     final gender = _effective(rolePlay.gender, person?.gender);
-    final signalement = _effective(rolePlay.signalement, person?.signalement);
+    final description = _effective(rolePlay.description, person?.description);
     final genderLabel = genderLabelFor(gender, l10n);
     final notes = person?.notes ?? '';
     final locationLabel = location == null
@@ -876,7 +876,7 @@ class _PlayCard extends StatelessWidget {
     final locationPosition = location?.position;
 
     // The card body, in the agreed order: who (age · gender, then
-    // signalement), what the marker does (the script sections
+    // description), what the marker does (the script sections
     // behavior/background/props, kept as markdown), person context (notes,
     // location), then the cast footer. Every labelled block uses the same
     // uppercase kicker; the name is not repeated here since it already heads
@@ -914,7 +914,7 @@ class _PlayCard extends StatelessWidget {
           ],
         );
 
-    // Non-markdown body text (signalement, notes, location) uses the same
+    // Non-markdown body text (description, notes, location) uses the same
     // style as the markdown script sections (BriefMarkdownBlock's paragraph:
     // briefTheme body typography + colour), so the whole card reads at one
     // size/colour with more air, not three.
@@ -943,7 +943,7 @@ class _PlayCard extends StatelessWidget {
             overridesValue(rolePlay.name, person.name),
             rolePlay.age != null && rolePlay.age != person.age,
             overridesValue(rolePlay.gender, person.gender),
-            overridesValue(rolePlay.signalement, person.signalement),
+            overridesValue(rolePlay.description, person.description),
           ].where((overridden) => overridden).length;
     final metaParts = [
       if (age != null) l10n.rolePlayAgeYears(age),
@@ -1021,9 +1021,9 @@ class _PlayCard extends StatelessWidget {
       onTap: () => onEditSection('roleplay'),
     );
 
-    if ((signalement ?? '').isNotEmpty) {
+    if ((description ?? '').isNotEmpty) {
       addSection(
-        labeled(l10n.roleSignalement, resolvedText(signalement!)),
+        labeled(l10n.roleDescription, resolvedText(description!)),
         onTap: () => onEditSection('roleplay'),
       );
     }
@@ -1198,7 +1198,7 @@ class _PlayStatusCard extends StatelessWidget {
           preStartSubline: l10n.statusPreStartSublineMarker(
             _activeFrom().toString(),
             Numbering.station(
-              ProgramService().activeProgram?.stationNumberFormat ??
+              PlanService().activePlan?.stationNumberFormat ??
                   StationNumberFormat.dotted,
               exerciseNumber: _exerciseNumber(),
               stationIndex: stationIndex,
@@ -1229,7 +1229,7 @@ class _PlayStatusCard extends StatelessWidget {
   }
 
   int _exerciseNumber() =>
-      ProgramService().loadExercises().indexWhere(
+      PlanService().loadExercises().indexWhere(
         (e) => e.uuid == exercise.uuid,
       ) +
       1;

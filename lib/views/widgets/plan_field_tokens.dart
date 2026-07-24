@@ -3,23 +3,23 @@ import 'package:ringdrill/views/widgets/editor_token.dart';
 
 /// Single source of truth for the [PlanFieldToken] lists every editor's
 /// token picker offers (DESIGN-009 follow-up 4b). Each list mirrors exactly
-/// one `refContext` map `brief_renderer.dart` builds — [program] the
-/// `_programRefContext` facets, [exercise] the `_exerciseRefContext` facets
+/// one `refContext` map `brief_renderer.dart` builds — [plan] the
+/// `_planRefContext` facets, [exercise] the `_exerciseRefContext` facets
 /// — so a token this picker offers is always one the renderer can resolve
 /// at that scope. Never add a facet here that isn't already in the
 /// matching `refContext` map.
 class PlanFieldTokens {
   const PlanFieldTokens._();
 
-  /// Resolvable at program scope and, via cascade, everywhere below it
+  /// Resolvable at plan scope and, via cascade, everywhere below it
   /// (exercise, station, roleplay).
-  static List<PlanFieldToken> program(AppLocalizations l) => [
-    PlanFieldToken(name: 'program.name', label: l.programName),
-    PlanFieldToken(name: 'program.description', label: l.programDescription),
+  static List<PlanFieldToken> plan(AppLocalizations l) => [
+    PlanFieldToken(name: 'plan.name', label: l.planName),
+    PlanFieldToken(name: 'plan.description', label: l.planDescription),
   ];
 
   /// Resolvable at exercise scope and, via cascade, station/roleplay scope
-  /// — but never at program scope, which has no exercise in context.
+  /// — but never at plan scope, which has no exercise in context.
   static List<PlanFieldToken> exercise(AppLocalizations l) => [
     PlanFieldToken(name: 'exercise.name', label: l.exerciseName),
     PlanFieldToken(name: 'exercise.numberOfTeams', label: l.numberOfTeams),
@@ -51,13 +51,13 @@ class PlanFieldTokens {
   /// in that field, never runs the cross-reference pass on it — so the
   /// caller must exclude it from that one field's own `planFields` while
   /// still offering it in the roleplay's other fields (behavior, background,
-  /// propsMd). `roleplay.signalement` has the matching issue in the
-  /// signalement field, but that field is never token-aware in the first
+  /// propsMd). `roleplay.description` has the matching issue in the
+  /// description field, but that field is never token-aware in the first
   /// place, so no caller-side filtering is needed for it.
   static List<PlanFieldToken> roleplay(AppLocalizations l) => [
     PlanFieldToken(name: 'roleplay.name', label: l.roleName),
     PlanFieldToken(name: 'roleplay.age', label: l.roleAge),
-    PlanFieldToken(name: 'roleplay.signalement', label: l.roleSignalement),
+    PlanFieldToken(name: 'roleplay.description', label: l.roleDescription),
     PlanFieldToken(name: 'roleplay.position', label: l.positionUtm),
   ];
 }

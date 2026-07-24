@@ -20,20 +20,20 @@ import 'package:ringdrill/views/widgets/station_scope.dart';
 /// context, so there is exactly one place that walks `PlanScope` →
 /// `ExerciseScope` → `StationScope` and hands the result to
 /// `lib/services/brief/field_resolver.dart` (ADR-0048). `BriefRenderer`
-/// assembles the equivalent context server-side from the loaded `Program`;
+/// assembles the equivalent context server-side from the loaded `Plan`;
 /// this is the same cascade read from the widget tree instead.
 ///
 /// [overrides] is [content]'s own scope-level variable overrides (e.g. an
 /// `Exercise`'s/`Station`'s `variableOverrides`) — same map a token-aware
 /// field's own `overrides` param already carries.
 ///
-/// The roleplay's own `roleplay.*` facets (name/age/signalement/`position`)
+/// The roleplay's own `roleplay.*` facets (name/age/description/`position`)
 /// come from a [RoleplayScope] ancestor when one is present —
 /// the viewer/editor wrap their roleplay content in `RoleplayScope.forRoleplay`
 /// once, so no field has to thread the facets down itself.
 ///
 /// A scope missing from the ancestry (no `ExerciseScope` above a
-/// program-scope field, no `StationScope` above an exercise-scope field, no
+/// plan-scope field, no `StationScope` above an exercise-scope field, no
 /// `RoleplayScope` outside a roleplay surface) contributes nothing: its facets
 /// are simply absent from the resolution context, so a reference to them
 /// resolves to the same literal, unrendered token the brief shows for a
@@ -56,13 +56,13 @@ String? resolveScopedField(
   };
 
   final refContext = <String, dynamic>{
-    // Always present: PlanScope is the mandatory (program) level of the
-    // cascade — a null programName/programDescription (a provider that
-    // hasn't forwarded them) renders {{program.*}} empty, same as the
-    // brief does for an empty Program.name/description, never a crash.
-    'program': {
-      'name': planScope?.programName,
-      'description': planScope?.programDescription,
+    // Always present: PlanScope is the mandatory (plan) level of the
+    // cascade — a null planName/planDescription (a provider that
+    // hasn't forwarded them) renders {{plan.*}} empty, same as the
+    // brief does for an empty Plan.name/description, never a crash.
+    'plan': {
+      'name': planScope?.planName,
+      'description': planScope?.planDescription,
     },
     if (exerciseScope != null)
       'exercise': _exerciseFacets(exerciseScope.exercise, l10n),
@@ -78,7 +78,7 @@ String? resolveScopedField(
       'roleplay': _roleplayFacets(
         name: roleplayScope.name,
         age: roleplayScope.age,
-        signalement: roleplayScope.signalement,
+        description: roleplayScope.description,
         position: roleplayScope.position,
       ),
   };
@@ -122,7 +122,7 @@ String? resolveScopedField(
 /// the mustache pass throwing on the first absent scope and dragging the whole
 /// label back to literal.
 ///
-/// The program level and the declared variables still come from the ambient
+/// The plan level and the declared variables still come from the ambient
 /// [PlanScope] (every map/search surface has one); [overrides] shadows a
 /// declared value the same way [resolveScopedField]'s does.
 String? resolveModelField(
@@ -143,9 +143,9 @@ String? resolveModelField(
   };
 
   final refContext = <String, dynamic>{
-    'program': {
-      'name': planScope?.programName,
-      'description': planScope?.programDescription,
+    'plan': {
+      'name': planScope?.planName,
+      'description': planScope?.planDescription,
     },
     if (exercise != null) 'exercise': _exerciseFacets(exercise, l10n),
     if (station != null)
@@ -159,7 +159,7 @@ String? resolveModelField(
       'roleplay': _roleplayFacets(
         name: roleplay.name,
         age: roleplay.age,
-        signalement: roleplay.signalement,
+        description: roleplay.description,
         position: roleplay.position,
       ),
   };
@@ -224,12 +224,12 @@ Map<String, dynamic> _stationFacets({
 Map<String, dynamic> _roleplayFacets({
   required String name,
   int? age,
-  String? signalement,
+  String? description,
   LatLng? position,
 }) => {
   'name': name,
   'age': age,
-  'signalement': signalement ?? '',
+  'description': description ?? '',
   'position': const resolver.ActionChipFormatter().position(
     resolver.formatUtm(position),
     position,

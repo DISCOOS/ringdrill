@@ -9,7 +9,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,7 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// that station_screen.dart wraps itself in ExerciseScope/StationScope and
 /// resolves its description through resolveScopedField (ADR-0048), the
 /// cross-references resolve the same way they would in the brief.
-const _programUuid = 'prog-ref';
+const _planUuid = 'prog-ref';
 const _exerciseUuid = 'ex-ref';
 final _stationPosition = const LatLng(59.91, 10.75);
 
@@ -63,11 +63,11 @@ Exercise _exercise() => Exercise(
 Map<String, Object> _prefs() {
   final ex = _exercise();
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Test Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Test Plan',
       'description': '',
       'metadata': {
         'created': '2024-01-01T00:00:00.000Z',
@@ -81,7 +81,7 @@ Map<String, Object> _prefs() {
       'actors': [],
       'variables': [],
     }),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
   };
 }
 
@@ -110,7 +110,7 @@ Widget _buildScreen() {
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(_prefs());
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   testWidgets('the description resolves {{station.position}} and '

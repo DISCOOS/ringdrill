@@ -9,7 +9,7 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart'
@@ -35,7 +35,7 @@ import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 
 /// Token-aware markdown sections, addable/removable (DESIGN-008
-/// follow-up 07). `signalement` is a short field, not markdown, and lives
+/// follow-up 07). `description` is a short field, not markdown, and lives
 /// in the always-visible "Rolle" base section instead.
 enum _MdSection { background, behavior, props }
 
@@ -47,7 +47,7 @@ sealed class RolePlayFormResult {
 
 /// A save: the edited [RolePlay] plus any [PlanAdditions] created inline this
 /// session (ADR-0047, DESIGN-009 follow-up 4) — new plan variables
-/// (→ `Program`) and any new station locations/persons beyond what the linked
+/// (→ `Plan`) and any new station locations/persons beyond what the linked
 /// station already had (→ that station; a roleplay does not own it).
 final class RolePlayFormSave extends RolePlayFormResult {
   const RolePlayFormSave(this.rolePlay, this.additions);
@@ -56,7 +56,7 @@ final class RolePlayFormSave extends RolePlayFormResult {
   final PlanAdditions additions;
 }
 
-/// A delete: the caller removes [rolePlay] (`ProgramService.deleteRolePlay`,
+/// A delete: the caller removes [rolePlay] (`PlanService.deleteRolePlay`,
 /// or from its own working copy). Any cast actor is unassigned but kept in the
 /// roster; nothing else references a roleplay today (SessionParticipant is not
 /// implemented yet, ADR-0019).
@@ -77,7 +77,7 @@ Future<bool> confirmDeleteRolePlay(
   final l = AppLocalizations.of(context)!;
   final actor = rolePlay.actorUuid == null
       ? null
-      : ProgramService().getActor(rolePlay.actorUuid!);
+      : PlanService().getActor(rolePlay.actorUuid!);
   final name = rolePlay.name.trim().isEmpty
       ? l.roleSection
       : rolePlay.name.trim();
@@ -97,7 +97,7 @@ final _variableSlugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 
 /// Edit form for a single [RolePlay].
 ///
-/// Edits the publishable Role fields only: name, age, signalement,
+/// Edits the publishable Role fields only: name, age, description,
 /// background, behavior, stationIndex, and position. The actorUuid
 /// (cast assignment) is intentionally absent — casting is managed
 /// from the RolePlays list via the cast picker.
@@ -122,7 +122,7 @@ class RolePlayFormScreen extends StatefulWidget {
   /// fresh draft from "+ Legg til spill"/"+ Ny markørordre"). Only an existing
   /// one shows the delete ("Slett spill") action. The caller knows which it is
   /// — this is not derived from the service, so the form stays testable without
-  /// a seeded [ProgramService].
+  /// a seeded [PlanService].
   final bool isExisting;
 
   final RolePlay rolePlay;
@@ -136,7 +136,7 @@ class RolePlayFormScreen extends StatefulWidget {
   /// The plan's declared variables (ADR-0046), read-only here — a roleplay
   /// declares and overrides nothing (DESIGN-008 follow-up 07's settled
   /// scope: no Variabler section). Every call site passes
-  /// `program.variables`.
+  /// `plan.variables`.
   final List<DrillVariable> variables;
 
   @override
@@ -145,15 +145,15 @@ class RolePlayFormScreen extends StatefulWidget {
 
 class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _programService = ProgramService();
+  final _planService = PlanService();
 
   /// Token-aware so `RingDrillTextField(tokenAware: true)` can drive its
   /// chips from [PlanScope] (DESIGN-008 follow-up 09).
   final TextEditingController _nameController = TokenTextEditingController();
   final _ageController = TextEditingController();
-  // Never token-aware — signalement is a short field in the always-visible
+  // Never token-aware — description is a short field in the always-visible
   // "Rolle" base section, not one of the three markdown sections.
-  final _signalementController = TextEditingController();
+  final _descriptionController = TextEditingController();
 
   /// Token-aware so `RingDrillTextArea(tokenAware: true)` can drive its
   /// chips from [PlanScope].
@@ -163,7 +163,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       TokenTextEditingController();
   final TextEditingController _propsController = TokenTextEditingController();
 
-  final _signalementFocus = FocusNode();
+  final _descriptionFocus = FocusNode();
   final _backgroundFocus = FocusNode();
   final _behaviorFocus = FocusNode();
   final _propsFocus = FocusNode();
@@ -199,7 +199,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
 
   /// New on `RolePlay` (ADR-0047, DESIGN-009 follow-up 4) — the
   /// `roleGender`-labeled counterpart of `Person.gender`, reusing
-  /// [GenderSegmentedControl]. Not token-aware, like `signalement`.
+  /// [GenderSegmentedControl]. Not token-aware, like `description`.
   String? _gender;
 
   /// Slug of the [Person] this roleplay portrays. Required for a saved
@@ -241,7 +241,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// (ADR-0047, DESIGN-009 follow-up 4 — un-defers DESIGN-008's parked
   /// "create a variable from a sub-editor"). A `RolePlay` cannot declare
   /// variables itself; these are returned as [PlanAdditions] for the caller
-  /// to apply to `Program` alongside this roleplay's own save.
+  /// to apply to `Plan` alongside this roleplay's own save.
   final List<DrillVariable> _pendingVariables = [];
 
   /// [widget.exercise]'s own stations, or empty when opened without one.
@@ -268,9 +268,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// overrides, then by [_parentStation]'s overrides. RolePlay has no
   /// override table of its own — it only ever reads this cascade, never
   /// writes to it — mirroring what
-  /// `effectivePlanVariables(program, exercise: parentExercise, station: parentStation)`
+  /// `effectivePlanVariables(plan, exercise: parentExercise, station: parentStation)`
   /// would return; computed directly since this editor only has the
-  /// declared list and its parent objects, not the whole `Program`.
+  /// declared list and its parent objects, not the whole `Plan`.
   Map<String, String> get _effectiveVariables {
     final vars = {for (final v in widget.variables) v.name: v.value};
     final exercise = widget.exercise;
@@ -296,7 +296,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   RolePlay get _liveRolePlay => widget.rolePlay.copyWith(
     name: _nameController.text,
     age: int.tryParse(_ageController.text.trim()),
-    signalement: _signalementController.text,
+    description: _descriptionController.text,
     position: _position,
   );
 
@@ -306,7 +306,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     _rolePlay = widget.rolePlay;
     _nameController.text = _rolePlay.name;
     _ageController.text = _rolePlay.age?.toString() ?? '';
-    _signalementController.text = _rolePlay.signalement ?? '';
+    _descriptionController.text = _rolePlay.description ?? '';
     _backgroundController.text = _rolePlay.background ?? '';
     _behaviorController.text = _rolePlay.behavior ?? '';
     _propsController.text = _rolePlay.propsMd ?? '';
@@ -334,7 +334,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     // denormalized facets synced from the person by `_applyPersonSelection`
     // — but one constructed directly (a legacy/imported archive, or a
     // hand-built fixture) can carry a `personRef` with its own name/age/
-    // gender/signalement left unset. Backfill only the facets still empty,
+    // gender/description left unset. Backfill only the facets still empty,
     // so the header reads as inherited from the person instead of blank,
     // without touching any facet that already has its own value (a genuine
     // override, or an already-synced denormalized copy).
@@ -346,8 +346,8 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         _ageController.text = selectedPerson.age?.toString() ?? '';
       }
       _gender ??= selectedPerson.gender;
-      if (_signalementController.text.isEmpty) {
-        _signalementController.text = selectedPerson.signalement ?? '';
+      if (_descriptionController.text.isEmpty) {
+        _descriptionController.text = selectedPerson.description ?? '';
       }
     }
     _identityExpanded =
@@ -440,9 +440,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         oldPerson == null || _nameController.text == oldPerson.name;
     final wasAgeInherited = oldPerson == null || currentAge == oldPerson.age;
     final wasGenderInherited = oldPerson == null || _gender == oldPerson.gender;
-    final wasSignalementInherited =
+    final wasDescriptionInherited =
         oldPerson == null ||
-        _signalementController.text == (oldPerson.signalement ?? '');
+        _descriptionController.text == (oldPerson.description ?? '');
     // Position follows the same inherit-or-override rule (DESIGN-009
     // prompt 4i): a position that is null, or that matched the *old*
     // person's location, was following rather than a deliberate choice,
@@ -459,8 +459,8 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     if (wasNameInherited) _nameController.text = person.name;
     if (wasAgeInherited) _ageController.text = person.age?.toString() ?? '';
     if (wasGenderInherited) _gender = person.gender;
-    if (wasSignalementInherited) {
-      _signalementController.text = person.signalement ?? '';
+    if (wasDescriptionInherited) {
+      _descriptionController.text = person.description ?? '';
     }
     if (wasPositionFollowing) {
       final newCoord = _personLocationCoordinate;
@@ -658,7 +658,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         (_position == null || _position == personCoord);
   }
 
-  /// How many of the four identity facets (name/age/gender/signalement)
+  /// How many of the four identity facets (name/age/gender/description)
   /// currently differ from [person]'s own value (DESIGN-009 prompt 4i) —
   /// drives the identity card's collapsed summary ("N felt tilpasset") and
   /// whether the override panel auto-expands on open.
@@ -667,7 +667,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     if (!_isInherited(_nameController.text, person.name)) count++;
     if (!_isAgeInherited(person)) count++;
     if (!_isInherited(_gender ?? '', person.gender)) count++;
-    if (!_isInherited(_signalementController.text, person.signalement)) {
+    if (!_isInherited(_descriptionController.text, person.description)) {
       count++;
     }
     return count;
@@ -682,12 +682,12 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   EffectivePersonIdentity? _portrayerOf(String personSlug) {
     if (personSlug != _personRef) return null;
     final ageText = _ageController.text.trim();
-    final signalement = _signalementController.text.trim();
+    final description = _descriptionController.text.trim();
     return EffectivePersonIdentity(
       name: _nameController.text.trim(),
       age: ageText.isEmpty ? null : int.tryParse(ageText),
       gender: _gender,
-      signalement: signalement.isEmpty ? null : signalement,
+      description: description.isEmpty ? null : description,
     );
   }
 
@@ -702,11 +702,11 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   void dispose() {
     _nameController.dispose();
     _ageController.dispose();
-    _signalementController.dispose();
+    _descriptionController.dispose();
     _backgroundController.dispose();
     _behaviorController.dispose();
     _propsController.dispose();
-    _signalementFocus.dispose();
+    _descriptionFocus.dispose();
     _backgroundFocus.dispose();
     _behaviorFocus.dispose();
     _propsFocus.dispose();
@@ -855,7 +855,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     );
   }
 
-  /// DESIGN-008 follow-up 07. `signalement` sits in the always-visible
+  /// DESIGN-008 follow-up 07. `description` sits in the always-visible
   /// "Rolle" base section. No Variabler section — a roleplay declares and
   /// overrides nothing (ADR-0046).
   Widget _buildSectionNavigated(BuildContext context) {
@@ -873,7 +873,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     // are not the roleplay's own name field, so no self-reference concern
     // (DESIGN-009 follow-up 4c) — see the name field's own planFields below.
     final planFields = [
-      ...PlanFieldTokens.program(l),
+      ...PlanFieldTokens.plan(l),
       ...PlanFieldTokens.exercise(l),
       ...PlanFieldTokens.station(l),
       ...PlanFieldTokens.roleplay(l),
@@ -908,7 +908,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       // (DESIGN-008 follow-up 07's settled scope, matching
                       // Exercise/Station), but can now create one inline
                       // for the write-back PlanAdditions carries up to
-                      // Program (ADR-0047, DESIGN-009 follow-up 4). A new
+                      // Plan (ADR-0047, DESIGN-009 follow-up 4). A new
                       // location/person belongs to the linked station,
                       // which this editor also does not own — both are
                       // likewise carried up as write-back.
@@ -934,9 +934,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
           ),
     ];
 
-    // Forwards the ambient PlanScope's program facets (DESIGN-010) — this
+    // Forwards the ambient PlanScope's plan facets (DESIGN-010) — this
     // editor shadows PlanScope with its own (for the live variables list),
-    // which would otherwise strand {{program.name}} at null below here.
+    // which would otherwise strand {{plan.name}} at null below here.
     final ambientPlan = PlanScope.maybeOf(context);
     final parentStation = _parentStation;
     final exercise = widget.exercise;
@@ -946,8 +946,8 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       // just-created {{var.x}} chip resolves live (amber) instead of red
       // (ADR-0047, DESIGN-009 follow-up 4).
       variables: [...widget.variables, ..._pendingVariables],
-      programName: ambientPlan?.programName,
-      programDescription: ambientPlan?.programDescription,
+      planName: ambientPlan?.planName,
+      planDescription: ambientPlan?.planDescription,
       // The linked station's own locations/persons, plus anything created
       // inline this session (ADR-0047, DESIGN-009 follow-up 4) — a
       // roleplay does not own a station's collections, so it always reads
@@ -1131,7 +1131,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   }
 
   /// The DESIGN-008 default section for [RolePlay]: the short structural
-  /// fields that never become their own section (name, age, signalement,
+  /// fields that never become their own section (name, age, description,
   /// station, position).
   Widget _buildRoleplaySectionBody(BuildContext context, AppLocalizations l) {
     // Excludes roleplay.name (DESIGN-009 follow-up 4c): this is the
@@ -1140,18 +1140,18 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     // would never resolve in this one field, unlike in behavior/background/
     // propsMd (see the full list in _buildSectionNavigated above).
     final planFields = [
-      ...PlanFieldTokens.program(l),
+      ...PlanFieldTokens.plan(l),
       ...PlanFieldTokens.exercise(l),
       ...PlanFieldTokens.station(l),
       ...PlanFieldTokens.roleplay(l).where((t) => t.name != 'roleplay.name'),
     ];
     final stations = _stations;
-    final exercises = _programService.loadExercises();
+    final exercises = _planService.loadExercises();
     final exerciseIndex = exercises.indexWhere(
       (e) => e.uuid == widget.rolePlay.exerciseUuid,
     );
     final stationNumberFormat =
-        _programService.activeProgram?.stationNumberFormat ??
+        _planService.activePlan?.stationNumberFormat ??
         StationNumberFormat.dotted;
 
     final fields = SafeArea(
@@ -1189,7 +1189,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
               else ...[
                 const SizedBox(height: 16),
                 // 2. Identity card (DESIGN-009 prompt 4i) — the effective
-                // name/age/gender/signalement packed into one inherit/
+                // name/age/gender/description packed into one inherit/
                 // override card, replacing the interleaved fields and 4g's
                 // Person + Kjønn row.
                 _buildIdentityCard(context, l, planFields),
@@ -1251,12 +1251,12 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       _personRef = null;
       // Clear the denormalized identity too: it mirrored the old station's
       // person, which no longer applies once personRef is cleared, so the
-      // header must not keep showing the previous age/gender/signalement.
+      // header must not keep showing the previous age/gender/description.
       // The author picks or creates a person on the new station.
       _nameController.clear();
       _ageController.clear();
       _gender = null;
-      _signalementController.clear();
+      _descriptionController.clear();
       _identityExpanded = false;
     });
   }
@@ -1436,7 +1436,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// `person-field` key as before, now rendered richly via
   /// [DropdownButtonFormField.selectedItemBuilder] instead of a plain
   /// name — a disclosure footer, and the "Tilpass" override panel with
-  /// Navn+Alder, Kjønn and Signalement.
+  /// Navn+Alder, Kjønn and Description.
   Widget _buildIdentityCard(
     BuildContext context,
     AppLocalizations l,
@@ -1471,7 +1471,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
               // tap-to-pick dialog rather than DropdownButtonFormField:
               // that widget's `selectedItemBuilder` closed-state area is
               // capped to a single-line height regardless of `itemHeight`,
-              // too short for this three-line (name/meta/signalement)
+              // too short for this three-line (name/meta/description)
               // summary. `pleaseSelectPerson` is enforced manually in
               // [_save] instead of via a FormField validator.
               InkWell(
@@ -1650,10 +1650,10 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       ),
                       const SizedBox(height: 12),
                       _identityFacetColumn(
-                        label: l.roleSignalement,
+                        label: l.roleDescription,
                         field: TextFormField(
-                          key: const Key('signalement-field'),
-                          controller: _signalementController,
+                          key: const Key('description-field'),
+                          controller: _descriptionController,
                           onChanged: (_) => setState(() {}),
                           keyboardType: TextInputType.multiline,
                           minLines: 1,
@@ -1678,8 +1678,8 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                                 _ageController.text =
                                     person.age?.toString() ?? '';
                                 _gender = person.gender;
-                                _signalementController.text =
-                                    person.signalement ?? '';
+                                _descriptionController.text =
+                                    person.description ?? '';
                               }),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -1783,7 +1783,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// The identity card's collapsed-header content: this roleplay's own
   /// live effective identity, not [person]'s raw fields — a bold name
   /// (with a small accent dot when any facet is overridden), an "age ·
-  /// gender" meta line, and either the signalement or, when the *name*
+  /// gender" meta line, and either the description or, when the *name*
   /// itself is overridden, "Tilpasset fra {person.name}" (DESIGN-009
   /// prompt 4j) so the reader still knows who is actually being portrayed.
   Widget _buildIdentityHeaderSummary(
@@ -1798,18 +1798,18 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     final age = int.tryParse(_ageController.text.trim());
     final genderLabel = genderLabelFor(_gender, l);
     final metaParts = [if (age != null) l.rolePlayAgeYears(age), ?genderLabel];
-    final signalementText = _signalementController.text.trim();
+    final descriptionText = _descriptionController.text.trim();
     final displayName = _nameController.text.trim();
     // A station is selected but no person picked yet (ADR-0047, amended
     // 2026-07-10): the header reads as a prompt to choose or create one, not
     // a nameless marker. The scenario-less edge (no stations) has no person
     // to pick, so it falls through to the name.
     final needsPerson = person == null && _stations.isNotEmpty;
-    // A one-line summary (the prompt, or a bare name with no meta/signalement)
+    // A one-line summary (the prompt, or a bare name with no meta/description)
     // centers against the avatar; a multi-line one top-aligns so the name
     // sits beside the avatar's top.
     final singleLine =
-        metaParts.isEmpty && !nameOverridden && signalementText.isEmpty;
+        metaParts.isEmpty && !nameOverridden && descriptionText.isEmpty;
 
     return Row(
       crossAxisAlignment: singleLine
@@ -1878,9 +1878,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                     fontStyle: FontStyle.italic,
                   ),
                 )
-              else if (signalementText.isNotEmpty)
+              else if (descriptionText.isNotEmpty)
                 Text(
-                  signalementText,
+                  descriptionText,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -1974,7 +1974,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       final sections = offending.join(', ');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l.programSaveBlockedUndeclaredVariable(sections)),
+          content: Text(l.planSaveBlockedUndeclaredVariable(sections)),
         ),
       );
       return;
@@ -1994,11 +1994,11 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     _formKey.currentState!.save();
 
     final ageText = _ageController.text.trim();
-    final signalementText = _signalementController.text.trim();
+    final descriptionText = _descriptionController.text.trim();
     final backgroundText = _backgroundController.text.trim();
     final behaviorText = _behaviorController.text.trim();
     final propsText = _propsController.text.trim();
-    final signalement = signalementText.isEmpty ? null : signalementText;
+    final description = descriptionText.isEmpty ? null : descriptionText;
     final backgroundActive = _activeMdSections.contains(_MdSection.background);
     final behaviorActive = _activeMdSections.contains(_MdSection.behavior);
     final propsActive = _activeMdSections.contains(_MdSection.props);
@@ -2007,7 +2007,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       name: _nameController.text.trim(),
       age: ageText.isEmpty ? null : int.parse(ageText),
       gender: _gender,
-      signalement: signalement,
+      description: description,
       background: backgroundActive && backgroundText.isNotEmpty
           ? backgroundText
           : null,

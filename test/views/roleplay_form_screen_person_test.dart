@@ -180,7 +180,7 @@ void main() {
             name: 'Anne Glemsk',
             age: 47,
             gender: 'woman',
-            signalement: 'Rød jakke',
+            description: 'Rød jakke',
           ),
         ],
       );
@@ -356,7 +356,7 @@ void main() {
           name: 'Anne Glemsk',
           age: 47,
           gender: 'woman',
-          signalement: 'Rød jakke',
+          description: 'Rød jakke',
         ),
       ],
     );
@@ -373,7 +373,7 @@ void main() {
     expect(find.text('Rød jakke'), findsOneWidget);
 
     // Switch to Post 2 (no persons): the stale identity must clear, leaving
-    // the pick-a-person prompt rather than the previous age/signalement.
+    // the pick-a-person prompt rather than the previous age/description.
     await tester.tap(find.byKey(const Key('station-field')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Post 2').last);

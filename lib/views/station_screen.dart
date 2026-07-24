@@ -13,7 +13,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
@@ -71,7 +71,7 @@ class _StationScreenState extends State<StationScreen> {
   late bool _isStarted;
   late Exercise _exercise;
   _StationDetailView _view = _StationDetailView.info;
-  final _programService = ProgramService();
+  final _planService = PlanService();
   final _exerciseService = ExerciseService();
   final _subscribers = <StreamSubscription>[];
 
@@ -93,10 +93,10 @@ class _StationScreenState extends State<StationScreen> {
   /// when there is no active plan (defense-in-depth; this screen only
   /// ever renders inside one).
   Map<String, String> _overridesFor(Exercise exercise, {Station? station}) {
-    final program = _programService.activeProgram;
-    if (program == null) return const {};
+    final plan = _planService.activePlan;
+    if (plan == null) return const {};
     return effectivePlanVariables(
-      program,
+      plan,
       exercise: exercise,
       station: station,
     );
@@ -104,7 +104,7 @@ class _StationScreenState extends State<StationScreen> {
 
   @override
   void initState() {
-    _exercise = _programService.getExercise(widget.uuid)!;
+    _exercise = _planService.getExercise(widget.uuid)!;
     _isStarted = _exerciseService.isStartedOn(_exercise.uuid);
     _loadStoredRole();
 
@@ -139,14 +139,14 @@ class _StationScreenState extends State<StationScreen> {
       }),
     );
 
-    // Rebuild on any program mutation (roleplay/actor/person/station edits
+    // Rebuild on any plan mutation (roleplay/actor/person/station edits
     // elsewhere), not just this screen's own actions — mirrors
     // CoordinatorScreen. Re-read the cached exercise; ignore a delete of the
     // exercise itself (the hosting sheet closes that case).
     _subscribers.add(
-      _programService.events.listen((_) {
+      _planService.events.listen((_) {
         if (!mounted) return;
-        final fresh = _programService.getExercise(widget.uuid);
+        final fresh = _planService.getExercise(widget.uuid);
         if (fresh != null) setState(() => _exercise = fresh);
       }),
     );
@@ -172,10 +172,10 @@ class _StationScreenState extends State<StationScreen> {
     // (doubling is not handled here).
     final station = _exercise.stations[widget.stationIndex];
     final stationNumberFormat =
-        _programService.activeProgram?.stationNumberFormat ??
+        _planService.activePlan?.stationNumberFormat ??
         StationNumberFormat.dotted;
     final exerciseNumber =
-        _programService.loadExercises().indexWhere(
+        _planService.loadExercises().indexWhere(
           (e) => e.uuid == _exercise.uuid,
         ) +
         1;
@@ -657,7 +657,7 @@ class _StationScreenState extends State<StationScreen> {
   Widget _buildPersonRow(Station station, Person person) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final rolePlay = _programService
+    final rolePlay = _planService
         .loadRolePlays()
         .where(
           (r) =>
@@ -668,7 +668,7 @@ class _StationScreenState extends State<StationScreen> {
         .firstOrNull;
     final castActor = rolePlay?.actorUuid == null
         ? null
-        : _programService.getActor(rolePlay!.actorUuid!);
+        : _planService.getActor(rolePlay!.actorUuid!);
 
     // Effective identity (DESIGN-012): the actor's own non-empty
     // override wins over the linked person's planned value, so the post's own
@@ -679,9 +679,9 @@ class _StationScreenState extends State<StationScreen> {
         : effName;
     final effAge = rolePlay?.age ?? person.age;
     final effGender = _effective(rolePlay?.gender, person.gender);
-    final effSignalement = _effective(
-      rolePlay?.signalement,
-      person.signalement,
+    final effDescription = _effective(
+      rolePlay?.description,
+      person.description,
     );
     final genderLabel = genderLabelFor(effGender, l10n);
     final metaParts = [
@@ -694,7 +694,7 @@ class _StationScreenState extends State<StationScreen> {
         (_isOverride(rolePlay.name, person.name) ||
             (rolePlay.age != null && rolePlay.age != person.age) ||
             _isOverride(rolePlay.gender, person.gender) ||
-            _isOverride(rolePlay.signalement, person.signalement));
+            _isOverride(rolePlay.description, person.description));
 
     // Trailing cast pill: create the RolePlay (no marker yet), or assign/edit
     // the actor (RolePlay present) via the shared cast picker — not the Spill
@@ -748,9 +748,9 @@ class _StationScreenState extends State<StationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(metaParts.join(' · '), overflow: TextOverflow.ellipsis),
-                  if ((effSignalement ?? '').isNotEmpty)
+                  if ((effDescription ?? '').isNotEmpty)
                     Text(
-                      effSignalement!,
+                      effDescription!,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
@@ -838,7 +838,7 @@ class _StationScreenState extends State<StationScreen> {
       builder: (_) => RolePlayFormScreen(
         rolePlay: rolePlay,
         exercise: _exercise,
-        variables: _programService.activeProgram?.variables ?? const [],
+        variables: _planService.activePlan?.variables ?? const [],
         isExisting: true,
       ),
     );
@@ -847,14 +847,14 @@ class _StationScreenState extends State<StationScreen> {
         return;
       case RolePlayFormSave(:final rolePlay, :final additions):
         await applyRolePlayAdditions(
-          _programService,
+          _planService,
           localizations,
           rolePlay,
           additions,
         );
-        await _programService.saveRolePlay(localizations, rolePlay);
+        await _planService.saveRolePlay(localizations, rolePlay);
       case RolePlayFormDelete(:final rolePlay):
-        await _programService.deleteRolePlay(rolePlay.uuid);
+        await _planService.deleteRolePlay(rolePlay.uuid);
     }
     if (mounted) setState(() {});
   }
@@ -952,10 +952,10 @@ class _StationScreenState extends State<StationScreen> {
     if (result == null) return;
     // Write-back (ADR-0047, DESIGN-009 "Inline creation and write-back"):
     // a var.* created inline from this person's own fields reaches the
-    // active Program; a sibling station.loc/person.* joins this same
+    // active Plan; a sibling station.loc/person.* joins this same
     // station, alongside the person itself.
-    await applyVariableAdditionsToActiveProgram(
-      _programService,
+    await applyVariableAdditionsToActivePlan(
+      _planService,
       result.additions,
     );
     final withAdditions = applyStationAdditions(station, result.additions);
@@ -975,8 +975,8 @@ class _StationScreenState extends State<StationScreen> {
     );
     if (result == null) return;
     // Write-back, mirroring _addPerson above.
-    await applyVariableAdditionsToActiveProgram(
-      _programService,
+    await applyVariableAdditionsToActivePlan(
+      _planService,
       result.additions,
     );
     final withAdditions = applyStationAdditions(station, result.additions);
@@ -1003,8 +1003,8 @@ class _StationScreenState extends State<StationScreen> {
       ),
     );
     if (result == null) return;
-    await applyVariableAdditionsToActiveProgram(
-      _programService,
+    await applyVariableAdditionsToActivePlan(
+      _planService,
       result.additions,
     );
     final withAdditions = applyStationAdditions(station, result.additions);
@@ -1031,8 +1031,8 @@ class _StationScreenState extends State<StationScreen> {
       ),
     );
     if (result == null) return;
-    await applyVariableAdditionsToActiveProgram(
-      _programService,
+    await applyVariableAdditionsToActivePlan(
+      _planService,
       result.additions,
     );
     final withAdditions = applyStationAdditions(station, result.additions);
@@ -1050,7 +1050,7 @@ class _StationScreenState extends State<StationScreen> {
   /// counterpart) — a new marker for a person nobody plays yet.
   Future<void> _addRolePlayForPerson(Station station, Person person) async {
     final localizations = AppLocalizations.of(context)!;
-    final existing = _programService
+    final existing = _planService
         .loadRolePlays()
         .where((r) => r.exerciseUuid == _exercise.uuid)
         .length;
@@ -1062,7 +1062,7 @@ class _StationScreenState extends State<StationScreen> {
       name: person.name,
       age: person.age,
       gender: person.gender,
-      signalement: person.signalement,
+      description: person.description,
       personRef: person.slug,
     );
     final result = await openFormSurface<RolePlayFormResult>(
@@ -1070,19 +1070,19 @@ class _StationScreenState extends State<StationScreen> {
       builder: (_) => RolePlayFormScreen(
         rolePlay: draft,
         exercise: _exercise,
-        variables: _programService.activeProgram?.variables ?? const [],
+        variables: _planService.activePlan?.variables ?? const [],
       ),
     );
     // A fresh draft has no delete affordance, so only a save (or cancel) is
     // possible here.
     if (result is RolePlayFormSave) {
       await applyRolePlayAdditions(
-        _programService,
+        _planService,
         localizations,
         result.rolePlay,
         result.additions,
       );
-      await _programService.saveRolePlay(localizations, result.rolePlay);
+      await _planService.saveRolePlay(localizations, result.rolePlay);
       if (mounted) setState(() {});
     }
   }
@@ -1094,7 +1094,7 @@ class _StationScreenState extends State<StationScreen> {
     final stations = _exercise.stations.toList()
       ..[widget.stationIndex] = updated;
     final newExercise = _exercise.copyWith(stations: stations);
-    await _programService.saveExercise(localizations, newExercise);
+    await _planService.saveExercise(localizations, newExercise);
     if (!mounted) return;
     setState(() => _exercise = newExercise);
   }
@@ -1106,7 +1106,7 @@ class _StationScreenState extends State<StationScreen> {
     // Captured before the await: in compact layout openFormSurface dismisses
     // the hosting context sheet around the form push, which disposes this
     // State — the context is gone by the time the form pops. The save must
-    // still run (ProgramService needs no context); only UI work below is
+    // still run (PlanService needs no context); only UI work below is
     // gated on mounted.
     final localizations = AppLocalizations.of(context)!;
     final stations = _exercise.stations.toList();
@@ -1114,7 +1114,7 @@ class _StationScreenState extends State<StationScreen> {
     // DESIGN-009 prompt 5: the delete-guard and save-block need to know
     // whether a roleplay linked to this station references a Location/
     // Person before letting the author remove or leave one dangling.
-    final roleplays = _programService
+    final roleplays = _planService
         .loadRolePlays()
         .where(
           (r) =>
@@ -1128,8 +1128,8 @@ class _StationScreenState extends State<StationScreen> {
       context,
       builder: (context) => StationFormScreen(
         station: stations[widget.stationIndex],
-        markers: _programService.getLocations().toMarkerSpecs(),
-        variables: _programService.activeProgram?.variables ?? const [],
+        markers: _planService.getLocations().toMarkerSpecs(),
+        variables: _planService.activePlan?.variables ?? const [],
         parentExercise: _exercise,
         roleplays: roleplays,
         initialSectionId: initialSectionId,
@@ -1140,13 +1140,13 @@ class _StationScreenState extends State<StationScreen> {
     // always true. Backing out of the form (result == null) then
     // ran `stations[i] = null` on a non-nullable list and crashed.
     if (result == null) return;
-    await applyVariableAdditionsToActiveProgram(
-      _programService,
+    await applyVariableAdditionsToActivePlan(
+      _planService,
       result.additions,
     );
     stations[widget.stationIndex] = result.station;
     final newExercise = _exercise.copyWith(stations: stations);
-    await _programService.saveExercise(localizations, newExercise);
+    await _planService.saveExercise(localizations, newExercise);
     if (!mounted) return;
     setState(() {
       _exercise = newExercise;

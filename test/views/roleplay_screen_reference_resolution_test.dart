@@ -6,7 +6,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,7 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// itself in a RoleplayScope (its own facets) and a StationScope (the linked
 /// station's facets), so a scenario field can reference both `{{roleplay.*}}`
 /// and the linked station's `{{station.*}}` instead of leaving them literal.
-const _programUuid = 'prog-role-ref';
+const _planUuid = 'prog-role-ref';
 const _exerciseUuid = 'ex-role-ref';
 const _roleUuid = 'role-ref';
 
@@ -50,7 +50,7 @@ RolePlay _rolePlay() => const RolePlay(
   // exercise (parent) and station (linked). The viewer must provide all
   // three, or the all-or-nothing mustache render throws on the first missing
   // one and drags the rest back to literal.
-  signalement:
+  description:
       'Alder {{roleplay.age}}, {{exercise.numberOfTeams}} lag, '
       'sett ved {{station.name}}.',
 );
@@ -58,11 +58,11 @@ RolePlay _rolePlay() => const RolePlay(
 Map<String, Object> _prefs() {
   final ex = _exercise();
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Test Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Test Plan',
       'description': '',
       'metadata': {
         'created': '2024-01-01T00:00:00.000Z',
@@ -76,8 +76,8 @@ Map<String, Object> _prefs() {
       'actors': [],
       'variables': [],
     }),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
-    'pr:$_programUuid:$_roleUuid': jsonEncode(_rolePlay().toJson()),
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
+    'pr:$_planUuid:$_roleUuid': jsonEncode(_rolePlay().toJson()),
   };
 }
 
@@ -100,11 +100,11 @@ Widget _buildScreen() {
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(_prefs());
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   testWidgets(
-    'signalement resolves {{roleplay.*}}, {{exercise.*}} and {{station.*}} '
+    'description resolves {{roleplay.*}}, {{exercise.*}} and {{station.*}} '
     'together instead of leaving them literal',
     (tester) async {
       await tester.pumpWidget(_buildScreen());

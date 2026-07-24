@@ -7,7 +7,7 @@ import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,7 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const _programUuid = 'prog-rv';
+const _planUuid = 'prog-rv';
 const _exerciseUuid = 'ex-rv';
 
 // Role A: cast to actor with phone + notes
@@ -75,11 +75,11 @@ Exercise _exercise() => Exercise(
 Map<String, Object> _buildPrefs() {
   final ex = _exercise();
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Test Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Test Plan',
       'description': '',
       'metadata': {
         'created': '2024-01-01T00:00:00.000Z',
@@ -92,15 +92,15 @@ Map<String, Object> _buildPrefs() {
       'rolePlays': [],
       'actors': [],
     }),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
     // Two roles seeded together
-    'pr:$_programUuid:$_roleAUuid': jsonEncode(_roleA.toJson()),
-    'pr:$_programUuid:$_roleBUuid': jsonEncode(_roleB.toJson()),
+    'pr:$_planUuid:$_roleAUuid': jsonEncode(_roleA.toJson()),
+    'pr:$_planUuid:$_roleBUuid': jsonEncode(_roleB.toJson()),
     // Two actors: A has phone+notes, B has neither.
     // Actor.notes is excluded from JSON (ADR-0022); stored under pan: prefix.
-    'pa:$_programUuid:$_actorAUuid': jsonEncode(_actorA.toJson()),
-    'pan:$_programUuid:$_actorAUuid': _actorA.notes!,
-    'pa:$_programUuid:$_actorBUuid': jsonEncode(_actorB.toJson()),
+    'pa:$_planUuid:$_actorAUuid': jsonEncode(_actorA.toJson()),
+    'pan:$_planUuid:$_actorAUuid': _actorA.notes!,
+    'pa:$_planUuid:$_actorBUuid': jsonEncode(_actorB.toJson()),
   };
 }
 
@@ -122,9 +122,9 @@ Widget _buildView() {
               [],
         ),
         // RolePlayListView now returns sliver content for embedding in a
-        // CustomScrollView (see program_view.dart's per-segment scroll
+        // CustomScrollView (see plan_view.dart's per-segment scroll
         // view); the "Ny rolle" FAB is a separate overlay widget
-        // (RolePlaysCreateFab) that program_view.dart renders alongside it,
+        // (RolePlaysCreateFab) that plan_view.dart renders alongside it,
         // mirrored here so the FAB-presence tests below still apply.
         body: Stack(
           children: [
@@ -155,7 +155,7 @@ Future<void> _expandTileAt(WidgetTester tester, int index) async {
 void main() {
   setUpAll(() async {
     SharedPreferences.setMockInitialValues(_buildPrefs());
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   group('Cast section — actor with phone and notes (role A)', () {
@@ -250,18 +250,18 @@ void main() {
     });
   });
 
-  group('Active-program guard and AppBar action (Step 5)', () {
-    testWidgets('with active program: noActiveProgramHint not shown', (
+  group('Active-plan guard and AppBar action (Step 5)', () {
+    testWidgets('with active plan: noActivePlanHint not shown', (
       tester,
     ) async {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(find.text(l10n.noActiveProgramHint), findsNothing);
+      expect(find.text(l10n.noActivePlanHint), findsNothing);
     });
 
-    testWidgets('filter icon is in AppBar actions when active program exists', (
+    testWidgets('filter icon is in AppBar actions when active plan exists', (
       tester,
     ) async {
       await tester.pumpWidget(_buildView());
@@ -271,7 +271,7 @@ void main() {
       expect(find.byIcon(Icons.filter_list), findsOneWidget);
     });
 
-    testWidgets('"Nytt spill" FAB is present when active program exists', (
+    testWidgets('"Nytt spill" FAB is present when active plan exists', (
       tester,
     ) async {
       await tester.pumpWidget(_buildView());

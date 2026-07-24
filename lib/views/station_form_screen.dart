@@ -8,7 +8,7 @@ import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart'
@@ -73,15 +73,15 @@ class StationFormScreen extends StatefulWidget {
   final List<MapMarkerSpec<(String, int)>> markers;
 
   /// The plan's declared variables (ADR-0046), read-only here — this editor
-  /// edits a `Station`, not the `Program` (DESIGN-008 follow-up 07's
+  /// edits a `Station`, not the `Plan` (DESIGN-008 follow-up 07's
   /// settled scope, same as `ExerciseFormScreen`). Every call site passes
-  /// `program.variables`.
+  /// `plan.variables`.
   final List<DrillVariable> variables;
 
   /// The enclosing `Exercise`, needed to compute this station's inherited
   /// baseline (ADR-0046): the plan's declared defaults overlaid by this
   /// exercise's overrides. Optional — a station opened without its parent
-  /// exercise in context degrades to a program-only baseline.
+  /// exercise in context degrades to a plan-only baseline.
   final Exercise? parentExercise;
 
   /// This station's own linked roleplays (`RolePlay.stationIndex ==
@@ -90,7 +90,7 @@ class StationFormScreen extends StatefulWidget {
   /// references a `Location`/`Person` before letting the author remove it.
   /// A roleplay's own editing happens in `RolePlayFormScreen`; this editor
   /// never mutates the list. Every call site filters
-  /// `ProgramService.loadRolePlays()` by this station's index and its
+  /// `PlanService.loadRolePlays()` by this station's index and its
   /// exercise's uuid.
   final List<RolePlay> roleplays;
 
@@ -107,7 +107,7 @@ class StationFormScreen extends StatefulWidget {
 
 class _StationFormScreenState extends State<StationFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _programService = ProgramService();
+  final _planService = PlanService();
 
   LatLng? _position;
 
@@ -172,7 +172,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// (ADR-0047, DESIGN-009 follow-up 4 — un-defers DESIGN-008's parked
   /// "create a variable from a sub-editor"). A `Station` cannot declare
   /// variables itself; these are returned as [PlanAdditions] for the caller
-  /// to apply to `Program` alongside this station's own save.
+  /// to apply to `Plan` alongside this station's own save.
   final List<DrillVariable> _pendingVariables = [];
 
   /// Markers created or edited this session from the Persons section's
@@ -187,9 +187,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
 
   /// This station's inherited baseline (ADR-0046): the plan's declared
   /// defaults overlaid by [StationFormScreen.parentExercise]'s overrides —
-  /// mirrors `effectivePlanVariables(program, exercise: parentExercise)`,
+  /// mirrors `effectivePlanVariables(plan, exercise: parentExercise)`,
   /// computed directly since this editor only has the declared list and the
-  /// parent `Exercise`, not the whole `Program` (same reasoning as
+  /// parent `Exercise`, not the whole `Plan` (same reasoning as
   /// `ExerciseFormScreen`'s simpler one-level version).
   Map<String, String> get _inheritedAtExerciseScope {
     // Canonical string encoding per type (a location default encodes place
@@ -211,7 +211,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// overlaid by this station's own working overrides. Passed as the
   /// token-aware fields' `overrides:` (not [_workingOverrides] alone) so a
   /// field resolves the whole ADR-0046 cascade — station override shadows
-  /// exercise override shadows program default — even for a variable this
+  /// exercise override shadows plan default — even for a variable this
   /// station does not itself override.
   Map<String, String> get _effectiveAtStationScope {
     final vars = Map<String, String>.of(_inheritedAtExerciseScope);
@@ -406,7 +406,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
         // The Persons section opens both fresh drafts and existing roleplays
         // (the caller says which); only the latter may be deleted. Never
         // derived from the service here — that would break tests that build
-        // this form without a seeded ProgramService.
+        // this form without a seeded PlanService.
         isExisting: isExisting,
       ),
     );
@@ -422,7 +422,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
         // for an already-persisted roleplay, so it is removed from disk (and
         // from any pending edit) here rather than folded into the station's
         // own unsaved working copy.
-        await _programService.deleteRolePlay(rolePlay.uuid);
+        await _planService.deleteRolePlay(rolePlay.uuid);
         if (mounted) {
           setState(() => _pendingRolePlays.remove(rolePlay.uuid));
         }
@@ -434,7 +434,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// and write-back") — new locations/persons belong to this same station,
   /// so they ride this station's own save rather than writing back
   /// separately; a new plan variable still needs to be carried up to
-  /// `Program` via [_pendingVariables]. Shared by [_openRolePlayEditor] and
+  /// `Plan` via [_pendingVariables]. Shared by [_openRolePlayEditor] and
   /// this editor's own Locations/Persons sections (their leaf token fields
   /// can create a sibling entity or a `var.*` too). Call inside a
   /// `setState`.
@@ -470,7 +470,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
   Future<void> _addMarkerFor(Person person) async {
     final exercise = widget.parentExercise;
     if (exercise == null) return;
-    final existingCount = _programService
+    final existingCount = _planService
         .loadRolePlays()
         .where((r) => r.exerciseUuid == exercise.uuid)
         .length;
@@ -481,7 +481,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
       name: person.name,
       age: person.age,
       gender: person.gender,
-      signalement: person.signalement,
+      description: person.description,
       stationIndex: widget.station.index,
       personRef: person.slug,
     );
@@ -703,7 +703,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
     // supplies (DESIGN-009 follow-up 4) — those come through StationScope,
     // not planFields, so both coexist (follow-up 4b).
     final planFields = [
-      ...PlanFieldTokens.program(l),
+      ...PlanFieldTokens.plan(l),
       ...PlanFieldTokens.exercise(l),
       ...PlanFieldTokens.station(l),
     ];
@@ -740,7 +740,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                       // A Station cannot declare a plan variable itself
                       // (DESIGN-008 follow-up 07's settled scope, matching
                       // Exercise), but can now create one inline for the
-                      // write-back PlanAdditions carries up to Program
+                      // write-back PlanAdditions carries up to Plan
                       // (ADR-0047, DESIGN-009 follow-up 4). Location/person
                       // creation needs no write-back — the station owns
                       // both directly.
@@ -767,9 +767,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
     ];
 
     final inherited = _inheritedAtExerciseScope;
-    // Forwards the ambient PlanScope's program facets (DESIGN-010) — this
+    // Forwards the ambient PlanScope's plan facets (DESIGN-010) — this
     // editor shadows PlanScope with its own (for the live variables list),
-    // which would otherwise strand {{program.name}} at null below here.
+    // which would otherwise strand {{plan.name}} at null below here.
     final ambientPlan = PlanScope.maybeOf(context);
     final exercise = widget.parentExercise;
 
@@ -778,8 +778,8 @@ class _StationFormScreenState extends State<StationFormScreen> {
       // just-created {{var.x}} chip resolves live (amber) instead of red
       // (ADR-0047, DESIGN-009 follow-up 4).
       variables: [...widget.variables, ..._pendingVariables],
-      programName: ambientPlan?.programName,
-      programDescription: ambientPlan?.programDescription,
+      planName: ambientPlan?.planName,
+      planDescription: ambientPlan?.planDescription,
       child: StationScope(
         // The station editor owns its locations/persons directly (unlike
         // the roleplay editor's linked-station copy), so it needs no
@@ -793,7 +793,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
         // section edits — so a {{station.name}} reference elsewhere
         // previews the name as it is being typed, not just the last save.
         // stationCode is left null (see StationScope's own doc comment):
-        // its brief value needs Program.stationNumberFormat and this
+        // its brief value needs Plan.stationNumberFormat and this
         // exercise's number, neither available here.
         name: _nameController.text.trim(),
         description: _descriptionController.text,
@@ -851,7 +851,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                   onAddRolePlay: _addMarkerFor,
                   actorFor: (rp) => rp.actorUuid == null
                       ? null
-                      : _programService.getActor(rp.actorUuid!),
+                      : _planService.getActor(rp.actorUuid!),
                 ),
               ),
               FormSection(
@@ -876,7 +876,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
               // {{var.<name>}}, {{loc.<slug>}}, and {{person.<slug>}} — so
               // they come after Persons and Locations, not before.
               ...activeMdSections,
-              // Last: Variabler, matching Program and Exercise — the section
+              // Last: Variabler, matching Plan and Exercise — the section
               // you land on after the fields that reference variables.
               FormSection(
                 id: 'variables',
@@ -904,10 +904,10 @@ class _StationFormScreenState extends State<StationFormScreen> {
     // resolves in preview — this editor even offers {{exercise.*}} tokens in
     // its insertion menu. Without the scope the resolver's mustache pass is
     // all-or-nothing per field: one unresolved {{exercise.*}} throws and
-    // takes the whole field (including {{station.*}}/{{program.*}}) back to
+    // takes the whole field (including {{station.*}}/{{plan.*}}) back to
     // literal. The viewer (station_screen) and the list (StationScope.
     // forStation) already provide it. Skipped when opened without a parent
-    // exercise (degrades to the program-only baseline).
+    // exercise (degrades to the plan-only baseline).
     if (exercise != null) {
       scopes = ExerciseScope(
         exercise: exercise,
@@ -923,7 +923,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// description).
   Widget _buildStationSectionBody(BuildContext context, AppLocalizations l10n) {
     final planFields = [
-      ...PlanFieldTokens.program(l10n),
+      ...PlanFieldTokens.plan(l10n),
       ...PlanFieldTokens.exercise(l10n),
       ...PlanFieldTokens.station(l10n),
     ];
@@ -1039,7 +1039,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
         final sections = offending.join(', ');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l.programSaveBlockedUndeclaredVariable(sections)),
+            content: Text(l.planSaveBlockedUndeclaredVariable(sections)),
           ),
         );
         return;

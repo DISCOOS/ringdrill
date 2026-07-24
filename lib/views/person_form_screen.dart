@@ -30,9 +30,9 @@ final _variableSlugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 
 /// [PersonFormScreen]'s result: the saved [Person] plus any [PlanAdditions]
 /// created inline this session (ADR-0047, DESIGN-009 "Inline creation and
-/// write-back") -- a new `var.*` (-> `Program`), a location from the home
+/// write-back") -- a new `var.*` (-> `Plan`), a location from the home
 /// picker's "Ny lokasjon" entry, or a sibling `station.loc.*`/
-/// `station.person.*` created from the `name`/`signalement`/`notes` fields'
+/// `station.person.*` created from the `name`/`description`/`notes` fields'
 /// own insertion menu (-> the station this [Person] itself joins, which this
 /// form does not own and never writes to directly).
 typedef PersonFormResult = ({Person person, PlanAdditions additions});
@@ -76,8 +76,8 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   late final _ageController = TextEditingController(
     text: widget.initial?.age?.toString() ?? '',
   );
-  late final _signalementController = TokenTextEditingController(
-    text: widget.initial?.signalement ?? '',
+  late final _descriptionController = TokenTextEditingController(
+    text: widget.initial?.description ?? '',
   );
   late final _notesController = TokenTextEditingController(
     text: widget.initial?.notes ?? '',
@@ -88,7 +88,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   /// Working copy of [PersonFormScreen.locations] -- both the home picker's
   /// own dropdown options and (ADR-0047, DESIGN-009 "Inline creation and
   /// write-back") the sibling `station.loc.*` candidates a
-  /// `name`/`signalement`/`notes` field can reference or create. Seeded
+  /// `name`/`description`/`notes` field can reference or create. Seeded
   /// from what this form was given, so a new entry from either mechanism
   /// shows up immediately without waiting for the caller to rebuild
   /// (DESIGN-009's "editor resolves newly created entities against a
@@ -105,7 +105,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   late Set<String> _originalPersonSlugs;
 
   /// The ambient `PlanScope`'s declared variables as of open time -- this
-  /// form does not own `Program.variables` either, so a `var.*` created
+  /// form does not own `Plan.variables` either, so a `var.*` created
   /// inline is tracked in [_pendingVariables] instead and carried up the
   /// same way.
   late List<DrillVariable> _declaredVariables;
@@ -141,7 +141,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   void dispose() {
     _nameController.dispose();
     _ageController.dispose();
-    _signalementController.dispose();
+    _descriptionController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -245,12 +245,12 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
 
   /// This form's own token-aware fields, paired with their display label
   /// (DESIGN-009 follow-up 4e) — mirrors `StationFormScreen`'s own
-  /// base-field scan, scoped down to `name`/`signalement`/`notes`.
+  /// base-field scan, scoped down to `name`/`description`/`notes`.
   Iterable<(String label, String text)> _tokenAwareFields(
     AppLocalizations l10n,
   ) sync* {
     yield (l10n.roleName, _nameController.text);
-    yield (l10n.roleSignalement, _signalementController.text);
+    yield (l10n.roleDescription, _descriptionController.text);
     yield (l10n.personsSectionNotesLabel, _notesController.text);
   }
 
@@ -315,7 +315,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            l10n.programSaveBlockedUndeclaredVariable(undeclared.join(', ')),
+            l10n.planSaveBlockedUndeclaredVariable(undeclared.join(', ')),
           ),
         ),
       );
@@ -337,7 +337,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
       return;
     }
 
-    final signalement = _signalementController.text.trim();
+    final description = _descriptionController.text.trim();
     final notes = _notesController.text.trim();
     final slug =
         widget.initial?.slug ?? randomSlug(widget.existingSlugs.contains);
@@ -348,7 +348,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
           ? null
           : int.tryParse(_ageController.text),
       gender: _gender,
-      signalement: signalement.isEmpty ? null : signalement,
+      description: description.isEmpty ? null : description,
       locSlug: _locSlug,
       notes: notes.isEmpty ? null : notes,
     );
@@ -386,7 +386,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     // never `PlanFieldTokens.roleplay`, which only resolves inside a
     // roleplay's own scope, not a station-owned Person's.
     final planFields = [
-      ...PlanFieldTokens.program(l10n),
+      ...PlanFieldTokens.plan(l10n),
       ...PlanFieldTokens.exercise(l10n),
       ...PlanFieldTokens.station(l10n),
     ];
@@ -404,8 +404,8 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     final ambientStation = StationScope.maybeOf(context);
     return PlanScope(
       variables: [..._declaredVariables, ..._pendingVariables],
-      programName: ambientPlan.programName,
-      programDescription: ambientPlan.programDescription,
+      planName: ambientPlan.planName,
+      planDescription: ambientPlan.planDescription,
       child: StationScope(
         locations: _workingLocations,
         persons: _workingPersons,
@@ -510,8 +510,8 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                       ),
                       const SizedBox(height: 16),
                       RingDrillTextArea(
-                        controller: _signalementController,
-                        label: l10n.roleSignalement,
+                        controller: _descriptionController,
+                        label: l10n.roleDescription,
                         minLines: 1,
                         maxLines: 3,
                         tokenAware: true,
@@ -520,7 +520,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                             ? null
                             : SelfTokenExclusion(
                                 slug: selfSlug,
-                                excludedFacet: 'signalement',
+                                excludedFacet: 'description',
                               ),
                         onCreateVariable: _createVariableInline,
                         onCreateLocation: _createStationLocation,

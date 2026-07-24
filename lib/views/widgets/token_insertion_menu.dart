@@ -77,7 +77,7 @@ class StationFacetMenuEntry extends TokenMenuEntry {
   final String slug;
   final List<String> facetPath;
 
-  /// The facet's own display label, e.g. "Signalement".
+  /// The facet's own display label, e.g. "Description".
   final String label;
 }
 
@@ -155,7 +155,7 @@ const locationFacetNames = ['place', 'label', 'position'];
 /// `_facetAwareEntries`) — `brief_renderer.dart` supports exactly one level
 /// of chaining, so this picker does too.
 @visibleForTesting
-const personFacetNames = ['name', 'age', 'gender', 'signalement', 'loc'];
+const personFacetNames = ['name', 'age', 'gender', 'description', 'loc'];
 
 String _locationFacetLabel(AppLocalizations l10n, String facet) =>
     switch (facet) {
@@ -170,7 +170,7 @@ String _personFacetLabel(AppLocalizations l10n, String facet) =>
       'name' => l10n.roleName,
       'age' => l10n.roleAge,
       'gender' => l10n.roleGender,
-      'signalement' => l10n.roleSignalement,
+      'description' => l10n.roleDescription,
       'loc' => l10n.personsSectionLocationLabel,
       _ => facet,
     };
@@ -212,7 +212,7 @@ class TokenInsertionMenu extends StatefulWidget {
 
   /// `station.loc.*`/`station.person.*` entries (ADR-0047, DESIGN-009
   /// follow-up 4) — empty when the field has no `StationScope` ancestor
-  /// (Program/Exercise fields), same as [variables] being empty absent a
+  /// (Plan/Exercise fields), same as [variables] being empty absent a
   /// `PlanScope`.
   final List<StationLocationToken> stationLocations;
   final List<StationPersonToken> stationPersons;

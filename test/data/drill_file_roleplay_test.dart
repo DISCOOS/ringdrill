@@ -4,16 +4,16 @@ import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/models/actor.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 
-Program _emptyProgram() {
+Plan _emptyPlan() {
   final now = DateTime(2026);
-  return Program(
+  return Plan(
     uuid: 'prog-1',
     name: 'Test',
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -92,14 +92,14 @@ DrillFile _build1_1Archive({
 }
 
 void main() {
-  test('round-trips program with rolePlays and actors, schema is 1.1', () {
+  test('round-trips plan with rolePlays and actors, schema is 1.1', () {
     const rp1 = RolePlay(
       uuid: 'rp-1',
       index: 0,
       exerciseUuid: 'ex-1',
       name: 'Anna Hansen',
       age: 67,
-      signalement: 'Blå jakke',
+      description: 'Blå jakke',
       behavior: 'Confused and scared',
       background: 'Fell down stairs',
     );
@@ -117,13 +117,13 @@ void main() {
       notes: 'Keep in character',
     );
 
-    final program = _emptyProgram().copyWith(
+    final plan = _emptyPlan().copyWith(
       rolePlays: [rp1, rp2],
       actors: [actor1],
     );
 
-    final drillFile = DrillFile.fromProgram(program, 'test');
-    final decoded = drillFile.program();
+    final drillFile = DrillFile.fromPlan(plan, 'test');
+    final decoded = drillFile.plan();
 
     expect(decoded.rolePlays.length, 2);
     expect(decoded.rolePlays.any((r) => r.uuid == 'rp-1'), isTrue);
@@ -131,7 +131,7 @@ void main() {
     final decodedRp1 = decoded.rolePlays.firstWhere((r) => r.uuid == 'rp-1');
     expect(decodedRp1.name, 'Anna Hansen');
     expect(decodedRp1.age, 67);
-    expect(decodedRp1.signalement, 'Blå jakke');
+    expect(decodedRp1.description, 'Blå jakke');
     expect(decodedRp1.behavior, 'Confused and scared');
     expect(decodedRp1.background, 'Fell down stairs');
 
@@ -146,30 +146,30 @@ void main() {
     expect(decoded.metadata.schema, '1.2');
   });
 
-  test('round-trips empty program without creating spurious folders', () {
-    final program = _emptyProgram();
-    final drillFile = DrillFile.fromProgram(program, 'empty');
+  test('round-trips empty plan without creating spurious folders', () {
+    final plan = _emptyPlan();
+    final drillFile = DrillFile.fromPlan(plan, 'empty');
     final archive = ZipDecoder().decodeBytes(drillFile.content);
 
     final names = archive.files.where((f) => f.isFile).map((f) => f.name);
     expect(names.any((n) => n.startsWith('roleplays')), isFalse);
     expect(names.any((n) => n.startsWith('actors')), isFalse);
 
-    final decoded = drillFile.program();
+    final decoded = drillFile.plan();
     expect(decoded.rolePlays, isEmpty);
     expect(decoded.actors, isEmpty);
-    // schema is always stamped by fromProgram
+    // schema is always stamped by fromPlan
     expect(decoded.metadata.schema, '1.2');
   });
 
   test('opens a synthetic 1.0 archive with no roleplays/actors/schema', () {
     // Build a minimal 1.0-style archive by hand (no roleplays/, actors/, schema)
     final now = DateTime(2026);
-    final prog = Program(
+    final prog = Plan(
       uuid: 'prog-old',
       name: 'Old',
       description: '',
-      metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+      metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
       teams: const [],
       sessions: const [],
       exercises: const [],
@@ -212,7 +212,7 @@ void main() {
       content: encoder.encode(archive),
     );
 
-    final decoded = drillFile.program();
+    final decoded = drillFile.plan();
     expect(decoded.rolePlays, isEmpty);
     expect(decoded.actors, isEmpty);
     expect(decoded.metadata.schema, isNull);
@@ -232,12 +232,12 @@ void main() {
       realName: 'Kari',
       notes: 'Stay in character',
     );
-    final program = _emptyProgram().copyWith(
+    final plan = _emptyPlan().copyWith(
       rolePlays: [rp],
       actors: [actor],
     );
 
-    final drillFile = DrillFile.fromProgram(program, 'test');
+    final drillFile = DrillFile.fromPlan(plan, 'test');
     final archive = ZipDecoder().decodeBytes(drillFile.content);
 
     final byName = {
@@ -267,7 +267,7 @@ void main() {
       background: 'Head trauma',
       notes: 'PII notes',
     );
-    final decoded = drillFile.program();
+    final decoded = drillFile.plan();
 
     final rp = decoded.rolePlays.firstWhere((r) => r.uuid == 'rp-1');
     expect(rp.behavior, 'Confused');
@@ -311,7 +311,7 @@ void main() {
       content: encoder.encode(archive),
     );
 
-    final decoded = drillFile.program();
+    final decoded = drillFile.plan();
     final rp = decoded.rolePlays.firstWhere((r) => r.uuid == 'rp-1');
     expect(rp.behavior, 'md file content');
   });
@@ -325,9 +325,9 @@ void main() {
       behavior: '', // empty string -> zero-byte file
       background: null, // null -> no file
     );
-    final program = _emptyProgram().copyWith(rolePlays: [rp]);
+    final plan = _emptyPlan().copyWith(rolePlays: [rp]);
 
-    final drillFile = DrillFile.fromProgram(program, 'test');
+    final drillFile = DrillFile.fromPlan(plan, 'test');
 
     // Verify the archive: behavior.md present (zero bytes), background.md absent
     final archive = ZipDecoder().decodeBytes(drillFile.content);
@@ -335,7 +335,7 @@ void main() {
     expect(names.contains('roleplays/rp-1/behavior.md'), isTrue);
     expect(names.contains('roleplays/rp-1/background.md'), isFalse);
 
-    final decoded = drillFile.program();
+    final decoded = drillFile.plan();
     final decodedRp = decoded.rolePlays.firstWhere((r) => r.uuid == 'rp-1');
     expect(decodedRp.behavior, '');
     expect(decodedRp.background, isNull);
@@ -349,10 +349,10 @@ void main() {
       name: 'Anna',
       behavior: 'Original behavior',
     );
-    final program = _emptyProgram().copyWith(rolePlays: [rp]);
-    final hash1 = program.computeContentHash();
+    final plan = _emptyPlan().copyWith(rolePlays: [rp]);
+    final hash1 = plan.computeContentHash();
 
-    final modified = program.copyWith(
+    final modified = plan.copyWith(
       rolePlays: [rp.copyWith(behavior: 'Changed behavior')],
     );
     final hash2 = modified.computeContentHash();
@@ -376,10 +376,10 @@ void main() {
       background: 'History',
     );
 
-    final programA = _emptyProgram().copyWith(rolePlays: [rp1, rp2]);
-    final programB = _emptyProgram().copyWith(rolePlays: [rp2, rp1]);
+    final planA = _emptyPlan().copyWith(rolePlays: [rp1, rp2]);
+    final planB = _emptyPlan().copyWith(rolePlays: [rp2, rp1]);
 
-    expect(programA.computeContentHash(), programB.computeContentHash());
+    expect(planA.computeContentHash(), planB.computeContentHash());
   });
 
   test('roundtrip preserves content hash', () {
@@ -396,14 +396,14 @@ void main() {
       realName: 'Kari',
       notes: 'Stay in character',
     );
-    final program = _emptyProgram().copyWith(
+    final plan = _emptyPlan().copyWith(
       rolePlays: [rp],
       actors: [actor],
     );
 
-    final hashBefore = program.computeContentHash();
-    final drillFile = DrillFile.fromProgram(program, 'test');
-    final decoded = drillFile.program();
+    final hashBefore = plan.computeContentHash();
+    final drillFile = DrillFile.fromPlan(plan, 'test');
+    final decoded = drillFile.plan();
     final hashAfter = decoded.computeContentHash();
 
     expect(hashAfter, hashBefore);

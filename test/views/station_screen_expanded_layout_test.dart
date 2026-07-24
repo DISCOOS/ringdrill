@@ -8,7 +8,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/shell/wide_detail_map_split.dart';
 import 'package:ringdrill/views/station_screen.dart';
@@ -28,7 +28,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // just an empty placeholder.
 // ---------------------------------------------------------------------------
 
-const _programUuid = 'prog-station-expanded-layout';
+const _planUuid = 'prog-station-expanded-layout';
 const _exerciseUuid = 'ex-station-expanded-layout';
 
 Exercise _exercise() => Exercise(
@@ -63,11 +63,11 @@ Exercise _exercise() => Exercise(
 Future<void> _seedAndInit() async {
   final ex = _exercise();
   SharedPreferences.setMockInitialValues({
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Test Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Test Plan',
       'description': '',
       'metadata': {
         'created': '2024-01-01T00:00:00.000Z',
@@ -80,9 +80,9 @@ Future<void> _seedAndInit() async {
       'rolePlays': [],
       'actors': [],
     }),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
   });
-  await ProgramService().init();
+  await PlanService().init();
 }
 
 Widget _harness(Widget widget) => MaterialApp(

@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:ringdrill/data/program_repository.dart';
+import 'package:ringdrill/data/plan_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/widgets/collapse_chevron.dart';
@@ -24,9 +24,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// the source location the position follows).
 ///
 /// RolePlay.background/behavior/propsMd are excluded from JSON (like
-/// Station's *Md fields) — persisting them for `ProgramService.init()` to
-/// pick up needs `ProgramRepository.saveRolePlay`'s sidecar-key path.
-const _programUuid = 'prog-role-viewer';
+/// Station's *Md fields) — persisting them for `PlanService.init()` to
+/// pick up needs `PlanRepository.saveRolePlay`'s sidecar-key path.
+const _planUuid = 'prog-role-viewer';
 const _exerciseUuid = 'ex-role-viewer';
 const _roleUuid = 'role-viewer';
 const _actorUuid = 'actor-viewer';
@@ -43,18 +43,18 @@ const _hilde = Person(
   name: 'Hilde',
   age: 34,
   gender: 'woman',
-  signalement: 'Gul regnjakke, hjemme',
+  description: 'Gul regnjakke, hjemme',
   locSlug: 'home',
   notes: 'Skadd venstre ankel, kan ikke gå selv.',
 );
 
-Program _shell() {
+Plan _shell() {
   final now = DateTime.utc(2026, 1, 1);
-  return Program(
-    uuid: _programUuid,
-    name: 'Test Program',
+  return Plan(
+    uuid: _planUuid,
+    name: 'Test Plan',
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -90,7 +90,7 @@ Exercise _exercise() => Exercise(
   endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
 );
 
-/// Age/signalement are left null (inherited from `_hilde`); gender is set
+/// Age/description are left null (inherited from `_hilde`); gender is set
 /// to 'man' (overrides `_hilde`'s 'woman' — ADR-0047's effective-identity
 /// rule: the roleplay's own non-empty value wins).
 RolePlay _rolePlay() => const RolePlay(
@@ -116,16 +116,16 @@ RolePlay _rolePlay() => const RolePlay(
 Future<void> _seedAndInit() async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
-  final repo = ProgramRepository(prefs);
-  await repo.saveProgramShell(_shell());
-  await repo.setActiveProgramUuid(_programUuid);
+  final repo = PlanRepository(prefs);
+  await repo.savePlanShell(_shell());
+  await repo.setActivePlanUuid(_planUuid);
   await repo.saveExercise(_exercise());
-  // Actor storage is a separate sidecar keyspace (`pa:<program>:<actor>`) —
-  // Program.actors on the shell alone is not what ProgramService.getActor
+  // Actor storage is a separate sidecar keyspace (`pa:<plan>:<actor>`) —
+  // Plan.actors on the shell alone is not what PlanService.getActor
   // reads.
   await repo.saveActor(const Actor(uuid: _actorUuid, realName: 'Nina Actor'));
   await repo.saveRolePlay(_rolePlay());
-  await ProgramService().init();
+  await PlanService().init();
 }
 
 Widget _buildScreen() {
@@ -142,7 +142,7 @@ void main() {
   });
 
   testWidgets(
-    'effective identity shows the person\'s inherited age/signalement and '
+    'effective identity shows the person\'s inherited age/description and '
     'the roleplay\'s overridden gender',
     (tester) async {
       await tester.pumpWidget(_buildScreen());
@@ -155,7 +155,7 @@ void main() {
       // Gender: the roleplay's own 'male' wins over the person's 'female'.
       expect(find.textContaining('Man'), findsOneWidget);
       expect(find.textContaining('Woman'), findsNothing);
-      // Signalement: inherited from the person (roleplay.signalement null).
+      // Description: inherited from the person (roleplay.description null).
       expect(
         find.text('Gul regnjakke, hjemme', findRichText: true),
         findsOneWidget,
@@ -238,7 +238,7 @@ void main() {
   );
 
   testWidgets(
-    'collapsing the identity card hides gender, signalement, notes, location '
+    'collapsing the identity card hides gender, description, notes, location '
     'and the "Spilles av" footer, leaving just the name line with the '
     'marker first name in parentheses',
     (tester) async {
@@ -249,7 +249,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      // Gender, signalement, notes, the linked location and the cast footer
+      // Gender, description, notes, the linked location and the cast footer
       // all live in the body, which folds away — clipped to zero height, not
       // removed from the tree.
       expect(tester.getSize(identityBodyReveal()).height, 0);
@@ -327,7 +327,7 @@ void main() {
   // Regression: the viewer caches `_rolePlay` and must refresh when the SAME
   // roleplay is mutated elsewhere (roster re-cast, another master/detail
   // pane), not only on its own actions. It subscribes to
-  // ProgramService.events via SubscriptionBag; without that it would keep
+  // PlanService.events via SubscriptionBag; without that it would keep
   // showing the stale cast.
   testWidgets('the viewer refreshes when the roleplay is re-cast externally', (
     tester,
@@ -339,7 +339,7 @@ void main() {
     expect(find.text(l10n.castedByLine('Nina Actor')), findsOneWidget);
 
     // Cast a different actor through the service, as the roster would.
-    final service = ProgramService();
+    final service = PlanService();
     await service.saveActor(
       l10n,
       const Actor(uuid: 'actor-2', realName: 'Ola Actor'),

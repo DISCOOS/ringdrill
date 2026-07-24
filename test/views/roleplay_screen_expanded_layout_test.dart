@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:ringdrill/data/program_repository.dart';
+import 'package:ringdrill/data/plan_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/shell/wide_detail_map_split.dart';
@@ -29,7 +29,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // position card's bar (Fix 2 of the Spill card consistency prompt).
 // ---------------------------------------------------------------------------
 
-const _programUuid = 'prog-role-expanded-layout';
+const _planUuid = 'prog-role-expanded-layout';
 const _exerciseUuid = 'ex-role-expanded-layout';
 const _roleUuid = 'role-expanded-layout';
 
@@ -48,13 +48,13 @@ const _hilde = Person(
   locSlug: 'home',
 );
 
-Program _shell() {
+Plan _shell() {
   final now = DateTime.utc(2026, 1, 1);
-  return Program(
-    uuid: _programUuid,
-    name: 'Test Program',
+  return Plan(
+    uuid: _planUuid,
+    name: 'Test Plan',
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -105,12 +105,12 @@ RolePlay _rolePlay() => const RolePlay(
 Future<void> _seedAndInit() async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
-  final repo = ProgramRepository(prefs);
-  await repo.saveProgramShell(_shell());
-  await repo.setActiveProgramUuid(_programUuid);
+  final repo = PlanRepository(prefs);
+  await repo.savePlanShell(_shell());
+  await repo.setActivePlanUuid(_planUuid);
   await repo.saveExercise(_exercise());
   await repo.saveRolePlay(_rolePlay());
-  await ProgramService().init();
+  await PlanService().init();
 }
 
 Widget _harness(Widget widget) => MaterialApp(
@@ -149,9 +149,9 @@ Future<void> _pumpAtPaneWidth(WidgetTester tester, double paneWidth) async {
 }
 
 void main() {
-  // Runs first, with pristine ProgramService/SharedPreferences singletons:
+  // Runs first, with pristine PlanService/SharedPreferences singletons:
   // this full-screen medium test is sensitive to cross-test state left by
-  // the other tests in this file (map controllers, program state), which
+  // the other tests in this file (map controllers, plan state), which
   // otherwise make its bounded pumps miss the freshly-built selector.
   testWidgets(
     'a roleplay with no central position still shows the Map segment, with '
@@ -165,7 +165,7 @@ void main() {
       await _seedAndInit();
       const orphanUuid = 'role-no-position';
       final prefs = await SharedPreferences.getInstance();
-      await ProgramRepository(prefs).saveRolePlay(
+      await PlanRepository(prefs).saveRolePlay(
         const RolePlay(
           uuid: orphanUuid,
           index: 0,

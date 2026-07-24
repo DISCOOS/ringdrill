@@ -4,7 +4,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/app_user_role.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/widgets/rollup.dart';
 
@@ -34,10 +34,10 @@ class RolePlayDescriptionRollup extends StatelessWidget {
   /// when there is no active plan (defense-in-depth; this screen only
   /// ever renders inside one).
   Map<String, String> _overridesFor() {
-    final program = ProgramService().activeProgram;
-    if (program == null) return const {};
+    final plan = PlanService().activePlan;
+    if (plan == null) return const {};
     return effectivePlanVariables(
-      program,
+      plan,
       exercise: exercise,
       station: station,
     );
@@ -51,7 +51,7 @@ class RolePlayDescriptionRollup extends StatelessWidget {
       sections: [
         RollupSection(
           id: 'description',
-          text: rolePlay.signalement,
+          text: rolePlay.description,
           overrides: overrides,
         ),
         RollupSection(

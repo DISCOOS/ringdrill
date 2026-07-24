@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/role_play.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 
@@ -20,11 +20,11 @@ void main() {
 
   setUp(() async {
     await initActivePlan('Roleplay resolution plan');
-    await ProgramService().saveExercise(
+    await PlanService().saveExercise(
       l10n,
       makeExercise(uuid: 'ex-1', name: 'Ex'),
     );
-    await ProgramService().saveRolePlay(
+    await PlanService().saveRolePlay(
       l10n,
       const RolePlay(
         uuid: 'role-1',
@@ -35,12 +35,12 @@ void main() {
         // Crosses roleplay + exercise scope in one field: the tile wraps both
         // (RoleplayScope + StationScope.forStation, which also provides the
         // ExerciseScope), so both must resolve together.
-        signalement: 'Heter {{roleplay.name}} i {{exercise.name}}',
+        description: 'Heter {{roleplay.name}} i {{exercise.name}}',
       ),
     );
   });
 
-  tearDown(() => ProgramService().clearAllForTest());
+  tearDown(() => PlanService().clearAllForTest());
 
   testWidgets('an expanded role tile resolves {{roleplay.*}} and '
       '{{exercise.*}} together', (tester) async {

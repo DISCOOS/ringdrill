@@ -104,7 +104,7 @@ void main() {
 
   testWidgets(
     'a token-aware field resolves at the roleplay\'s station scope: station '
-    'override shadows exercise override shadows program default',
+    'override shadows exercise override shadows plan default',
     (tester) async {
       final station = Station(
         index: 0,
@@ -158,7 +158,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byType(TextField));
       // Narrowed to each station namespace explicitly (DESIGN-009 follow-up
-      // 4b added a dozen program/exercise plan-field entries ahead of these
+      // 4b added a dozen plan/exercise plan-field entries ahead of these
       // in the unfiltered "/" list, pushing them out of the picker's fixed
       // viewport in this 800x600 test surface).
       await tester.enterText(find.byType(TextField), 'x {{station.loc.');
@@ -249,7 +249,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(captured.value, isNull);
       expect(
-        find.text(l.programSaveBlockedUndeclaredVariable(l.roleBehavior)),
+        find.text(l.planSaveBlockedUndeclaredVariable(l.roleBehavior)),
         findsOneWidget,
       );
 
@@ -268,7 +268,7 @@ void main() {
   );
 
   testWidgets(
-    'save round-trips a name edit, signalement, a markdown field and props',
+    'save round-trips a name edit, description, a markdown field and props',
     (tester) async {
       final captured = _Captured();
       // The person's name matches the roleplay's, so every facet starts
@@ -287,7 +287,7 @@ void main() {
         captured,
       );
 
-      // Navn and Signalement live inside the identity card's "Tilpass"
+      // Navn and Description live inside the identity card's "Tilpass"
       // override panel (DESIGN-009 prompt 4i), only mounted while expanded.
       await tester.tap(find.byKey(const Key('identity-disclosure')));
       await tester.pumpAndSettle();
@@ -297,7 +297,7 @@ void main() {
         'Renamed',
       );
       await tester.enterText(
-        find.byKey(const Key('signalement-field')),
+        find.byKey(const Key('description-field')),
         '180 cm, mørkt hår',
       );
 
@@ -325,7 +325,7 @@ void main() {
       final saved = captured.value?.rolePlay;
       expect(saved, isNotNull);
       expect(saved!.name, 'Renamed');
-      expect(saved.signalement, '180 cm, mørkt hår');
+      expect(saved.description, '180 cm, mørkt hår');
       expect(saved.behavior, 'Spiller forvirret');
       expect(saved.propsMd, 'Rullestol');
       expect(saved.stationIndex, 0);

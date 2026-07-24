@@ -15,7 +15,7 @@ void main() {
       exerciseUuid: 'ex-1',
       name: 'Anna Hansen',
       age: 67,
-      signalement: 'Blå jakke, rød lue',
+      description: 'Blå jakke, rød lue',
       background: 'Erfaren turgåer',
       behavior: 'Forvirret, underavkjølt',
       stationIndex: 2,
@@ -28,7 +28,7 @@ void main() {
     expect(decoded.uuid, rp.uuid);
     expect(decoded.name, rp.name);
     expect(decoded.age, rp.age);
-    expect(decoded.signalement, rp.signalement);
+    expect(decoded.description, rp.description);
     expect(decoded.stationIndex, rp.stationIndex);
     expect(decoded.actorUuid, rp.actorUuid);
     expect(decoded.behavior, isNull); // behavior is not in JSON

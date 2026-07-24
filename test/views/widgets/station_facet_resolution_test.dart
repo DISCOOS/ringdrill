@@ -4,7 +4,7 @@ import 'package:ringdrill/l10n/app_localizations_en.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
@@ -42,7 +42,7 @@ Person _person() => const Person(
   name: 'Anne Glemsk',
   age: 39,
   gender: 'female',
-  signalement: '160 cm, grått hår, blå anorakk',
+  description: '160 cm, grått hår, blå anorakk',
   locSlug: _locationSlug,
 );
 
@@ -68,11 +68,11 @@ Exercise _exercise(Station station) => Exercise(
   schedule: const [],
 );
 
-Program _program(Exercise exercise) => Program(
+Plan _plan(Exercise exercise) => Plan(
   uuid: 'pgm-1',
-  name: 'Test Program',
-  description: 'A test program',
-  metadata: ProgramMetadata(
+  name: 'Test Plan',
+  description: 'A test plan',
+  metadata: PlanMetadata(
     created: DateTime(2026),
     updated: DateTime(2026),
     version: '1.0',
@@ -89,10 +89,10 @@ Future<void> _expectAllResolve(List<String> tokenNames) async {
   final situationMd = tokenNames.map(_wrap).join('\n');
   final station = _station(situationMd: situationMd);
   final exercise = _exercise(station);
-  final program = _program(exercise);
+  final plan = _plan(exercise);
 
   final rendered = await BriefRenderer().render(
-    program: program,
+    plan: plan,
     exercise: exercise,
     audience: BriefAudience.participant,
     l10n: _l10n,

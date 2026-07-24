@@ -7,7 +7,7 @@ import 'package:ringdrill/l10n/app_localizations_nb.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
@@ -21,13 +21,13 @@ import 'package:ringdrill/services/brief/template_registry.dart';
 final _start = SimpleTimeOfDay(hour: 8, minute: 30);
 final _end = SimpleTimeOfDay(hour: 10, minute: 30);
 
-Program _emptyProgram() {
+Plan _emptyPlan() {
   final now = DateTime(2026);
-  return Program(
+  return Plan(
     uuid: 'prog-1',
-    name: 'Test Program',
+    name: 'Test Plan',
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -95,7 +95,7 @@ const _rolePlay = RolePlay(
   exerciseUuid: 'ex-3',
   name: 'Anne Glemsk',
   age: 39,
-  signalement: '160 cm, grått hår, blå anorakk',
+  description: '160 cm, grått hår, blå anorakk',
   behavior:
       'Du spiller en dement dame i god fysisk form. Noen karakteristiske trekk:\n'
       '- Du svarer på navnet ditt, men er forvirret om hvor du er.\n'
@@ -111,7 +111,7 @@ const _actor = Actor(
   phone: '99887766',
 );
 
-Program _designProgram() => _emptyProgram().copyWith(
+Plan _designPlan() => _emptyPlan().copyWith(
   exercises: [_designExercise()],
   rolePlays: [_rolePlay],
   actors: [_actor],
@@ -150,9 +150,9 @@ void main() {
 
   group('BriefRenderer — director audience', () {
     test('renders DESIGN-004 station section for director audience', () async {
-      final program = _designProgram();
+      final plan = _designPlan();
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.director,
         l10n: _l10n,
       );
@@ -221,9 +221,9 @@ void main() {
 
   group('BriefRenderer — participant audience', () {
     test('drops actor PII and director notes', () async {
-      final program = _designProgram();
+      final plan = _designPlan();
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -244,9 +244,9 @@ void main() {
 
   group('BriefRenderer — instructor audience', () {
     test('shows director notes but not actor PII', () async {
-      final program = _designProgram();
+      final plan = _designPlan();
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.instructor,
         l10n: _l10n,
       );
@@ -284,9 +284,9 @@ void main() {
         ],
         schedule: const [],
       );
-      final program = _emptyProgram().copyWith(exercises: [exercise]);
+      final plan = _emptyPlan().copyWith(exercises: [exercise]);
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -296,21 +296,21 @@ void main() {
     });
 
     test(
-      '{{program.name}} and {{program.description}} resolve inside program-scope '
+      '{{plan.name}} and {{plan.description}} resolve inside plan-scope '
       'markdown fields (briefIntroMd, commsMd, beforeRoundMd)',
       () async {
         final exercise = _designExercise();
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           name: 'Vinterøvelse Nordland',
           description: 'Samvirkeøvelse',
           exercises: [exercise],
-          briefIntroMd: 'Velkommen til {{program.name}}.',
-          commsMd: '{{program.description}} — se innledningen.',
-          beforeRoundMd: 'Plan: {{program.name}}.',
+          briefIntroMd: 'Velkommen til {{plan.name}}.',
+          commsMd: '{{plan.description}} — se innledningen.',
+          beforeRoundMd: 'Plan: {{plan.name}}.',
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
@@ -318,8 +318,8 @@ void main() {
         expect(result, contains('Velkommen til Vinterøvelse Nordland.'));
         expect(result, contains('Samvirkeøvelse — se innledningen.'));
         expect(result, contains('Plan: Vinterøvelse Nordland.'));
-        expect(result, isNot(contains('{{program.name}}')));
-        expect(result, isNot(contains('{{program.description}}')));
+        expect(result, isNot(contains('{{plan.name}}')));
+        expect(result, isNot(contains('{{plan.description}}')));
       },
     );
 
@@ -342,10 +342,10 @@ void main() {
               'Øvelse {{exercise.name}} har {{exercise.numberOfTeams}} lag '
               'og går {{exercise.numberOfRounds}} runder, {{exercise.timeLabel}}.',
         );
-        final program = _emptyProgram().copyWith(exercises: [exercise]);
+        final plan = _emptyPlan().copyWith(exercises: [exercise]);
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
@@ -360,7 +360,7 @@ void main() {
       },
     );
 
-    test('station-scope cross-references resolve station, exercise AND program data '
+    test('station-scope cross-references resolve station, exercise AND plan data '
         '(cascade)', () async {
       final exercise = Exercise(
         uuid: 'ex-1',
@@ -379,19 +379,19 @@ void main() {
             variantSuffix: 'Vinter',
             description: 'Skogsholt ved myra',
             situationMd:
-                '{{program.name}} / {{exercise.name}} — post {{station.stationCode}} '
+                '{{plan.name}} / {{exercise.name}} — post {{station.stationCode}} '
                 '({{station.variantSuffix}}): {{station.description}}.',
           ),
         ],
         schedule: const [],
       );
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         name: 'Vinterøvelse',
         exercises: [exercise],
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -404,12 +404,12 @@ void main() {
       );
       expect(result, isNot(contains('{{station.')));
       expect(result, isNot(contains('{{exercise.')));
-      expect(result, isNot(contains('{{program.')));
+      expect(result, isNot(contains('{{plan.')));
     });
 
     test(
       'roleplay-scope cross-references resolve roleplay, station, exercise AND '
-      'program data (cascade)',
+      'plan data (cascade)',
       () async {
         const rolePosition = LatLng(59.1, 10.5);
         final expectedUtm = BriefRenderer.formatUtm(rolePosition);
@@ -437,13 +437,13 @@ void main() {
           stations: const [Station(index: 0, name: 'Post')],
           schedule: const [],
         );
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           exercises: [exercise],
           rolePlays: [rolePlay],
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.director,
           l10n: _l10n,
         );
@@ -481,9 +481,9 @@ void main() {
         ],
         schedule: const [],
       );
-      final program = _emptyProgram().copyWith(exercises: [exercise]);
+      final plan = _emptyPlan().copyWith(exercises: [exercise]);
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -496,7 +496,7 @@ void main() {
   });
 
   group('BriefRenderer — description lead (DESIGN-009)', () {
-    Program programWithDescription(String? description, {LatLng? position}) {
+    Plan planWithDescription(String? description, {LatLng? position}) {
       final exercise = Exercise(
         uuid: 'ex-1',
         name: 'Test',
@@ -517,14 +517,14 @@ void main() {
         ],
         schedule: const [],
       );
-      return _emptyProgram().copyWith(exercises: [exercise]);
+      return _emptyPlan().copyWith(exercises: [exercise]);
     }
 
     test(
       'renders as an unheaded lead paragraph before the plassering line (nb)',
       () async {
         final result = await BriefRenderer().render(
-          program: programWithDescription('Åpent jorde ved elva.'),
+          plan: planWithDescription('Åpent jorde ved elva.'),
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
@@ -544,7 +544,7 @@ void main() {
       'renders as an unheaded lead paragraph before the location line (en)',
       () async {
         final result = await BriefRenderer().render(
-          program: programWithDescription('Open field by the river.'),
+          plan: planWithDescription('Open field by the river.'),
           audience: BriefAudience.participant,
           l10n: _l10nEn,
         );
@@ -562,7 +562,7 @@ void main() {
       const position = LatLng(58.99, 10.43);
       final expectedUtm = BriefRenderer.formatUtm(position);
       final result = await BriefRenderer().render(
-        program: programWithDescription(
+        plan: planWithDescription(
           'IPP er ved {{station.position}}.',
           position: position,
         ),
@@ -576,7 +576,7 @@ void main() {
     test('an absent description renders no lead paragraph or stray blank '
         'line', () async {
       final result = await BriefRenderer().render(
-        program: programWithDescription(null),
+        plan: planWithDescription(null),
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -597,7 +597,7 @@ void main() {
 
     test('an empty-string description renders no lead paragraph', () async {
       final result = await BriefRenderer().render(
-        program: programWithDescription(''),
+        plan: planWithDescription(''),
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -606,9 +606,9 @@ void main() {
   });
 
   group('BriefRenderer — comms fallback', () {
-    test('exercise.commsMd overrides program.commsMd in station Samband', () async {
+    test('exercise.commsMd overrides plan.commsMd in station Samband', () async {
       // Use distinct tokens so we can check the station section independently
-      // of the program-level "Talegrupper" section (which always shows program.commsMd).
+      // of the plan-level "Talegrupper" section (which always shows plan.commsMd).
       final exerciseWithComms = Exercise(
         uuid: 'ex-1',
         name: 'Test',
@@ -623,13 +623,13 @@ void main() {
         schedule: const [],
         commsMd: 'EXERCISE_COMMS_TOKEN',
       );
-      final programWithComms = _emptyProgram().copyWith(
+      final planWithComms = _emptyPlan().copyWith(
         exercises: [exerciseWithComms],
         commsMd: 'PROGRAM_COMMS_TOKEN',
       );
 
       final result = await renderer.render(
-        program: programWithComms,
+        plan: planWithComms,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -637,10 +637,10 @@ void main() {
       // Exercise token must appear (in station Samband)
       expect(result, contains('EXERCISE_COMMS_TOKEN'));
 
-      // The station Samband section shows the exercise comms, not the program comms.
-      // program.commsMd does appear in the top-level "Talegrupper" section — that is
+      // The station Samband section shows the exercise comms, not the plan comms.
+      // plan.commsMd does appear in the top-level "Talegrupper" section — that is
       // correct behaviour. We verify that directly below the station "#### Samband"
-      // heading the exercise comms token appears, not the program comms token.
+      // heading the exercise comms token appears, not the plan comms token.
       final stationSambandIndex = result.indexOf(
         '#### Samband\nEXERCISE_COMMS_TOKEN',
       );
@@ -651,7 +651,7 @@ void main() {
       );
     });
 
-    test('falls back to program.commsMd when exercise has none', () async {
+    test('falls back to plan.commsMd when exercise has none', () async {
       final exerciseNoComms = Exercise(
         uuid: 'ex-1',
         name: 'Test',
@@ -665,13 +665,13 @@ void main() {
         stations: const [Station(index: 0, name: 'Post')],
         schedule: const [],
       );
-      final programWithComms = _emptyProgram().copyWith(
+      final planWithComms = _emptyPlan().copyWith(
         exercises: [exerciseNoComms],
         commsMd: 'PROG COMMS',
       );
 
       final result = await renderer.render(
-        program: programWithComms,
+        plan: planWithComms,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -699,21 +699,21 @@ void main() {
         templateId: null,
       );
 
-      final programA = _emptyProgram().copyWith(
+      final planA = _emptyPlan().copyWith(
         exercises: [exerciseWithTemplate],
       );
-      final programB = _emptyProgram().copyWith(
+      final planB = _emptyPlan().copyWith(
         exercises: [exerciseNoTemplate],
       );
 
       final resultA = await renderer.render(
-        program: programA,
+        plan: planA,
         exercise: exerciseWithTemplate,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
       final resultB = await renderer.render(
-        program: programB,
+        plan: planB,
         exercise: exerciseNoTemplate,
         audience: BriefAudience.participant,
         l10n: _l10n,
@@ -729,9 +729,9 @@ void main() {
 
   group('BriefRenderer — wideTocSidebar flag', () {
     test('in-doc TOC present when wideTocSidebar is false (default)', () async {
-      final program = _designProgram();
+      final plan = _designPlan();
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
         wideTocSidebar: false,
@@ -741,9 +741,9 @@ void main() {
     });
 
     test('in-doc TOC absent when wideTocSidebar is true', () async {
-      final program = _designProgram();
+      final plan = _designPlan();
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
         wideTocSidebar: true,
@@ -755,35 +755,35 @@ void main() {
   });
 
   group('BriefRenderer — single-exercise mode', () {
-    // Program with all three program-level intro fields populated so the
+    // Plan with all three plan-level intro fields populated so the
     // assertions below distinguish "hidden by isSingleExercise" from "hidden
     // because the field was null".
-    Program programWithIntro() => _designProgram().copyWith(
+    Plan planWithIntro() => _designPlan().copyWith(
       briefIntroMd: 'INTRO_BODY',
       commsMd: 'PROGRAM_COMMS_TOKEN',
     );
 
     test(
-      'program intro (H1, description, TOC, briefIntroMd, commsMd, divider) is omitted',
+      'plan intro (H1, description, TOC, briefIntroMd, commsMd, divider) is omitted',
       () async {
-        final program = programWithIntro();
-        final exercise = program.exercises.first;
+        final plan = planWithIntro();
+        final exercise = plan.exercises.first;
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           exercise: exercise,
           audience: BriefAudience.participant,
           l10n: _l10n,
           wideTocSidebar: false,
         );
 
-        // The program-level H1 (`# {{program.name}}`) is dropped. We assert
+        // The plan-level H1 (`# {{plan.name}}`) is dropped. We assert
         // against the leading `# ` form so we do not accidentally match `## `
-        // headings that share the program name in a sub-section.
+        // headings that share the plan name in a sub-section.
         expect(
           result,
-          isNot(contains('# ${program.name}\n')),
-          reason: 'Program H1 should be hidden in single-exercise mode',
+          isNot(contains('# ${plan.name}\n')),
+          reason: 'Plan H1 should be hidden in single-exercise mode',
         );
         expect(
           result,
@@ -799,7 +799,7 @@ void main() {
           result,
           isNot(contains('## Talegrupper')),
           reason:
-              'Program-level Talegrupper should be hidden in single-exercise '
+              'Plan-level Talegrupper should be hidden in single-exercise '
               'mode (exercise-level Samband still renders inside the exercise)',
         );
 
@@ -813,17 +813,17 @@ void main() {
       },
     );
 
-    test('program intro IS present when no exercise is passed', () async {
-      final program = programWithIntro();
+    test('plan intro IS present when no exercise is passed', () async {
+      final plan = planWithIntro();
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
         wideTocSidebar: false,
       );
 
-      expect(result, contains('# ${program.name}'));
+      expect(result, contains('# ${plan.name}'));
       expect(result, contains('## Innholdsfortegnelse'));
       expect(result, contains('## Generelt om spill og øvingsledelse'));
       expect(result, contains('## Talegrupper'));
@@ -961,12 +961,12 @@ void main() {
     );
 
     test('dotted format produces "1.1" and "1.2" headings', () async {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [twoStationExercise()],
         stationNumberFormat: StationNumberFormat.dotted,
       );
       final result = await BriefRenderer().render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -977,12 +977,12 @@ void main() {
     });
 
     test('dotted format TOC links use dotted labels', () async {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [twoStationExercise()],
         stationNumberFormat: StationNumberFormat.dotted,
       );
       final result = await BriefRenderer().render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -991,12 +991,12 @@ void main() {
     });
 
     test('alpha format produces "1a" and "1b" headings', () async {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [twoStationExercise()],
         stationNumberFormat: StationNumberFormat.alpha,
       );
       final result = await BriefRenderer().render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -1007,12 +1007,12 @@ void main() {
     });
 
     test('alpha format TOC links use alpha labels', () async {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [twoStationExercise()],
         stationNumberFormat: StationNumberFormat.alpha,
       );
       final result = await BriefRenderer().render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -1023,12 +1023,12 @@ void main() {
     test(
       'dotted anchor is derived from stationCode (dot dropped by slug)',
       () async {
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           exercises: [twoStationExercise()],
           stationNumberFormat: StationNumberFormat.dotted,
         );
         final result = await BriefRenderer().render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
           wideTocSidebar: false,
@@ -1048,7 +1048,7 @@ void main() {
 
       await expectLater(
         renderer.render(
-          program: _emptyProgram(),
+          plan: _emptyPlan(),
           audience: BriefAudience.participant,
           l10n: _l10n,
         ),
@@ -1074,7 +1074,7 @@ void main() {
 
       await expectLater(
         renderer.render(
-          program: _emptyProgram(),
+          plan: _emptyPlan(),
           audience: BriefAudience.participant,
           l10n: _l10nEn,
         ),
@@ -1091,9 +1091,9 @@ void main() {
 
   group('BriefRenderer — locale-aware template selection', () {
     test('en locale renders English chrome, no Norwegian headings', () async {
-      final program = _designProgram();
+      final plan = _designPlan();
       final result = await BriefRenderer().render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.director,
         l10n: _l10nEn,
       );
@@ -1113,7 +1113,7 @@ void main() {
 
     test('nb locale still renders Norwegian chrome', () async {
       final result = await BriefRenderer().render(
-        program: _designProgram(),
+        plan: _designPlan(),
         audience: BriefAudience.participant,
         l10n: _l10n,
       );

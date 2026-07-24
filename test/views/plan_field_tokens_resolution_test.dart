@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations_en.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
@@ -12,11 +12,11 @@ import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 
 /// DESIGN-009 follow-ups 4b and 4c's "the picker never offers an
 /// unresolvable token" invariant, enforced mechanically: every
-/// [PlanFieldTokens.program]/[PlanFieldTokens.exercise]/
+/// [PlanFieldTokens.plan]/[PlanFieldTokens.exercise]/
 /// [PlanFieldTokens.station]/[PlanFieldTokens.roleplay] entry is inserted as
 /// a raw `{{<name>}}` into a markdown field and rendered through the real
 /// [BriefRenderer]. A future rename that drops a facet from
-/// `_programRefContext`/`_exerciseRefContext`/`stationRefContext`/
+/// `_planRefContext`/`_exerciseRefContext`/`stationRefContext`/
 /// `roleplayRefContext` fails here instead of only surfacing as a silently
 /// empty mustache miss in a shipped brief.
 
@@ -26,15 +26,15 @@ final _l10n = AppLocalizationsEn();
 /// the full rendered brief regardless of surrounding template chrome.
 String _wrap(String name) => '>>>$name>>>{{$name}}<<<$name<<<';
 
-Program _program({
+Plan _plan({
   required String briefIntroMd,
   required Exercise exercise,
   List<RolePlay> rolePlays = const [],
-}) => Program(
+}) => Plan(
   uuid: 'pgm-1',
-  name: 'Test Program',
-  description: 'A test program',
-  metadata: ProgramMetadata(
+  name: 'Test Plan',
+  description: 'A test plan',
+  metadata: PlanMetadata(
     created: DateTime(2026),
     updated: DateTime(2026),
     version: '1.0',
@@ -76,7 +76,7 @@ RolePlay _rolePlay({String? behavior}) => RolePlay(
   exerciseUuid: 'ex-1',
   name: 'Test Role',
   age: 30,
-  signalement: 'Test signalement',
+  description: 'Test description',
   stationIndex: 0,
   position: const LatLng(58.99, 10.43),
   behavior: behavior,
@@ -110,17 +110,17 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
-    'every PlanFieldTokens.program(l) entry resolves via BriefRenderer',
+    'every PlanFieldTokens.plan(l) entry resolves via BriefRenderer',
     () async {
-      final tokens = PlanFieldTokens.program(_l10n);
+      final tokens = PlanFieldTokens.plan(_l10n);
       final briefIntroMd = tokens.map((t) => _wrap(t.name)).join('\n');
-      final program = _program(
+      final plan = _plan(
         briefIntroMd: briefIntroMd,
         exercise: _exercise(),
       );
 
       final rendered = await BriefRenderer().render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -135,10 +135,10 @@ void main() {
       final tokens = PlanFieldTokens.exercise(_l10n);
       final methodMd = tokens.map((t) => _wrap(t.name)).join('\n');
       final exercise = _exercise(methodMd: methodMd);
-      final program = _program(briefIntroMd: '', exercise: exercise);
+      final plan = _plan(briefIntroMd: '', exercise: exercise);
 
       final rendered = await BriefRenderer().render(
-        program: program,
+        plan: plan,
         exercise: exercise,
         audience: BriefAudience.participant,
         l10n: _l10n,
@@ -155,10 +155,10 @@ void main() {
       final situationMd = tokens.map((t) => _wrap(t.name)).join('\n');
       final station = _station(situationMd: situationMd);
       final exercise = _exercise(stations: [station]);
-      final program = _program(briefIntroMd: '', exercise: exercise);
+      final plan = _plan(briefIntroMd: '', exercise: exercise);
 
       final rendered = await BriefRenderer().render(
-        program: program,
+        plan: plan,
         exercise: exercise,
         audience: BriefAudience.participant,
         l10n: _l10n,
@@ -176,14 +176,14 @@ void main() {
       final station = _station();
       final exercise = _exercise(stations: [station]);
       final rolePlay = _rolePlay(behavior: behavior);
-      final program = _program(
+      final plan = _plan(
         briefIntroMd: '',
         exercise: exercise,
         rolePlays: [rolePlay],
       );
 
       final rendered = await BriefRenderer().render(
-        program: program,
+        plan: plan,
         exercise: exercise,
         audience: BriefAudience.participant,
         l10n: _l10n,

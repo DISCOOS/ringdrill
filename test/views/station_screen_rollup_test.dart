@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:ringdrill/data/program_repository.dart';
+import 'package:ringdrill/data/plan_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/station_screen.dart';
@@ -21,20 +21,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// in-view toggle.
 ///
 /// Station.*Md fields are excluded from JSON (ADR-0022) — persisting them
-/// so `ProgramService.init()` picks them up (like the real app) needs
-/// `ProgramRepository.saveExercise`'s sidecar-key path, not a bare
+/// so `PlanService.init()` picks them up (like the real app) needs
+/// `PlanRepository.saveExercise`'s sidecar-key path, not a bare
 /// SharedPreferences JSON blob (mirrors
-/// test/data/program_repository_brief_fields_test.dart's own setup).
-const _programUuid = 'prog-post-rollup';
+/// test/data/plan_repository_brief_fields_test.dart's own setup).
+const _planUuid = 'prog-post-rollup';
 const _exerciseUuid = 'ex-post-rollup';
 
-Program _shell() {
+Plan _shell() {
   final now = DateTime.utc(2026, 1, 1);
-  return Program(
-    uuid: _programUuid,
-    name: 'Test Program',
+  return Plan(
+    uuid: _planUuid,
+    name: 'Test Plan',
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -82,11 +82,11 @@ Exercise _exercise() => Exercise(
 Future<void> _seedAndInit({String? role}) async {
   SharedPreferences.setMockInitialValues({AppConfig.keyAppUserRole: ?role});
   final prefs = await SharedPreferences.getInstance();
-  final repo = ProgramRepository(prefs);
-  await repo.saveProgramShell(_shell());
-  await repo.setActiveProgramUuid(_programUuid);
+  final repo = PlanRepository(prefs);
+  await repo.savePlanShell(_shell());
+  await repo.setActivePlanUuid(_planUuid);
   await repo.saveExercise(_exercise());
-  await ProgramService().init();
+  await PlanService().init();
 }
 
 Widget _buildScreen() {

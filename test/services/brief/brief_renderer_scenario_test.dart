@@ -4,7 +4,7 @@ import 'package:ringdrill/l10n/app_localizations_nb.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
@@ -26,13 +26,13 @@ const _lkp = Location(
 );
 const _noPositionLoc = Location(slug: 'ko', place: 'Rådhuset');
 
-Program _emptyProgram() {
+Plan _emptyPlan() {
   final now = DateTime(2026);
-  return Program(
+  return Plan(
     uuid: 'prog-scenario',
-    name: 'Scenario Program',
+    name: 'Scenario Plan',
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -80,12 +80,12 @@ void main() {
             'Navn: {{station.loc.lkp.label}}\n'
             'Standard: {{station.loc.lkp}}',
       );
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [_exerciseWith(station: station)],
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -109,12 +109,12 @@ void main() {
         situationMd:
             'UTM:[{{station.loc.ko.position}}] Standard:[{{station.loc.ko}}]',
       );
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [_exerciseWith(station: station)],
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -124,13 +124,13 @@ void main() {
   });
 
   group('BriefRenderer — station persons', () {
-    test('.name/.age/.gender/.signalement resolve from the Person', () async {
+    test('.name/.age/.gender/.description resolve from the Person', () async {
       const anne = Person(
         slug: 'anne',
         name: 'Anne Glemsk',
         age: 74,
         gender: 'kvinne',
-        signalement: 'Blå jakke',
+        description: 'Blå jakke',
       );
       final station = Station(
         index: 0,
@@ -140,15 +140,15 @@ void main() {
             'Navn: {{station.person.anne.name}}\n'
             'Alder: {{station.person.anne.age}}\n'
             'Kjønn: {{station.person.anne.gender}}\n'
-            'Signalement: {{station.person.anne.signalement}}\n'
+            'Description: {{station.person.anne.description}}\n'
             'Standard: {{station.person.anne}}',
       );
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [_exerciseWith(station: station)],
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -156,7 +156,7 @@ void main() {
       expect(result, contains('Navn: Anne Glemsk'));
       expect(result, contains('Alder: 74'));
       expect(result, contains('Kjønn: kvinne'));
-      expect(result, contains('Signalement: Blå jakke'));
+      expect(result, contains('Description: Blå jakke'));
       expect(result, contains('Standard: Anne Glemsk'));
     });
 
@@ -171,12 +171,12 @@ void main() {
             'Hjemme: {{station.person.anne.loc}}\n'
             'HjemmeUTM: {{station.person.anne.loc.position}}',
       );
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [_exerciseWith(station: station)],
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -196,12 +196,12 @@ void main() {
         persons: const [anne],
         situationMd: 'Sted: {{station.person.anne.loc.place}}',
       );
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [_exerciseWith(station: station)],
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -228,7 +228,7 @@ void main() {
         persons: const [anne],
         situationMd: 'Navn: {{station.person.anne.name}}',
       );
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [
           _exerciseWith(station: station, rolePlays: [rolePlay]),
         ],
@@ -236,7 +236,7 @@ void main() {
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -254,12 +254,12 @@ void main() {
         persons: const [anne],
         situationMd: 'Navn: {{station.person.anne.name}}',
       );
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [_exerciseWith(station: station)],
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -290,7 +290,7 @@ void main() {
           persons: const [anne],
           situationMd: 'Kjønn: {{station.person.anne.gender}}',
         );
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           exercises: [
             _exerciseWith(station: station, rolePlays: [rolePlay]),
           ],
@@ -298,7 +298,7 @@ void main() {
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
@@ -321,7 +321,7 @@ void main() {
           behavior: 'Spiller {{station.person.anne.name}}',
         );
         final station = Station(index: 0, name: 'Post', persons: const [anne]);
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           exercises: [
             _exerciseWith(station: station, rolePlays: [rolePlay]),
           ],
@@ -329,7 +329,7 @@ void main() {
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
@@ -340,9 +340,9 @@ void main() {
   });
 
   group('BriefRenderer — scope and unknown references', () {
-    test('a program field does not resolve station.loc/person (no station in '
+    test('a plan field does not resolve station.loc/person (no station in '
         'scope)', () async {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [
           _exerciseWith(station: const Station(index: 0, name: 'Post')),
         ],
@@ -350,7 +350,7 @@ void main() {
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -364,7 +364,7 @@ void main() {
 
     test('an exercise field does not resolve station.loc/person (no station in '
         'scope)', () async {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [
           _exerciseWith(
             station: const Station(index: 0, name: 'Post'),
@@ -374,7 +374,7 @@ void main() {
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -392,12 +392,12 @@ void main() {
         name: 'Post',
         situationMd: 'Sted: {{station.loc.mangler}}',
       );
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [_exerciseWith(station: station)],
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -415,12 +415,12 @@ void main() {
         name: 'Post',
         situationMd: 'Person: {{station.person.mangler}}',
       );
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [_exerciseWith(station: station)],
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
@@ -440,19 +440,19 @@ void main() {
           index: 0,
           name: 'Post',
           persons: const [anne],
-          situationMd: 'Signalement:[{{station.person.anne.signalement}}]',
+          situationMd: 'Description:[{{station.person.anne.description}}]',
         );
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           exercises: [_exerciseWith(station: station)],
         );
 
         final result = await renderer.render(
-          program: program,
+          plan: plan,
           audience: BriefAudience.participant,
           l10n: _l10n,
         );
 
-        expect(result, contains('Signalement:[]'));
+        expect(result, contains('Description:[]'));
         expect(
           result,
           isNot(contains(_l10n.briefUnknownReference('station.person.anne'))),
@@ -470,12 +470,12 @@ void main() {
         position: const LatLng(58.99, 10.43),
         situationMd: 'IPP er ved {{station.position}}.',
       );
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [_exerciseWith(station: station)],
       );
 
       final result = await renderer.render(
-        program: program,
+        plan: plan,
         audience: BriefAudience.participant,
         l10n: _l10n,
       );

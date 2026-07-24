@@ -8,8 +8,8 @@ The authoritative names are **English** — used in code, tests and all document
 * **RolePlay** — the publishable *role* a marker enacts (behaviour, background, effective identity). Norwegian UI: "Rolle", and "Markør" for the marker as a whole. Never model it as `RolePlayer`.
 * **Actor** — the real person cast to play a `RolePlay` (`enacted by`). Carries PII, stored locally, stripped on publish (ADR-0018, ADR-0047). "Spilles av {actor}" / "played by {actor}" names the Actor, not the role. The Norwegian "Markør" spans the RolePlay+Actor concept in the UI; in code they are separate types.
 * **Location** — a station-owned scenario place (label, kind, coordinate, note). `station.loc.<slug>` (ADR-0047, DESIGN-009).
-* **Person** — a station-owned fictional scenario person (name, age, gender, signalement, notes, linked location). **No PII** — the real human is the `Actor`. `station.person.<slug>`.
-* **Program** (model type) = **"Plan"** in the UI (`PlanScope`, `PlanVariables`, …). Standardising the model on `Plan` is a separate future refactor; it does **not** change the `.drill` wire format — the archive root stays `program.json` (ADR-0007) and JSON keys are unaffected.
+* **Person** — a station-owned fictional scenario person (name, age, gender, description, notes, linked location). **No PII** — the real human is the `Actor`. `station.person.<slug>`.
+* **Plan** — the model type backing the "Plan" UI tab (`PlanScope`, `PlanVariables`, …). Named `Plan` throughout, matching the UI; it does **not** change the `.drill` wire format — the archive root stays `program.json` (ADR-0007) and JSON keys are unaffected.
 
 ## Roles / audience
 

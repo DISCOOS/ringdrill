@@ -11,7 +11,7 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 
 /// DESIGN-009 "Personer" section (follow-up 3b, card-per-item since prompt
-/// 4j): a card per station-owned [Person] (name + age/gender/signalement
+/// 4j): a card per station-owned [Person] (name + age/gender/description
 /// summary), matching the app's card-per-item list style — the same
 /// elevated `Card` (no border) `ExpandableTile` uses elsewhere in the app,
 /// with a leading avatar. Tap opens [PersonFormScreen] to edit;
@@ -62,7 +62,7 @@ class PersonsSection extends StatefulWidget {
   /// inline this session (ADR-0047, DESIGN-009 "Inline creation and
   /// write-back"): a location from the home picker's "Ny lokasjon" entry,
   /// or a sibling `station.loc.*`/`station.person.*`/`var.*` created from
-  /// the `name`/`signalement`/`notes` fields' own insertion menu. The
+  /// the `name`/`description`/`notes` fields' own insertion menu. The
   /// caller upserts the person and merges the additions into its own
   /// working state the same way it already does for
   /// `RolePlayFormResult.additions`.
@@ -92,7 +92,7 @@ class PersonsSection extends StatefulWidget {
   final ValueChanged<Person> onAddRolePlay;
 
   /// The cast [Actor] for an enacting [RolePlay], if any — the caller knows
-  /// the program's actors, which this presentation-only section does not.
+  /// the plan's actors, which this presentation-only section does not.
   /// Used so the "Spilles av …" line names the actor who plays the role,
   /// not the roleplay's own (person-mirroring) name.
   final Actor? Function(RolePlay rolePlay)? actorFor;
@@ -117,7 +117,7 @@ class _PersonsSectionState extends State<PersonsSection> {
     return widget.persons.where((p) {
       final name = p.name.isEmpty ? p.slug : p.name;
       return name.toLowerCase().contains(query) ||
-          (p.signalement ?? '').toLowerCase().contains(query);
+          (p.description ?? '').toLowerCase().contains(query);
     }).toList();
   }
 
@@ -235,7 +235,7 @@ class _SearchAddRow extends StatelessWidget {
 }
 
 /// One card-per-item row (DESIGN-009 prompt 4j, `post-editor-persons.html`):
-/// a leading avatar and the name/meta/signalement/marker summary — an
+/// a leading avatar and the name/meta/description/marker summary — an
 /// elevated `Card` (no border), matching the app's other card lists
 /// (`ExpandableTile`), not a hand-decorated bordered `Container`. Tap
 /// opens the person form; swipe deletes, guarded by [usagesFor] (ADR-0031
@@ -375,9 +375,9 @@ class _PersonCard extends StatelessWidget {
                             ),
                           ],
                         ),
-                        if ((person.signalement ?? '').isNotEmpty)
+                        if ((person.description ?? '').isNotEmpty)
                           Text(
-                            person.signalement!,
+                            person.description!,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,

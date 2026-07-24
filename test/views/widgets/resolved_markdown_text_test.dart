@@ -2,20 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/views/widgets/resolved_markdown_text.dart';
 
 /// The sanctioned way to display a raw plan-scope markdown field
-/// (`Program.briefIntroMd`/`commsMd`/`beforeRoundMd`) outside the full
+/// (`Plan.briefIntroMd`/`commsMd`/`beforeRoundMd`) outside the full
 /// brief — see the widget's doc comment and `AGENTS.md`'s Pitfalls entry.
 
-Program _program({List<DrillVariable> variables = const []}) {
+Plan _plan({List<DrillVariable> variables = const []}) {
   final now = DateTime.utc(2026, 1, 1);
-  return Program(
+  return Plan(
     uuid: 'pgm-1',
     name: 'Vinterøvelse Nordland',
     description: 'Samvirkeøvelse',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.1'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.1'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -40,7 +40,7 @@ void main() {
     await _pump(
       tester,
       ResolvedMarkdownText(
-        program: _program(
+        plan: _plan(
           variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
         ),
         content: 'Samband på kanal {{var.frekvens}}.',
@@ -50,14 +50,14 @@ void main() {
     expect(find.text('Samband på kanal Kanal 6.'), findsOneWidget);
   });
 
-  testWidgets('resolves {{program.name}} and {{program.description}}', (
+  testWidgets('resolves {{plan.name}} and {{plan.description}}', (
     tester,
   ) async {
     await _pump(
       tester,
       ResolvedMarkdownText(
-        program: _program(),
-        content: '{{program.name}} — {{program.description}}',
+        plan: _plan(),
+        content: '{{plan.name}} — {{plan.description}}',
       ),
     );
 
@@ -72,7 +72,7 @@ void main() {
   ) async {
     await _pump(
       tester,
-      ResolvedMarkdownText(program: _program(), content: 'Kanal {{var.mangler}}.'),
+      ResolvedMarkdownText(plan: _plan(), content: 'Kanal {{var.mangler}}.'),
     );
 
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
@@ -81,7 +81,7 @@ void main() {
   });
 
   testWidgets('null content renders nothing', (tester) async {
-    await _pump(tester, ResolvedMarkdownText(program: _program(), content: null));
+    await _pump(tester, ResolvedMarkdownText(plan: _plan(), content: null));
 
     expect(find.byType(Text), findsNothing);
   });
@@ -92,7 +92,7 @@ void main() {
     await _pump(
       tester,
       ResolvedMarkdownText(
-        program: _program(),
+        plan: _plan(),
         content: 'Plain text, no tokens.',
         style: const TextStyle(fontSize: 20),
         maxLines: 2,

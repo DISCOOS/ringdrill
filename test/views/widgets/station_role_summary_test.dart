@@ -8,7 +8,7 @@ import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,7 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const _programUuid = 'prog-srs';
+const _planUuid = 'prog-srs';
 const _exerciseUuid = 'ex-srs';
 
 const _actorAUuid = 'actor-srs-a';
@@ -78,10 +78,10 @@ Exercise _exercise() => Exercise(
 Map<String, Object> _buildPrefs() {
   final ex = _exercise();
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
       'name': 'Test',
       'description': '',
       'metadata': {
@@ -95,12 +95,12 @@ Map<String, Object> _buildPrefs() {
       'rolePlays': [],
       'actors': [],
     }),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
-    'pr:$_programUuid:${_roleWithAge.uuid}': jsonEncode(_roleWithAge.toJson()),
-    'pr:$_programUuid:${_roleCast.uuid}': jsonEncode(_roleCast.toJson()),
-    'pr:$_programUuid:${_roleStation1.uuid}':
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
+    'pr:$_planUuid:${_roleWithAge.uuid}': jsonEncode(_roleWithAge.toJson()),
+    'pr:$_planUuid:${_roleCast.uuid}': jsonEncode(_roleCast.toJson()),
+    'pr:$_planUuid:${_roleStation1.uuid}':
         jsonEncode(_roleStation1.toJson()),
-    'pa:$_programUuid:$_actorAUuid': jsonEncode(_actorA.toJson()),
+    'pa:$_planUuid:$_actorAUuid': jsonEncode(_actorA.toJson()),
   };
 }
 
@@ -144,7 +144,7 @@ Widget _buildWidget({required int stationIndex}) {
 void main() {
   setUpAll(() async {
     SharedPreferences.setMockInitialValues(_buildPrefs());
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   testWidgets('returns SizedBox.shrink when no roles match stationIndex',

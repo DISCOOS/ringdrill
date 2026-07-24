@@ -11,7 +11,7 @@ import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 /// DESIGN-008 follow-up 07 — the section-navigated `StationFormScreen`:
 /// the override table (`VariableOverridesSection`) at station scope,
 /// token-aware markdown fields resolving through the full
-/// program→exercise→station cascade, and save-time undeclared-token
+/// plan→exercise→station cascade, and save-time undeclared-token
 /// validation. No explicit surface size is set: the default
 /// `flutter_test` surface (800x600) already lands in the wide/medium
 /// window class, so these tests exercise the master/detail rail directly
@@ -91,7 +91,7 @@ void main() {
   });
 
   testWidgets('the override table shows the inherited value at station scope '
-      '(program overlaid by the enclosing exercise)', (tester) async {
+      '(plan overlaid by the enclosing exercise)', (tester) async {
     await _openForm(
       tester,
       _station(),
@@ -107,8 +107,8 @@ void main() {
       find.text('(Kanal 8)'),
       findsOneWidget,
       reason:
-          'inherited at station scope means program overlaid by the '
-          'enclosing exercise, not the bare program default',
+          'inherited at station scope means plan overlaid by the '
+          'enclosing exercise, not the bare plan default',
     );
   });
 
@@ -140,7 +140,7 @@ void main() {
   );
 
   testWidgets('a token-aware station field resolves the full cascade: station '
-      'override shadows exercise override shadows program default', (
+      'override shadows exercise override shadows plan default', (
     tester,
   ) async {
     await _openForm(
@@ -284,7 +284,7 @@ void main() {
       expect(captured.value, isNull);
       expect(
         find.text(
-          l.programSaveBlockedUndeclaredVariable(
+          l.planSaveBlockedUndeclaredVariable(
             l.briefSectionStationSituation,
           ),
         ),

@@ -146,7 +146,7 @@ recurse on itself (DESIGN-009 follow-up 4c).
 |-------|-------------|
 | `{{roleplay.name}}` | The marker's role name. |
 | `{{roleplay.age}}` | The marker's age. |
-| `{{roleplay.signalement}}` | The marker's appearance/description (*signalement*). |
+| `{{roleplay.description}}` | The marker's appearance/description. |
 | `{{roleplay.position}}` | The marker's coordinate (default UTM format), as a copy chip in the brief or an actionable (open-in-maps) chip in the app. |
 
 As with `station.description`, `{{roleplay.name}}` is excluded from the
@@ -170,7 +170,7 @@ scope. `<slug>` is the location's or person's own slug.
 | `{{station.person.<slug>.name}}` | The person's name. |
 | `{{station.person.<slug>.age}}` | The person's age. |
 | `{{station.person.<slug>.gender}}` | The person's gender. |
-| `{{station.person.<slug>.signalement}}` | The person's appearance/description. |
+| `{{station.person.<slug>.description}}` | The person's appearance/description. |
 | `{{station.person.<slug>.loc.<facet>}}` | The person's own linked location, with any of the location facets above. |
 
 ## The copy-chip and action-chip convention
@@ -257,7 +257,7 @@ itself never reads a `BuildContext` (ADR-0048, DESIGN-010).
 | `PlanScope`     | program facets + the declared variables (mandatory) |
 | `ExerciseScope` | the enclosing exercise                              |
 | `StationScope`  | the station's facets + its locations/persons        |
-| `RoleplayScope` | the roleplay's own facets (name/age/signalement/UTM)|
+| `RoleplayScope` | the roleplay's own facets (name/age/description/UTM)|
 
 `resolveScopedField(context, ...)` reads whichever scopes are present above the
 field and builds the context from them; the read-only display widget

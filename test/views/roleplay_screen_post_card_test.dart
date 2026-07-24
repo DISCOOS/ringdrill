@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ringdrill/data/program_repository.dart';
+import 'package:ringdrill/data/plan_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/collapse_chevron.dart';
@@ -19,17 +19,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// header (flag icon + collapse chevron) over a body that is itself the
 /// tappable navigating row. Exercised only through the public
 /// `RolePlayScreen`, since the card class itself is private.
-const _programUuid = 'prog-role-post-card';
+const _planUuid = 'prog-role-post-card';
 const _exerciseUuid = 'ex-role-post-card';
 const _roleUuid = 'role-post-card';
 
-Program _shell() {
+Plan _shell() {
   final now = DateTime.utc(2026, 1, 1);
-  return Program(
-    uuid: _programUuid,
-    name: 'Test Program',
+  return Plan(
+    uuid: _planUuid,
+    name: 'Test Plan',
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -74,12 +74,12 @@ RolePlay _rolePlay() => const RolePlay(
 Future<void> _seedAndInit() async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
-  final repo = ProgramRepository(prefs);
-  await repo.saveProgramShell(_shell());
-  await repo.setActiveProgramUuid(_programUuid);
+  final repo = PlanRepository(prefs);
+  await repo.savePlanShell(_shell());
+  await repo.setActivePlanUuid(_planUuid);
   await repo.saveExercise(_exercise());
   await repo.saveRolePlay(_rolePlay());
-  await ProgramService().init();
+  await PlanService().init();
 }
 
 /// The Post card's own collapse chevron, disambiguated from the identity

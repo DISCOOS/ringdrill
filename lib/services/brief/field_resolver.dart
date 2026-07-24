@@ -1,6 +1,6 @@
 /// The flutter-free field resolver (ADR-0048): the token pipeline
 /// `{{var.<name>}}` → `{{station.loc/person.<slug>}}` → the mustache
-/// cross-reference pass (`program.*`/`exercise.*`/`station.*`/`roleplay.*`),
+/// cross-reference pass (`plan.*`/`exercise.*`/`station.*`/`roleplay.*`),
 /// fixpoint-bounded by [maxResolvePasses]. Extracted from `BriefRenderer`,
 /// which keeps assembling the resolution context (the effective `vars` map,
 /// the `refContext` maps, the optional scenario station/roleplays) exactly as
@@ -166,16 +166,16 @@ enum CoordinateFormat {
 ///
 /// The loop is what makes *nested* tokens resolve: any of the three systems
 /// can inject a value that itself contains further tokens. A `{{var.year}}`
-/// living inside `program.name` and reached through `{{program.name}}`, or a
-/// `{{program.name}}` living inside `program.description` and reached through
-/// `{{program.description}}`, only appears in the text after the pass that
+/// living inside `plan.name` and reached through `{{plan.name}}`, or a
+/// `{{plan.name}}` living inside `plan.description` and reached through
+/// `{{plan.description}}`, only appears in the text after the pass that
 /// injected it, so a single pass would leave it literal. Re-running the
 /// whole pipeline on each pass' output resolves the next layer down. This
 /// also means the cross-reference source values in the various `refContext`
 /// maps can stay raw (unresolved) — the following pass' `{{var.*}}`
 /// substitution catches whatever they inject.
 ///
-/// [scenarioStation] is omitted (null) for program- and exercise-scope
+/// [scenarioStation] is omitted (null) for plan- and exercise-scope
 /// fields, which have no station in scope and so never resolve
 /// `station.loc.*`/`station.person.*`; only station and roleplay fields pass
 /// it, both scoped to that same station's `locations`/`persons`.
@@ -439,8 +439,8 @@ String _resolvePersonFacet(
       return age == null ? '' : '$age';
     case 'gender':
       return _effectiveField(portrayer?.gender, person.gender) ?? '';
-    case 'signalement':
-      return _effectiveField(portrayer?.signalement, person.signalement) ?? '';
+    case 'description':
+      return _effectiveField(portrayer?.description, person.description) ?? '';
     case 'loc':
       final locSlug = person.locSlug;
       final loc = locSlug == null

@@ -6,7 +6,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,10 +15,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// RolePlayListView list: the role name (`RingDrillText`, needs an ambient
 /// `PlanScope`) and
 /// the exercise/station subtitle (a direct `substitutePlanVariables` call,
-/// resolved from `ProgramService().activeProgram` regardless of any
+/// resolved from `PlanService().activePlan` regardless of any
 /// `PlanScope` ancestor).
 
-const _programUuid = 'prog-rv-vars';
+const _planUuid = 'prog-rv-vars';
 const _exerciseUuid = 'ex-rv-vars';
 const _roleUuid = 'role-rv-vars';
 
@@ -59,11 +59,11 @@ RolePlay _role() => RolePlay(
 Map<String, Object> _buildPrefs() {
   final ex = _exercise();
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Test Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Test Plan',
       'description': '',
       'metadata': {
         'created': '2024-01-01T00:00:00.000Z',
@@ -77,8 +77,8 @@ Map<String, Object> _buildPrefs() {
       'actors': [],
       'variables': _declaredVariables.map((v) => v.toJson()).toList(),
     }),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
-    'pr:$_programUuid:$_roleUuid': jsonEncode(_role().toJson()),
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
+    'pr:$_planUuid:$_roleUuid': jsonEncode(_role().toJson()),
   };
 }
 
@@ -107,7 +107,7 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues(_buildPrefs());
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   testWidgets(
@@ -116,7 +116,7 @@ void main() {
       await tester.pumpWidget(_buildView(withPlanScope: true));
       await tester.pumpAndSettle();
 
-      // The role's own exercise override (Kanal 8) shadows the program
+      // The role's own exercise override (Kanal 8) shadows the plan
       // declared default (Kanal 6).
       expect(find.text('Recon Kanal 8'), findsOneWidget);
       expect(find.textContaining('{{var.frekvens}}'), findsNothing);

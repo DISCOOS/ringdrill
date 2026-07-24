@@ -6,7 +6,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 
 /// DESIGN-010 follow-up "inline create from leaf fields" — the
-/// `Location`/`Person` forms' `place`/`note`/`name`/`signalement`/`notes`
+/// `Location`/`Person` forms' `place`/`note`/`name`/`description`/`notes`
 /// fields now offer the picker's "Create «x»" entries (ADR-0047, DESIGN-009
 /// "Inline creation and write-back"), not just existing-entity references
 /// (DESIGN-010 stage 4). This exercises the full round trip through

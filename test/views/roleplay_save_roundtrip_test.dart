@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 
 import 'support/save_roundtrip_harness.dart';
@@ -25,7 +25,7 @@ void main() {
     // 2026-07-10 — no auto-created placeholder). Seed one on station 0 whose
     // name matches, so the identity starts inherited (panel collapsed).
     final base = makeExercise(uuid: 'ex-rt-rp', name: 'Roleplay Exercise');
-    await ProgramService().saveExercise(
+    await PlanService().saveExercise(
       l10n,
       base.copyWith(
         stations: [
@@ -36,7 +36,7 @@ void main() {
         ],
       ),
     );
-    await ProgramService().saveRolePlay(
+    await PlanService().saveRolePlay(
       l10n,
       const RolePlay(
         uuid: 'role-rt-1',
@@ -49,7 +49,7 @@ void main() {
     );
   });
 
-  tearDown(() => ProgramService().clearAllForTest());
+  tearDown(() => PlanService().clearAllForTest());
 
   Future<void> renameViaSheet(
     WidgetTester tester, {
@@ -87,7 +87,7 @@ void main() {
     // Round 1: sheet body (RolePlayScreen) → edit → rename → save.
     await renameViaSheet(tester, from: 'Pasient A', to: 'Pasient B');
     expect(
-      ProgramService().getRolePlay('role-rt-1')?.name,
+      PlanService().getRolePlay('role-rt-1')?.name,
       'Pasient B',
       reason: 'first save from the sheet must persist',
     );
@@ -97,7 +97,7 @@ void main() {
     // regressed (the stale first re-open future swallowed the result).
     await renameViaSheet(tester, from: 'Pasient B', to: 'Pasient C');
     expect(
-      ProgramService().getRolePlay('role-rt-1')?.name,
+      PlanService().getRolePlay('role-rt-1')?.name,
       'Pasient C',
       reason: 'second consecutive save must persist too',
     );

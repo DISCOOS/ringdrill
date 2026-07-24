@@ -11,7 +11,7 @@ _Person _$PersonFromJson(Map<String, dynamic> json) => _Person(
   name: json['name'] as String? ?? '',
   age: (json['age'] as num?)?.toInt(),
   gender: json['gender'] as String?,
-  signalement: json['signalement'] as String?,
+  description: json['description'] as String?,
   locSlug: json['locSlug'] as String?,
   notes: json['notes'] as String?,
 );
@@ -21,7 +21,7 @@ Map<String, dynamic> _$PersonToJson(_Person instance) => <String, dynamic>{
   'name': instance.name,
   'age': instance.age,
   'gender': instance.gender,
-  'signalement': instance.signalement,
+  'description': instance.description,
   'locSlug': instance.locSlug,
   'notes': instance.notes,
 };

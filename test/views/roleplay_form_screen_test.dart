@@ -39,7 +39,7 @@ Exercise _exercise() => Exercise(
 );
 
 /// Expands the identity card's "Tilpass" override panel — DESIGN-009
-/// prompt 4i moved Navn/Alder/Kjønn/Signalement inside it, only mounted
+/// prompt 4i moved Navn/Alder/Kjønn/Description inside it, only mounted
 /// while expanded.
 Future<void> _expandIdentity(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('identity-disclosure')));
@@ -235,11 +235,11 @@ void main() {
     await tester.pumpWidget(_buildForm());
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-    // Signalement lives inside the identity card's "Tilpass" override
+    // Description lives inside the identity card's "Tilpass" override
     // panel (DESIGN-009 prompt 4i); background and behavior are addable
     // sections, listed once revealed.
     await _expandIdentity(tester);
-    expect(find.text(l10n.roleSignalement), findsOneWidget);
+    expect(find.text(l10n.roleDescription), findsOneWidget);
     await tester.tap(find.text(l10n.formSectionAddAction));
     await tester.pumpAndSettle();
     expect(find.text(l10n.roleBackground), findsOneWidget);

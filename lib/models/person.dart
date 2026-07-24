@@ -19,7 +19,7 @@ sealed class Person with _$Person {
     @Default('') String name,
     int? age,
     String? gender,
-    String? signalement,
+    String? description,
 
     /// References a [Location.slug] on the same station.
     String? locSlug,

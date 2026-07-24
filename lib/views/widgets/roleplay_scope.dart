@@ -19,7 +19,7 @@ class RoleplayScope extends InheritedWidget {
     super.key,
     required this.name,
     this.age,
-    this.signalement,
+    this.description,
     this.position,
     required super.child,
   });
@@ -27,7 +27,7 @@ class RoleplayScope extends InheritedWidget {
   /// This roleplay's own facets — mirroring [StationScope]'s raw fields.
   final String name;
   final int? age;
-  final String? signalement;
+  final String? description;
 
   /// The roleplay's raw coordinate (like [StationScope.position]) — formatted
   /// and, in the app, wired to a tappable map action at resolve time
@@ -46,7 +46,7 @@ class RoleplayScope extends InheritedWidget {
       key: key,
       name: rolePlay.name,
       age: rolePlay.age,
-      signalement: rolePlay.signalement,
+      description: rolePlay.description,
       position: rolePlay.position,
       child: child,
     );
@@ -59,6 +59,6 @@ class RoleplayScope extends InheritedWidget {
   bool updateShouldNotify(RoleplayScope oldWidget) =>
       name != oldWidget.name ||
       age != oldWidget.age ||
-      signalement != oldWidget.signalement ||
+      description != oldWidget.description ||
       position != oldWidget.position;
 }

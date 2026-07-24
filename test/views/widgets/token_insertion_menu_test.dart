@@ -35,7 +35,7 @@ String _personFacetLabelFor(AppLocalizations l10n, String facet) =>
       'name' => l10n.roleName,
       'age' => l10n.roleAge,
       'gender' => l10n.roleGender,
-      'signalement' => l10n.roleSignalement,
+      'description' => l10n.roleDescription,
       'loc' => l10n.personsSectionLocationLabel,
       _ => facet,
     };
@@ -650,7 +650,7 @@ void main() {
       );
 
       testWidgets(
-        'completion: "station.person.anne.sig" narrows to signalement and '
+        'completion: "station.person.anne.desc" narrows to description and '
         'inserts the full dotted token',
         (tester) async {
           final controller = await _pump(
@@ -658,17 +658,17 @@ void main() {
             stationPersons: const [person],
           );
 
-          await _typeAndOpen(tester, '{{station.person.anne.sig');
+          await _typeAndOpen(tester, '{{station.person.anne.desc');
 
           final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-          expect(find.text(l10n.roleSignalement), findsOneWidget);
+          expect(find.text(l10n.roleDescription), findsOneWidget);
           expect(find.text(l10n.roleAge), findsNothing);
           expect(find.text('Anne Glemsk'), findsNothing);
 
-          await tester.tap(find.text(l10n.roleSignalement));
+          await tester.tap(find.text(l10n.roleDescription));
           await tester.pump();
 
-          expect(controller.text, '{{station.person.anne.signalement}}');
+          expect(controller.text, '{{station.person.anne.description}}');
         },
       );
 
@@ -734,7 +734,7 @@ void main() {
             findsOneWidget,
           );
           expect(find.text(l10n.roleAge), findsNothing);
-          expect(find.text(l10n.roleSignalement), findsNothing);
+          expect(find.text(l10n.roleDescription), findsNothing);
         },
       );
     });

@@ -14,7 +14,7 @@ const _rolePlay = RolePlay(
   exerciseUuid: 'ex-1',
   name: 'Anna',
   age: 34,
-  signalement: 'Gul jakke',
+  description: 'Gul jakke',
   position: LatLng(59.91, 10.75),
 );
 
@@ -38,7 +38,7 @@ void main() {
     expect(scope, isNotNull);
     expect(scope!.name, 'Anna');
     expect(scope!.age, 34);
-    expect(scope!.signalement, 'Gul jakke');
+    expect(scope!.description, 'Gul jakke');
     // The raw coordinate (formatting/chip wrapping is applied in
     // resolveScopedField, like StationScope).
     expect(scope!.position, const LatLng(59.91, 10.75));
@@ -61,6 +61,6 @@ void main() {
     );
 
     expect(scope!.position, isNull);
-    expect(scope!.signalement, isNull);
+    expect(scope!.description, isNull);
   });
 }

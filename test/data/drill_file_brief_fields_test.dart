@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 
@@ -13,13 +13,13 @@ import 'package:ringdrill/models/station.dart';
 // Fixtures
 // ---------------------------------------------------------------------------
 
-Program _emptyProgram() {
+Plan _emptyPlan() {
   final now = DateTime(2026);
-  return Program(
+  return Plan(
     uuid: 'prog-1',
     name: 'Test',
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -84,7 +84,7 @@ const _actor = Actor(uuid: 'actor-1', realName: 'Kari', notes: 'PII notes');
 void main() {
   group('Stage 1b writer', () {
     test('writes Stage 1b markdown fields as .md files in archive', () {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         briefIntroMd: 'intro',
         commsMd: 'comms-prog',
         beforeRoundMd: 'before-round',
@@ -93,17 +93,17 @@ void main() {
         actors: [_actor],
       );
 
-      final drillFile = DrillFile.fromProgram(program, 'test');
+      final drillFile = DrillFile.fromPlan(plan, 'test');
       final archive = ZipDecoder().decodeBytes(drillFile.content);
       final byName = {
         for (final f in archive.files.where((f) => f.isFile))
           f.name: utf8.decode(f.content as List<int>),
       };
 
-      // Program-level
-      expect(byName['program/intro.md'], 'intro');
-      expect(byName['program/comms.md'], 'comms-prog');
-      expect(byName['program/before-round.md'], 'before-round');
+      // Plan-level
+      expect(byName['plan/intro.md'], 'intro');
+      expect(byName['plan/comms.md'], 'comms-prog');
+      expect(byName['plan/before-round.md'], 'before-round');
 
       // Exercise-level
       expect(byName['exercises/ex-1/method.md'], 'method');
@@ -156,7 +156,7 @@ void main() {
       expect(
         progJson.keys.any((k) => k.endsWith('Md')),
         isFalse,
-        reason: 'program JSON must not contain *Md keys',
+        reason: 'plan JSON must not contain *Md keys',
       );
     });
 
@@ -166,9 +166,9 @@ void main() {
         final exercise = _exercise(
           templateId: 'my-template',
         ).copyWith(stations: [_station(0, variantSuffix: 'Alpha')]);
-        final program = _emptyProgram().copyWith(exercises: [exercise]);
+        final plan = _emptyPlan().copyWith(exercises: [exercise]);
 
-        final drillFile = DrillFile.fromProgram(program, 'test');
+        final drillFile = DrillFile.fromPlan(plan, 'test');
         final archive = ZipDecoder().decodeBytes(drillFile.content);
         final byName = {
           for (final f in archive.files.where((f) => f.isFile))
@@ -195,7 +195,7 @@ void main() {
 
   group('Stage 1b reader', () {
     test('reads back Stage 1b markdown fields from archive (roundtrip)', () {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         briefIntroMd: 'intro',
         commsMd: 'comms-prog',
         beforeRoundMd: 'before-round',
@@ -203,8 +203,8 @@ void main() {
         rolePlays: [_rolePlay],
       );
 
-      final drillFile = DrillFile.fromProgram(program, 'test');
-      final decoded = drillFile.program();
+      final drillFile = DrillFile.fromPlan(plan, 'test');
+      final decoded = drillFile.plan();
 
       expect(decoded.briefIntroMd, 'intro');
       expect(decoded.commsMd, 'comms-prog');
@@ -259,13 +259,13 @@ void main() {
           learningGoalsMd: null, // null
         );
 
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           briefIntroMd: '', // empty
           commsMd: null, // null
           exercises: [exercise],
         );
 
-        final drillFile = DrillFile.fromProgram(program, 'test');
+        final drillFile = DrillFile.fromPlan(plan, 'test');
         final archiveRaw = ZipDecoder().decodeBytes(drillFile.content);
         final names = archiveRaw.files
             .where((f) => f.isFile)
@@ -273,7 +273,7 @@ void main() {
             .toSet();
 
         // Empty-string fields produce zero-byte files.
-        expect(names.contains('program/intro.md'), isTrue);
+        expect(names.contains('plan/intro.md'), isTrue);
         expect(names.contains('exercises/ex-1/method.md'), isTrue);
         expect(
           names.contains('exercises/ex-1/stations/0/equipment.md'),
@@ -281,14 +281,14 @@ void main() {
         );
 
         // Null fields produce no file.
-        expect(names.contains('program/comms.md'), isFalse);
+        expect(names.contains('plan/comms.md'), isFalse);
         expect(names.contains('exercises/ex-1/learning-goals.md'), isFalse);
         expect(
           names.contains('exercises/ex-1/stations/0/situation.md'),
           isFalse,
         );
 
-        final decoded = drillFile.program();
+        final decoded = drillFile.plan();
         expect(decoded.briefIntroMd, '');
         expect(decoded.commsMd, isNull);
 
@@ -305,7 +305,7 @@ void main() {
 
   group('Stage 1b content hash', () {
     test('includes new markdown fields', () {
-      final base = _emptyProgram().copyWith(exercises: [_exercise()]);
+      final base = _emptyPlan().copyWith(exercises: [_exercise()]);
 
       // briefIntroMd
       final h1 = base.computeContentHash();
@@ -412,19 +412,19 @@ void main() {
           methodMd: 'method-z',
         );
 
-        final programA = _emptyProgram().copyWith(exercises: [ex1, ex2]);
-        final programB = _emptyProgram().copyWith(exercises: [ex2, ex1]);
+        final planA = _emptyPlan().copyWith(exercises: [ex1, ex2]);
+        final planB = _emptyPlan().copyWith(exercises: [ex2, ex1]);
 
         expect(
-          programA.computeContentHash(),
-          programB.computeContentHash(),
+          planA.computeContentHash(),
+          planB.computeContentHash(),
           reason: 'hash must be independent of exercise list order',
         );
       },
     );
 
     test('Stage 1b content hash is stable across save/load roundtrip', () {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         briefIntroMd: 'intro',
         commsMd: 'comms',
         exercises: [_exercise()],
@@ -432,15 +432,15 @@ void main() {
         actors: [_actor],
       );
 
-      final hashBefore = program.computeContentHash();
-      final drillFile = DrillFile.fromProgram(program, 'test');
-      final decoded = drillFile.program();
+      final hashBefore = plan.computeContentHash();
+      final drillFile = DrillFile.fromPlan(plan, 'test');
+      final decoded = drillFile.plan();
       final hashAfter = decoded.computeContentHash();
 
       expect(
         hashAfter,
         hashBefore,
-        reason: 'hash must survive fromProgram -> program() roundtrip',
+        reason: 'hash must survive fromPlan -> plan() roundtrip',
       );
     });
 
@@ -448,12 +448,12 @@ void main() {
       const actorA = Actor(uuid: 'a-1', realName: 'Alice', notes: 'note A');
       const actorB = Actor(uuid: 'a-1', realName: 'Alice', notes: 'note B');
 
-      final programA = _emptyProgram().copyWith(actors: [actorA]);
-      final programB = _emptyProgram().copyWith(actors: [actorB]);
+      final planA = _emptyPlan().copyWith(actors: [actorA]);
+      final planB = _emptyPlan().copyWith(actors: [actorB]);
 
       expect(
-        programA.computeContentHash(),
-        programB.computeContentHash(),
+        planA.computeContentHash(),
+        planB.computeContentHash(),
         reason: 'actor.notes must not affect the content hash (ADR-0018)',
       );
     });

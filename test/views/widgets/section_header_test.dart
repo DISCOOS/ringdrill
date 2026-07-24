@@ -13,9 +13,9 @@ Widget _harness(Widget child) => MaterialApp(
 void main() {
   group('SectionHeader', () {
     testWidgets('renders the label uppercased', (tester) async {
-      await tester.pumpWidget(_harness(const SectionHeader('Signalement')));
+      await tester.pumpWidget(_harness(const SectionHeader('Description')));
 
-      expect(find.text('SIGNALEMENT'), findsOneWidget);
+      expect(find.text('DESCRIPTION'), findsOneWidget);
     });
 
     testWidgets('gated: false renders no badge', (tester) async {

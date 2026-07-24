@@ -22,7 +22,7 @@ class _Captured {
 /// (DESIGN-009 follow-up 4e) — mirroring what `openFormSurface` re-provides
 /// from the caller in production (DESIGN-010 stage 1), since a token-aware
 /// field asserts on a missing [PlanScope]. [variables]/[stationPersons] feed
-/// the `name`/`signalement`/`notes` fields' insertion menu; [locations] is
+/// the `name`/`description`/`notes` fields' insertion menu; [locations] is
 /// both the form's own location-picker list and the ambient StationScope's
 /// locations.
 Future<void> _open(
