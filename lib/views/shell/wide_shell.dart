@@ -136,8 +136,11 @@ class WideShell extends StatelessWidget {
         : 320.0;
     // Matches the NavigationRail's explicit `minWidth: 72` below, so the rail
     // column reserves exactly the rail's width in both the expanded and the
-    // collapsed (clipped) state — narrower than the M3 default 80.
-    const railWidth = 72.0;
+    // collapsed (clipped) state — narrower than the M3 default 80. Plus the
+    // extra left inset `wrapInRailPadding` adds on iOS landscape: without it
+    // the padded rail is 12px wider than reserved and the rail+master Row
+    // overflows its parent SizedBox by that 12px (a landscape iPhone).
+    final railWidth = 72.0 + railLeadingInset(context);
     // The build() gate (`useRail`) guarantees we only reach the rail
     // layout when there is room for a usable detail pane. Narrower
     // widths render the compact narrow layout instead, so there is no
