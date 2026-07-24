@@ -30,6 +30,30 @@ enum MapCommandSize {
       ? MapCommandSize.compact
       : MapCommandSize.regular;
 
+  /// Resolve from a real local *viewport* (both axes), downgrading to
+  /// [compact] on a short viewport even when the width alone would pick
+  /// [regular]. A landscape phone reads as medium/expanded by width (>=600)
+  /// but is only ~375-430px tall; a full bottom-right column of 56dp
+  /// commands (locate + the zoom pair + centre) plus its padding is then
+  /// taller than the map itself, clipping the lowest buttons off the bottom
+  /// edge (reported: the map commands are "too big" and "not all are
+  /// showing" on a landscape phone). Below [_shortViewportHeight] the
+  /// smaller 40dp control keeps the whole stack on screen. Height unknown
+  /// (unbounded) falls back to the width-only mapping.
+  static MapCommandSize fromViewport(Size viewport) =>
+      viewport.height.isFinite && viewport.height < shortViewportHeight
+      ? MapCommandSize.compact
+      : fromWidth(viewport.width);
+
+  /// Viewport height below which the command stack is forced [compact] — a
+  /// landscape phone (~375-430px) falls under it; a tablet in either
+  /// orientation (>=~700px) stays above. Matches the docked mini-player's
+  /// own short-viewport threshold so the two agree on "this is a landscape
+  /// phone, shrink the chrome." Also drives `MapView`'s decision to merge
+  /// its two opposing command columns into one so they don't collide in the
+  /// middle of a short map.
+  static const double shortViewportHeight = 500;
+
   double get diameter => switch (this) {
     MapCommandSize.compact => 40,
     MapCommandSize.regular => 56,

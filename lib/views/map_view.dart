@@ -314,7 +314,7 @@ class MapConfig {
   }) {
     final sizeClass = WindowSizeClass.fromWidth(viewport.width);
     final scale = markerScaleFor(sizeClass);
-    final commandSize = MapCommandSize.fromWidth(viewport.width);
+    final commandSize = MapCommandSize.fromViewport(viewport);
 
     // The label footprint is real rendered space, but unlike the search
     // field and FAB stack (chrome that is always visible) it is zoom-gated:
@@ -996,7 +996,7 @@ class _MapViewState<K> extends State<MapView<K>> {
         // it here instead of letting it re-derive.
         final commandSize =
             widget.commandSizeOverride ??
-            MapCommandSize.fromWidth(constraints.maxWidth);
+            MapCommandSize.fromViewport(constraints.biggest);
         _lastCommandSize = commandSize;
         // Distance from the right edge to the *visible* command circle, plus
         // a 10 px gap so the search field never butts up against it. The
@@ -1026,6 +1026,113 @@ class _MapViewState<K> extends State<MapView<K>> {
         final searchWidth = commandSize == MapCommandSize.compact
             ? searchAvailable
             : math.min(searchAvailable, maxSearchWidth);
+
+        final l10n = AppLocalizations.of(context)!;
+        // Built once here so the same command widgets can be laid out either
+        // as two opposing columns (the tall-viewport default) or merged into
+        // one (a short viewport — see `shortViewport` below).
+        final layersCommand = withToggle
+            ? MapCommand(
+                heroTag: (_heroScope, 'layers'),
+                tooltip: l10n.layers,
+                onPressed: _toggleLayer,
+                icon: Icons.layers,
+                size: commandSize,
+              )
+            : null;
+        final fullscreenCommand = widget.withFullscreen
+            ? MapCommand(
+                heroTag: (_heroScope, 'fullscreen'),
+                tooltip: l10n.expandMap,
+                onPressed: _openFullscreen,
+                icon: Icons.open_in_full,
+                size: commandSize,
+              )
+            : null;
+        final locateCommand = widget.withLocate
+            ? MapCommand(
+                heroTag: (_heroScope, 'locate'),
+                tooltip: l10n.locateMe,
+                size: commandSize,
+                onPressed: _locating ? null : _locateMe,
+                child: _locating
+                    ? SizedBox(
+                        width: commandSize.spinnerSize,
+                        height: commandSize.spinnerSize,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                        ),
+                      )
+                    : Icon(Icons.my_location, size: commandSize.iconSize),
+              )
+            : null;
+        final zoomInCommand = showZoom
+            ? MapCommand(
+                heroTag: (_heroScope, 'zoomIn'),
+                tooltip: l10n.zoomIn,
+                size: commandSize,
+                onPressed: _zoomIn,
+                icon: Icons.add,
+              )
+            : null;
+        final zoomOutCommand = showZoom
+            ? MapCommand(
+                heroTag: (_heroScope, 'zoomOut'),
+                tooltip: l10n.zoomOut,
+                size: commandSize,
+                onPressed: _zoomOut,
+                icon: Icons.remove,
+              )
+            : null;
+        final centerCommand = widget.withCenter
+            ? MapCommand(
+                heroTag: (_heroScope, 'center'),
+                tooltip: l10n.recenter,
+                size: commandSize,
+                onPressed: _toggleCenter,
+                icon: Icons.center_focus_strong_rounded,
+              )
+            : null;
+
+        // Each entry is (command, gap-before). `_column` drops nulls and
+        // ignores the leading gap of the first surviving entry, so the gaps
+        // between whichever commands are actually present stay correct
+        // regardless of which are enabled.
+        final topEntries = <(Widget?, double)>[
+          (layersCommand, 0),
+          (fullscreenCommand, 8),
+          for (final c in widget.topRightCommands) (c, 8),
+        ];
+        final bottomEntries = <(Widget?, double)>[
+          (locateCommand, 0),
+          (zoomInCommand, 12),
+          (zoomOutCommand, 8),
+          (centerCommand, 12),
+        ];
+        final hasTop = topEntries.any((e) => e.$1 != null);
+        final hasBottom = bottomEntries.any((e) => e.$1 != null);
+        // Flattened order for the merged short-viewport column: the top
+        // group (layers, fullscreen, any external commands) then the bottom
+        // group (locate, zoom pair, centre).
+        final mergedCommands = <Widget>[
+          for (final e in topEntries)
+            if (e.$1 != null) e.$1!,
+          for (final e in bottomEntries)
+            if (e.$1 != null) e.$1!,
+        ];
+
+        // A short viewport (a landscape phone): the top-right
+        // (layers/fullscreen) and bottom-right (zoom/centre/locate) columns
+        // each grow toward the map's vertical centre and collide there,
+        // reading as one cramped cluster (reported: the commands are "too
+        // close"). Merge them into a single top-anchored right-hand column
+        // so the controls stack once, in order, and never overlap. A tall
+        // viewport (portrait phone, tablet, desktop) keeps the conventional
+        // split with zoom/centre anchored at the bottom-right.
+        final shortViewport =
+            constraints.maxHeight.isFinite &&
+            constraints.maxHeight < MapCommandSize.shortViewportHeight;
+
         return Stack(
           children: [
             FlutterMap(
@@ -1125,7 +1232,34 @@ class _MapViewState<K> extends State<MapView<K>> {
                   ),
                 ),
               ),
-            if (hasTopRightColumn)
+            // Short viewport: one merged, top-anchored stack (see the
+            // `shortViewport` comment above). A `Wrap` fills a column
+            // top-down and, when the full command set (layers + fullscreen +
+            // zoom pair + centre + locate ≈ 280px) is taller than a very
+            // short map (the 220px interactive floor leaves only ~188px of
+            // content height), starts a *new column* beside it rather than
+            // clipping or scrolling the overflow out of reach — every command
+            // stays visible and tappable. `textDirection: rtl` makes the
+            // extra columns grow to the left, keeping the primary column
+            // pinned to the map's right edge.
+            if (shortViewport && mergedCommands.isNotEmpty)
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                  child: Wrap(
+                    direction: Axis.vertical,
+                    textDirection: TextDirection.rtl,
+                    verticalDirection: VerticalDirection.down,
+                    spacing: 8, // vertical gap between commands in a column
+                    runSpacing: 8, // horizontal gap between columns
+                    children: mergedCommands,
+                  ),
+                ),
+              ),
+            // Tall viewport: the conventional split — layers/fullscreen at
+            // the top-right, zoom/centre/locate anchored at the bottom-right.
+            if (!shortViewport && hasTop)
               Align(
                 alignment: Alignment.topRight,
                 child: Padding(
@@ -1137,39 +1271,11 @@ class _MapViewState<K> extends State<MapView<K>> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (withToggle)
-                        MapCommand(
-                          heroTag: (_heroScope, 'layers'),
-                          tooltip: AppLocalizations.of(context)!.layers,
-                          onPressed: _toggleLayer,
-                          icon: Icons.layers,
-                          size: commandSize,
-                        ),
-                      if (widget.withFullscreen) ...[
-                        if (withToggle) const SizedBox(height: 8),
-                        MapCommand(
-                          heroTag: (_heroScope, 'fullscreen'),
-                          tooltip: AppLocalizations.of(context)!.expandMap,
-                          onPressed: _openFullscreen,
-                          icon: Icons.open_in_full,
-                          size: commandSize,
-                        ),
-                      ],
-                      for (
-                        var i = 0;
-                        i < widget.topRightCommands.length;
-                        i++
-                      ) ...[
-                        if (i > 0 || withToggle || widget.withFullscreen)
-                          const SizedBox(height: 8),
-                        widget.topRightCommands[i],
-                      ],
-                    ],
+                    children: _column(topEntries),
                   ),
                 ),
               ),
-            if (widget.withCenter || showZoom || widget.withLocate)
+            if (!shortViewport && hasBottom)
               Align(
                 alignment: Alignment.bottomRight,
                 child: Padding(
@@ -1182,56 +1288,7 @@ class _MapViewState<K> extends State<MapView<K>> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (widget.withLocate) ...[
-                        MapCommand(
-                          heroTag: (_heroScope, 'locate'),
-                          tooltip: AppLocalizations.of(context)!.locateMe,
-                          size: commandSize,
-                          onPressed: _locating ? null : _locateMe,
-                          child: _locating
-                              ? SizedBox(
-                                  width: commandSize.spinnerSize,
-                                  height: commandSize.spinnerSize,
-                                  child: const CircularProgressIndicator(
-                                    strokeWidth: 2.4,
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.my_location,
-                                  size: commandSize.iconSize,
-                                ),
-                        ),
-                        if (showZoom || widget.withCenter)
-                          const SizedBox(height: 12),
-                      ],
-                      if (showZoom) ...[
-                        MapCommand(
-                          heroTag: (_heroScope, 'zoomIn'),
-                          tooltip: AppLocalizations.of(context)!.zoomIn,
-                          size: commandSize,
-                          onPressed: _zoomIn,
-                          icon: Icons.add,
-                        ),
-                        const SizedBox(height: 8),
-                        MapCommand(
-                          heroTag: (_heroScope, 'zoomOut'),
-                          tooltip: AppLocalizations.of(context)!.zoomOut,
-                          size: commandSize,
-                          onPressed: _zoomOut,
-                          icon: Icons.remove,
-                        ),
-                        if (widget.withCenter) const SizedBox(height: 12),
-                      ],
-                      if (widget.withCenter)
-                        MapCommand(
-                          heroTag: (_heroScope, 'center'),
-                          tooltip: AppLocalizations.of(context)!.recenter,
-                          size: commandSize,
-                          onPressed: _toggleCenter,
-                          icon: Icons.center_focus_strong_rounded,
-                        ),
-                    ],
+                    children: _column(bottomEntries),
                   ),
                 ),
               ),
@@ -1239,6 +1296,25 @@ class _MapViewState<K> extends State<MapView<K>> {
         );
       },
     );
+  }
+
+  /// Lays out a right-hand command column from `(command, gap-before)`
+  /// entries: drops null (disabled) commands, then inserts a
+  /// `SizedBox(height: gap)` before every surviving command except the
+  /// first (whose leading gap is meaningless). Keeps the spacing between
+  /// whichever commands are actually enabled correct without a tangle of
+  /// `if (a || b) SizedBox(...)` guards, and lets the same entries be laid
+  /// out as either two columns or one merged column.
+  static List<Widget> _column(List<(Widget?, double)> entries) {
+    final present = entries
+        .where((e) => e.$1 != null)
+        .toList(growable: false);
+    final out = <Widget>[];
+    for (var i = 0; i < present.length; i++) {
+      if (i > 0) out.add(SizedBox(height: present[i].$2));
+      out.add(present[i].$1!);
+    }
+    return out;
   }
 
   void _zoomIn() {
