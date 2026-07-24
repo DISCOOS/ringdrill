@@ -3,7 +3,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'program.dart';
+part of 'plan.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -13,38 +13,38 @@ part of 'program.dart';
 T _$identity<T>(T value) => value;
 
 /// @nodoc
-mixin _$Program {
+mixin _$Plan {
 
- String get uuid; String get name; String get description; ExerciseNumberFormat get exerciseNumberFormat; StationNumberFormat get stationNumberFormat; ProgramMetadata get metadata; ProgramSource get source; String? get contentHash; List<Team> get teams; List<Session> get sessions; List<Exercise> get exercises;// @Default([]) so 1.0 archives without these keys deserialize to empty
+ String get uuid; String get name; String get description; ExerciseNumberFormat get exerciseNumberFormat; StationNumberFormat get stationNumberFormat; PlanMetadata get metadata; PlanSource get source; String? get contentHash; List<Team> get teams; List<Session> get sessions; List<Exercise> get exercises;// @Default([]) so 1.0 archives without these keys deserialize to empty
 // lists rather than failing (ADR-0018 backward-compat requirement).
  List<RolePlay> get rolePlays; List<Actor> get actors;// @Default([]) so 1.0/1.1/1.2 archives without the key deserialize to
 // an empty list rather than failing (ADR-0043; same pattern as ADR-0018).
  List<String> get tags;// @Default([]) so 1.0/1.1/1.2 archives without the key deserialize to
 // an empty registry (ADR-0046, additive field, no schema bump).
- List<DrillVariable> get variables;// Markdown brief fields — stored as program/<field>.md, not in JSON.
-// May contain unresolved {{var.<name>}} tokens and {{program.name}}/
-// {{program.description}} cross-references (ADR-0046, DESIGN-004/008).
+ List<DrillVariable> get variables;// Markdown brief fields — stored as plan/<field>.md, not in JSON.
+// May contain unresolved {{var.<name>}} tokens and {{plan.name}}/
+// {{plan.description}} cross-references (ADR-0046, DESIGN-004/008).
 // Never render one of these directly in a Text widget — resolve it
 // first via ResolvedMarkdownText (lib/views/widgets/) or
-// BriefRenderer.resolveProgramScopeText, the same way BriefRenderer.render
+// BriefRenderer.resolvePlanScopeText, the same way BriefRenderer.render
 // resolves it in the full brief. Reading the raw field straight into a
-// Text widget is the bug the Program overview card had before
+// Text widget is the bug the Plan overview card had before
 // ResolvedMarkdownText existed: a declared variable renders as a
 // literal `{{...}}` token instead of its value.
 @JsonKey(includeFromJson: false, includeToJson: false) String? get briefIntroMd;@JsonKey(includeFromJson: false, includeToJson: false) String? get commsMd;@JsonKey(includeFromJson: false, includeToJson: false) String? get beforeRoundMd;
-/// Create a copy of Program
+/// Create a copy of Plan
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$ProgramCopyWith<Program> get copyWith => _$ProgramCopyWithImpl<Program>(this as Program, _$identity);
+$PlanCopyWith<Plan> get copyWith => _$PlanCopyWithImpl<Plan>(this as Plan, _$identity);
 
-  /// Serializes this Program to a JSON map.
+  /// Serializes this Plan to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Program&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.exerciseNumberFormat, exerciseNumberFormat) || other.exerciseNumberFormat == exerciseNumberFormat)&&(identical(other.stationNumberFormat, stationNumberFormat) || other.stationNumberFormat == stationNumberFormat)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&(identical(other.source, source) || other.source == source)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&const DeepCollectionEquality().equals(other.teams, teams)&&const DeepCollectionEquality().equals(other.sessions, sessions)&&const DeepCollectionEquality().equals(other.exercises, exercises)&&const DeepCollectionEquality().equals(other.rolePlays, rolePlays)&&const DeepCollectionEquality().equals(other.actors, actors)&&const DeepCollectionEquality().equals(other.tags, tags)&&const DeepCollectionEquality().equals(other.variables, variables)&&(identical(other.briefIntroMd, briefIntroMd) || other.briefIntroMd == briefIntroMd)&&(identical(other.commsMd, commsMd) || other.commsMd == commsMd)&&(identical(other.beforeRoundMd, beforeRoundMd) || other.beforeRoundMd == beforeRoundMd));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Plan&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.exerciseNumberFormat, exerciseNumberFormat) || other.exerciseNumberFormat == exerciseNumberFormat)&&(identical(other.stationNumberFormat, stationNumberFormat) || other.stationNumberFormat == stationNumberFormat)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&(identical(other.source, source) || other.source == source)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&const DeepCollectionEquality().equals(other.teams, teams)&&const DeepCollectionEquality().equals(other.sessions, sessions)&&const DeepCollectionEquality().equals(other.exercises, exercises)&&const DeepCollectionEquality().equals(other.rolePlays, rolePlays)&&const DeepCollectionEquality().equals(other.actors, actors)&&const DeepCollectionEquality().equals(other.tags, tags)&&const DeepCollectionEquality().equals(other.variables, variables)&&(identical(other.briefIntroMd, briefIntroMd) || other.briefIntroMd == briefIntroMd)&&(identical(other.commsMd, commsMd) || other.commsMd == commsMd)&&(identical(other.beforeRoundMd, beforeRoundMd) || other.beforeRoundMd == beforeRoundMd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -53,33 +53,33 @@ int get hashCode => Object.hash(runtimeType,uuid,name,description,exerciseNumber
 
 @override
 String toString() {
-  return 'Program(uuid: $uuid, name: $name, description: $description, exerciseNumberFormat: $exerciseNumberFormat, stationNumberFormat: $stationNumberFormat, metadata: $metadata, source: $source, contentHash: $contentHash, teams: $teams, sessions: $sessions, exercises: $exercises, rolePlays: $rolePlays, actors: $actors, tags: $tags, variables: $variables, briefIntroMd: $briefIntroMd, commsMd: $commsMd, beforeRoundMd: $beforeRoundMd)';
+  return 'Plan(uuid: $uuid, name: $name, description: $description, exerciseNumberFormat: $exerciseNumberFormat, stationNumberFormat: $stationNumberFormat, metadata: $metadata, source: $source, contentHash: $contentHash, teams: $teams, sessions: $sessions, exercises: $exercises, rolePlays: $rolePlays, actors: $actors, tags: $tags, variables: $variables, briefIntroMd: $briefIntroMd, commsMd: $commsMd, beforeRoundMd: $beforeRoundMd)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $ProgramCopyWith<$Res>  {
-  factory $ProgramCopyWith(Program value, $Res Function(Program) _then) = _$ProgramCopyWithImpl;
+abstract mixin class $PlanCopyWith<$Res>  {
+  factory $PlanCopyWith(Plan value, $Res Function(Plan) _then) = _$PlanCopyWithImpl;
 @useResult
 $Res call({
- String uuid, String name, String description, ExerciseNumberFormat exerciseNumberFormat, StationNumberFormat stationNumberFormat, ProgramMetadata metadata, ProgramSource source, String? contentHash, List<Team> teams, List<Session> sessions, List<Exercise> exercises, List<RolePlay> rolePlays, List<Actor> actors, List<String> tags, List<DrillVariable> variables,@JsonKey(includeFromJson: false, includeToJson: false) String? briefIntroMd,@JsonKey(includeFromJson: false, includeToJson: false) String? commsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? beforeRoundMd
+ String uuid, String name, String description, ExerciseNumberFormat exerciseNumberFormat, StationNumberFormat stationNumberFormat, PlanMetadata metadata, PlanSource source, String? contentHash, List<Team> teams, List<Session> sessions, List<Exercise> exercises, List<RolePlay> rolePlays, List<Actor> actors, List<String> tags, List<DrillVariable> variables,@JsonKey(includeFromJson: false, includeToJson: false) String? briefIntroMd,@JsonKey(includeFromJson: false, includeToJson: false) String? commsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? beforeRoundMd
 });
 
 
-$ProgramMetadataCopyWith<$Res> get metadata;$ProgramSourceCopyWith<$Res> get source;
+$PlanMetadataCopyWith<$Res> get metadata;$PlanSourceCopyWith<$Res> get source;
 
 }
 /// @nodoc
-class _$ProgramCopyWithImpl<$Res>
-    implements $ProgramCopyWith<$Res> {
-  _$ProgramCopyWithImpl(this._self, this._then);
+class _$PlanCopyWithImpl<$Res>
+    implements $PlanCopyWith<$Res> {
+  _$PlanCopyWithImpl(this._self, this._then);
 
-  final Program _self;
-  final $Res Function(Program) _then;
+  final Plan _self;
+  final $Res Function(Plan) _then;
 
-/// Create a copy of Program
+/// Create a copy of Plan
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? uuid = null,Object? name = null,Object? description = null,Object? exerciseNumberFormat = null,Object? stationNumberFormat = null,Object? metadata = null,Object? source = null,Object? contentHash = freezed,Object? teams = null,Object? sessions = null,Object? exercises = null,Object? rolePlays = null,Object? actors = null,Object? tags = null,Object? variables = null,Object? briefIntroMd = freezed,Object? commsMd = freezed,Object? beforeRoundMd = freezed,}) {
   return _then(_self.copyWith(
@@ -89,8 +89,8 @@ as String,description: null == description ? _self.description : description // 
 as String,exerciseNumberFormat: null == exerciseNumberFormat ? _self.exerciseNumberFormat : exerciseNumberFormat // ignore: cast_nullable_to_non_nullable
 as ExerciseNumberFormat,stationNumberFormat: null == stationNumberFormat ? _self.stationNumberFormat : stationNumberFormat // ignore: cast_nullable_to_non_nullable
 as StationNumberFormat,metadata: null == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
-as ProgramMetadata,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
-as ProgramSource,contentHash: freezed == contentHash ? _self.contentHash : contentHash // ignore: cast_nullable_to_non_nullable
+as PlanMetadata,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as PlanSource,contentHash: freezed == contentHash ? _self.contentHash : contentHash // ignore: cast_nullable_to_non_nullable
 as String?,teams: null == teams ? _self.teams : teams // ignore: cast_nullable_to_non_nullable
 as List<Team>,sessions: null == sessions ? _self.sessions : sessions // ignore: cast_nullable_to_non_nullable
 as List<Session>,exercises: null == exercises ? _self.exercises : exercises // ignore: cast_nullable_to_non_nullable
@@ -104,30 +104,30 @@ as String?,beforeRoundMd: freezed == beforeRoundMd ? _self.beforeRoundMd : befor
 as String?,
   ));
 }
-/// Create a copy of Program
+/// Create a copy of Plan
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ProgramMetadataCopyWith<$Res> get metadata {
+$PlanMetadataCopyWith<$Res> get metadata {
   
-  return $ProgramMetadataCopyWith<$Res>(_self.metadata, (value) {
+  return $PlanMetadataCopyWith<$Res>(_self.metadata, (value) {
     return _then(_self.copyWith(metadata: value));
   });
-}/// Create a copy of Program
+}/// Create a copy of Plan
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ProgramSourceCopyWith<$Res> get source {
+$PlanSourceCopyWith<$Res> get source {
   
-  return $ProgramSourceCopyWith<$Res>(_self.source, (value) {
+  return $PlanSourceCopyWith<$Res>(_self.source, (value) {
     return _then(_self.copyWith(source: value));
   });
 }
 }
 
 
-/// Adds pattern-matching-related methods to [Program].
-extension ProgramPatterns on Program {
+/// Adds pattern-matching-related methods to [Plan].
+extension PlanPatterns on Plan {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -140,10 +140,10 @@ extension ProgramPatterns on Program {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _Program value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _Plan value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _Program() when $default != null:
+case _Plan() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -162,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _Program value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _Plan value)  $default,){
 final _that = this;
 switch (_that) {
-case _Program():
+case _Plan():
 return $default(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
@@ -180,10 +180,10 @@ return $default(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _Program value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _Plan value)?  $default,){
 final _that = this;
 switch (_that) {
-case _Program() when $default != null:
+case _Plan() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -201,9 +201,9 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ExerciseNumberFormat exerciseNumberFormat,  StationNumberFormat stationNumberFormat,  ProgramMetadata metadata,  ProgramSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises,  List<RolePlay> rolePlays,  List<Actor> actors,  List<String> tags,  List<DrillVariable> variables, @JsonKey(includeFromJson: false, includeToJson: false)  String? briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? commsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? beforeRoundMd)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ExerciseNumberFormat exerciseNumberFormat,  StationNumberFormat stationNumberFormat,  PlanMetadata metadata,  PlanSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises,  List<RolePlay> rolePlays,  List<Actor> actors,  List<String> tags,  List<DrillVariable> variables, @JsonKey(includeFromJson: false, includeToJson: false)  String? briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? commsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? beforeRoundMd)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _Program() when $default != null:
+case _Plan() when $default != null:
 return $default(_that.uuid,_that.name,_that.description,_that.exerciseNumberFormat,_that.stationNumberFormat,_that.metadata,_that.source,_that.contentHash,_that.teams,_that.sessions,_that.exercises,_that.rolePlays,_that.actors,_that.tags,_that.variables,_that.briefIntroMd,_that.commsMd,_that.beforeRoundMd);case _:
   return orElse();
 
@@ -222,9 +222,9 @@ return $default(_that.uuid,_that.name,_that.description,_that.exerciseNumberForm
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ExerciseNumberFormat exerciseNumberFormat,  StationNumberFormat stationNumberFormat,  ProgramMetadata metadata,  ProgramSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises,  List<RolePlay> rolePlays,  List<Actor> actors,  List<String> tags,  List<DrillVariable> variables, @JsonKey(includeFromJson: false, includeToJson: false)  String? briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? commsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? beforeRoundMd)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ExerciseNumberFormat exerciseNumberFormat,  StationNumberFormat stationNumberFormat,  PlanMetadata metadata,  PlanSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises,  List<RolePlay> rolePlays,  List<Actor> actors,  List<String> tags,  List<DrillVariable> variables, @JsonKey(includeFromJson: false, includeToJson: false)  String? briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? commsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? beforeRoundMd)  $default,) {final _that = this;
 switch (_that) {
-case _Program():
+case _Plan():
 return $default(_that.uuid,_that.name,_that.description,_that.exerciseNumberFormat,_that.stationNumberFormat,_that.metadata,_that.source,_that.contentHash,_that.teams,_that.sessions,_that.exercises,_that.rolePlays,_that.actors,_that.tags,_that.variables,_that.briefIntroMd,_that.commsMd,_that.beforeRoundMd);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -239,9 +239,9 @@ return $default(_that.uuid,_that.name,_that.description,_that.exerciseNumberForm
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String name,  String description,  ExerciseNumberFormat exerciseNumberFormat,  StationNumberFormat stationNumberFormat,  ProgramMetadata metadata,  ProgramSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises,  List<RolePlay> rolePlays,  List<Actor> actors,  List<String> tags,  List<DrillVariable> variables, @JsonKey(includeFromJson: false, includeToJson: false)  String? briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? commsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? beforeRoundMd)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String name,  String description,  ExerciseNumberFormat exerciseNumberFormat,  StationNumberFormat stationNumberFormat,  PlanMetadata metadata,  PlanSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises,  List<RolePlay> rolePlays,  List<Actor> actors,  List<String> tags,  List<DrillVariable> variables, @JsonKey(includeFromJson: false, includeToJson: false)  String? briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? commsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? beforeRoundMd)?  $default,) {final _that = this;
 switch (_that) {
-case _Program() when $default != null:
+case _Plan() when $default != null:
 return $default(_that.uuid,_that.name,_that.description,_that.exerciseNumberFormat,_that.stationNumberFormat,_that.metadata,_that.source,_that.contentHash,_that.teams,_that.sessions,_that.exercises,_that.rolePlays,_that.actors,_that.tags,_that.variables,_that.briefIntroMd,_that.commsMd,_that.beforeRoundMd);case _:
   return null;
 
@@ -253,17 +253,17 @@ return $default(_that.uuid,_that.name,_that.description,_that.exerciseNumberForm
 /// @nodoc
 @JsonSerializable()
 
-class _Program implements Program {
-  const _Program({required this.uuid, required this.name, required this.description, this.exerciseNumberFormat = ExerciseNumberFormat.hash, this.stationNumberFormat = StationNumberFormat.dotted, required this.metadata, this.source = const ProgramSource.local(), this.contentHash, required final  List<Team> teams, required final  List<Session> sessions, required final  List<Exercise> exercises, final  List<RolePlay> rolePlays = const [], final  List<Actor> actors = const [], final  List<String> tags = const <String>[], final  List<DrillVariable> variables = const <DrillVariable>[], @JsonKey(includeFromJson: false, includeToJson: false) this.briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false) this.commsMd, @JsonKey(includeFromJson: false, includeToJson: false) this.beforeRoundMd}): _teams = teams,_sessions = sessions,_exercises = exercises,_rolePlays = rolePlays,_actors = actors,_tags = tags,_variables = variables;
-  factory _Program.fromJson(Map<String, dynamic> json) => _$ProgramFromJson(json);
+class _Plan implements Plan {
+  const _Plan({required this.uuid, required this.name, required this.description, this.exerciseNumberFormat = ExerciseNumberFormat.hash, this.stationNumberFormat = StationNumberFormat.dotted, required this.metadata, this.source = const PlanSource.local(), this.contentHash, required final  List<Team> teams, required final  List<Session> sessions, required final  List<Exercise> exercises, final  List<RolePlay> rolePlays = const [], final  List<Actor> actors = const [], final  List<String> tags = const <String>[], final  List<DrillVariable> variables = const <DrillVariable>[], @JsonKey(includeFromJson: false, includeToJson: false) this.briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false) this.commsMd, @JsonKey(includeFromJson: false, includeToJson: false) this.beforeRoundMd}): _teams = teams,_sessions = sessions,_exercises = exercises,_rolePlays = rolePlays,_actors = actors,_tags = tags,_variables = variables;
+  factory _Plan.fromJson(Map<String, dynamic> json) => _$PlanFromJson(json);
 
 @override final  String uuid;
 @override final  String name;
 @override final  String description;
 @override@JsonKey() final  ExerciseNumberFormat exerciseNumberFormat;
 @override@JsonKey() final  StationNumberFormat stationNumberFormat;
-@override final  ProgramMetadata metadata;
-@override@JsonKey() final  ProgramSource source;
+@override final  PlanMetadata metadata;
+@override@JsonKey() final  PlanSource source;
 @override final  String? contentHash;
  final  List<Team> _teams;
 @override List<Team> get teams {
@@ -326,34 +326,34 @@ class _Program implements Program {
   return EqualUnmodifiableListView(_variables);
 }
 
-// Markdown brief fields — stored as program/<field>.md, not in JSON.
-// May contain unresolved {{var.<name>}} tokens and {{program.name}}/
-// {{program.description}} cross-references (ADR-0046, DESIGN-004/008).
+// Markdown brief fields — stored as plan/<field>.md, not in JSON.
+// May contain unresolved {{var.<name>}} tokens and {{plan.name}}/
+// {{plan.description}} cross-references (ADR-0046, DESIGN-004/008).
 // Never render one of these directly in a Text widget — resolve it
 // first via ResolvedMarkdownText (lib/views/widgets/) or
-// BriefRenderer.resolveProgramScopeText, the same way BriefRenderer.render
+// BriefRenderer.resolvePlanScopeText, the same way BriefRenderer.render
 // resolves it in the full brief. Reading the raw field straight into a
-// Text widget is the bug the Program overview card had before
+// Text widget is the bug the Plan overview card had before
 // ResolvedMarkdownText existed: a declared variable renders as a
 // literal `{{...}}` token instead of its value.
 @override@JsonKey(includeFromJson: false, includeToJson: false) final  String? briefIntroMd;
 @override@JsonKey(includeFromJson: false, includeToJson: false) final  String? commsMd;
 @override@JsonKey(includeFromJson: false, includeToJson: false) final  String? beforeRoundMd;
 
-/// Create a copy of Program
+/// Create a copy of Plan
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$ProgramCopyWith<_Program> get copyWith => __$ProgramCopyWithImpl<_Program>(this, _$identity);
+_$PlanCopyWith<_Plan> get copyWith => __$PlanCopyWithImpl<_Plan>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$ProgramToJson(this, );
+  return _$PlanToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Program&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.exerciseNumberFormat, exerciseNumberFormat) || other.exerciseNumberFormat == exerciseNumberFormat)&&(identical(other.stationNumberFormat, stationNumberFormat) || other.stationNumberFormat == stationNumberFormat)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&(identical(other.source, source) || other.source == source)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&const DeepCollectionEquality().equals(other._teams, _teams)&&const DeepCollectionEquality().equals(other._sessions, _sessions)&&const DeepCollectionEquality().equals(other._exercises, _exercises)&&const DeepCollectionEquality().equals(other._rolePlays, _rolePlays)&&const DeepCollectionEquality().equals(other._actors, _actors)&&const DeepCollectionEquality().equals(other._tags, _tags)&&const DeepCollectionEquality().equals(other._variables, _variables)&&(identical(other.briefIntroMd, briefIntroMd) || other.briefIntroMd == briefIntroMd)&&(identical(other.commsMd, commsMd) || other.commsMd == commsMd)&&(identical(other.beforeRoundMd, beforeRoundMd) || other.beforeRoundMd == beforeRoundMd));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Plan&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.exerciseNumberFormat, exerciseNumberFormat) || other.exerciseNumberFormat == exerciseNumberFormat)&&(identical(other.stationNumberFormat, stationNumberFormat) || other.stationNumberFormat == stationNumberFormat)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&(identical(other.source, source) || other.source == source)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&const DeepCollectionEquality().equals(other._teams, _teams)&&const DeepCollectionEquality().equals(other._sessions, _sessions)&&const DeepCollectionEquality().equals(other._exercises, _exercises)&&const DeepCollectionEquality().equals(other._rolePlays, _rolePlays)&&const DeepCollectionEquality().equals(other._actors, _actors)&&const DeepCollectionEquality().equals(other._tags, _tags)&&const DeepCollectionEquality().equals(other._variables, _variables)&&(identical(other.briefIntroMd, briefIntroMd) || other.briefIntroMd == briefIntroMd)&&(identical(other.commsMd, commsMd) || other.commsMd == commsMd)&&(identical(other.beforeRoundMd, beforeRoundMd) || other.beforeRoundMd == beforeRoundMd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -362,44 +362,44 @@ int get hashCode => Object.hash(runtimeType,uuid,name,description,exerciseNumber
 
 @override
 String toString() {
-  return 'Program(uuid: $uuid, name: $name, description: $description, exerciseNumberFormat: $exerciseNumberFormat, stationNumberFormat: $stationNumberFormat, metadata: $metadata, source: $source, contentHash: $contentHash, teams: $teams, sessions: $sessions, exercises: $exercises, rolePlays: $rolePlays, actors: $actors, tags: $tags, variables: $variables, briefIntroMd: $briefIntroMd, commsMd: $commsMd, beforeRoundMd: $beforeRoundMd)';
+  return 'Plan(uuid: $uuid, name: $name, description: $description, exerciseNumberFormat: $exerciseNumberFormat, stationNumberFormat: $stationNumberFormat, metadata: $metadata, source: $source, contentHash: $contentHash, teams: $teams, sessions: $sessions, exercises: $exercises, rolePlays: $rolePlays, actors: $actors, tags: $tags, variables: $variables, briefIntroMd: $briefIntroMd, commsMd: $commsMd, beforeRoundMd: $beforeRoundMd)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$ProgramCopyWith<$Res> implements $ProgramCopyWith<$Res> {
-  factory _$ProgramCopyWith(_Program value, $Res Function(_Program) _then) = __$ProgramCopyWithImpl;
+abstract mixin class _$PlanCopyWith<$Res> implements $PlanCopyWith<$Res> {
+  factory _$PlanCopyWith(_Plan value, $Res Function(_Plan) _then) = __$PlanCopyWithImpl;
 @override @useResult
 $Res call({
- String uuid, String name, String description, ExerciseNumberFormat exerciseNumberFormat, StationNumberFormat stationNumberFormat, ProgramMetadata metadata, ProgramSource source, String? contentHash, List<Team> teams, List<Session> sessions, List<Exercise> exercises, List<RolePlay> rolePlays, List<Actor> actors, List<String> tags, List<DrillVariable> variables,@JsonKey(includeFromJson: false, includeToJson: false) String? briefIntroMd,@JsonKey(includeFromJson: false, includeToJson: false) String? commsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? beforeRoundMd
+ String uuid, String name, String description, ExerciseNumberFormat exerciseNumberFormat, StationNumberFormat stationNumberFormat, PlanMetadata metadata, PlanSource source, String? contentHash, List<Team> teams, List<Session> sessions, List<Exercise> exercises, List<RolePlay> rolePlays, List<Actor> actors, List<String> tags, List<DrillVariable> variables,@JsonKey(includeFromJson: false, includeToJson: false) String? briefIntroMd,@JsonKey(includeFromJson: false, includeToJson: false) String? commsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? beforeRoundMd
 });
 
 
-@override $ProgramMetadataCopyWith<$Res> get metadata;@override $ProgramSourceCopyWith<$Res> get source;
+@override $PlanMetadataCopyWith<$Res> get metadata;@override $PlanSourceCopyWith<$Res> get source;
 
 }
 /// @nodoc
-class __$ProgramCopyWithImpl<$Res>
-    implements _$ProgramCopyWith<$Res> {
-  __$ProgramCopyWithImpl(this._self, this._then);
+class __$PlanCopyWithImpl<$Res>
+    implements _$PlanCopyWith<$Res> {
+  __$PlanCopyWithImpl(this._self, this._then);
 
-  final _Program _self;
-  final $Res Function(_Program) _then;
+  final _Plan _self;
+  final $Res Function(_Plan) _then;
 
-/// Create a copy of Program
+/// Create a copy of Plan
 /// with the given fields replaced by the non-null parameter values.
 @override @pragma('vm:prefer-inline') $Res call({Object? uuid = null,Object? name = null,Object? description = null,Object? exerciseNumberFormat = null,Object? stationNumberFormat = null,Object? metadata = null,Object? source = null,Object? contentHash = freezed,Object? teams = null,Object? sessions = null,Object? exercises = null,Object? rolePlays = null,Object? actors = null,Object? tags = null,Object? variables = null,Object? briefIntroMd = freezed,Object? commsMd = freezed,Object? beforeRoundMd = freezed,}) {
-  return _then(_Program(
+  return _then(_Plan(
 uuid: null == uuid ? _self.uuid : uuid // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,exerciseNumberFormat: null == exerciseNumberFormat ? _self.exerciseNumberFormat : exerciseNumberFormat // ignore: cast_nullable_to_non_nullable
 as ExerciseNumberFormat,stationNumberFormat: null == stationNumberFormat ? _self.stationNumberFormat : stationNumberFormat // ignore: cast_nullable_to_non_nullable
 as StationNumberFormat,metadata: null == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
-as ProgramMetadata,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
-as ProgramSource,contentHash: freezed == contentHash ? _self.contentHash : contentHash // ignore: cast_nullable_to_non_nullable
+as PlanMetadata,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as PlanSource,contentHash: freezed == contentHash ? _self.contentHash : contentHash // ignore: cast_nullable_to_non_nullable
 as String?,teams: null == teams ? _self._teams : teams // ignore: cast_nullable_to_non_nullable
 as List<Team>,sessions: null == sessions ? _self._sessions : sessions // ignore: cast_nullable_to_non_nullable
 as List<Session>,exercises: null == exercises ? _self._exercises : exercises // ignore: cast_nullable_to_non_nullable
@@ -414,28 +414,28 @@ as String?,
   ));
 }
 
-/// Create a copy of Program
+/// Create a copy of Plan
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ProgramMetadataCopyWith<$Res> get metadata {
+$PlanMetadataCopyWith<$Res> get metadata {
   
-  return $ProgramMetadataCopyWith<$Res>(_self.metadata, (value) {
+  return $PlanMetadataCopyWith<$Res>(_self.metadata, (value) {
     return _then(_self.copyWith(metadata: value));
   });
-}/// Create a copy of Program
+}/// Create a copy of Plan
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ProgramSourceCopyWith<$Res> get source {
+$PlanSourceCopyWith<$Res> get source {
   
-  return $ProgramSourceCopyWith<$Res>(_self.source, (value) {
+  return $PlanSourceCopyWith<$Res>(_self.source, (value) {
     return _then(_self.copyWith(source: value));
   });
 }
 }
 
-ProgramSource _$ProgramSourceFromJson(
+PlanSource _$PlanSourceFromJson(
   Map<String, dynamic> json
 ) {
         switch (json['runtimeType']) {
@@ -456,7 +456,7 @@ ProgramSource _$ProgramSourceFromJson(
             throw CheckedFromJsonException(
   json,
   'runtimeType',
-  'ProgramSource',
+  'PlanSource',
   'Invalid union type "${json['runtimeType']}"!'
 );
         }
@@ -464,17 +464,17 @@ ProgramSource _$ProgramSourceFromJson(
 }
 
 /// @nodoc
-mixin _$ProgramSource {
+mixin _$PlanSource {
 
 
 
-  /// Serializes this ProgramSource to a JSON map.
+  /// Serializes this PlanSource to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProgramSource);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlanSource);
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -483,20 +483,20 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ProgramSource()';
+  return 'PlanSource()';
 }
 
 
 }
 
 /// @nodoc
-class $ProgramSourceCopyWith<$Res>  {
-$ProgramSourceCopyWith(ProgramSource _, $Res Function(ProgramSource) __);
+class $PlanSourceCopyWith<$Res>  {
+$PlanSourceCopyWith(PlanSource _, $Res Function(PlanSource) __);
 }
 
 
-/// Adds pattern-matching-related methods to [ProgramSource].
-extension ProgramSourcePatterns on ProgramSource {
+/// Adds pattern-matching-related methods to [PlanSource].
+extension PlanSourcePatterns on PlanSource {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -634,7 +634,7 @@ return catalog(_that.slug,_that.latestEtag,_that.installedAt,_that.latestVersion
 /// @nodoc
 @JsonSerializable()
 
-class _Local implements ProgramSource {
+class _Local implements PlanSource {
   const _Local({final  String? $type}): $type = $type ?? 'local';
   factory _Local.fromJson(Map<String, dynamic> json) => _$LocalFromJson(json);
 
@@ -661,7 +661,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ProgramSource.local()';
+  return 'PlanSource.local()';
 }
 
 
@@ -673,7 +673,7 @@ String toString() {
 /// @nodoc
 @JsonSerializable()
 
-class _Imported implements ProgramSource {
+class _Imported implements PlanSource {
   const _Imported({required this.fileName, final  String? $type}): $type = $type ?? 'imported';
   factory _Imported.fromJson(Map<String, dynamic> json) => _$ImportedFromJson(json);
 
@@ -683,7 +683,7 @@ class _Imported implements ProgramSource {
 final String $type;
 
 
-/// Create a copy of ProgramSource
+/// Create a copy of PlanSource
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
@@ -705,14 +705,14 @@ int get hashCode => Object.hash(runtimeType,fileName);
 
 @override
 String toString() {
-  return 'ProgramSource.imported(fileName: $fileName)';
+  return 'PlanSource.imported(fileName: $fileName)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$ImportedCopyWith<$Res> implements $ProgramSourceCopyWith<$Res> {
+abstract mixin class _$ImportedCopyWith<$Res> implements $PlanSourceCopyWith<$Res> {
   factory _$ImportedCopyWith(_Imported value, $Res Function(_Imported) _then) = __$ImportedCopyWithImpl;
 @useResult
 $Res call({
@@ -731,7 +731,7 @@ class __$ImportedCopyWithImpl<$Res>
   final _Imported _self;
   final $Res Function(_Imported) _then;
 
-/// Create a copy of ProgramSource
+/// Create a copy of PlanSource
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') $Res call({Object? fileName = null,}) {
   return _then(_Imported(
@@ -746,7 +746,7 @@ as String,
 /// @nodoc
 @JsonSerializable()
 
-class _Catalog implements ProgramSource {
+class _Catalog implements PlanSource {
   const _Catalog({required this.slug, required this.latestEtag, this.installedAt, this.latestVersion, final  String? $type}): $type = $type ?? 'catalog';
   factory _Catalog.fromJson(Map<String, dynamic> json) => _$CatalogFromJson(json);
 
@@ -754,7 +754,7 @@ class _Catalog implements ProgramSource {
  final  String latestEtag;
  final  DateTime? installedAt;
 /// The catalog's publish version as of the last install/refresh/publish
-/// (e.g. "5"). Null for programs installed before this field existed;
+/// (e.g. "5"). Null for plans installed before this field existed;
 /// repopulated on the next successful refresh or publish.
  final  String? latestVersion;
 
@@ -762,7 +762,7 @@ class _Catalog implements ProgramSource {
 final String $type;
 
 
-/// Create a copy of ProgramSource
+/// Create a copy of PlanSource
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
@@ -784,14 +784,14 @@ int get hashCode => Object.hash(runtimeType,slug,latestEtag,installedAt,latestVe
 
 @override
 String toString() {
-  return 'ProgramSource.catalog(slug: $slug, latestEtag: $latestEtag, installedAt: $installedAt, latestVersion: $latestVersion)';
+  return 'PlanSource.catalog(slug: $slug, latestEtag: $latestEtag, installedAt: $installedAt, latestVersion: $latestVersion)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$CatalogCopyWith<$Res> implements $ProgramSourceCopyWith<$Res> {
+abstract mixin class _$CatalogCopyWith<$Res> implements $PlanSourceCopyWith<$Res> {
   factory _$CatalogCopyWith(_Catalog value, $Res Function(_Catalog) _then) = __$CatalogCopyWithImpl;
 @useResult
 $Res call({
@@ -810,7 +810,7 @@ class __$CatalogCopyWithImpl<$Res>
   final _Catalog _self;
   final $Res Function(_Catalog) _then;
 
-/// Create a copy of ProgramSource
+/// Create a copy of PlanSource
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') $Res call({Object? slug = null,Object? latestEtag = null,Object? installedAt = freezed,Object? latestVersion = freezed,}) {
   return _then(_Catalog(
@@ -827,7 +827,7 @@ as String?,
 
 
 /// @nodoc
-mixin _$ProgramDiff {
+mixin _$PlanDiff {
 
 /// Local name when it differs from remote. Null when names match.
  String? get nameLocal;/// Remote name when it differs from local. Null when names match.
@@ -841,19 +841,19 @@ mixin _$ProgramDiff {
 /// local. Null when tag lists match.
  String? get tagsRemote; List<String> get addedExercises; List<String> get removedExercises; List<ItemDiff> get modifiedExercises; List<String> get addedTeams; List<String> get removedTeams; List<ItemDiff> get modifiedTeams; List<String> get addedSessions; List<String> get removedSessions; List<ItemDiff> get modifiedSessions;// rolePlays are included in the content hash; actors are not.
  List<String> get addedRolePlays; List<String> get removedRolePlays; List<ItemDiff> get modifiedRolePlays;
-/// Create a copy of ProgramDiff
+/// Create a copy of PlanDiff
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$ProgramDiffCopyWith<ProgramDiff> get copyWith => _$ProgramDiffCopyWithImpl<ProgramDiff>(this as ProgramDiff, _$identity);
+$PlanDiffCopyWith<PlanDiff> get copyWith => _$PlanDiffCopyWithImpl<PlanDiff>(this as PlanDiff, _$identity);
 
-  /// Serializes this ProgramDiff to a JSON map.
+  /// Serializes this PlanDiff to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProgramDiff&&(identical(other.nameLocal, nameLocal) || other.nameLocal == nameLocal)&&(identical(other.nameRemote, nameRemote) || other.nameRemote == nameRemote)&&(identical(other.descriptionLocal, descriptionLocal) || other.descriptionLocal == descriptionLocal)&&(identical(other.descriptionRemote, descriptionRemote) || other.descriptionRemote == descriptionRemote)&&(identical(other.tagsLocal, tagsLocal) || other.tagsLocal == tagsLocal)&&(identical(other.tagsRemote, tagsRemote) || other.tagsRemote == tagsRemote)&&const DeepCollectionEquality().equals(other.addedExercises, addedExercises)&&const DeepCollectionEquality().equals(other.removedExercises, removedExercises)&&const DeepCollectionEquality().equals(other.modifiedExercises, modifiedExercises)&&const DeepCollectionEquality().equals(other.addedTeams, addedTeams)&&const DeepCollectionEquality().equals(other.removedTeams, removedTeams)&&const DeepCollectionEquality().equals(other.modifiedTeams, modifiedTeams)&&const DeepCollectionEquality().equals(other.addedSessions, addedSessions)&&const DeepCollectionEquality().equals(other.removedSessions, removedSessions)&&const DeepCollectionEquality().equals(other.modifiedSessions, modifiedSessions)&&const DeepCollectionEquality().equals(other.addedRolePlays, addedRolePlays)&&const DeepCollectionEquality().equals(other.removedRolePlays, removedRolePlays)&&const DeepCollectionEquality().equals(other.modifiedRolePlays, modifiedRolePlays));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlanDiff&&(identical(other.nameLocal, nameLocal) || other.nameLocal == nameLocal)&&(identical(other.nameRemote, nameRemote) || other.nameRemote == nameRemote)&&(identical(other.descriptionLocal, descriptionLocal) || other.descriptionLocal == descriptionLocal)&&(identical(other.descriptionRemote, descriptionRemote) || other.descriptionRemote == descriptionRemote)&&(identical(other.tagsLocal, tagsLocal) || other.tagsLocal == tagsLocal)&&(identical(other.tagsRemote, tagsRemote) || other.tagsRemote == tagsRemote)&&const DeepCollectionEquality().equals(other.addedExercises, addedExercises)&&const DeepCollectionEquality().equals(other.removedExercises, removedExercises)&&const DeepCollectionEquality().equals(other.modifiedExercises, modifiedExercises)&&const DeepCollectionEquality().equals(other.addedTeams, addedTeams)&&const DeepCollectionEquality().equals(other.removedTeams, removedTeams)&&const DeepCollectionEquality().equals(other.modifiedTeams, modifiedTeams)&&const DeepCollectionEquality().equals(other.addedSessions, addedSessions)&&const DeepCollectionEquality().equals(other.removedSessions, removedSessions)&&const DeepCollectionEquality().equals(other.modifiedSessions, modifiedSessions)&&const DeepCollectionEquality().equals(other.addedRolePlays, addedRolePlays)&&const DeepCollectionEquality().equals(other.removedRolePlays, removedRolePlays)&&const DeepCollectionEquality().equals(other.modifiedRolePlays, modifiedRolePlays));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -862,15 +862,15 @@ int get hashCode => Object.hash(runtimeType,nameLocal,nameRemote,descriptionLoca
 
 @override
 String toString() {
-  return 'ProgramDiff(nameLocal: $nameLocal, nameRemote: $nameRemote, descriptionLocal: $descriptionLocal, descriptionRemote: $descriptionRemote, tagsLocal: $tagsLocal, tagsRemote: $tagsRemote, addedExercises: $addedExercises, removedExercises: $removedExercises, modifiedExercises: $modifiedExercises, addedTeams: $addedTeams, removedTeams: $removedTeams, modifiedTeams: $modifiedTeams, addedSessions: $addedSessions, removedSessions: $removedSessions, modifiedSessions: $modifiedSessions, addedRolePlays: $addedRolePlays, removedRolePlays: $removedRolePlays, modifiedRolePlays: $modifiedRolePlays)';
+  return 'PlanDiff(nameLocal: $nameLocal, nameRemote: $nameRemote, descriptionLocal: $descriptionLocal, descriptionRemote: $descriptionRemote, tagsLocal: $tagsLocal, tagsRemote: $tagsRemote, addedExercises: $addedExercises, removedExercises: $removedExercises, modifiedExercises: $modifiedExercises, addedTeams: $addedTeams, removedTeams: $removedTeams, modifiedTeams: $modifiedTeams, addedSessions: $addedSessions, removedSessions: $removedSessions, modifiedSessions: $modifiedSessions, addedRolePlays: $addedRolePlays, removedRolePlays: $removedRolePlays, modifiedRolePlays: $modifiedRolePlays)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $ProgramDiffCopyWith<$Res>  {
-  factory $ProgramDiffCopyWith(ProgramDiff value, $Res Function(ProgramDiff) _then) = _$ProgramDiffCopyWithImpl;
+abstract mixin class $PlanDiffCopyWith<$Res>  {
+  factory $PlanDiffCopyWith(PlanDiff value, $Res Function(PlanDiff) _then) = _$PlanDiffCopyWithImpl;
 @useResult
 $Res call({
  String? nameLocal, String? nameRemote, String? descriptionLocal, String? descriptionRemote, String? tagsLocal, String? tagsRemote, List<String> addedExercises, List<String> removedExercises, List<ItemDiff> modifiedExercises, List<String> addedTeams, List<String> removedTeams, List<ItemDiff> modifiedTeams, List<String> addedSessions, List<String> removedSessions, List<ItemDiff> modifiedSessions, List<String> addedRolePlays, List<String> removedRolePlays, List<ItemDiff> modifiedRolePlays
@@ -881,14 +881,14 @@ $Res call({
 
 }
 /// @nodoc
-class _$ProgramDiffCopyWithImpl<$Res>
-    implements $ProgramDiffCopyWith<$Res> {
-  _$ProgramDiffCopyWithImpl(this._self, this._then);
+class _$PlanDiffCopyWithImpl<$Res>
+    implements $PlanDiffCopyWith<$Res> {
+  _$PlanDiffCopyWithImpl(this._self, this._then);
 
-  final ProgramDiff _self;
-  final $Res Function(ProgramDiff) _then;
+  final PlanDiff _self;
+  final $Res Function(PlanDiff) _then;
 
-/// Create a copy of ProgramDiff
+/// Create a copy of PlanDiff
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? nameLocal = freezed,Object? nameRemote = freezed,Object? descriptionLocal = freezed,Object? descriptionRemote = freezed,Object? tagsLocal = freezed,Object? tagsRemote = freezed,Object? addedExercises = null,Object? removedExercises = null,Object? modifiedExercises = null,Object? addedTeams = null,Object? removedTeams = null,Object? modifiedTeams = null,Object? addedSessions = null,Object? removedSessions = null,Object? modifiedSessions = null,Object? addedRolePlays = null,Object? removedRolePlays = null,Object? modifiedRolePlays = null,}) {
   return _then(_self.copyWith(
@@ -917,8 +917,8 @@ as List<ItemDiff>,
 }
 
 
-/// Adds pattern-matching-related methods to [ProgramDiff].
-extension ProgramDiffPatterns on ProgramDiff {
+/// Adds pattern-matching-related methods to [PlanDiff].
+extension PlanDiffPatterns on PlanDiff {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -931,10 +931,10 @@ extension ProgramDiffPatterns on ProgramDiff {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ProgramDiff value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PlanDiff value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _ProgramDiff() when $default != null:
+case _PlanDiff() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -953,10 +953,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ProgramDiff value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PlanDiff value)  $default,){
 final _that = this;
 switch (_that) {
-case _ProgramDiff():
+case _PlanDiff():
 return $default(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
@@ -971,10 +971,10 @@ return $default(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ProgramDiff value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PlanDiff value)?  $default,){
 final _that = this;
 switch (_that) {
-case _ProgramDiff() when $default != null:
+case _PlanDiff() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -994,7 +994,7 @@ return $default(_that);case _:
 
 @optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? nameLocal,  String? nameRemote,  String? descriptionLocal,  String? descriptionRemote,  String? tagsLocal,  String? tagsRemote,  List<String> addedExercises,  List<String> removedExercises,  List<ItemDiff> modifiedExercises,  List<String> addedTeams,  List<String> removedTeams,  List<ItemDiff> modifiedTeams,  List<String> addedSessions,  List<String> removedSessions,  List<ItemDiff> modifiedSessions,  List<String> addedRolePlays,  List<String> removedRolePlays,  List<ItemDiff> modifiedRolePlays)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _ProgramDiff() when $default != null:
+case _PlanDiff() when $default != null:
 return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.descriptionRemote,_that.tagsLocal,_that.tagsRemote,_that.addedExercises,_that.removedExercises,_that.modifiedExercises,_that.addedTeams,_that.removedTeams,_that.modifiedTeams,_that.addedSessions,_that.removedSessions,_that.modifiedSessions,_that.addedRolePlays,_that.removedRolePlays,_that.modifiedRolePlays);case _:
   return orElse();
 
@@ -1015,7 +1015,7 @@ return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.de
 
 @optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? nameLocal,  String? nameRemote,  String? descriptionLocal,  String? descriptionRemote,  String? tagsLocal,  String? tagsRemote,  List<String> addedExercises,  List<String> removedExercises,  List<ItemDiff> modifiedExercises,  List<String> addedTeams,  List<String> removedTeams,  List<ItemDiff> modifiedTeams,  List<String> addedSessions,  List<String> removedSessions,  List<ItemDiff> modifiedSessions,  List<String> addedRolePlays,  List<String> removedRolePlays,  List<ItemDiff> modifiedRolePlays)  $default,) {final _that = this;
 switch (_that) {
-case _ProgramDiff():
+case _PlanDiff():
 return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.descriptionRemote,_that.tagsLocal,_that.tagsRemote,_that.addedExercises,_that.removedExercises,_that.modifiedExercises,_that.addedTeams,_that.removedTeams,_that.modifiedTeams,_that.addedSessions,_that.removedSessions,_that.modifiedSessions,_that.addedRolePlays,_that.removedRolePlays,_that.modifiedRolePlays);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -1032,7 +1032,7 @@ return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.de
 
 @optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? nameLocal,  String? nameRemote,  String? descriptionLocal,  String? descriptionRemote,  String? tagsLocal,  String? tagsRemote,  List<String> addedExercises,  List<String> removedExercises,  List<ItemDiff> modifiedExercises,  List<String> addedTeams,  List<String> removedTeams,  List<ItemDiff> modifiedTeams,  List<String> addedSessions,  List<String> removedSessions,  List<ItemDiff> modifiedSessions,  List<String> addedRolePlays,  List<String> removedRolePlays,  List<ItemDiff> modifiedRolePlays)?  $default,) {final _that = this;
 switch (_that) {
-case _ProgramDiff() when $default != null:
+case _PlanDiff() when $default != null:
 return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.descriptionRemote,_that.tagsLocal,_that.tagsRemote,_that.addedExercises,_that.removedExercises,_that.modifiedExercises,_that.addedTeams,_that.removedTeams,_that.modifiedTeams,_that.addedSessions,_that.removedSessions,_that.modifiedSessions,_that.addedRolePlays,_that.removedRolePlays,_that.modifiedRolePlays);case _:
   return null;
 
@@ -1044,9 +1044,9 @@ return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.de
 /// @nodoc
 @JsonSerializable()
 
-class _ProgramDiff implements ProgramDiff {
-  const _ProgramDiff({this.nameLocal, this.nameRemote, this.descriptionLocal, this.descriptionRemote, this.tagsLocal, this.tagsRemote, final  List<String> addedExercises = const [], final  List<String> removedExercises = const [], final  List<ItemDiff> modifiedExercises = const [], final  List<String> addedTeams = const [], final  List<String> removedTeams = const [], final  List<ItemDiff> modifiedTeams = const [], final  List<String> addedSessions = const [], final  List<String> removedSessions = const [], final  List<ItemDiff> modifiedSessions = const [], final  List<String> addedRolePlays = const [], final  List<String> removedRolePlays = const [], final  List<ItemDiff> modifiedRolePlays = const []}): _addedExercises = addedExercises,_removedExercises = removedExercises,_modifiedExercises = modifiedExercises,_addedTeams = addedTeams,_removedTeams = removedTeams,_modifiedTeams = modifiedTeams,_addedSessions = addedSessions,_removedSessions = removedSessions,_modifiedSessions = modifiedSessions,_addedRolePlays = addedRolePlays,_removedRolePlays = removedRolePlays,_modifiedRolePlays = modifiedRolePlays;
-  factory _ProgramDiff.fromJson(Map<String, dynamic> json) => _$ProgramDiffFromJson(json);
+class _PlanDiff implements PlanDiff {
+  const _PlanDiff({this.nameLocal, this.nameRemote, this.descriptionLocal, this.descriptionRemote, this.tagsLocal, this.tagsRemote, final  List<String> addedExercises = const [], final  List<String> removedExercises = const [], final  List<ItemDiff> modifiedExercises = const [], final  List<String> addedTeams = const [], final  List<String> removedTeams = const [], final  List<ItemDiff> modifiedTeams = const [], final  List<String> addedSessions = const [], final  List<String> removedSessions = const [], final  List<ItemDiff> modifiedSessions = const [], final  List<String> addedRolePlays = const [], final  List<String> removedRolePlays = const [], final  List<ItemDiff> modifiedRolePlays = const []}): _addedExercises = addedExercises,_removedExercises = removedExercises,_modifiedExercises = modifiedExercises,_addedTeams = addedTeams,_removedTeams = removedTeams,_modifiedTeams = modifiedTeams,_addedSessions = addedSessions,_removedSessions = removedSessions,_modifiedSessions = modifiedSessions,_addedRolePlays = addedRolePlays,_removedRolePlays = removedRolePlays,_modifiedRolePlays = modifiedRolePlays;
+  factory _PlanDiff.fromJson(Map<String, dynamic> json) => _$PlanDiffFromJson(json);
 
 /// Local name when it differs from remote. Null when names match.
 @override final  String? nameLocal;
@@ -1151,20 +1151,20 @@ class _ProgramDiff implements ProgramDiff {
 }
 
 
-/// Create a copy of ProgramDiff
+/// Create a copy of PlanDiff
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$ProgramDiffCopyWith<_ProgramDiff> get copyWith => __$ProgramDiffCopyWithImpl<_ProgramDiff>(this, _$identity);
+_$PlanDiffCopyWith<_PlanDiff> get copyWith => __$PlanDiffCopyWithImpl<_PlanDiff>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$ProgramDiffToJson(this, );
+  return _$PlanDiffToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProgramDiff&&(identical(other.nameLocal, nameLocal) || other.nameLocal == nameLocal)&&(identical(other.nameRemote, nameRemote) || other.nameRemote == nameRemote)&&(identical(other.descriptionLocal, descriptionLocal) || other.descriptionLocal == descriptionLocal)&&(identical(other.descriptionRemote, descriptionRemote) || other.descriptionRemote == descriptionRemote)&&(identical(other.tagsLocal, tagsLocal) || other.tagsLocal == tagsLocal)&&(identical(other.tagsRemote, tagsRemote) || other.tagsRemote == tagsRemote)&&const DeepCollectionEquality().equals(other._addedExercises, _addedExercises)&&const DeepCollectionEquality().equals(other._removedExercises, _removedExercises)&&const DeepCollectionEquality().equals(other._modifiedExercises, _modifiedExercises)&&const DeepCollectionEquality().equals(other._addedTeams, _addedTeams)&&const DeepCollectionEquality().equals(other._removedTeams, _removedTeams)&&const DeepCollectionEquality().equals(other._modifiedTeams, _modifiedTeams)&&const DeepCollectionEquality().equals(other._addedSessions, _addedSessions)&&const DeepCollectionEquality().equals(other._removedSessions, _removedSessions)&&const DeepCollectionEquality().equals(other._modifiedSessions, _modifiedSessions)&&const DeepCollectionEquality().equals(other._addedRolePlays, _addedRolePlays)&&const DeepCollectionEquality().equals(other._removedRolePlays, _removedRolePlays)&&const DeepCollectionEquality().equals(other._modifiedRolePlays, _modifiedRolePlays));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlanDiff&&(identical(other.nameLocal, nameLocal) || other.nameLocal == nameLocal)&&(identical(other.nameRemote, nameRemote) || other.nameRemote == nameRemote)&&(identical(other.descriptionLocal, descriptionLocal) || other.descriptionLocal == descriptionLocal)&&(identical(other.descriptionRemote, descriptionRemote) || other.descriptionRemote == descriptionRemote)&&(identical(other.tagsLocal, tagsLocal) || other.tagsLocal == tagsLocal)&&(identical(other.tagsRemote, tagsRemote) || other.tagsRemote == tagsRemote)&&const DeepCollectionEquality().equals(other._addedExercises, _addedExercises)&&const DeepCollectionEquality().equals(other._removedExercises, _removedExercises)&&const DeepCollectionEquality().equals(other._modifiedExercises, _modifiedExercises)&&const DeepCollectionEquality().equals(other._addedTeams, _addedTeams)&&const DeepCollectionEquality().equals(other._removedTeams, _removedTeams)&&const DeepCollectionEquality().equals(other._modifiedTeams, _modifiedTeams)&&const DeepCollectionEquality().equals(other._addedSessions, _addedSessions)&&const DeepCollectionEquality().equals(other._removedSessions, _removedSessions)&&const DeepCollectionEquality().equals(other._modifiedSessions, _modifiedSessions)&&const DeepCollectionEquality().equals(other._addedRolePlays, _addedRolePlays)&&const DeepCollectionEquality().equals(other._removedRolePlays, _removedRolePlays)&&const DeepCollectionEquality().equals(other._modifiedRolePlays, _modifiedRolePlays));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1173,15 +1173,15 @@ int get hashCode => Object.hash(runtimeType,nameLocal,nameRemote,descriptionLoca
 
 @override
 String toString() {
-  return 'ProgramDiff(nameLocal: $nameLocal, nameRemote: $nameRemote, descriptionLocal: $descriptionLocal, descriptionRemote: $descriptionRemote, tagsLocal: $tagsLocal, tagsRemote: $tagsRemote, addedExercises: $addedExercises, removedExercises: $removedExercises, modifiedExercises: $modifiedExercises, addedTeams: $addedTeams, removedTeams: $removedTeams, modifiedTeams: $modifiedTeams, addedSessions: $addedSessions, removedSessions: $removedSessions, modifiedSessions: $modifiedSessions, addedRolePlays: $addedRolePlays, removedRolePlays: $removedRolePlays, modifiedRolePlays: $modifiedRolePlays)';
+  return 'PlanDiff(nameLocal: $nameLocal, nameRemote: $nameRemote, descriptionLocal: $descriptionLocal, descriptionRemote: $descriptionRemote, tagsLocal: $tagsLocal, tagsRemote: $tagsRemote, addedExercises: $addedExercises, removedExercises: $removedExercises, modifiedExercises: $modifiedExercises, addedTeams: $addedTeams, removedTeams: $removedTeams, modifiedTeams: $modifiedTeams, addedSessions: $addedSessions, removedSessions: $removedSessions, modifiedSessions: $modifiedSessions, addedRolePlays: $addedRolePlays, removedRolePlays: $removedRolePlays, modifiedRolePlays: $modifiedRolePlays)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$ProgramDiffCopyWith<$Res> implements $ProgramDiffCopyWith<$Res> {
-  factory _$ProgramDiffCopyWith(_ProgramDiff value, $Res Function(_ProgramDiff) _then) = __$ProgramDiffCopyWithImpl;
+abstract mixin class _$PlanDiffCopyWith<$Res> implements $PlanDiffCopyWith<$Res> {
+  factory _$PlanDiffCopyWith(_PlanDiff value, $Res Function(_PlanDiff) _then) = __$PlanDiffCopyWithImpl;
 @override @useResult
 $Res call({
  String? nameLocal, String? nameRemote, String? descriptionLocal, String? descriptionRemote, String? tagsLocal, String? tagsRemote, List<String> addedExercises, List<String> removedExercises, List<ItemDiff> modifiedExercises, List<String> addedTeams, List<String> removedTeams, List<ItemDiff> modifiedTeams, List<String> addedSessions, List<String> removedSessions, List<ItemDiff> modifiedSessions, List<String> addedRolePlays, List<String> removedRolePlays, List<ItemDiff> modifiedRolePlays
@@ -1192,17 +1192,17 @@ $Res call({
 
 }
 /// @nodoc
-class __$ProgramDiffCopyWithImpl<$Res>
-    implements _$ProgramDiffCopyWith<$Res> {
-  __$ProgramDiffCopyWithImpl(this._self, this._then);
+class __$PlanDiffCopyWithImpl<$Res>
+    implements _$PlanDiffCopyWith<$Res> {
+  __$PlanDiffCopyWithImpl(this._self, this._then);
 
-  final _ProgramDiff _self;
-  final $Res Function(_ProgramDiff) _then;
+  final _PlanDiff _self;
+  final $Res Function(_PlanDiff) _then;
 
-/// Create a copy of ProgramDiff
+/// Create a copy of PlanDiff
 /// with the given fields replaced by the non-null parameter values.
 @override @pragma('vm:prefer-inline') $Res call({Object? nameLocal = freezed,Object? nameRemote = freezed,Object? descriptionLocal = freezed,Object? descriptionRemote = freezed,Object? tagsLocal = freezed,Object? tagsRemote = freezed,Object? addedExercises = null,Object? removedExercises = null,Object? modifiedExercises = null,Object? addedTeams = null,Object? removedTeams = null,Object? modifiedTeams = null,Object? addedSessions = null,Object? removedSessions = null,Object? modifiedSessions = null,Object? addedRolePlays = null,Object? removedRolePlays = null,Object? modifiedRolePlays = null,}) {
-  return _then(_ProgramDiff(
+  return _then(_PlanDiff(
 nameLocal: freezed == nameLocal ? _self.nameLocal : nameLocal // ignore: cast_nullable_to_non_nullable
 as String?,nameRemote: freezed == nameRemote ? _self.nameRemote : nameRemote // ignore: cast_nullable_to_non_nullable
 as String?,descriptionLocal: freezed == descriptionLocal ? _self.descriptionLocal : descriptionLocal // ignore: cast_nullable_to_non_nullable
@@ -2076,28 +2076,28 @@ $SimpleTimeOfDayCopyWith<$Res> get startTime {
 
 
 /// @nodoc
-mixin _$ProgramMetadata {
+mixin _$PlanMetadata {
 
  DateTime get created; DateTime get updated; String get version;// Optional schema marker added in schema 1.1 (ADR-0018).
 // Absent in 1.0 archives; readers treat null as '1.0'.
  String? get schema;// ISO 639-1 code for the plan's *content* language (name, briefs,
 // exercise/station/team names) — unrelated to the app's own UI locale.
-// null until the author picks one via ProgramFormScreen (ADR-0007
+// null until the author picks one via PlanFormScreen (ADR-0007
 // addendum). Never defaulted or guessed by readers.
  String? get languageCode;
-/// Create a copy of ProgramMetadata
+/// Create a copy of PlanMetadata
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$ProgramMetadataCopyWith<ProgramMetadata> get copyWith => _$ProgramMetadataCopyWithImpl<ProgramMetadata>(this as ProgramMetadata, _$identity);
+$PlanMetadataCopyWith<PlanMetadata> get copyWith => _$PlanMetadataCopyWithImpl<PlanMetadata>(this as PlanMetadata, _$identity);
 
-  /// Serializes this ProgramMetadata to a JSON map.
+  /// Serializes this PlanMetadata to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProgramMetadata&&(identical(other.created, created) || other.created == created)&&(identical(other.updated, updated) || other.updated == updated)&&(identical(other.version, version) || other.version == version)&&(identical(other.schema, schema) || other.schema == schema)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlanMetadata&&(identical(other.created, created) || other.created == created)&&(identical(other.updated, updated) || other.updated == updated)&&(identical(other.version, version) || other.version == version)&&(identical(other.schema, schema) || other.schema == schema)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2106,15 +2106,15 @@ int get hashCode => Object.hash(runtimeType,created,updated,version,schema,langu
 
 @override
 String toString() {
-  return 'ProgramMetadata(created: $created, updated: $updated, version: $version, schema: $schema, languageCode: $languageCode)';
+  return 'PlanMetadata(created: $created, updated: $updated, version: $version, schema: $schema, languageCode: $languageCode)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $ProgramMetadataCopyWith<$Res>  {
-  factory $ProgramMetadataCopyWith(ProgramMetadata value, $Res Function(ProgramMetadata) _then) = _$ProgramMetadataCopyWithImpl;
+abstract mixin class $PlanMetadataCopyWith<$Res>  {
+  factory $PlanMetadataCopyWith(PlanMetadata value, $Res Function(PlanMetadata) _then) = _$PlanMetadataCopyWithImpl;
 @useResult
 $Res call({
  DateTime created, DateTime updated, String version, String? schema, String? languageCode
@@ -2125,14 +2125,14 @@ $Res call({
 
 }
 /// @nodoc
-class _$ProgramMetadataCopyWithImpl<$Res>
-    implements $ProgramMetadataCopyWith<$Res> {
-  _$ProgramMetadataCopyWithImpl(this._self, this._then);
+class _$PlanMetadataCopyWithImpl<$Res>
+    implements $PlanMetadataCopyWith<$Res> {
+  _$PlanMetadataCopyWithImpl(this._self, this._then);
 
-  final ProgramMetadata _self;
-  final $Res Function(ProgramMetadata) _then;
+  final PlanMetadata _self;
+  final $Res Function(PlanMetadata) _then;
 
-/// Create a copy of ProgramMetadata
+/// Create a copy of PlanMetadata
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? created = null,Object? updated = null,Object? version = null,Object? schema = freezed,Object? languageCode = freezed,}) {
   return _then(_self.copyWith(
@@ -2148,8 +2148,8 @@ as String?,
 }
 
 
-/// Adds pattern-matching-related methods to [ProgramMetadata].
-extension ProgramMetadataPatterns on ProgramMetadata {
+/// Adds pattern-matching-related methods to [PlanMetadata].
+extension PlanMetadataPatterns on PlanMetadata {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -2162,10 +2162,10 @@ extension ProgramMetadataPatterns on ProgramMetadata {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ProgramMetadata value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PlanMetadata value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _ProgramMetadata() when $default != null:
+case _PlanMetadata() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -2184,10 +2184,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ProgramMetadata value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PlanMetadata value)  $default,){
 final _that = this;
 switch (_that) {
-case _ProgramMetadata():
+case _PlanMetadata():
 return $default(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
@@ -2202,10 +2202,10 @@ return $default(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ProgramMetadata value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PlanMetadata value)?  $default,){
 final _that = this;
 switch (_that) {
-case _ProgramMetadata() when $default != null:
+case _PlanMetadata() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -2225,7 +2225,7 @@ return $default(_that);case _:
 
 @optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime created,  DateTime updated,  String version,  String? schema,  String? languageCode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _ProgramMetadata() when $default != null:
+case _PlanMetadata() when $default != null:
 return $default(_that.created,_that.updated,_that.version,_that.schema,_that.languageCode);case _:
   return orElse();
 
@@ -2246,7 +2246,7 @@ return $default(_that.created,_that.updated,_that.version,_that.schema,_that.lan
 
 @optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime created,  DateTime updated,  String version,  String? schema,  String? languageCode)  $default,) {final _that = this;
 switch (_that) {
-case _ProgramMetadata():
+case _PlanMetadata():
 return $default(_that.created,_that.updated,_that.version,_that.schema,_that.languageCode);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -2263,7 +2263,7 @@ return $default(_that.created,_that.updated,_that.version,_that.schema,_that.lan
 
 @optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime created,  DateTime updated,  String version,  String? schema,  String? languageCode)?  $default,) {final _that = this;
 switch (_that) {
-case _ProgramMetadata() when $default != null:
+case _PlanMetadata() when $default != null:
 return $default(_that.created,_that.updated,_that.version,_that.schema,_that.languageCode);case _:
   return null;
 
@@ -2275,9 +2275,9 @@ return $default(_that.created,_that.updated,_that.version,_that.schema,_that.lan
 /// @nodoc
 @JsonSerializable()
 
-class _ProgramMetadata implements ProgramMetadata {
-  const _ProgramMetadata({required this.created, required this.updated, required this.version, this.schema, this.languageCode});
-  factory _ProgramMetadata.fromJson(Map<String, dynamic> json) => _$ProgramMetadataFromJson(json);
+class _PlanMetadata implements PlanMetadata {
+  const _PlanMetadata({required this.created, required this.updated, required this.version, this.schema, this.languageCode});
+  factory _PlanMetadata.fromJson(Map<String, dynamic> json) => _$PlanMetadataFromJson(json);
 
 @override final  DateTime created;
 @override final  DateTime updated;
@@ -2287,24 +2287,24 @@ class _ProgramMetadata implements ProgramMetadata {
 @override final  String? schema;
 // ISO 639-1 code for the plan's *content* language (name, briefs,
 // exercise/station/team names) — unrelated to the app's own UI locale.
-// null until the author picks one via ProgramFormScreen (ADR-0007
+// null until the author picks one via PlanFormScreen (ADR-0007
 // addendum). Never defaulted or guessed by readers.
 @override final  String? languageCode;
 
-/// Create a copy of ProgramMetadata
+/// Create a copy of PlanMetadata
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$ProgramMetadataCopyWith<_ProgramMetadata> get copyWith => __$ProgramMetadataCopyWithImpl<_ProgramMetadata>(this, _$identity);
+_$PlanMetadataCopyWith<_PlanMetadata> get copyWith => __$PlanMetadataCopyWithImpl<_PlanMetadata>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$ProgramMetadataToJson(this, );
+  return _$PlanMetadataToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProgramMetadata&&(identical(other.created, created) || other.created == created)&&(identical(other.updated, updated) || other.updated == updated)&&(identical(other.version, version) || other.version == version)&&(identical(other.schema, schema) || other.schema == schema)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlanMetadata&&(identical(other.created, created) || other.created == created)&&(identical(other.updated, updated) || other.updated == updated)&&(identical(other.version, version) || other.version == version)&&(identical(other.schema, schema) || other.schema == schema)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2313,15 +2313,15 @@ int get hashCode => Object.hash(runtimeType,created,updated,version,schema,langu
 
 @override
 String toString() {
-  return 'ProgramMetadata(created: $created, updated: $updated, version: $version, schema: $schema, languageCode: $languageCode)';
+  return 'PlanMetadata(created: $created, updated: $updated, version: $version, schema: $schema, languageCode: $languageCode)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$ProgramMetadataCopyWith<$Res> implements $ProgramMetadataCopyWith<$Res> {
-  factory _$ProgramMetadataCopyWith(_ProgramMetadata value, $Res Function(_ProgramMetadata) _then) = __$ProgramMetadataCopyWithImpl;
+abstract mixin class _$PlanMetadataCopyWith<$Res> implements $PlanMetadataCopyWith<$Res> {
+  factory _$PlanMetadataCopyWith(_PlanMetadata value, $Res Function(_PlanMetadata) _then) = __$PlanMetadataCopyWithImpl;
 @override @useResult
 $Res call({
  DateTime created, DateTime updated, String version, String? schema, String? languageCode
@@ -2332,17 +2332,17 @@ $Res call({
 
 }
 /// @nodoc
-class __$ProgramMetadataCopyWithImpl<$Res>
-    implements _$ProgramMetadataCopyWith<$Res> {
-  __$ProgramMetadataCopyWithImpl(this._self, this._then);
+class __$PlanMetadataCopyWithImpl<$Res>
+    implements _$PlanMetadataCopyWith<$Res> {
+  __$PlanMetadataCopyWithImpl(this._self, this._then);
 
-  final _ProgramMetadata _self;
-  final $Res Function(_ProgramMetadata) _then;
+  final _PlanMetadata _self;
+  final $Res Function(_PlanMetadata) _then;
 
-/// Create a copy of ProgramMetadata
+/// Create a copy of PlanMetadata
 /// with the given fields replaced by the non-null parameter values.
 @override @pragma('vm:prefer-inline') $Res call({Object? created = null,Object? updated = null,Object? version = null,Object? schema = freezed,Object? languageCode = freezed,}) {
-  return _then(_ProgramMetadata(
+  return _then(_PlanMetadata(
 created: null == created ? _self.created : created // ignore: cast_nullable_to_non_nullable
 as DateTime,updated: null == updated ? _self.updated : updated // ignore: cast_nullable_to_non_nullable
 as DateTime,version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable

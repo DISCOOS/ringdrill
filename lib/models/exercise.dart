@@ -74,8 +74,8 @@ extension ExerciseX on Exercise {
   /// [StationNumberBadge]), expanding to the full label once zoomed in
   /// close enough to have room for it (`MapConfig.labelDetailZoomFor`).
   ///
-  /// [exerciseNumber] is the 1-based position of this exercise in the program
-  /// (the caller knows the program order; the exercise itself does not). The
+  /// [exerciseNumber] is the 1-based position of this exercise in the plan
+  /// (the caller knows the plan order; the exercise itself does not). The
   /// sub-index is the station's ordinal in the index-sorted full station list
   /// — including stations without a position — so the numbers match the badges
   /// shown in the Stations list even when some stations are unplaced.
@@ -179,7 +179,7 @@ extension ExerciseX on Exercise {
   }
 }
 
-/// Represents an immutable drill program metadata
+/// Represents an immutable drill plan metadata
 @freezed
 sealed class ExerciseMetadata with _$ExerciseMetadata {
   const factory ExerciseMetadata({String? copyOfUuid}) = _ExerciseMetadata;

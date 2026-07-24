@@ -11,20 +11,20 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 
-part 'program.freezed.dart';
-part 'program.g.dart';
+part 'plan.freezed.dart';
+part 'plan.g.dart';
 
-/// Represents an immutable drill program
+/// Represents an immutable drill plan
 @freezed
-sealed class Program with _$Program {
-  const factory Program({
+sealed class Plan with _$Plan {
+  const factory Plan({
     required String uuid,
     required String name,
     required String description,
     @Default(ExerciseNumberFormat.hash) ExerciseNumberFormat exerciseNumberFormat,
     @Default(StationNumberFormat.dotted) StationNumberFormat stationNumberFormat,
-    required ProgramMetadata metadata,
-    @Default(ProgramSource.local()) ProgramSource source,
+    required PlanMetadata metadata,
+    @Default(PlanSource.local()) PlanSource source,
     String? contentHash,
     required List<Team> teams,
     required List<Session> sessions,
@@ -39,50 +39,50 @@ sealed class Program with _$Program {
     // @Default([]) so 1.0/1.1/1.2 archives without the key deserialize to
     // an empty registry (ADR-0046, additive field, no schema bump).
     @Default(<DrillVariable>[]) List<DrillVariable> variables,
-    // Markdown brief fields — stored as program/<field>.md, not in JSON.
-    // May contain unresolved {{var.<name>}} tokens and {{program.name}}/
-    // {{program.description}} cross-references (ADR-0046, DESIGN-004/008).
+    // Markdown brief fields — stored as plan/<field>.md, not in JSON.
+    // May contain unresolved {{var.<name>}} tokens and {{plan.name}}/
+    // {{plan.description}} cross-references (ADR-0046, DESIGN-004/008).
     // Never render one of these directly in a Text widget — resolve it
     // first via ResolvedMarkdownText (lib/views/widgets/) or
-    // BriefRenderer.resolveProgramScopeText, the same way BriefRenderer.render
+    // BriefRenderer.resolvePlanScopeText, the same way BriefRenderer.render
     // resolves it in the full brief. Reading the raw field straight into a
-    // Text widget is the bug the Program overview card had before
+    // Text widget is the bug the Plan overview card had before
     // ResolvedMarkdownText existed: a declared variable renders as a
     // literal `{{...}}` token instead of its value.
     @JsonKey(includeFromJson: false, includeToJson: false) String? briefIntroMd,
     @JsonKey(includeFromJson: false, includeToJson: false) String? commsMd,
     @JsonKey(includeFromJson: false, includeToJson: false)
     String? beforeRoundMd,
-  }) = _Program;
+  }) = _Plan;
 
-  factory Program.fromJson(Map<String, dynamic> json) =>
-      _$ProgramFromJson(json);
+  factory Plan.fromJson(Map<String, dynamic> json) =>
+      _$PlanFromJson(json);
 }
 
 @freezed
-sealed class ProgramSource with _$ProgramSource {
-  const factory ProgramSource.local() = _Local;
+sealed class PlanSource with _$PlanSource {
+  const factory PlanSource.local() = _Local;
 
-  const factory ProgramSource.imported({required String fileName}) = _Imported;
+  const factory PlanSource.imported({required String fileName}) = _Imported;
 
-  const factory ProgramSource.catalog({
+  const factory PlanSource.catalog({
     required String slug,
     required String latestEtag,
     DateTime? installedAt,
 
     /// The catalog's publish version as of the last install/refresh/publish
-    /// (e.g. "5"). Null for programs installed before this field existed;
+    /// (e.g. "5"). Null for plans installed before this field existed;
     /// repopulated on the next successful refresh or publish.
     String? latestVersion,
   }) = _Catalog;
 
-  factory ProgramSource.fromJson(Map<String, dynamic> json) =>
-      _$ProgramSourceFromJson(json);
+  factory PlanSource.fromJson(Map<String, dynamic> json) =>
+      _$PlanSourceFromJson(json);
 }
 
 @freezed
-sealed class ProgramDiff with _$ProgramDiff {
-  const factory ProgramDiff({
+sealed class PlanDiff with _$PlanDiff {
+  const factory PlanDiff({
     /// Local name when it differs from remote. Null when names match.
     String? nameLocal,
 
@@ -117,14 +117,14 @@ sealed class ProgramDiff with _$ProgramDiff {
     @Default([]) List<String> addedRolePlays,
     @Default([]) List<String> removedRolePlays,
     @Default([]) List<ItemDiff> modifiedRolePlays,
-  }) = _ProgramDiff;
+  }) = _PlanDiff;
 
-  factory ProgramDiff.fromJson(Map<String, dynamic> json) =>
-      _$ProgramDiffFromJson(json);
+  factory PlanDiff.fromJson(Map<String, dynamic> json) =>
+      _$PlanDiffFromJson(json);
 }
 
 /// A single field that differs between the local and remote copy of a
-/// modified [ProgramDiff] item. [field] is a stable, non-localized key (e.g.
+/// modified [PlanDiff] item. [field] is a stable, non-localized key (e.g.
 /// `"name"`, `"methodMd"`) — the view layer maps it to a display label.
 /// [local]/[remote] are pre-formatted for display; both null means the
 /// field's presence/absence toggled (e.g. a nested list changed) rather than
@@ -141,7 +141,7 @@ sealed class FieldChange with _$FieldChange {
       _$FieldChangeFromJson(json);
 }
 
-/// A modified item (exercise/team/session/rolePlay) in a [ProgramDiff],
+/// A modified item (exercise/team/session/rolePlay) in a [PlanDiff],
 /// naming which of its fields changed. [changes] is best-effort: it covers
 /// the fields users actually edit, not every JSON key, so it can be empty
 /// even though the item as a whole compares unequal (see the "other changes"
@@ -151,7 +151,7 @@ sealed class FieldChange with _$FieldChange {
 ///
 /// [number] is the item's formatted display position (e.g. `"#2"` from
 /// [Numbering.exercise]), used by the view to tell apart same-named items —
-/// a drill program routinely has several exercises sharing a name (e.g. the
+/// a drill plan routinely has several exercises sharing a name (e.g. the
 /// same round repeated per team). Null for entity types without a numbering
 /// scheme (teams, sessions, role plays).
 ///
@@ -162,7 +162,7 @@ sealed class FieldChange with _$FieldChange {
 /// [Numbering.station] label ("1.2") and its changes are ordinary
 /// [FieldChange]s — there is nothing station-specific about the shape
 /// itself. [addedNested]/[removedNested] are the sub-entity equivalent of
-/// [ProgramDiff]'s own `added*`/`removed*` lists, one level down — plain
+/// [PlanDiff]'s own `added*`/`removed*` lists, one level down — plain
 /// names, no per-item detail, same as how the top-level added/removed
 /// lists render. All three are empty for every entity type except
 /// exercises today.
@@ -181,13 +181,13 @@ sealed class ItemDiff with _$ItemDiff {
       _$ItemDiffFromJson(json);
 }
 
-extension ProgramX on Program {
+extension PlanX on Plan {
   /// Stable fingerprint of the user-visible content. Used to detect whether
   /// the local copy has unpublished edits when refreshing from the catalog.
   ///
-  /// This is a DENYLIST, not an allowlist: [programMap] below starts from
-  /// this program's own [Program.toJson] — which already carries every
-  /// current field, and every field added to [Program] in the future,
+  /// This is a DENYLIST, not an allowlist: [planMap] below starts from
+  /// this plan's own [Plan.toJson] — which already carries every
+  /// current field, and every field added to [Plan] in the future,
   /// automatically — and then only *removes* the handful of keys that must
   /// be excluded. The previous version hand-listed the fields to include
   /// (just `name`/`description`/`tags`/the brief markdown fields) and
@@ -198,7 +198,7 @@ extension ProgramX on Program {
   /// publish), which is far cheaper than silently failing to detect a real
   /// edit. The exercise/station/team/session/rolePlay levels already follow
   /// this same "start from toJson, patch in what's excluded" shape below —
-  /// only the program level was still hand-listed.
+  /// only the plan level was still hand-listed.
   ///
   /// Removed on purpose:
   /// - `uuid`, `contentHash`, `source` — identity/bookkeeping, not content.
@@ -213,7 +213,7 @@ extension ProgramX on Program {
   /// - `variables` — `toJson()` gives a raw, unsorted list; the version
   ///   sorted by name (ADR-0046) built below replaces it.
   ///
-  /// If you add a new bookkeeping-only field to [Program] or [ProgramMetadata]
+  /// If you add a new bookkeeping-only field to [Plan] or [PlanMetadata]
   /// (something that changes without the plan's content changing), add it
   /// to the removal list above. If you're unsure whether a new field
   /// belongs here, leave it included — that is the safe default.
@@ -230,7 +230,7 @@ extension ProgramX on Program {
   /// already carried into `_canonicalRolePlayMap` with no extra code.
   String computeContentHash() {
     // Build canonical exercise/rolePlay maps with markdown fields injected.
-    // Shared with diffPrograms() below so both stay exhaustive over the same
+    // Shared with diffPlans() below so both stay exhaustive over the same
     // set of fields.
     final sortedExercises = exercises.toList()
       ..sort((a, b) => a.uuid.compareTo(b.uuid));
@@ -242,7 +242,7 @@ extension ProgramX on Program {
     final rolePlaysMaps = sortedRolePlays.map(_canonicalRolePlayMap).toList();
 
     // Denylist, not allowlist — see the class-level doc comment above.
-    final programMap = Map<String, dynamic>.from(toJson())
+    final planMap = Map<String, dynamic>.from(toJson())
       ..remove('uuid')
       ..remove('contentHash')
       ..remove('source')
@@ -259,7 +259,7 @@ extension ProgramX on Program {
       ..['beforeRoundMd'] = beforeRoundMd;
 
     final canonical = {
-      ...programMap,
+      ...planMap,
       'exercises': exerciseMaps,
       'teams': _sortedCanonical(teams, (e) => e.uuid),
       'sessions': _sortedCanonical(sessions, (e) => e.uuid),
@@ -276,7 +276,7 @@ extension ProgramX on Program {
 
 /// Canonical JSON map for an [Exercise], with its own and its stations'
 /// markdown fields (excluded from `toJson()` per ADR-0022) injected back in.
-/// Shared by [ProgramX.computeContentHash] and [diffPrograms] so both stay
+/// Shared by [PlanX.computeContentHash] and [diffPlans] so both stay
 /// exhaustive over the same fields — see the denylist doc comment above for
 /// why a separate, hand-rolled comparison used to silently miss
 /// markdown-only edits.
@@ -303,7 +303,7 @@ Map<String, dynamic> _canonicalExerciseMap(Exercise ex) {
     sMap['directorNotesMd'] = s.directorNotesMd;
     // toJson() gives raw, unsorted lists; sorted by slug (ADR-0047) so
     // archive order never affects the hash, same rationale as `variables`
-    // sorted by name at the program level above.
+    // sorted by name at the plan level above.
     sMap['locations'] = _sortedCanonical(s.locations, (l) => l.slug);
     sMap['persons'] = _sortedCanonical(s.persons, (p) => p.slug);
     return _canonicalize(sMap);
@@ -321,7 +321,7 @@ Map<String, dynamic> _canonicalRolePlayMap(RolePlay rp) {
   return _canonicalize(map) as Map<String, dynamic>;
 }
 
-ProgramDiff diffPrograms(Program local, Program remote) {
+PlanDiff diffPlans(Plan local, Plan remote) {
   final localExerciseOrdinals = _exerciseOrdinalsByUuid(local);
   final exerciseDiff = _diffItems<Exercise>(
     local.exercises,
@@ -384,7 +384,7 @@ ProgramDiff diffPrograms(Program local, Program remote) {
   final tagsChanged =
       localTagsSorted.join(',') != remoteTagsSorted.join(',');
 
-  return ProgramDiff(
+  return PlanDiff(
     nameLocal: nameChanged ? local.name : null,
     nameRemote: nameChanged ? remote.name : null,
     descriptionLocal: descriptionChanged ? local.description : null,
@@ -406,27 +406,27 @@ ProgramDiff diffPrograms(Program local, Program remote) {
   );
 }
 
-/// 1-based position of every exercise in [program], keyed by uuid, sorted
+/// 1-based position of every exercise in [plan], keyed by uuid, sorted
 /// by [Exercise.index]. Shared by [_exerciseNumbersByUuid] (which formats
-/// it via [Numbering.exercise]) and `diffPrograms` (which needs the raw int
+/// it via [Numbering.exercise]) and `diffPlans` (which needs the raw int
 /// to label that exercise's stations via [Numbering.station]).
-Map<String, int> _exerciseOrdinalsByUuid(Program program) {
-  final sorted = [...program.exercises]
+Map<String, int> _exerciseOrdinalsByUuid(Plan plan) {
+  final sorted = [...plan.exercises]
     ..sort((a, b) => a.index.compareTo(b.index));
   return {for (var i = 0; i < sorted.length; i++) sorted[i].uuid: i + 1};
 }
 
 /// Formatted display position (e.g. `"#2"`) for every exercise in
-/// [program], keyed by uuid — the number the app already shows elsewhere
+/// [plan], keyed by uuid — the number the app already shows elsewhere
 /// (see [ExerciseNumberBadge]). Passed into `_diffItems` so a modified or
 /// reordered exercise can be labelled the same way the rest of the app
-/// labels it, disambiguating same-named exercises (a drill program routinely
+/// labels it, disambiguating same-named exercises (a drill plan routinely
 /// repeats the same exercise name across rounds/teams).
-Map<String, String> _exerciseNumbersByUuid(Program program) {
-  final ordinals = _exerciseOrdinalsByUuid(program);
+Map<String, String> _exerciseNumbersByUuid(Plan plan) {
+  final ordinals = _exerciseOrdinalsByUuid(plan);
   return {
     for (final entry in ordinals.entries)
-      entry.key: Numbering.exercise(program.exerciseNumberFormat, entry.value),
+      entry.key: Numbering.exercise(plan.exerciseNumberFormat, entry.value),
   };
 }
 
@@ -457,10 +457,10 @@ Object? _canonicalize(Object? value) {
 /// Best-effort field-level changes between two [Exercise]s, for display in
 /// the catalog-conflict diff. Not exhaustive — `index`/`schedule`/
 /// `metadata`/`templateId` are bookkeeping/derived and skipped, same
-/// rationale as [ProgramX.computeContentHash]'s denylist. Station edits are
+/// rationale as [PlanX.computeContentHash]'s denylist. Station edits are
 /// NOT covered here — they are reported separately, per station, via
 /// `_diffStations` and attached to the exercise's [ItemDiff.nestedChanges]
-/// (see `diffPrograms`) — `_diffItems`'s exhaustive canonical-map comparison
+/// (see `diffPlans`) — `_diffItems`'s exhaustive canonical-map comparison
 /// is what actually decides whether the exercise is "modified" at all; this
 /// only explains its own top-level fields.
 List<FieldChange> _exerciseFieldChanges(Exercise local, Exercise remote) {
@@ -715,7 +715,11 @@ List<FieldChange> _rolePlayFieldChanges(RolePlay local, RolePlay remote) {
 
   add('name', local.name, remote.name);
   add('age', local.age?.toString(), remote.age?.toString());
-  add('signalement', local.signalement, remote.signalement);
+  // Keyed 'roleDescription', not the plain 'description' the diff-label
+  // switch already uses for Station.description — RolePlay and Station are
+  // different diff branches but share one label lookup in
+  // plan_diff_widgets.dart, and a bare 'description' key would collide.
+  add('roleDescription', local.description, remote.description);
   add('background', local.background, remote.background);
   add('behavior', local.behavior, remote.behavior);
   add('propsMd', local.propsMd, remote.propsMd);
@@ -906,10 +910,10 @@ sealed class Session with _$Session {
       _$SessionFromJson(json);
 }
 
-/// Represents an immutable drill program metadata
+/// Represents an immutable drill plan metadata
 @freezed
-sealed class ProgramMetadata with _$ProgramMetadata {
-  const factory ProgramMetadata({
+sealed class PlanMetadata with _$PlanMetadata {
+  const factory PlanMetadata({
     required DateTime created,
     required DateTime updated,
     required String version,
@@ -918,11 +922,11 @@ sealed class ProgramMetadata with _$ProgramMetadata {
     String? schema,
     // ISO 639-1 code for the plan's *content* language (name, briefs,
     // exercise/station/team names) — unrelated to the app's own UI locale.
-    // null until the author picks one via ProgramFormScreen (ADR-0007
+    // null until the author picks one via PlanFormScreen (ADR-0007
     // addendum). Never defaulted or guessed by readers.
     String? languageCode,
-  }) = _ProgramMetadata;
+  }) = _PlanMetadata;
 
-  factory ProgramMetadata.fromJson(Map<String, dynamic> json) =>
-      _$ProgramMetadataFromJson(json);
+  factory PlanMetadata.fromJson(Map<String, dynamic> json) =>
+      _$PlanMetadataFromJson(json);
 }

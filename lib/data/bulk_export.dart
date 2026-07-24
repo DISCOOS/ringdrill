@@ -1,15 +1,15 @@
 import 'dart:typed_data';
 
 import 'package:ringdrill/data/drill_library.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 
-/// Bundles every program into a single outer ZIP for migration export.
+/// Bundles every plan into a single outer ZIP for migration export.
 ///
-/// Thin delegate: the encoder lives in [DrillLibrary.fromPrograms]
+/// Thin delegate: the encoder lives in [DrillLibrary.fromPlans]
 /// (ADR-0045) so encode and decode live together. Kept here so
 /// `MigrationPage` and the migration banner do not need to change.
-Uint8List exportAllPrograms(List<Program> programs) =>
-    DrillLibrary.fromPrograms(programs);
+Uint8List exportAllPlans(List<Plan> plans) =>
+    DrillLibrary.fromPlans(plans);
 
 /// Returns the suggested filename for the outer ZIP, e.g.
 /// `ringdrill-eksport-2026-06-29.zip`.

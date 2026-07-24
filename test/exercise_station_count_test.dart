@@ -5,14 +5,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations_en.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 
 void main() {
   final localizations = AppLocalizationsEn();
 
   group('decoupled station count', () {
     test('one round can still create four stations for four teams', () {
-      final exercise = ProgramService.generateSchedule(
+      final exercise = PlanService.generateSchedule(
         name: 'One-round ring',
         startTime: const TimeOfDay(hour: 8, minute: 0),
         numberOfTeams: 4,
@@ -32,7 +32,7 @@ void main() {
     });
 
     test('more rounds than stations is allowed for revisits', () {
-      final exercise = ProgramService.generateSchedule(
+      final exercise = PlanService.generateSchedule(
         name: 'Revisits',
         startTime: const TimeOfDay(hour: 8, minute: 0),
         numberOfTeams: 4,
@@ -51,7 +51,7 @@ void main() {
 
     test('more teams than stations asserts', () {
       expect(
-        () => ProgramService.generateSchedule(
+        () => PlanService.generateSchedule(
           name: 'Too many teams',
           startTime: const TimeOfDay(hour: 8, minute: 0),
           numberOfTeams: 5,

@@ -1,7 +1,7 @@
 /// Plan-wide `{{var.<name>}}` reference bookkeeping (ADR-0046): counting,
 /// locating and rewriting references across every markdown field, every
 /// name/description field, and every `variableOverrides` map in a
-/// [Program]. Pure and Flutter-free — safe for the CLI
+/// [Plan]. Pure and Flutter-free — safe for the CLI
 /// (`bin/ringdrill.dart`) to import transitively.
 ///
 /// Deliberately does not depend on `AppLocalizations` (a Flutter type), so
@@ -15,7 +15,7 @@ library;
 
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -25,11 +25,11 @@ import 'package:ringdrill/utils/plan_variables.dart';
 /// resolution of `{{var.<name>}}` in names/descriptions) a reference — or an
 /// override key naming it — can occur in.
 enum PlanVariableField {
-  programName,
-  programDescription,
-  programBriefIntro,
-  programComms,
-  programBeforeRound,
+  planName,
+  planDescription,
+  planBriefIntro,
+  planComms,
+  planBeforeRound,
   exerciseName,
   exerciseMethod,
   exerciseLearningGoals,
@@ -57,7 +57,7 @@ enum PlanVariableField {
 /// One location referencing a variable. At most one of [exerciseNumber]
 /// (1-based), [stationCode] (pre-formatted, e.g. "3a" — [Numbering] is
 /// itself Flutter-free so this module computes it directly) and
-/// [roleplayName] is set, matching [field]'s scope; program-scope fields
+/// [roleplayName] is set, matching [field]'s scope; plan-scope fields
 /// set none of them.
 class PlanVariableReference {
   const PlanVariableReference({
@@ -94,39 +94,39 @@ class _FieldHit {
   final String? roleplayName;
 }
 
-/// Walks every markdown field and `variableOverrides` map in [program]
+/// Walks every markdown field and `variableOverrides` map in [plan]
 /// once, yielding a hit per field/override that references [name] — shared
 /// by [variableReferenceCount] and [variableReferences] so the field list
-/// (program, every exercise, every station, every roleplay) is only
+/// (plan, every exercise, every station, every roleplay) is only
 /// enumerated in one place.
-Iterable<_FieldHit> _hits(Program program, String name) sync* {
+Iterable<_FieldHit> _hits(Plan plan, String name) sync* {
   final pattern = planVariableTokenPatternFor(name);
   int matches(String? content) =>
       content == null ? 0 : pattern.allMatches(content).length;
 
-  final programName = matches(program.name);
-  if (programName > 0) {
-    yield _FieldHit(PlanVariableField.programName, programName);
+  final planName = matches(plan.name);
+  if (planName > 0) {
+    yield _FieldHit(PlanVariableField.planName, planName);
   }
-  final programDescription = matches(program.description);
-  if (programDescription > 0) {
-    yield _FieldHit(PlanVariableField.programDescription, programDescription);
+  final planDescription = matches(plan.description);
+  if (planDescription > 0) {
+    yield _FieldHit(PlanVariableField.planDescription, planDescription);
   }
-  final programBriefIntro = matches(program.briefIntroMd);
-  if (programBriefIntro > 0) {
-    yield _FieldHit(PlanVariableField.programBriefIntro, programBriefIntro);
+  final planBriefIntro = matches(plan.briefIntroMd);
+  if (planBriefIntro > 0) {
+    yield _FieldHit(PlanVariableField.planBriefIntro, planBriefIntro);
   }
-  final programComms = matches(program.commsMd);
-  if (programComms > 0) {
-    yield _FieldHit(PlanVariableField.programComms, programComms);
+  final planComms = matches(plan.commsMd);
+  if (planComms > 0) {
+    yield _FieldHit(PlanVariableField.planComms, planComms);
   }
-  final programBeforeRound = matches(program.beforeRoundMd);
-  if (programBeforeRound > 0) {
-    yield _FieldHit(PlanVariableField.programBeforeRound, programBeforeRound);
+  final planBeforeRound = matches(plan.beforeRoundMd);
+  if (planBeforeRound > 0) {
+    yield _FieldHit(PlanVariableField.planBeforeRound, planBeforeRound);
   }
 
-  for (var i = 0; i < program.exercises.length; i++) {
-    final exercise = program.exercises[i];
+  for (var i = 0; i < plan.exercises.length; i++) {
+    final exercise = plan.exercises[i];
     final exerciseNumber = i + 1;
 
     final exerciseName = matches(exercise.name);
@@ -195,7 +195,7 @@ Iterable<_FieldHit> _hits(Program program, String name) sync* {
 
     for (final station in exercise.stations) {
       final stationCode = Numbering.station(
-        program.stationNumberFormat,
+        plan.stationNumberFormat,
         exerciseNumber: exerciseNumber,
         stationIndex: station.index,
       );
@@ -282,7 +282,7 @@ Iterable<_FieldHit> _hits(Program program, String name) sync* {
     }
   }
 
-  for (final rolePlay in program.rolePlays) {
+  for (final rolePlay in plan.rolePlays) {
     final roleplayNameField = matches(rolePlay.name);
     if (roleplayNameField > 0) {
       yield _FieldHit(
@@ -319,18 +319,18 @@ Iterable<_FieldHit> _hits(Program program, String name) sync* {
 }
 
 /// Total number of `{{var.<name>}}` occurrences across every markdown field
-/// in [program], plus one for every `variableOverrides` map that keys on
+/// in [plan], plus one for every `variableOverrides` map that keys on
 /// [name]. Zero means [name] is safe to delete.
-int variableReferenceCount(Program program, String name) =>
-    _hits(program, name).fold(0, (sum, hit) => sum + hit.matchCount);
+int variableReferenceCount(Plan plan, String name) =>
+    _hits(plan, name).fold(0, (sum, hit) => sum + hit.matchCount);
 
 /// One entry per distinct location referencing [name] — a field counted
 /// once regardless of how many times the token appears inside it, unlike
 /// [variableReferenceCount]. For the delete-blocked message: "this is
 /// referenced in these N places", not "this appears M times total".
-List<PlanVariableReference> variableReferences(Program program, String name) {
+List<PlanVariableReference> variableReferences(Plan plan, String name) {
   return [
-    for (final hit in _hits(program, name))
+    for (final hit in _hits(plan, name))
       PlanVariableReference(
         field: hit.field,
         exerciseNumber: hit.exerciseNumber,
@@ -354,7 +354,7 @@ String? _rewrite(String? content, RegExp pattern, String newName) {
 }
 
 /// Same as [_rewrite], for the non-nullable name/description fields
-/// (`Program.name`/`description`, `Exercise.name`, `Station.name`,
+/// (`Plan.name`/`description`, `Exercise.name`, `Station.name`,
 /// `RolePlay.name` — DESIGN-008 follow-up 10).
 String _rewriteRequired(String content, RegExp pattern, String newName) =>
     _rewrite(content, pattern, newName)!;
@@ -373,16 +373,16 @@ Map<String, String> _renameOverrideKey(
   };
 }
 
-/// Returns a copy of [program] with every `{{var.<oldName>}}` reference
+/// Returns a copy of [plan] with every `{{var.<oldName>}}` reference
 /// rewritten to `{{var.<newName>}}` (every markdown field and every
-/// name/description field: program, every exercise, every station, every
+/// name/description field: plan, every exercise, every station, every
 /// roleplay — DESIGN-008 follow-up 10 extends this to the same
 /// name/description surface follow-ups 05/09 taught the renderer and the
 /// live UI to resolve), every `variableOverrides` key named [oldName]
-/// renamed to [newName], and the [oldName] entry in `program.variables`
-/// itself renamed. Does not mutate [program]; uses `copyWith` throughout,
+/// renamed to [newName], and the [oldName] entry in `plan.variables`
+/// itself renamed. Does not mutate [plan]; uses `copyWith` throughout,
 /// per ADR-0046's plan-wide rename requirement.
-Program renameVariable(Program program, String oldName, String newName) {
+Plan renameVariable(Plan plan, String oldName, String newName) {
   final pattern = planVariableTokenPatternFor(oldName);
 
   Station rewriteStation(Station station) => station.copyWith(
@@ -429,16 +429,16 @@ Program renameVariable(Program program, String oldName, String newName) {
     propsMd: _rewrite(rolePlay.propsMd, pattern, newName),
   );
 
-  return program.copyWith(
-    name: _rewriteRequired(program.name, pattern, newName),
-    description: _rewriteRequired(program.description, pattern, newName),
-    briefIntroMd: _rewrite(program.briefIntroMd, pattern, newName),
-    commsMd: _rewrite(program.commsMd, pattern, newName),
-    beforeRoundMd: _rewrite(program.beforeRoundMd, pattern, newName),
-    exercises: program.exercises.map(rewriteExercise).toList(),
-    rolePlays: program.rolePlays.map(rewriteRolePlay).toList(),
+  return plan.copyWith(
+    name: _rewriteRequired(plan.name, pattern, newName),
+    description: _rewriteRequired(plan.description, pattern, newName),
+    briefIntroMd: _rewrite(plan.briefIntroMd, pattern, newName),
+    commsMd: _rewrite(plan.commsMd, pattern, newName),
+    beforeRoundMd: _rewrite(plan.beforeRoundMd, pattern, newName),
+    exercises: plan.exercises.map(rewriteExercise).toList(),
+    rolePlays: plan.rolePlays.map(rewriteRolePlay).toList(),
     variables: [
-      for (final v in program.variables)
+      for (final v in plan.variables)
         if (v.name == oldName) v.copyWith(name: newName) else v,
     ],
   );

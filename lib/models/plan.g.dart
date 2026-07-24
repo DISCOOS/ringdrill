@@ -1,12 +1,12 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'program.dart';
+part of 'plan.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-_Program _$ProgramFromJson(Map<String, dynamic> json) => _Program(
+_Plan _$PlanFromJson(Map<String, dynamic> json) => _Plan(
   uuid: json['uuid'] as String,
   name: json['name'] as String,
   description: json['description'] as String,
@@ -22,10 +22,10 @@ _Program _$ProgramFromJson(Map<String, dynamic> json) => _Program(
         json['stationNumberFormat'],
       ) ??
       StationNumberFormat.dotted,
-  metadata: ProgramMetadata.fromJson(json['metadata'] as Map<String, dynamic>),
+  metadata: PlanMetadata.fromJson(json['metadata'] as Map<String, dynamic>),
   source: json['source'] == null
-      ? const ProgramSource.local()
-      : ProgramSource.fromJson(json['source'] as Map<String, dynamic>),
+      ? const PlanSource.local()
+      : PlanSource.fromJson(json['source'] as Map<String, dynamic>),
   contentHash: json['contentHash'] as String?,
   teams: (json['teams'] as List<dynamic>)
       .map((e) => Team.fromJson(e as Map<String, dynamic>))
@@ -56,7 +56,7 @@ _Program _$ProgramFromJson(Map<String, dynamic> json) => _Program(
       const <DrillVariable>[],
 );
 
-Map<String, dynamic> _$ProgramToJson(_Program instance) => <String, dynamic>{
+Map<String, dynamic> _$PlanToJson(_Plan instance) => <String, dynamic>{
   'uuid': instance.uuid,
   'name': instance.name,
   'description': instance.description,
@@ -118,7 +118,7 @@ Map<String, dynamic> _$CatalogToJson(_Catalog instance) => <String, dynamic>{
   'runtimeType': instance.$type,
 };
 
-_ProgramDiff _$ProgramDiffFromJson(Map<String, dynamic> json) => _ProgramDiff(
+_PlanDiff _$PlanDiffFromJson(Map<String, dynamic> json) => _PlanDiff(
   nameLocal: json['nameLocal'] as String?,
   nameRemote: json['nameRemote'] as String?,
   descriptionLocal: json['descriptionLocal'] as String?,
@@ -187,27 +187,26 @@ _ProgramDiff _$ProgramDiffFromJson(Map<String, dynamic> json) => _ProgramDiff(
       const [],
 );
 
-Map<String, dynamic> _$ProgramDiffToJson(_ProgramDiff instance) =>
-    <String, dynamic>{
-      'nameLocal': instance.nameLocal,
-      'nameRemote': instance.nameRemote,
-      'descriptionLocal': instance.descriptionLocal,
-      'descriptionRemote': instance.descriptionRemote,
-      'tagsLocal': instance.tagsLocal,
-      'tagsRemote': instance.tagsRemote,
-      'addedExercises': instance.addedExercises,
-      'removedExercises': instance.removedExercises,
-      'modifiedExercises': instance.modifiedExercises,
-      'addedTeams': instance.addedTeams,
-      'removedTeams': instance.removedTeams,
-      'modifiedTeams': instance.modifiedTeams,
-      'addedSessions': instance.addedSessions,
-      'removedSessions': instance.removedSessions,
-      'modifiedSessions': instance.modifiedSessions,
-      'addedRolePlays': instance.addedRolePlays,
-      'removedRolePlays': instance.removedRolePlays,
-      'modifiedRolePlays': instance.modifiedRolePlays,
-    };
+Map<String, dynamic> _$PlanDiffToJson(_PlanDiff instance) => <String, dynamic>{
+  'nameLocal': instance.nameLocal,
+  'nameRemote': instance.nameRemote,
+  'descriptionLocal': instance.descriptionLocal,
+  'descriptionRemote': instance.descriptionRemote,
+  'tagsLocal': instance.tagsLocal,
+  'tagsRemote': instance.tagsRemote,
+  'addedExercises': instance.addedExercises,
+  'removedExercises': instance.removedExercises,
+  'modifiedExercises': instance.modifiedExercises,
+  'addedTeams': instance.addedTeams,
+  'removedTeams': instance.removedTeams,
+  'modifiedTeams': instance.modifiedTeams,
+  'addedSessions': instance.addedSessions,
+  'removedSessions': instance.removedSessions,
+  'modifiedSessions': instance.modifiedSessions,
+  'addedRolePlays': instance.addedRolePlays,
+  'removedRolePlays': instance.removedRolePlays,
+  'modifiedRolePlays': instance.modifiedRolePlays,
+};
 
 _FieldChange _$FieldChangeFromJson(Map<String, dynamic> json) => _FieldChange(
   field: json['field'] as String,
@@ -278,8 +277,8 @@ Map<String, dynamic> _$SessionToJson(_Session instance) => <String, dynamic>{
   'startTime': instance.startTime,
 };
 
-_ProgramMetadata _$ProgramMetadataFromJson(Map<String, dynamic> json) =>
-    _ProgramMetadata(
+_PlanMetadata _$PlanMetadataFromJson(Map<String, dynamic> json) =>
+    _PlanMetadata(
       created: DateTime.parse(json['created'] as String),
       updated: DateTime.parse(json['updated'] as String),
       version: json['version'] as String,
@@ -287,7 +286,7 @@ _ProgramMetadata _$ProgramMetadataFromJson(Map<String, dynamic> json) =>
       languageCode: json['languageCode'] as String?,
     );
 
-Map<String, dynamic> _$ProgramMetadataToJson(_ProgramMetadata instance) =>
+Map<String, dynamic> _$PlanMetadataToJson(_PlanMetadata instance) =>
     <String, dynamic>{
       'created': instance.created.toIso8601String(),
       'updated': instance.updated.toIso8601String(),

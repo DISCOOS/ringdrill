@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/plan_variable_refs.dart';
@@ -10,13 +10,13 @@ import 'package:ringdrill/utils/plan_variable_refs.dart';
 final _start = SimpleTimeOfDay(hour: 8, minute: 0);
 final _end = SimpleTimeOfDay(hour: 9, minute: 0);
 
-Program _emptyProgram() {
+Plan _emptyPlan() {
   final now = DateTime(2026);
-  return Program(
+  return Plan(
     uuid: 'prog-1',
-    name: 'Program',
+    name: 'Plan',
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.2'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.2'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -61,7 +61,7 @@ Exercise _exercise({
 void main() {
   group('variableReferenceCount', () {
     test('zero when the variable is not referenced anywhere', () {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
         exercises: [
           _exercise(
@@ -71,11 +71,11 @@ void main() {
         ],
       );
 
-      expect(variableReferenceCount(program, 'frekvens'), 0);
+      expect(variableReferenceCount(plan, 'frekvens'), 0);
     });
 
     test(
-      'counts across program, exercise, station, roleplay and override maps',
+      'counts across plan, exercise, station, roleplay and override maps',
       () {
         final rolePlay = RolePlay(
           uuid: 'rp-1',
@@ -96,22 +96,22 @@ void main() {
           methodMd: 'Kanal {{var.frekvens}} og {{var.frekvens}} igjen',
           variableOverrides: const {'frekvens': 'Kanal 8'},
         );
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
           exercises: [exercise],
           rolePlays: [rolePlay],
           briefIntroMd: 'Kanal {{var.frekvens}}',
         );
 
-        // program.briefIntroMd: 1, exercise.methodMd: 2, exercise override
+        // plan.briefIntroMd: 1, exercise.methodMd: 2, exercise override
         // key: 1, station.situationMd: 1, station override key: 1,
         // roleplay.behavior: 1 = 7.
-        expect(variableReferenceCount(program, 'frekvens'), 7);
+        expect(variableReferenceCount(plan, 'frekvens'), 7);
       },
     );
 
     test('does not confuse a variable name that is a prefix of another', () {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         variables: const [
           DrillVariable(name: 'kanal', value: 'A'),
           DrillVariable(name: 'kanal2', value: 'B'),
@@ -119,26 +119,26 @@ void main() {
         briefIntroMd: '{{var.kanal2}}',
       );
 
-      expect(variableReferenceCount(program, 'kanal'), 0);
-      expect(variableReferenceCount(program, 'kanal2'), 1);
+      expect(variableReferenceCount(plan, 'kanal'), 0);
+      expect(variableReferenceCount(plan, 'kanal2'), 1);
     });
 
     // DESIGN-008 follow-up 10: name/description fields are just as much a
     // resolution surface as the markdown fields (follow-ups 05/09), but
     // _hits originally never looked at them -- a reference living only in
     // a name/description was invisible to the delete guard.
-    test('counts a reference in program.name and program.description', () {
-      final program = _emptyProgram().copyWith(
+    test('counts a reference in plan.name and plan.description', () {
+      final plan = _emptyPlan().copyWith(
         name: 'Plan {{var.frekvens}}',
         description: 'Om {{var.frekvens}}',
         variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
       );
 
-      expect(variableReferenceCount(program, 'frekvens'), 2);
+      expect(variableReferenceCount(plan, 'frekvens'), 2);
     });
 
     test('counts a reference in exercise.name', () {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [
           Exercise(
             uuid: 'ex-1',
@@ -156,7 +156,7 @@ void main() {
         ],
       );
 
-      expect(variableReferenceCount(program, 'frekvens'), 1);
+      expect(variableReferenceCount(plan, 'frekvens'), 1);
     });
 
     test('counts a reference in station.name and station.description', () {
@@ -165,13 +165,13 @@ void main() {
         name: 'Post {{var.frekvens}}',
         description: 'Ved {{var.frekvens}}',
       );
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [
           _exercise(stations: [station]),
         ],
       );
 
-      expect(variableReferenceCount(program, 'frekvens'), 2);
+      expect(variableReferenceCount(plan, 'frekvens'), 2);
     });
 
     test('counts a reference in rolePlay.name', () {
@@ -181,21 +181,21 @@ void main() {
         exerciseUuid: 'ex-1',
         name: 'Rolle {{var.frekvens}}',
       );
-      final program = _emptyProgram().copyWith(rolePlays: [rolePlay]);
+      final plan = _emptyPlan().copyWith(rolePlays: [rolePlay]);
 
-      expect(variableReferenceCount(program, 'frekvens'), 1);
+      expect(variableReferenceCount(plan, 'frekvens'), 1);
     });
   });
 
   group('variableReferences', () {
     test('one entry per location, not per occurrence', () {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         exercises: [
           _exercise(methodMd: 'Kanal {{var.frekvens}} og {{var.frekvens}}'),
         ],
       );
 
-      final refs = variableReferences(program, 'frekvens');
+      final refs = variableReferences(plan, 'frekvens');
       expect(refs, hasLength(1));
       expect(refs.single.field, PlanVariableField.exerciseMethod);
       expect(refs.single.exerciseNumber, 1);
@@ -228,12 +228,12 @@ void main() {
           ],
           trainingFocusMd: '{{var.frekvens}}',
         );
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           exercises: [exercise1, exercise2],
           rolePlays: [rolePlay],
         );
 
-        final refs = variableReferences(program, 'frekvens');
+        final refs = variableReferences(plan, 'frekvens');
         expect(refs, hasLength(3));
 
         final exerciseRef = refs.firstWhere(
@@ -262,9 +262,9 @@ void main() {
 
     test('an override key surfaces as its own reference', () {
       final exercise = _exercise(variableOverrides: const {'frekvens': 'X'});
-      final program = _emptyProgram().copyWith(exercises: [exercise]);
+      final plan = _emptyPlan().copyWith(exercises: [exercise]);
 
-      final refs = variableReferences(program, 'frekvens');
+      final refs = variableReferences(plan, 'frekvens');
       expect(refs.single.field, PlanVariableField.exerciseOverride);
       expect(refs.single.exerciseNumber, 1);
     });
@@ -272,9 +272,9 @@ void main() {
     test('a name-only reference surfaces with the right field', () {
       final station = Station(index: 0, name: 'Post {{var.frekvens}}');
       final exercise = _exercise(stations: [station]);
-      final program = _emptyProgram().copyWith(exercises: [exercise]);
+      final plan = _emptyPlan().copyWith(exercises: [exercise]);
 
-      final refs = variableReferences(program, 'frekvens');
+      final refs = variableReferences(plan, 'frekvens');
       expect(refs.single.field, PlanVariableField.stationName);
       expect(refs.single.stationCode, isNotNull);
     });
@@ -285,13 +285,13 @@ void main() {
       'carries a facet path over unchanged (DESIGN-008 follow-up 11): '
       '{{var.old.utm}} becomes {{var.new.utm}}, never a bare token',
       () {
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           variables: const [
             DrillVariable(name: 'oppmote', type: VariableType.location),
           ],
           briefIntroMd: 'Møt på {{var.oppmote.utm}} ({{var.oppmote.place}})',
         );
-        final renamed = renameVariable(program, 'oppmote', 'moetested');
+        final renamed = renameVariable(plan, 'oppmote', 'moetested');
         expect(
           renamed.briefIntroMd,
           'Møt på {{var.moetested.utm}} ({{var.moetested.place}})',
@@ -323,7 +323,7 @@ void main() {
           methodMd: 'Bruk {{var.frekvens}}',
           variableOverrides: const {'frekvens': 'Kanal 8'},
         );
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
           exercises: [exercise],
           rolePlays: [rolePlay],
@@ -332,7 +332,7 @@ void main() {
           beforeRoundMd: 'Før runden: {{var.frekvens}}',
         );
 
-        final renamed = renameVariable(program, 'frekvens', 'kanal');
+        final renamed = renameVariable(plan, 'frekvens', 'kanal');
 
         expect(renamed.variables.single.name, 'kanal');
         expect(renamed.variables.single.value, 'Kanal 6');
@@ -361,20 +361,20 @@ void main() {
       },
     );
 
-    test('does not mutate the original program', () {
-      final program = _emptyProgram().copyWith(
+    test('does not mutate the original plan', () {
+      final plan = _emptyPlan().copyWith(
         variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
         briefIntroMd: '{{var.frekvens}}',
       );
 
-      renameVariable(program, 'frekvens', 'kanal');
+      renameVariable(plan, 'frekvens', 'kanal');
 
-      expect(program.variables.single.name, 'frekvens');
-      expect(program.briefIntroMd, '{{var.frekvens}}');
+      expect(plan.variables.single.name, 'frekvens');
+      expect(plan.briefIntroMd, '{{var.frekvens}}');
     });
 
     test('leaves fields referencing a different variable untouched', () {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         variables: const [
           DrillVariable(name: 'frekvens', value: 'Kanal 6'),
           DrillVariable(name: 'kode', value: 'Alfa'),
@@ -382,7 +382,7 @@ void main() {
         briefIntroMd: '{{var.frekvens}} og {{var.kode}}',
       );
 
-      final renamed = renameVariable(program, 'frekvens', 'radio');
+      final renamed = renameVariable(plan, 'frekvens', 'radio');
 
       expect(renamed.briefIntroMd, '{{var.radio}} og {{var.kode}}');
       expect(renamed.variables.map((v) => v.name), ['radio', 'kode']);
@@ -392,7 +392,7 @@ void main() {
     // every name/description field pointing at the now-nonexistent old
     // name -- exactly the "silent breakage" ADR-0046's rename feature
     // exists to prevent.
-    test('rewrites program.name/description, exercise.name, station.name/'
+    test('rewrites plan.name/description, exercise.name, station.name/'
         'description and rolePlay.name', () {
       final station = Station(
         index: 0,
@@ -409,7 +409,7 @@ void main() {
         uuid: 'ex-1',
         stations: [station],
       ).copyWith(name: 'Øvelse {{var.frekvens}}');
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         name: 'Plan {{var.frekvens}}',
         description: 'Om {{var.frekvens}}',
         variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
@@ -417,7 +417,7 @@ void main() {
         rolePlays: [rolePlay],
       );
 
-      final renamed = renameVariable(program, 'frekvens', 'kanal');
+      final renamed = renameVariable(plan, 'frekvens', 'kanal');
 
       expect(renamed.name, 'Plan {{var.kanal}}');
       expect(renamed.description, 'Om {{var.kanal}}');

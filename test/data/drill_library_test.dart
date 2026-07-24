@@ -5,16 +5,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/drill_library.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
 
-Program _program(String uuid, String name, {int exerciseCount = 0}) {
+Plan _plan(String uuid, String name, {int exerciseCount = 0}) {
   final now = DateTime(2026, 1, 1);
-  return Program(
+  return Plan(
     uuid: uuid,
     name: name,
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
     teams: const [],
     sessions: const [],
     exercises: [
@@ -55,14 +55,14 @@ List<int> _emptyZip() => ZipEncoder().encode(Archive());
 void main() {
   group('DrillLibrary.sniff', () {
     test('single .drill -> DrillArchiveKind.single', () {
-      final content = DrillFile.fromProgram(_program('u1', 'Solo plan'), 'x').content;
+      final content = DrillFile.fromPlan(_plan('u1', 'Solo plan'), 'x').content;
       expect(DrillLibrary.sniff(content), DrillArchiveKind.single);
     });
 
     test('drill-library bundle -> DrillArchiveKind.library', () {
-      final content = DrillLibrary.fromPrograms([
-        _program('u1', 'Alfa'),
-        _program('u2', 'Beta'),
+      final content = DrillLibrary.fromPlans([
+        _plan('u1', 'Alfa'),
+        _plan('u2', 'Beta'),
       ]);
       expect(DrillLibrary.sniff(content), DrillArchiveKind.library);
     });
@@ -92,7 +92,7 @@ void main() {
         // Mirrors what Finder produces when someone extracts a downloaded
         // bundle, edits a file, then re-compresses the folder: every real
         // entry sits one level deeper, plus junk cruft is added.
-        final drillFile = DrillFile.fromProgram(_program('u1', 'Alfa'), 'alfa');
+        final drillFile = DrillFile.fromPlan(_plan('u1', 'Alfa'), 'alfa');
         final archive = Archive()
           ..addFile(_entry('bundle/', ''))
           ..addFile(_entry('__MACOSX/._bundle', 'junk'))
@@ -112,16 +112,16 @@ void main() {
   });
 
   group('DrillLibrary.entries — round-trip', () {
-    test('fromPrograms([a, b]) -> entries() reproduces a and b', () {
-      final a = _program('uuid-a', 'Alfa plan', exerciseCount: 2);
-      final b = _program('uuid-b', 'Beta plan', exerciseCount: 1);
+    test('fromPlans([a, b]) -> entries() reproduces a and b', () {
+      final a = _plan('uuid-a', 'Alfa plan', exerciseCount: 2);
+      final b = _plan('uuid-b', 'Beta plan', exerciseCount: 1);
 
-      final bundle = DrillLibrary.fromPrograms([a, b]);
+      final bundle = DrillLibrary.fromPlans([a, b]);
       final files = DrillLibrary.entries(bundle);
       expect(files.length, 2);
 
-      final programs = files.map((f) => f.program()).toList();
-      final byUuid = {for (final p in programs) p.uuid: p};
+      final plans = files.map((f) => f.plan()).toList();
+      final byUuid = {for (final p in plans) p.uuid: p};
 
       expect(byUuid['uuid-a']!.name, 'Alfa plan');
       expect(byUuid['uuid-a']!.exercises.length, 2);
@@ -146,7 +146,7 @@ void main() {
     test(
       'Finder-repacked bundle decodes the nested .drill and skips cruft',
       () {
-        final drillFile = DrillFile.fromProgram(_program('u1', 'Alfa'), 'alfa');
+        final drillFile = DrillFile.fromPlan(_plan('u1', 'Alfa'), 'alfa');
         final archive = Archive()
           ..addFile(_entry('bundle/', ''))
           ..addFile(_entry('__MACOSX/._bundle', 'junk'))
@@ -165,7 +165,7 @@ void main() {
 
         expect(files.length, 1);
         expect(files.single.fileName, 'alfa.drill');
-        expect(files.single.program().uuid, 'u1');
+        expect(files.single.plan().uuid, 'u1');
       },
     );
 
@@ -211,11 +211,11 @@ void main() {
     });
   });
 
-  group('DrillLibrary.fromPrograms — slug collisions', () {
-    test('two programs with the same name get distinct entry names', () {
-      final bundle = DrillLibrary.fromPrograms([
-        _program('uuid-1', 'My Plan'),
-        _program('uuid-2', 'My Plan'),
+  group('DrillLibrary.fromPlans — slug collisions', () {
+    test('two plans with the same name get distinct entry names', () {
+      final bundle = DrillLibrary.fromPlans([
+        _plan('uuid-1', 'My Plan'),
+        _plan('uuid-2', 'My Plan'),
       ]);
       final archive = ZipDecoder().decodeBytes(bundle);
       final names =

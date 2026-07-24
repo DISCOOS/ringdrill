@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
@@ -17,11 +17,11 @@ import 'package:ringdrill/models/team.dart';
 void main() {
   final now = DateTime(2026);
 
-  Program emptyProgram() => Program(
+  Plan emptyPlan() => Plan(
     uuid: 'prog-1',
     name: 'Test',
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -51,9 +51,9 @@ void main() {
       stations: [station],
       schedule: const [],
     );
-    final program = emptyProgram().copyWith(exercises: [exercise]);
+    final plan = emptyPlan().copyWith(exercises: [exercise]);
 
-    final decoded = DrillFile.fromProgram(program, 'test').program();
+    final decoded = DrillFile.fromPlan(plan, 'test').plan();
     final decodedStation = decoded.exercises.single.stations.single;
 
     expect(decodedStation.position, LatLng(59.911, 10.757));
@@ -66,9 +66,9 @@ void main() {
       name: 'Team 1',
       position: LatLng(58.99, 10.43),
     );
-    final program = emptyProgram().copyWith(teams: [team]);
+    final plan = emptyPlan().copyWith(teams: [team]);
 
-    final decoded = DrillFile.fromProgram(program, 'test').program();
+    final decoded = DrillFile.fromPlan(plan, 'test').plan();
 
     expect(decoded.teams.single.position, LatLng(58.99, 10.43));
   });
@@ -81,9 +81,9 @@ void main() {
       name: 'Anna',
       position: LatLng(59.0, 10.0),
     );
-    final program = emptyProgram().copyWith(rolePlays: [rolePlay]);
+    final plan = emptyPlan().copyWith(rolePlays: [rolePlay]);
 
-    final decoded = DrillFile.fromProgram(program, 'test').program();
+    final decoded = DrillFile.fromPlan(plan, 'test').plan();
 
     expect(decoded.rolePlays.single.position, LatLng(59.0, 10.0));
   });
@@ -103,9 +103,9 @@ void main() {
       stations: [station],
       schedule: const [],
     );
-    final program = emptyProgram().copyWith(exercises: [exercise]);
+    final plan = emptyPlan().copyWith(exercises: [exercise]);
 
-    final decoded = DrillFile.fromProgram(program, 'test').program();
+    final decoded = DrillFile.fromPlan(plan, 'test').plan();
 
     expect(decoded.exercises.single.stations.single.position, isNull);
   });
@@ -130,11 +130,11 @@ void main() {
       stations: [station],
       schedule: const [],
     );
-    final program = emptyProgram().copyWith(exercises: [exercise]);
-    final moved = program.copyWith(
+    final plan = emptyPlan().copyWith(exercises: [exercise]);
+    final moved = plan.copyWith(
       exercises: [exercise.copyWith(stations: [movedStation])],
     );
 
-    expect(program.computeContentHash(), isNot(moved.computeContentHash()));
+    expect(plan.computeContentHash(), isNot(moved.computeContentHash()));
   });
 }

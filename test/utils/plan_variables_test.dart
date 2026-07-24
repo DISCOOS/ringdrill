@@ -2,18 +2,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/variable_values.dart';
 
-Program _emptyProgram() {
+Plan _emptyPlan() {
   final now = DateTime(2026);
-  return Program(
+  return Plan(
     uuid: 'prog-1',
-    name: 'Test Program',
+    name: 'Test Plan',
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -116,29 +116,29 @@ void main() {
   });
 
   group('effectivePlanVariables', () {
-    test('program scope returns the declared defaults', () {
-      final program = _emptyProgram().copyWith(
+    test('plan scope returns the declared defaults', () {
+      final plan = _emptyPlan().copyWith(
         variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
       );
-      expect(effectivePlanVariables(program), {'frekvens': 'Kanal 6'});
+      expect(effectivePlanVariables(plan), {'frekvens': 'Kanal 6'});
     });
 
-    test('an exercise override shadows the program default', () {
-      final program = _emptyProgram().copyWith(
+    test('an exercise override shadows the plan default', () {
+      final plan = _emptyPlan().copyWith(
         variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
       );
       final exercise = _exercise(
         variableOverrides: const {'frekvens': 'Kanal 8'},
       );
-      expect(effectivePlanVariables(program, exercise: exercise), {
+      expect(effectivePlanVariables(plan, exercise: exercise), {
         'frekvens': 'Kanal 8',
       });
     });
 
     test(
-      'a station override shadows both the exercise and program default',
+      'a station override shadows both the exercise and plan default',
       () {
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
         );
         final exercise = _exercise(
@@ -150,33 +150,33 @@ void main() {
           variableOverrides: {'frekvens': 'Kanal 9'},
         );
         expect(
-          effectivePlanVariables(program, exercise: exercise, station: station),
+          effectivePlanVariables(plan, exercise: exercise, station: station),
           {'frekvens': 'Kanal 9'},
         );
       },
     );
 
     test('an override keyed on an undeclared variable name is ignored', () {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
       );
       final exercise = _exercise(
         variableOverrides: const {'ukjent': 'Skal ikke vises'},
       );
-      expect(effectivePlanVariables(program, exercise: exercise), {
+      expect(effectivePlanVariables(plan, exercise: exercise), {
         'frekvens': 'Kanal 6',
       });
     });
 
     test('a plan with no declared variables returns an empty map', () {
-      expect(effectivePlanVariables(_emptyProgram()), <String, String>{});
+      expect(effectivePlanVariables(_emptyPlan()), <String, String>{});
     });
 
     test(
       'a location-typed variable renders its bare place + UTM display, '
       'not the raw structured value (DESIGN-008 follow-up 11)',
       () {
-        final program = _emptyProgram().copyWith(
+        final plan = _emptyPlan().copyWith(
           variables: const [
             DrillVariable(
               name: 'oppmote',
@@ -188,7 +188,7 @@ void main() {
             ),
           ],
         );
-        final value = effectivePlanVariables(program)['oppmote']!;
+        final value = effectivePlanVariables(plan)['oppmote']!;
         expect(value, startsWith('Meiselen 14 ('));
         expect(value, contains('32V'));
       },
@@ -219,7 +219,7 @@ void main() {
 
   group('effectiveTypedPlanVariables', () {
     test('a location override string decodes into the structured value', () {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         variables: const [
           DrillVariable(
             name: 'oppmote',
@@ -234,7 +234,7 @@ void main() {
         },
       );
       final effective = effectiveTypedPlanVariables(
-        program,
+        plan,
         exercise: exercise,
       )['oppmote']!;
       expect(effective.type, VariableType.location);
@@ -243,14 +243,14 @@ void main() {
     });
 
     test('a scalar override keeps the declared type', () {
-      final program = _emptyProgram().copyWith(
+      final plan = _emptyPlan().copyWith(
         variables: const [
           DrillVariable(name: 'tid', type: VariableType.time, value: '00:00'),
         ],
       );
       final exercise = _exercise(variableOverrides: const {'tid': '12:00'});
       final effective = effectiveTypedPlanVariables(
-        program,
+        plan,
         exercise: exercise,
       )['tid']!;
       expect(effective.type, VariableType.time);

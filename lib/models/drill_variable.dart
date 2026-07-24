@@ -53,7 +53,7 @@ sealed class VariableLocation with _$VariableLocation {
 /// An author-defined value declared once on the plan and referenced from
 /// markdown fields as `{{var.<name>}}`. See ADR-0046 and DESIGN-008.
 ///
-/// Identity is plan-global: a variable is declared only on [Program].
+/// Identity is plan-global: a variable is declared only on [Plan].
 /// [Exercise] and [Station] override the value for their subtree via a
 /// `variableOverrides` map keyed by [name]; they never declare new names.
 @freezed

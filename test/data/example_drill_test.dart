@@ -22,16 +22,16 @@ void main() {
       });
 
       test('parses without error', () {
-        expect(() => drill.program(), returnsNormally);
+        expect(() => drill.plan(), returnsNormally);
       });
 
       test('has 2 exercises', () {
-        expect(drill.program().exercises, hasLength(2));
+        expect(drill.plan().exercises, hasLength(2));
       });
 
       test('showcased exercise (#2) has 3 stations and 3 teams, 2 rounds', () {
         // Exercises are ordered by index; index=1 is exercise #2.
-        final exercises = [...drill.program().exercises]
+        final exercises = [...drill.plan().exercises]
           ..sort((a, b) => a.index.compareTo(b.index));
         final ex2 = exercises[1];
         expect(ex2.stations, hasLength(3));
@@ -40,9 +40,9 @@ void main() {
       });
 
       test('station labels on exercise #2 are 2a/2b/2c (alpha format)', () {
-        final program = drill.program();
-        expect(program.stationNumberFormat, StationNumberFormat.alpha);
-        final exercises = [...program.exercises]
+        final plan = drill.plan();
+        expect(plan.stationNumberFormat, StationNumberFormat.alpha);
+        final exercises = [...plan.exercises]
           ..sort((a, b) => a.index.compareTo(b.index));
         final ex2 = exercises[1]; // index=1 → exerciseNumber=2
         for (var i = 0; i < ex2.stations.length; i++) {
@@ -56,26 +56,26 @@ void main() {
       });
 
       test('has 3 teams starting with "$expectedTeamPrefix"', () {
-        final teams = drill.program().teams;
+        final teams = drill.plan().teams;
         expect(teams, hasLength(3));
         expect(teams.every((t) => t.name.startsWith(expectedTeamPrefix)), isTrue);
       });
 
       test('has at least 1 RolePlay on exercise #2', () {
-        final program = drill.program();
-        final exercises = [...program.exercises]
+        final plan = drill.plan();
+        final exercises = [...plan.exercises]
           ..sort((a, b) => a.index.compareTo(b.index));
         final ex2Uuid = exercises[1].uuid;
-        final rolePlays = program.rolePlays
+        final rolePlays = plan.rolePlays
             .where((rp) => rp.exerciseUuid == ex2Uuid)
             .toList();
         expect(rolePlays, isNotEmpty);
       });
 
       test('has a non-empty brief intro', () {
-        final program = drill.program();
-        expect(program.briefIntroMd, isNotNull);
-        expect(program.briefIntroMd, isNotEmpty);
+        final plan = drill.plan();
+        expect(plan.briefIntroMd, isNotNull);
+        expect(plan.briefIntroMd, isNotEmpty);
       });
     });
   }

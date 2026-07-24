@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/data/drill_file.dart';
 
 // ---------------------------------------------------------------------------
-// DrillFile.program() — format-error hardening
+// DrillFile.plan() — format-error hardening
 //
 // Covers the user-facing failure modes the open/import flow must
 // distinguish. Each case asserts:
@@ -24,12 +24,12 @@ ArchiveFile _entry(String name, String content) {
 }
 
 void main() {
-  group('DrillFile.program() format errors', () {
+  group('DrillFile.plan() format errors', () {
     test('empty bytes -> DrillFormatReason.empty', () {
       final file = DrillFile.fromBytes('empty.drill', const <int>[]);
       DrillFormatException? caught;
       try {
-        file.program();
+        file.plan();
       } on DrillFormatException catch (e) {
         caught = e;
       }
@@ -47,7 +47,7 @@ void main() {
       final file = DrillFile.fromBytes('bogus.drill', bytes);
       DrillFormatException? caught;
       try {
-        file.program();
+        file.plan();
       } on DrillFormatException catch (e) {
         caught = e;
       }
@@ -65,21 +65,21 @@ void main() {
     // to decode in production; we just don't have a reliable unit-test
     // fixture for it.
 
-    test('zip without program.json -> DrillFormatReason.missingProgram', () {
+    test('zip without program.json -> DrillFormatReason.missingPlan', () {
       final archive = Archive()
         ..addFile(
           _entry('teams/ignored.json', '{"uuid":"x","name":"T"}'),
         );
       final bytes = ZipEncoder().encode(archive);
-      final file = DrillFile.fromBytes('no-program.drill', bytes);
+      final file = DrillFile.fromBytes('no-plan.drill', bytes);
       DrillFormatException? caught;
       try {
-        file.program();
+        file.plan();
       } on DrillFormatException catch (e) {
         caught = e;
       }
       expect(caught, isNotNull);
-      expect(caught!.reason, DrillFormatReason.missingProgram);
+      expect(caught!.reason, DrillFormatReason.missingPlan);
     });
 
     test(
@@ -93,7 +93,7 @@ void main() {
         final file = DrillFile.fromBytes('corrupt.drill', bytes);
         DrillFormatException? caught;
         try {
-          file.program();
+          file.plan();
         } on DrillFormatException catch (e) {
           caught = e;
         }
@@ -106,8 +106,8 @@ void main() {
     test(
       'program.json missing required fields -> DrillFormatReason.corruptManifest',
       () {
-        // `Program.fromJson` blows up with a TypeError when uuid/name are
-        // absent. We catch that inside `program()` and surface it as a
+        // `Plan.fromJson` blows up with a TypeError when uuid/name are
+        // absent. We catch that inside `plan()` and surface it as a
         // corrupt-manifest format error, not a raw TypeError.
         final archive = Archive()
           ..addFile(_entry('program.json', '{"unrelated": 1}'));
@@ -115,7 +115,7 @@ void main() {
         final file = DrillFile.fromBytes('shape.drill', bytes);
         DrillFormatException? caught;
         try {
-          file.program();
+          file.plan();
         } on DrillFormatException catch (e) {
           caught = e;
         }
@@ -127,7 +127,7 @@ void main() {
     test('schema from the future -> DrillFormatReason.schemaUnsupported', () {
       // Minimum viable program.json + a metadata.json that declares a
       // major version higher than anything this build knows.
-      final programJson = jsonEncode({
+      final planJson = jsonEncode({
         'uuid': 'prog-1',
         'name': 'Future Plan',
         'description': '',
@@ -149,13 +149,13 @@ void main() {
         'schema': '9.9',
       });
       final archive = Archive()
-        ..addFile(_entry('program.json', programJson))
+        ..addFile(_entry('program.json', planJson))
         ..addFile(_entry('metadata.json', metaJson));
       final bytes = ZipEncoder().encode(archive);
       final file = DrillFile.fromBytes('future.drill', bytes);
       DrillFormatException? caught;
       try {
-        file.program();
+        file.plan();
       } on DrillFormatException catch (e) {
         caught = e;
       }

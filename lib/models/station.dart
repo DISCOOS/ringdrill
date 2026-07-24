@@ -51,7 +51,7 @@ extension StationNumbering on Station {
   /// [format] and the 1-based [exerciseNumber]) — e.g. "1.1" / "1a".
   /// Map marker labels use this rather than [numberAndName]: the number
   /// takes far less room above the pin and matches the StationNumberBadge
-  /// used everywhere else (see `ProgramService.getLocations`).
+  /// used everywhere else (see `PlanService.getLocations`).
   String numberLabel(StationNumberFormat format, {required int exerciseNumber}) =>
       Numbering.station(
         format,

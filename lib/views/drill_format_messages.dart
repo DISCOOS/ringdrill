@@ -24,7 +24,7 @@ String drillFormatMessage(
       return l10n.openEmptyDrill(fileName);
     case DrillFormatReason.notArchive:
       return l10n.openInvalidDrill(fileName);
-    case DrillFormatReason.missingProgram:
+    case DrillFormatReason.missingPlan:
     case DrillFormatReason.corruptManifest:
       return l10n.openCorruptDrill(fileName);
     case DrillFormatReason.schemaUnsupported:

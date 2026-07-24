@@ -11,7 +11,7 @@ import 'package:ringdrill/services/brief/field_resolver.dart'
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/map_settings.dart';
 import 'package:ringdrill/services/notification_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/app_flags.dart';
@@ -89,7 +89,7 @@ Future<void> main() async {
     //  indicator until all services are initialized and
     //  MainScreen is shown
     // Initialize services
-    await ProgramService().init();
+    await PlanService().init();
     await MapSettings.instance.load();
 
     if (isFirstLaunch) {

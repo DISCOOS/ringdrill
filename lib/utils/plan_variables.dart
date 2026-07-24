@@ -11,7 +11,7 @@ library;
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart';
 import 'package:ringdrill/utils/variable_values.dart';
@@ -116,11 +116,11 @@ String resolveTypedPlanVariables(
 /// declared variable name is ignored, per ADR-0046's "an undeclared
 /// override key is meaningless" rule.
 Map<String, DrillVariable> effectiveTypedPlanVariables(
-  Program program, {
+  Plan plan, {
   Exercise? exercise,
   Station? station,
 }) {
-  final vars = {for (final v in program.variables) v.name: v};
+  final vars = {for (final v in plan.variables) v.name: v};
   void apply(Map<String, String> overrides) {
     for (final entry in overrides.entries) {
       final declared = vars[entry.key];
@@ -145,13 +145,13 @@ Map<String, DrillVariable> effectiveTypedPlanVariables(
 /// renderer and the editor previews use [effectiveTypedPlanVariables] with
 /// per-type formatting instead.
 Map<String, String> effectivePlanVariables(
-  Program program, {
+  Plan plan, {
   Exercise? exercise,
   Station? station,
 }) {
   return {
     for (final entry in effectiveTypedPlanVariables(
-      program,
+      plan,
       exercise: exercise,
       station: station,
     ).entries)

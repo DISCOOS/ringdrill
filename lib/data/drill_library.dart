@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as path;
 import 'package:ringdrill/data/drill_file.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 
 /// How a byte buffer is classified before import.
 ///
@@ -18,8 +18,8 @@ enum DrillArchiveKind { single, library, invalid }
 /// Why a drill-library bundle could not be parsed at the container level.
 ///
 /// Per-entry parse failures are NOT represented here — those are handled
-/// by skipping the entry during install (see [ProgramService.installBundle]
-/// in `lib/services/program_service.dart`).
+/// by skipping the entry during install (see [PlanService.installBundle]
+/// in `lib/services/plan_service.dart`).
 enum DrillLibraryReason {
   /// Bytes are empty, or the file does not exist on disk by the time we
   /// try to read it.
@@ -66,7 +66,7 @@ class DrillLibraryException implements FormatException {
       : 'DrillLibraryException(${reason.name}): $message (cause: $cause)';
 }
 
-/// A drill library: a ZIP of `.drill` entries, one per program (ADR-0045).
+/// A drill library: a ZIP of `.drill` entries, one per plan (ADR-0045).
 ///
 /// A thin container — it carries no schema of its own, each inner `.drill`
 /// carries its own schema per ADR-0007. Detection is content-based, so the
@@ -90,28 +90,28 @@ class DrillLibrary {
     }
     if (archive.files.isEmpty) return DrillArchiveKind.invalid;
 
-    var hasTopLevelProgramJson = false;
+    var hasTopLevelPlanJson = false;
     var hasDrillEntry = false;
     for (final file in archive.files) {
       if (!file.isFile || _isPackagingCruft(file.name)) continue;
       // program.json is the .drill format's own root manifest (ADR-0007),
       // not a container concern, so this stays a literal top-level check.
       if (!file.name.contains('/') && file.name == 'program.json') {
-        hasTopLevelProgramJson = true;
+        hasTopLevelPlanJson = true;
       }
       if (file.name.endsWith('.${DrillFile.drillExtension}')) {
         hasDrillEntry = true;
       }
     }
 
-    if (hasTopLevelProgramJson) return DrillArchiveKind.single;
+    if (hasTopLevelPlanJson) return DrillArchiveKind.single;
     if (hasDrillEntry) return DrillArchiveKind.library;
     return DrillArchiveKind.invalid;
   }
 
   /// Decode a bundle into one [DrillFile] per inner `.drill`. Throws
   /// [DrillLibraryException] for container-level problems. Does NOT parse
-  /// the inner programs — callers use [DrillFile.program] per entry so a
+  /// the inner plans — callers use [DrillFile.plan] per entry so a
   /// single bad entry can be skipped instead of sinking the whole import.
   static List<DrillFile> entries(List<int> content, {String? sourceName}) {
     final label = sourceName == null ? '' : ' ($sourceName)';
@@ -123,7 +123,7 @@ class DrillLibrary {
       );
     }
 
-    // Same cheap magic-byte guard as DrillFile.program(): ZipDecoder is
+    // Same cheap magic-byte guard as DrillFile.plan(): ZipDecoder is
     // lenient enough to return a zero-entry Archive for ASCII garbage
     // instead of throwing.
     if (content.length < 2 || content[0] != 0x50 || content[1] != 0x4B) {
@@ -187,16 +187,16 @@ class DrillLibrary {
   static bool _isPackagingCruft(String name) =>
       name.startsWith('__MACOSX/') || path.basename(name) == '.DS_Store';
 
-  /// Encode a library: one `.drill` per program inside an outer ZIP, slug
+  /// Encode a library: one `.drill` per plan inside an outer ZIP, slug
   /// collisions disambiguated with a counter. This is the mechanism
-  /// `bulk_export.exportAllPrograms` uses today.
-  static Uint8List fromPrograms(List<Program> programs) {
+  /// `bulk_export.exportAllPlans` uses today.
+  static Uint8List fromPlans(List<Plan> plans) {
     final outer = Archive();
     final seen = <String>{};
 
-    for (final program in programs) {
-      var slug = sanitizeSlug(program.name);
-      if (slug.isEmpty) slug = program.uuid;
+    for (final plan in plans) {
+      var slug = sanitizeSlug(plan.name);
+      if (slug.isEmpty) slug = plan.uuid;
 
       var name = slug;
       var counter = 1;
@@ -206,7 +206,7 @@ class DrillLibrary {
       }
       seen.add(name);
 
-      final drillFile = DrillFile.fromProgram(program, name);
+      final drillFile = DrillFile.fromPlan(plan, name);
       final bytes = drillFile.content;
       outer.addFile(ArchiveFile(drillFile.fileName, bytes.length, bytes));
     }

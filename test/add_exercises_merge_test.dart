@@ -1,13 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/views/add_exercises_dialog.dart';
 
 void main() {
   test('projects add-exercises merge and applies overwrites by uuid', () {
-    final active = _program(
+    final active = _plan(
       uuid: 'active',
       exercises: [
         _exercise('exercise-1', 'Warmup'),
@@ -18,7 +18,7 @@ void main() {
         Team(uuid: 'team-2', index: 1, name: 'Blue'),
       ],
     );
-    final incoming = _program(
+    final incoming = _plan(
       uuid: 'incoming',
       exercises: [
         _exercise('exercise-2', 'Ladder changed'),
@@ -34,8 +34,8 @@ void main() {
         .map((exercise) => exercise.uuid)
         .toList();
 
-    final projected = projectMergedProgram(active, incoming, selected);
-    final diff = diffPrograms(active, projected);
+    final projected = projectMergedPlan(active, incoming, selected);
+    final diff = diffPlans(active, projected);
 
     expect(diff.modifiedExercises.map((i) => i.name), ['Ladder changed']);
     expect(diff.addedExercises, ['Recovery', 'Sprint']);
@@ -58,17 +58,17 @@ void main() {
   });
 }
 
-Program _program({
+Plan _plan({
   required String uuid,
   required List<Exercise> exercises,
   required List<Team> teams,
 }) {
   final now = DateTime(2026);
-  return Program(
+  return Plan(
     uuid: uuid,
     name: uuid,
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
     teams: teams,
     sessions: const [],
     exercises: exercises,

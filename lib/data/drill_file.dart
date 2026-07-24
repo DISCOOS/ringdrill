@@ -4,7 +4,7 @@ import 'package:archive/archive.dart';
 import 'package:path/path.dart' as path;
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:universal_io/io.dart';
@@ -27,7 +27,7 @@ enum DrillFormatReason {
 
   /// Valid ZIP, but `program.json` is missing. Either a manually crafted
   /// zip or a `.drill` produced by a very different tool.
-  missingProgram,
+  missingPlan,
 
   /// `program.json` (or `metadata.json`, or one of the entity manifests)
   /// is present but the JSON or the schema-shape is wrong.
@@ -38,7 +38,7 @@ enum DrillFormatReason {
   schemaUnsupported,
 }
 
-/// Thrown by [DrillFile.program] when the archive cannot be parsed for
+/// Thrown by [DrillFile.plan] when the archive cannot be parsed for
 /// reasons that are user-visible rather than a programming error.
 ///
 /// Implements [FormatException] for backwards compatibility — any
@@ -100,7 +100,7 @@ class DrillFile {
   String get slug => path.basenameWithoutExtension(fileName);
   String get versionedSlug => sanitizeSlug('$slug@$version');
 
-  Program program() {
+  Plan plan() {
     final teams = <Team>[];
     final sessions = <Session>[];
     // Exercise manifests keyed by uuid; markdown patches collected separately.
@@ -115,11 +115,11 @@ class DrillFile {
     final actorJsons = <String, Map<String, dynamic>>{};
     final actorNotesFields = <String, String>{};
     final actors = <Actor>[];
-    // Program-level markdown fields (program/intro.md, program/comms.md,
-    // program/before-round.md).
-    String? programBriefIntroMd;
-    String? programCommsMd;
-    String? programBeforeRoundMd;
+    // Plan-level markdown fields (plan/intro.md, plan/comms.md,
+    // plan/before-round.md).
+    String? planBriefIntroMd;
+    String? planCommsMd;
+    String? planBeforeRoundMd;
     // Nullable rather than `late final`: a `.drill` archive produced by
     // an older client, a manual zip, or a truncated download may be
     // missing one or both of these entries. With `late final` the
@@ -127,8 +127,8 @@ class DrillFile {
     // `LateInitializationError: Field '' has not been initialized.`
     // We want a clear FormatException with a name so the import path
     // can surface a useful message to the user instead.
-    Program? program;
-    ProgramMetadata? metadata;
+    Plan? plan;
+    PlanMetadata? metadata;
 
     if (content.isEmpty) {
       throw DrillFormatException(
@@ -191,7 +191,7 @@ class DrillFile {
     // otherwise hit first.
     if (!index.containsKey('program.json')) {
       throw DrillFormatException(
-        DrillFormatReason.missingProgram,
+        DrillFormatReason.missingPlan,
         'Invalid .drill archive: missing required entry "program.json".',
       );
     }
@@ -204,7 +204,7 @@ class DrillFile {
       if (name == 'program.json') {
         try {
           final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
-          program = Program.fromJson(json);
+          plan = Plan.fromJson(json);
         } catch (e) {
           throw DrillFormatException(
             DrillFormatReason.corruptManifest,
@@ -217,7 +217,7 @@ class DrillFile {
       if (name == 'metadata.json') {
         try {
           final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
-          metadata = ProgramMetadata.fromJson(json);
+          metadata = PlanMetadata.fromJson(json);
         } catch (e) {
           throw DrillFormatException(
             DrillFormatReason.corruptManifest,
@@ -227,16 +227,16 @@ class DrillFile {
         }
         continue;
       }
-      if (name == 'program/intro.md') {
-        programBriefIntroMd = utf8.decode(bytes);
+      if (name == 'plan/intro.md') {
+        planBriefIntroMd = utf8.decode(bytes);
         continue;
       }
-      if (name == 'program/comms.md') {
-        programCommsMd = utf8.decode(bytes);
+      if (name == 'plan/comms.md') {
+        planCommsMd = utf8.decode(bytes);
         continue;
       }
-      if (name == 'program/before-round.md') {
-        programBeforeRoundMd = utf8.decode(bytes);
+      if (name == 'plan/before-round.md') {
+        planBeforeRoundMd = utf8.decode(bytes);
         continue;
       }
 
@@ -435,16 +435,16 @@ class DrillFile {
       actors.add(actor);
     }
 
-    if (program == null) {
+    if (plan == null) {
       throw DrillFormatException(
-        DrillFormatReason.missingProgram,
+        DrillFormatReason.missingPlan,
         'Invalid .drill archive: missing required entry "program.json".',
       );
     }
     // metadata.json was not part of the very first schema (drillSchema1_0).
-    // Fall back to the embedded metadata on the program shell so we can
+    // Fall back to the embedded metadata on the plan shell so we can
     // still import those older archives instead of crashing.
-    final effectiveMetadata = metadata ?? program.metadata;
+    final effectiveMetadata = metadata ?? plan.metadata;
 
     // Reject archives from a future schema version this build does not
     // know how to read. We only know about 1.0/1.1/1.2 today; anything
@@ -473,7 +473,7 @@ class DrillFile {
       }
     }
 
-    var result = program.copyWith(
+    var result = plan.copyWith(
       teams: teams,
       sessions: sessions,
       metadata: effectiveMetadata,
@@ -482,13 +482,13 @@ class DrillFile {
       actors: actors,
     );
 
-    if (programBriefIntroMd != null ||
-        programCommsMd != null ||
-        programBeforeRoundMd != null) {
+    if (planBriefIntroMd != null ||
+        planCommsMd != null ||
+        planBeforeRoundMd != null) {
       result = result.copyWith(
-        briefIntroMd: programBriefIntroMd,
-        commsMd: programCommsMd,
-        beforeRoundMd: programBeforeRoundMd,
+        briefIntroMd: planBriefIntroMd,
+        commsMd: planCommsMd,
+        beforeRoundMd: planBeforeRoundMd,
       );
     }
 
@@ -514,24 +514,24 @@ class DrillFile {
     );
   }
 
-  static DrillFile fromProgram(Program program, String fileName) {
+  static DrillFile fromPlan(Plan plan, String fileName) {
     final archive = Archive();
     final encoder = ZipEncoder();
 
-    // Serialize Program's metadata, stamping the current schema version.
-    final metadataWithSchema = program.metadata.copyWith(
+    // Serialize Plan's metadata, stamping the current schema version.
+    final metadataWithSchema = plan.metadata.copyWith(
       schema: drillSchemaCurrent,
     );
     final metadata = utf8.encode(jsonEncode(metadataWithSchema.toJson()));
     archive.addFile(ArchiveFile('metadata.json', metadata.length, metadata));
 
-    // Program-level markdown fields.
-    _writeMd(archive, 'program/intro.md', program.briefIntroMd);
-    _writeMd(archive, 'program/comms.md', program.commsMd);
-    _writeMd(archive, 'program/before-round.md', program.beforeRoundMd);
+    // Plan-level markdown fields.
+    _writeMd(archive, 'plan/intro.md', plan.briefIntroMd);
+    _writeMd(archive, 'plan/comms.md', plan.commsMd);
+    _writeMd(archive, 'plan/before-round.md', plan.beforeRoundMd);
 
     // Serialize exercises into folder 'exercises'
-    for (var exercise in program.exercises) {
+    for (var exercise in plan.exercises) {
       final json = utf8.encode(jsonEncode(exercise.toJson()));
       archive.addFile(
         ArchiveFile(
@@ -602,7 +602,7 @@ class DrillFile {
     }
 
     // Serialize teams into folder 'teams'
-    for (var team in program.teams) {
+    for (var team in plan.teams) {
       final json = utf8.encode(jsonEncode(team.toJson()));
       archive.addFile(
         ArchiveFile(path.join('teams', '${team.uuid}.json'), json.length, json),
@@ -610,7 +610,7 @@ class DrillFile {
     }
 
     // Serialize sessions into folder 'sessions'
-    for (var session in program.sessions) {
+    for (var session in plan.sessions) {
       final json = utf8.encode(jsonEncode(session.toJson()));
       archive.addFile(
         ArchiveFile(
@@ -622,7 +622,7 @@ class DrillFile {
     }
 
     // Serialize roleplays into folder 'roleplays'
-    for (var rolePlay in program.rolePlays) {
+    for (var rolePlay in plan.rolePlays) {
       final json = utf8.encode(jsonEncode(rolePlay.toJson()));
       archive.addFile(
         ArchiveFile(
@@ -644,7 +644,7 @@ class DrillFile {
     }
 
     // Serialize actors into folder 'actors'
-    for (var actor in program.actors) {
+    for (var actor in plan.actors) {
       final json = utf8.encode(jsonEncode(actor.toJson()));
       archive.addFile(
         ArchiveFile(
@@ -660,10 +660,10 @@ class DrillFile {
       );
     }
 
-    // Serialize Program itself (without nested objects)
+    // Serialize Plan itself (without nested objects)
     final json = utf8.encode(
       jsonEncode(
-        program
+        plan
             .copyWith(
               teams: [],
               sessions: [],
