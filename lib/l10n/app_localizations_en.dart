@@ -364,6 +364,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapTab => 'Map';
 
   @override
+  String get infoTab => 'Info';
+
+  @override
+  String get scriptTab => 'Script';
+
+  @override
   String get expandMap => 'Open full map';
 
   @override

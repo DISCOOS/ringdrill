@@ -1000,10 +1000,11 @@ class _MapViewState<K> extends State<MapView<K>> {
         _lastCommandSize = commandSize;
         // Distance from the right edge to the *visible* command circle, plus
         // a 10 px gap so the search field never butts up against it. The
-        // command column itself is inset 10 px from the right and its
-        // small-FAB visual sits `tapInset` in from its hit box.
+        // command column is inset 16 px from the right (matching the
+        // bottom-right column, so the two stacks align) and its small-FAB
+        // visual sits `tapInset` in from its hit box.
         final topRightInset =
-            10 + commandSize.tapInset + commandSize.diameter + 10;
+            16 + commandSize.tapInset + commandSize.diameter + 10;
         // The visible command circle starts `tapInset` below the column's
         // 16 px top padding, so the search field drops by the same amount to
         // keep the tops aligned.
@@ -1128,9 +1129,11 @@ class _MapViewState<K> extends State<MapView<K>> {
               Align(
                 alignment: Alignment.topRight,
                 child: Padding(
-                  padding: const EdgeInsets.all(
-                    10.0,
-                  ).copyWith(top: 16.0), // Add some spacing
+                  // Right inset matches the bottom-right command column
+                  // (16) so the two FAB stacks line up on the same vertical
+                  // edge; a larger top inset just drops the first command
+                  // clear of the map's top edge / any search field.
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.end,

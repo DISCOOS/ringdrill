@@ -17,6 +17,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
+import 'package:ringdrill/views/map_view.dart' show MapConfig;
 import 'package:ringdrill/views/location_form_screen.dart';
 import 'package:ringdrill/views/person_form_screen.dart';
 import 'package:ringdrill/views/plan_additions.dart';
@@ -33,6 +34,7 @@ import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
+import 'package:ringdrill/views/widgets/map_placeholder.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
@@ -56,9 +58,19 @@ class StationExerciseScreen extends StatefulWidget {
   State<StationExerciseScreen> createState() => _StationExerciseScreenState();
 }
 
+/// The three segments of the compact/medium detail body: the post brief
+/// (`info` — description + schedule), the acted scenario (`script` —
+/// persons + locations), and the directly-interactive map (`map`). No
+/// coercion guard is needed on resize (unlike CoordinatorScreen's
+/// `_viewWithoutMap`): the `SegmentedButton` is rendered only in this body
+/// and always carries all three segments, so `_view` is always a valid
+/// selection regardless of a resize (the expanded body never reads it).
+enum _StationDetailView { info, script, map }
+
 class _StationExerciseScreenState extends State<StationExerciseScreen> {
   late bool _isStarted;
   late Exercise _exercise;
+  _StationDetailView _view = _StationDetailView.info;
   final _programService = ProgramService();
   final _exerciseService = ExerciseService();
   final _subscribers = <StreamSubscription>[];
@@ -241,22 +253,9 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                   if (windowSize == WindowSizeClass.expanded) {
                     return _buildExpandedBody(station, event);
                   }
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.all(
-                      kPlayerSurfaceHorizontalPadding,
-                    ),
-                    child: Column(
-                      spacing: 8.0,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildStationStatus(station, event),
-                        _buildStationInfo(station),
-                        _buildPersonsCard(station),
-                        _buildLocationsCard(station),
-                        _buildTimingCard(station, event),
-                      ],
-                    ),
-                  );
+                  // Compact and medium share the segmented Info/Script/Map
+                  // body; only expanded gets the two-pane WideDetailMapSplit.
+                  return _buildSegmentedBody(station, event);
                 },
               );
             },
@@ -358,18 +357,6 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     return finishFallbackCell(l10n, _exercise, icon: Icons.arrow_forward);
   }
 
-  /// Station description (rollup) + map cards. Sized to its content (no inner
-  /// scrollable) so the outer SingleChildScrollView in [build] owns the
-  /// whole screen's scroll context.
-  Widget _buildStationInfo(Station station) {
-    return Column(
-      spacing: 8.0,
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [_buildStationDescriptionCard(station), _buildMapCard(station)],
-    );
-  }
-
   /// The rollup made concrete (DESIGN-010): the lead description then every
   /// active labeled section, resolved and markdown-rendered, closing the
   /// literal `{{station.position}}` bug this stage started from.
@@ -390,11 +377,15 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   /// The scenario map card: the station's own position plus its DESIGN-009
   /// `Location`s, styled by `LocationKind` (ADR-0020), with the legend slot
   /// — richer than `StationPositionPanel`'s administrative-only default,
-  /// which every other station surface keeps. [fillHeight] makes the map
-  /// flex to fill the expanded body's right pane instead of the panel's
-  /// own fixed default height; left `false` for the stacked body's small
-  /// inline card.
-  Widget _buildMapCard(Station station, {bool fillHeight = false}) {
+  /// which every other station surface keeps. Both the expanded pane and
+  /// the compact/medium Map segment pass `fillHeight: true, interactive:
+  /// true` so the map flexes to fill its bounded parent and is directly
+  /// interactive.
+  Widget _buildMapCard(
+    Station station, {
+    bool fillHeight = false,
+    bool interactive = false,
+  }) {
     return StationPositionPanel(
       exercise: _exercise,
       station: station,
@@ -402,6 +393,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       asCard: true,
       withTitle: false,
       fillHeight: fillHeight,
+      interactive: interactive,
       sectionId: 'position',
       miniMapKey: ValueKey<String>(
         'station-screen-map-${_exercise.uuid}-${station.index}',
@@ -435,7 +427,151 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
           _buildLocationsCard(station),
           _buildTimingCard(station, event),
         ],
-        mapPane: _buildMapCard(station, fillHeight: true),
+        mapPane: _buildMapCard(station, fillHeight: true, interactive: true),
+      ),
+    );
+  }
+
+  /// Compact and medium body: a pinned status card + Info/Script/Map
+  /// segmented selector, then the selected segment filling the rest. Info
+  /// (description + schedule) and Script (persons + locations) scroll within
+  /// their area; Map fills it to the bottom with a directly-interactive map
+  /// (or, with no position, a [MapPlaceholder]) — no bottom-sheet detour,
+  /// and a fullscreen command for going bigger. Mirrors CoordinatorScreen's
+  /// own segmented body. Only the `expanded` window size uses the two-pane
+  /// `WideDetailMapSplit` instead.
+  Widget _buildSegmentedBody(Station station, ExerciseEvent event) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            kPlayerSurfaceHorizontalPadding,
+            kPlayerSurfaceHorizontalPadding,
+            kPlayerSurfaceHorizontalPadding,
+            0,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_isStarted) ...[
+                _buildStationStatus(station, event),
+                const SizedBox(height: 8),
+              ],
+              _buildViewSelector(l10n),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: switch (_view) {
+            _StationDetailView.info => _segmentScroll([
+              _buildStationDescriptionCard(station),
+              _buildTimingCard(station, event),
+            ]),
+            _StationDetailView.script => _segmentScroll([
+              _buildPersonsCard(station),
+              _buildLocationsCard(station),
+            ]),
+            _StationDetailView.map => _fillOrScrollMap(
+              station.position == null
+                  ? MapPlaceholder(message: l10n.noLocation)
+                  : _buildMapCard(station, fillHeight: true, interactive: true),
+            ),
+          },
+        ),
+      ],
+    );
+  }
+
+  /// A segment's cards in their own scroll view, filling the [Expanded] the
+  /// segmented body gives them (so the pinned selector above stays put while
+  /// this content scrolls).
+  Widget _segmentScroll(List<Widget> cards) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        kPlayerSurfaceHorizontalPadding,
+        0,
+        kPlayerSurfaceHorizontalPadding,
+        kPlayerSurfaceHorizontalPadding,
+      ),
+      child: Column(
+        spacing: 8.0,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: cards,
+      ),
+    );
+  }
+
+  /// Sizes the Map segment's [map] to fill the space the segmented body
+  /// gives it — reaching the bottom with no dead gap — but never below a
+  /// floor, since a shorter map can't fit its own FAB command stack (a very
+  /// short landscape-phone viewport would otherwise overflow). When the
+  /// available height is below the floor the map takes the floor and the
+  /// area scrolls; otherwise it fills exactly (content == viewport, so no
+  /// scroll). The floor is [MapConfig.minInteractiveHeight] (the *map's* own
+  /// FAB-stack minimum) plus ~80px for the position panel's coordinate bar
+  /// and legend below the map, so the map portion itself still clears the
+  /// minimum.
+  Widget _fillOrScrollMap(Widget map) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final height = constraints.maxHeight.clamp(
+          MapConfig.minInteractiveHeight + 80,
+          double.infinity,
+        );
+        return SingleChildScrollView(
+          child: SizedBox(
+            height: height,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: kPlayerSurfaceHorizontalPadding,
+              ),
+              child: map,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// The Info/Script/Map segmented control. Wrapped in a horizontal scroll
+  /// view forced to at least the viewport width (like CoordinatorScreen's
+  /// own selector) so three segments centre when they fit and scroll rather
+  /// than overflow on a very narrow phone.
+  Widget _buildViewSelector(AppLocalizations l10n) {
+    final button = SegmentedButton<_StationDetailView>(
+      segments: [
+        ButtonSegment<_StationDetailView>(
+          value: _StationDetailView.info,
+          label: Text(l10n.infoTab),
+          icon: const Icon(Icons.info_outline),
+        ),
+        ButtonSegment<_StationDetailView>(
+          value: _StationDetailView.script,
+          label: Text(l10n.scriptTab),
+          icon: const Icon(Icons.theater_comedy),
+        ),
+        ButtonSegment<_StationDetailView>(
+          value: _StationDetailView.map,
+          label: Text(l10n.mapTab),
+          icon: const Icon(Icons.map),
+        ),
+      ],
+      selected: {_view},
+      showSelectedIcon: false,
+      onSelectionChanged: (selection) {
+        setState(() => _view = selection.first);
+      },
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minWidth: constraints.maxWidth),
+          child: Center(child: button),
+        ),
       ),
     );
   }

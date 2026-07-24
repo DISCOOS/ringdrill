@@ -650,6 +650,18 @@ abstract class AppLocalizations {
   /// **'Map'**
   String get mapTab;
 
+  /// Segmented-control label for the non-map content of a station/role detail view, paired with mapTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get infoTab;
+
+  /// Segmented-control label for the station detail view's scenario/roleplay content (persons and locations), between infoTab and mapTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Script'**
+  String get scriptTab;
+
   /// Tooltip for the FAB that opens an exercise's all-stations map in a bigger dialog/bottom sheet, from the coordinator screen's inline map.
   ///
   /// In en, this message translates to:

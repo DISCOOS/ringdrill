@@ -149,6 +149,56 @@ Future<void> _pumpAtPaneWidth(WidgetTester tester, double paneWidth) async {
 }
 
 void main() {
+  // Runs first, with pristine ProgramService/SharedPreferences singletons:
+  // this full-screen medium test is sensitive to cross-test state left by
+  // the other tests in this file (map controllers, program state), which
+  // otherwise make its bounded pumps miss the freshly-built selector.
+  testWidgets(
+    'a roleplay with no central position still shows the Map segment, with '
+    'the MapPlaceholder fallback instead of omitting it (medium)',
+    (tester) async {
+      // A roleplay with neither its own position nor a linked person (so
+      // _markerMapCentral resolves to null) added straight to prefs —
+      // getRolePlay reads prefs live by key, so no re-init is needed. The
+      // compact body would omit the panel entirely; medium's Map segment
+      // shows a MapPlaceholder instead.
+      await _seedAndInit();
+      const orphanUuid = 'role-no-position';
+      final prefs = await SharedPreferences.getInstance();
+      await ProgramRepository(prefs).saveRolePlay(
+        const RolePlay(
+          uuid: orphanUuid,
+          index: 0,
+          exerciseUuid: _exerciseUuid,
+          name: 'Ukjent',
+        ),
+      );
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      tester.view.physicalSize = const Size(700, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        _harness(const RolePlayScreen(rolePlayUuid: orphanUuid)),
+      );
+      // Bounded pumps, not pumpAndSettle: RolePlayScreen docks a
+      // DrillMiniPlayer whose live status animates indefinitely, so
+      // pumpAndSettle never settles. A frame plus a fixed advance is enough
+      // to build the segmented body (the Map segment here is a static
+      // MapPlaceholder, no map).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.byIcon(Icons.map));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(RolePositionPanel), findsNothing);
+      expect(find.text(l10n.noLocation), findsOneWidget);
+    },
+  );
+
   testWidgets(
     'a narrow (700px) pane stacks — no WideDetailMapSplit, no overflow',
     (tester) async {
@@ -287,10 +337,11 @@ void main() {
   );
 
   testWidgets(
-    'the stacked (compact) layout keeps the panel at its fixed inline '
-    'height, unaffected by the expanded fill mode',
+    'the medium (700px) layout shows the Info/Map selector; the Map segment '
+    'fills the floored viewport-derived height (no WideDetailMapSplit)',
     (tester) async {
       await _seedAndInit();
+      // 700px width is medium (600-839), not compact.
       tester.view.physicalSize = const Size(700, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -299,10 +350,34 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
+      expect(find.byType(WideDetailMapSplit), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.map));
+      await tester.pumpAndSettle();
+
       final panelRect = tester.getRect(find.byType(RolePositionPanel));
-      // Well short of the ~800px window height — the fixed thumbnail
-      // height plus bar chrome, not a filled pane.
-      expect(panelRect.height, lessThan(350));
+      expect(panelRect.height, greaterThan(240));
+      expect(panelRect.height, lessThan(800));
+    },
+  );
+
+  testWidgets(
+    'a short medium viewport (800x375, landscape phone) floors the Map '
+    "segment's height and scrolls — no overflow",
+    (tester) async {
+      await _seedAndInit();
+      tester.view.physicalSize = const Size(800, 375);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(_harness(const RolePlayScreen(rolePlayUuid: _roleUuid)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.map));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      final panelRect = tester.getRect(find.byType(RolePositionPanel));
+      expect(panelRect.height, greaterThan(240));
     },
   );
 

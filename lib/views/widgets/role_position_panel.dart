@@ -19,13 +19,11 @@ import 'package:ringdrill/views/widgets/role_mini_map.dart';
 ///
 /// Renders [PositionCardShell]: [RoleMiniMap] on top, a coordinate bar
 /// below (label, UTM coordinate). [RoleMiniMap] is a static tap-to-expand
-/// preview by default; this panel forwards its own [fillHeight] straight
-/// through as [RoleMiniMap.interactive], since `fillHeight: true` is only
-/// ever passed once the caller (roleplay_screen.dart's expanded body) has
-/// already decided this panel sits in a spacious enough pane — the exact
-/// moment to make the map directly interactive instead. The bar itself
-/// has no `onTap` to forward, so tapping it is a no-op — read-only either
-/// way, never the [PositionCard] picker.
+/// preview by default; pass [interactive] to render it directly
+/// interactive instead (the caller decides — the expanded pane and the
+/// medium map segment both opt in). The bar itself has no `onTap` to
+/// forward, so tapping it is a no-op — read-only either way, never the
+/// [PositionCard] picker.
 class RolePositionPanel extends StatelessWidget {
   const RolePositionPanel({
     super.key,
@@ -38,6 +36,7 @@ class RolePositionPanel extends StatelessWidget {
     this.mapHeight = 200,
     this.asCard = false,
     this.fillHeight = false,
+    this.interactive = false,
     this.extraMarkers = const [],
     this.overrides = const {},
     this.onTap,
@@ -96,6 +95,11 @@ class RolePositionPanel extends StatelessWidget {
   /// (`WideDetailMapSplit`) passes `true`; every other call site keeps the
   /// default fixed-height inline card.
   final bool fillHeight;
+
+  /// Forwarded to [RoleMiniMap.interactive]: render the map directly
+  /// interactive instead of the static tap-to-expand preview. Decoupled
+  /// from [fillHeight] — mirrors [StationPositionPanel.interactive].
+  final bool interactive;
 
   /// Forwarded to [PositionCardShell.sectionId]. Null (every call site but
   /// the Spill viewer) keeps this panel exactly as it always was: no
@@ -170,12 +174,7 @@ class RolePositionPanel extends StatelessWidget {
         rolePlay: rolePlay,
         station: station,
         height: mapHeight,
-        // fillHeight is only ever true once the caller (roleplay_screen.dart's
-        // _buildExpandedBody, building a WideDetailMapSplit) has already
-        // decided this panel sits in a spacious expanded pane — the exact
-        // moment to make the map directly interactive instead of a static
-        // tap-to-expand preview.
-        interactive: fillHeight,
+        interactive: interactive,
         extraMarkers: extraMarkers,
         overrides: overrides,
       ),

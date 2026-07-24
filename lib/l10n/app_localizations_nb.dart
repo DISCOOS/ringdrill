@@ -364,6 +364,12 @@ class AppLocalizationsNb extends AppLocalizations {
   String get mapTab => 'Kart';
 
   @override
+  String get infoTab => 'Info';
+
+  @override
+  String get scriptTab => 'Spill';
+
+  @override
   String get expandMap => 'Åpne fullt kart';
 
   @override

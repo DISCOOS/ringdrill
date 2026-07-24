@@ -384,6 +384,14 @@
   "@mapTab": {
     "description": "Bottom-nav label for the Map tab (formerly Stations, renamed to reflect that it shows a map of the stations)."
   },
+  "infoTab": "Info",
+  "@infoTab": {
+    "description": "Segmented-control label for the non-map content of a station/role detail view, paired with mapTab."
+  },
+  "scriptTab": "Script",
+  "@scriptTab": {
+    "description": "Segmented-control label for the station detail view's scenario/roleplay content (persons and locations), between infoTab and mapTab."
+  },
   "expandMap": "Open full map",
   "@expandMap": {
     "description": "Tooltip for the FAB that opens an exercise's all-stations map in a bigger dialog/bottom sheet, from the coordinator screen's inline map."

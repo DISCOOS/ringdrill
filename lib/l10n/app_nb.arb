@@ -70,6 +70,8 @@
   "station": "{count, plural, =0{Post} =1{Post} other{Poster}}",
   "notStationsCreated": "Ingen poster opprettet",
   "mapTab": "Kart",
+  "infoTab": "Info",
+  "scriptTab": "Spill",
   "expandMap": "Åpne fullt kart",
   "stationsTab": "Poster",
   "allExercises": "Alle øvelser",

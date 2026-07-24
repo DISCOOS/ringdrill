@@ -196,6 +196,15 @@ class _StationSheetHarnessState extends State<_StationSheetHarness> {
 // Tests
 // ---------------------------------------------------------------------------
 
+/// Persons and Locations now live under the Station detail view's "Script"
+/// (Spill) segment (Icons.theater_comedy) at the default ~800px test width,
+/// which reads as WindowSizeClass.medium — the segmented body. Select it
+/// before asserting on those cards.
+Future<void> _selectScript(WidgetTester tester) async {
+  await tester.tap(find.byIcon(Icons.theater_comedy));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   setUp(() async {
     await _seedAndInit();
@@ -204,6 +213,7 @@ void main() {
   testWidgets('Personer card lists the station\'s persons', (tester) async {
     await tester.pumpWidget(_buildScreen(stationIndex: 0));
     await tester.pumpAndSettle();
+    await _selectScript(tester);
 
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     expect(find.text(l10n.personsSectionTitle.toUpperCase()), findsOneWidget);
@@ -216,6 +226,7 @@ void main() {
     (tester) async {
       await tester.pumpWidget(_buildScreen(stationIndex: 1));
       await tester.pumpAndSettle();
+      await _selectScript(tester);
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       expect(find.text(l10n.personsSectionTitle.toUpperCase()), findsNothing);
@@ -237,6 +248,7 @@ void main() {
       await tester.pump(); // post-frame callback fires → show()
       await tester.pump(); // showModalBottomSheet starts
       await tester.pumpAndSettle();
+      await _selectScript(tester);
 
       // Hilde is enacted by the cast actor — the pill shows just the actor
       // name (no "Played by").
@@ -256,6 +268,7 @@ void main() {
     (tester) async {
       await tester.pumpWidget(_buildScreen(stationIndex: 0));
       await tester.pumpAndSettle();
+      await _selectScript(tester);
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       expect(find.text(l10n.personsSectionAddMarkerAction), findsOneWidget);
@@ -276,6 +289,7 @@ void main() {
     (tester) async {
       await tester.pumpWidget(_buildScreen(stationIndex: 0));
       await tester.pumpAndSettle();
+      await _selectScript(tester);
 
       // Hilde is enacted (has a RolePlay) — tapping her row (not the pill)
       // opens the spill editor so the spill is reachable from the person list.
@@ -295,6 +309,7 @@ void main() {
     (tester) async {
       await tester.pumpWidget(_buildScreen(stationIndex: 0));
       await tester.pumpAndSettle();
+      await _selectScript(tester);
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       await tester.tap(find.text(l10n.personsSectionAddAction));
@@ -319,6 +334,7 @@ void main() {
   testWidgets('Lokasjoner card lists the station\'s locations', (tester) async {
     await tester.pumpWidget(_buildScreen(stationIndex: 0));
     await tester.pumpAndSettle();
+    await _selectScript(tester);
 
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     expect(find.text(l10n.locationsSectionTitle.toUpperCase()), findsOneWidget);
@@ -331,6 +347,7 @@ void main() {
     (tester) async {
       await tester.pumpWidget(_buildScreen(stationIndex: 0));
       await tester.pumpAndSettle();
+      await _selectScript(tester);
 
       // Kari's row reads "Kari Fiskeløs · 71" — tap the name (left of the
       // trailing "+ Legg til spill" pill) to edit the person, not add a marker.
@@ -349,6 +366,7 @@ void main() {
       'location', (tester) async {
     await tester.pumpWidget(_buildScreen(stationIndex: 0));
     await tester.pumpAndSettle();
+    await _selectScript(tester);
 
     // The "LKP" text inside the Lokasjoner card (a CollapsibleSectionCard) —
     // scoped so it never matches the same label on the map marker/legend.

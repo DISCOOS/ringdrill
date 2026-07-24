@@ -131,7 +131,9 @@ void main() {
   });
 
   testWidgets(
-    'a narrow (700px) pane stacks — no WideDetailMapSplit, no overflow',
+    'a medium (700px) pane uses the Info/Script/Map selector, not '
+    'WideDetailMapSplit; Info shows description + schedule, Script shows '
+    'persons + locations',
     (tester) async {
       await _seedAndInit();
       tester.view.physicalSize = const Size(700, 800);
@@ -147,15 +149,30 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(WideDetailMapSplit), findsNothing);
-      // The stacked body still renders every section, in one column.
+
+      // Default Info segment: description + schedule; persons (Script) not
+      // yet visible.
       expect(
         find.text(l10n.postDescriptionCardTitle.toUpperCase()),
         findsOneWidget,
       );
-      expect(find.text(l10n.personsSectionTitle.toUpperCase()), findsOneWidget);
       expect(
         find.text(l10n.stationTimingCardTitle.toUpperCase()),
         findsOneWidget,
+      );
+      expect(find.text(l10n.personsSectionTitle.toUpperCase()), findsNothing);
+
+      // Script segment: persons + locations.
+      await tester.tap(find.byIcon(Icons.theater_comedy));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.personsSectionTitle.toUpperCase()), findsOneWidget);
+      expect(
+        find.text(l10n.locationsSectionTitle.toUpperCase()),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.postDescriptionCardTitle.toUpperCase()),
+        findsNothing,
       );
     },
   );
@@ -270,10 +287,12 @@ void main() {
   );
 
   testWidgets(
-    'the stacked (compact) layout keeps the panel at its fixed inline '
-    'height, unaffected by the expanded fill mode',
+    'the medium (700px) layout shows the Info/Map selector; the Map segment '
+    'fills the floored viewport-derived height (no WideDetailMapSplit)',
     (tester) async {
       await _seedAndInit();
+      // 700px width is medium (600-839), not compact — the segmented
+      // Info/Map body, not WideDetailMapSplit.
       tester.view.physicalSize = const Size(700, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -286,10 +305,44 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
+      expect(find.byType(WideDetailMapSplit), findsNothing);
+
+      // The panel lives behind the Map segment; select it, then assert the
+      // map fills the floored (viewportHeight - 220).clamp(240, inf) height.
+      // The panel is the map card (mapHeight) plus its coordinate bar and
+      // legend chrome, so assert approximately, not an exact raw difference.
+      await tester.tap(find.byIcon(Icons.map));
+      await tester.pumpAndSettle();
+
       final panelRect = tester.getRect(find.byType(StationPositionPanel));
-      // Well short of the ~800px window height — the fixed thumbnail
-      // height plus legend/bar chrome, not a filled pane.
-      expect(panelRect.height, lessThan(350));
+      expect(panelRect.height, greaterThan(240));
+      expect(panelRect.height, lessThan(800));
+    },
+  );
+
+  testWidgets(
+    'a short medium viewport (800x375, landscape phone) floors the Map '
+    "segment's height and scrolls — no overflow",
+    (tester) async {
+      await _seedAndInit();
+      tester.view.physicalSize = const Size(800, 375);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        _harness(
+          const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.map));
+      await tester.pumpAndSettle();
+
+      // (375 - 220) < 240, so the map clamps *up* to the 240 floor and the
+      // SingleChildScrollView scrolls — never overflows.
+      expect(tester.takeException(), isNull);
+      final panelRect = tester.getRect(find.byType(StationPositionPanel));
+      expect(panelRect.height, greaterThan(240));
     },
   );
 
@@ -321,6 +374,39 @@ void main() {
       expect(find.byIcon(Icons.center_focus_strong_rounded), findsOneWidget);
       expect(find.byIcon(Icons.open_in_full), findsOneWidget);
       expect(find.byIcon(Icons.layers), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'medium body defaults to the Info segment (no map yet); selecting Map '
+    'reveals a directly interactive map with its own FAB commands',
+    (tester) async {
+      await _seedAndInit();
+      tester.view.physicalSize = const Size(700, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        _harness(
+          const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Two segments (info_outline + map icons), defaulting to Info: no map
+      // is rendered yet.
+      expect(find.byIcon(Icons.info_outline), findsOneWidget);
+      expect(find.byIcon(Icons.map), findsOneWidget);
+      expect(find.byType(StationPositionPanel), findsNothing);
+      expect(find.byIcon(Icons.center_focus_strong_rounded), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.map));
+      await tester.pumpAndSettle();
+
+      // Now the interactive map with its own FAB stack (no tap-to-expand).
+      expect(find.byType(StationPositionPanel), findsOneWidget);
+      expect(find.byIcon(Icons.center_focus_strong_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.open_in_full), findsOneWidget);
     },
   );
 }

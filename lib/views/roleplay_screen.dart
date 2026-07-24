@@ -18,6 +18,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
+import 'package:ringdrill/views/map_view.dart' show MapConfig;
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
@@ -36,6 +37,7 @@ import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/face_badge_icon.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 import 'package:ringdrill/views/widgets/map_legend.dart';
+import 'package:ringdrill/views/widgets/map_placeholder.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/role_mini_map.dart';
@@ -68,9 +70,17 @@ class RolePlayScreen extends StatefulWidget {
   State<RolePlayScreen> createState() => _RolePlayScreenState();
 }
 
+/// The two segments of the medium-width detail body — everything-but-the-map
+/// (`info`) and the directly-interactive map (`map`). Mirrors
+/// `_StationDetailView`; no resize coercion needed for the same reason (the
+/// selector always carries both segments and only the medium body renders it).
+enum _RolePlayDetailView { info, map }
+
 class _RolePlayScreenState extends State<RolePlayScreen>
     with SubscriptionBag<RolePlayScreen> {
   final _programService = ProgramService();
+
+  _RolePlayDetailView _view = _RolePlayDetailView.info;
 
   RolePlay? _rolePlay;
 
@@ -301,42 +311,15 @@ class _RolePlayScreenState extends State<RolePlayScreen>
                 roleOverrides: roleOverrides,
               );
             }
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(kPlayerSurfaceHorizontalPadding),
-              child: Column(
-                spacing: 8.0,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Identity (name + parent exercise) lives in the sheet's
-                  // AppBar via `SheetTitle`. The body starts directly at
-                  // the first content card.
-                  ..._buildTopSections(
-                    rolePlay: rolePlay,
-                    station: station,
-                    exercise: exercise,
-                    stationIndex: stationIndex,
-                    roleOverrides: roleOverrides,
-                    localizations: l10n,
-                  ),
-
-                  // Position card — the marker's own position (or, failing
-                  // that, the portrayed person's location), plus read-only
-                  // post/person context pins (Del B). Omitted entirely (not
-                  // even a placeholder) when there is no central position.
-                  if (_markerMapCentral(rolePlay, station) != null)
-                    _buildPositionPanel(
-                      l10n: l10n,
-                      rolePlay: rolePlay,
-                      station: station,
-                      roleOverrides: roleOverrides,
-                    )!,
-
-                  // Når aktiv card — the round(s) this station is staffed
-                  // by a team, from the same Exercise.schedule +
-                  // teamIndex data the Post viewer's Tidsplan card reads.
-                  _ActiveScheduleCard(exercise: exercise, rolePlay: rolePlay),
-                ],
-              ),
+            // Compact and medium share the segmented Info/Map body; only
+            // expanded gets the two-pane WideDetailMapSplit.
+            return _buildSegmentedBody(
+              l10n: l10n,
+              station: station,
+              exercise: exercise,
+              rolePlay: rolePlay,
+              stationIndex: stationIndex,
+              roleOverrides: roleOverrides,
             );
           },
         ),
@@ -465,6 +448,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
     required AppLocalizations l10n,
     required Map<String, String> roleOverrides,
     bool fillHeight = false,
+    bool interactive = false,
   }) {
     final central = _markerMapCentral(rolePlay, station);
     if (central == null) return null;
@@ -513,6 +497,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
           overrides: roleOverrides,
           asCard: true,
           fillHeight: fillHeight,
+          interactive: interactive,
           sectionId: 'position',
           extraMarkers: extra,
           legend: MapLegend(entries: legendEntries),
@@ -521,14 +506,13 @@ class _RolePlayScreenState extends State<RolePlayScreen>
     );
   }
 
-  /// Placeholder shown in the expanded body's map pane for an unassigned
-  /// roleplay with no position — mirrors the coordinator's own
-  /// `_buildMapPlaceholder`.
-  Widget _buildMapPlaceholder(AppLocalizations l10n) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Center(child: Text(l10n.noLocation)),
-    );
+  /// Placeholder shown in a map slot for a roleplay with no central
+  /// position — the polished, card-shaped [MapPlaceholder] shared with the
+  /// station and coordinator maps. [height] is null in the expanded body's
+  /// map pane (it fills the pane) and the clamped map height in the medium
+  /// segment (a fixed slot in a scrolling column).
+  Widget _buildMapPlaceholder(AppLocalizations l10n, {double? height}) {
+    return MapPlaceholder(height: height, message: l10n.noLocation);
   }
 
   /// Expanded body (pane ≥ 840): the same cards the stacked body shows,
@@ -567,9 +551,146 @@ class _RolePlayScreenState extends State<RolePlayScreen>
               station: station,
               roleOverrides: roleOverrides,
               fillHeight: true,
+              interactive: true,
             ) ??
             _buildMapPlaceholder(l10n),
       ),
+    );
+  }
+
+  /// Compact and medium body: a pinned Info/Map segmented selector, then the
+  /// selected segment filling the rest. Info (status/context/play cards +
+  /// schedule) scrolls within its area; Map fills it to the bottom with the
+  /// directly-interactive position panel (or, with no central position, a
+  /// [MapPlaceholder] — unlike the compact behaviour before this, which
+  /// omitted it entirely). Only the `expanded` window size uses the two-pane
+  /// `WideDetailMapSplit` instead.
+  Widget _buildSegmentedBody({
+    required RolePlay rolePlay,
+    required Station? station,
+    required Exercise? exercise,
+    required int? stationIndex,
+    required Map<String, String> roleOverrides,
+    required AppLocalizations l10n,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            kPlayerSurfaceHorizontalPadding,
+            kPlayerSurfaceHorizontalPadding,
+            kPlayerSurfaceHorizontalPadding,
+            0,
+          ),
+          child: _buildViewSelector(l10n),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: switch (_view) {
+            _RolePlayDetailView.info => SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(
+                kPlayerSurfaceHorizontalPadding,
+                0,
+                kPlayerSurfaceHorizontalPadding,
+                kPlayerSurfaceHorizontalPadding,
+              ),
+              child: Column(
+                spacing: 8.0,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ..._buildTopSections(
+                    rolePlay: rolePlay,
+                    station: station,
+                    exercise: exercise,
+                    stationIndex: stationIndex,
+                    roleOverrides: roleOverrides,
+                    localizations: l10n,
+                  ),
+                  _ActiveScheduleCard(exercise: exercise, rolePlay: rolePlay),
+                ],
+              ),
+            ),
+            _RolePlayDetailView.map => _fillOrScrollMap(
+              _buildPositionPanel(
+                    l10n: l10n,
+                    rolePlay: rolePlay,
+                    station: station,
+                    roleOverrides: roleOverrides,
+                    fillHeight: true,
+                    interactive: true,
+                  ) ??
+                  _buildMapPlaceholder(l10n),
+            ),
+          },
+        ),
+      ],
+    );
+  }
+
+  /// The Info/Map segmented control. Wrapped in a horizontal scroll view
+  /// forced to at least the viewport width (like CoordinatorScreen's) so it
+  /// centres when it fits and scrolls rather than overflows on a very
+  /// narrow phone.
+  Widget _buildViewSelector(AppLocalizations l10n) {
+    final button = SegmentedButton<_RolePlayDetailView>(
+      segments: [
+        ButtonSegment<_RolePlayDetailView>(
+          value: _RolePlayDetailView.info,
+          label: Text(l10n.infoTab),
+          icon: const Icon(Icons.info_outline),
+        ),
+        ButtonSegment<_RolePlayDetailView>(
+          value: _RolePlayDetailView.map,
+          label: Text(l10n.mapTab),
+          icon: const Icon(Icons.map),
+        ),
+      ],
+      selected: {_view},
+      showSelectedIcon: false,
+      onSelectionChanged: (selection) {
+        setState(() => _view = selection.first);
+      },
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minWidth: constraints.maxWidth),
+          child: Center(child: button),
+        ),
+      ),
+    );
+  }
+
+  /// Sizes the Map segment's [map] to fill the space the segmented body
+  /// gives it — reaching the bottom with no dead gap — but never below a
+  /// floor, since a shorter map can't fit its own FAB command stack (a very
+  /// short landscape-phone viewport would otherwise overflow). When the
+  /// available height is below the floor the map takes the floor and the
+  /// area scrolls; otherwise it fills exactly. The floor is
+  /// [MapConfig.minInteractiveHeight] (the *map's* own FAB-stack minimum)
+  /// plus ~80px for the position panel's coordinate bar and legend below
+  /// the map, so the map portion itself still clears the minimum.
+  Widget _fillOrScrollMap(Widget map) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final height = constraints.maxHeight.clamp(
+          MapConfig.minInteractiveHeight + 80,
+          double.infinity,
+        );
+        return SingleChildScrollView(
+          child: SizedBox(
+            height: height,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: kPlayerSurfaceHorizontalPadding,
+              ),
+              child: map,
+            ),
+          ),
+        );
+      },
     );
   }
 }

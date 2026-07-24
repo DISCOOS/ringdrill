@@ -15,15 +15,13 @@ import 'package:ringdrill/views/widgets/station_mini_map.dart';
 /// Renders [PositionCardShell]: a bordered card with [StationMiniMap] on
 /// top and a coordinate bar below (the "Position" label, the UTM
 /// coordinate). [StationMiniMap] is a static tap-to-expand preview by
-/// default; this panel forwards its own [fillHeight] straight through as
-/// [StationMiniMap.interactive], since `fillHeight: true` is only ever
-/// passed once the caller (station_screen.dart's expanded body) has
-/// already decided this panel sits in a spacious enough pane — the exact
-/// moment to make the map directly interactive instead. The bar itself
-/// only opens anything when the caller passes [onTap] for that purpose —
-/// station_screen.dart wires it to open the station editor, and every
-/// other call site leaves it null (bar tap is then a no-op). This stays
-/// read-only either way — never the [PositionCard] picker.
+/// default; pass [interactive] to render it directly interactive instead
+/// (the caller decides — the expanded pane and the medium map segment both
+/// opt in). The bar itself only opens anything when the caller passes
+/// [onTap] for that purpose — station_screen.dart wires it to open the
+/// station editor, and every other call site leaves it null (bar tap is
+/// then a no-op). This stays read-only either way — never the
+/// [PositionCard] picker.
 ///
 /// When the station has no [Station.position] the card is omitted
 /// entirely and the row shows the "no location" fallback text instead.
@@ -38,6 +36,7 @@ class StationPositionPanel extends StatelessWidget {
     this.sectionId,
     this.asCard = false,
     this.fillHeight = false,
+    this.interactive = false,
     this.mapHeight = 200,
     this.label,
     this.onTap,
@@ -66,6 +65,14 @@ class StationPositionPanel extends StatelessWidget {
   /// (`WideDetailMapSplit`) passes `true`; every other call site keeps the
   /// default fixed-height inline card.
   final bool fillHeight;
+
+  /// Forwarded to [StationMiniMap.interactive]: render the map directly
+  /// interactive (pan/zoom/tap, own FAB stack, fullscreen command) instead
+  /// of the static tap-to-expand preview. Decoupled from [fillHeight] —
+  /// the medium detail body wants an interactive map at an explicit
+  /// [mapHeight] (inside a scrolling column, where `fillHeight`'s
+  /// `Expanded` sizing can't apply), while the expanded pane wants both.
+  final bool interactive;
 
   /// Overrides the embedded [StationMiniMap]'s default administrative-only
   /// marker with a richer scenario set (DESIGN-010's Post viewer). Null
@@ -156,12 +163,7 @@ class StationPositionPanel extends StatelessWidget {
         exercise: exercise,
         station: station,
         height: mapHeight,
-        // fillHeight is only ever true once the caller (station_screen.dart's
-        // _buildExpandedBody, building a WideDetailMapSplit) has already
-        // decided this panel sits in a spacious expanded pane — the exact
-        // moment to make the map directly interactive instead of a static
-        // tap-to-expand preview.
-        interactive: fillHeight,
+        interactive: interactive,
         markers: markers,
         // Square bottom corners: the map sits flush above the
         // coordinate bar, and PositionCardShell's own outer

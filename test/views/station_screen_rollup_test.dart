@@ -174,6 +174,12 @@ void main() {
       await tester.pumpWidget(_buildScreen());
       await tester.pumpAndSettle();
 
+      // Default test window (~800px) is medium: the map now lives behind the
+      // "Map" segment of the Info/Map selector, so select it before reading
+      // the map card.
+      await tester.tap(find.byIcon(Icons.map));
+      await tester.pumpAndSettle();
+
       // `find.byType(MapView)` implicitly means `MapView<dynamic>`, which
       // does not `==` the actual `MapView<int>` instance's runtime type
       // (generics make exact Type equality too strict here) — a predicate

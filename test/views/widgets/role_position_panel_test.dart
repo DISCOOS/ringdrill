@@ -82,19 +82,22 @@ void main() {
   );
 
   testWidgets(
-    'fillHeight + wide window: the map is directly interactive with its '
-    'own FAB stack (no tap needed), and its built-in expand command opens '
-    'a genuine full-screen route — not a dialog, not a bottom sheet',
+    'interactive: true renders a directly interactive map with its own FAB '
+    'stack (no tap needed), whose built-in expand command opens a genuine '
+    'full-screen route — not a dialog, not a bottom sheet',
     (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
+            // interactive is decoupled from fillHeight now — pass it
+            // explicitly; fillHeight here just gives the map room to fill.
             body: RolePositionPanel(
               exercise: exercise(),
               rolePlay: rolePlay(),
               fillHeight: true,
+              interactive: true,
             ),
           ),
         ),

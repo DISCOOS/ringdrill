@@ -34,6 +34,7 @@ import 'package:ringdrill/views/widgets/exercise_mini_map.dart'
     show exerciseStationMarkers, ExerciseMapSheetHeader;
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
+import 'package:ringdrill/views/widgets/map_placeholder.dart';
 import 'package:ringdrill/views/widgets/notification_permission_help.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
@@ -528,14 +529,26 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                 localizations: localizations,
               );
             }
+            final sideBySideTop = windowSize == WindowSizeClass.medium;
+            // The Map segment pins the top section + selector and lets the
+            // map fill the rest to the bottom (no scroll, no fixed-height
+            // gap, and the bottom-right FABs anchor to the true bottom). The
+            // stations/teams segments keep scrolling the whole column.
+            if (_view == _CoordinatorView.map) {
+              return _buildMapBody(
+                event,
+                showHero: showHero,
+                localizations: localizations,
+                sideBySideTop: sideBySideTop,
+              );
+            }
             return SingleChildScrollView(
               padding: const EdgeInsets.all(_kCoordinatorBodyPadding),
               child: _buildStackedBody(
                 event,
                 showHero: showHero,
                 localizations: localizations,
-                viewportHeight: constraints.maxHeight,
-                sideBySideTop: windowSize == WindowSizeClass.medium,
+                sideBySideTop: sideBySideTop,
               ),
             );
           },
@@ -566,7 +579,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     ExerciseEvent event, {
     required bool showHero,
     required AppLocalizations localizations,
-    required double viewportHeight,
     required bool sideBySideTop,
   }) {
     return Column(
@@ -581,9 +593,61 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         switch (_view) {
           _CoordinatorView.stations => _buildStationList(event),
           _CoordinatorView.teams => _buildTeamList(event),
-          _CoordinatorView.map => _buildSingleColumnMap(event, viewportHeight),
+          // The map segment never reaches here — `_buildBody` routes it to
+          // `_buildMapBody` (a filling, non-scrolling layout) before calling
+          // this scrolling stacked body.
+          _CoordinatorView.map => const SizedBox.shrink(),
         },
       ],
+    );
+  }
+
+  /// The `Kart` segment's body (compact/medium): the same top section +
+  /// selector as [_buildStackedBody], but pinned, with the map filling all
+  /// remaining height to the bottom via [Expanded] instead of a guessed
+  /// fixed height inside a scroll view — so there is no dead gap below the
+  /// map and its bottom-right command stack anchors to the true bottom.
+  Widget _buildMapBody(
+    ExerciseEvent event, {
+    required bool showHero,
+    required AppLocalizations localizations,
+    required bool sideBySideTop,
+  }) {
+    final map = _buildExercisePositionMap(event); // height null → fills
+    return Padding(
+      padding: const EdgeInsets.all(_kCoordinatorBodyPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          sideBySideTop
+              ? _buildSideBySideTopSection(event, showHero: showHero)
+              : _buildTopSection(event, showHero: showHero),
+          const SizedBox(height: 16),
+          _buildViewSelector(localizations, includeMap: true),
+          const SizedBox(height: 8),
+          // The map fills the remaining height to the bottom, but never
+          // below MapConfig.minInteractiveHeight — a shorter map can't fit
+          // its own FAB command stack (a short landscape-phone viewport, or
+          // a tall running-exercise top section, would otherwise overflow);
+          // below that floor the area scrolls instead.
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final height = constraints.maxHeight.clamp(
+                  MapConfig.minInteractiveHeight,
+                  double.infinity,
+                );
+                return SingleChildScrollView(
+                  child: SizedBox(
+                    height: height,
+                    child: map ?? _buildMapPlaceholder(localizations),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -711,40 +775,23 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
-  /// Map subview for the compact/medium bodies, shown when the `Kart`
-  /// segment is selected. Reuses the same all-stations map as the expanded
-  /// body's permanent pane and falls back to a short placeholder when no
-  /// station has a position yet.
-  Widget _buildSingleColumnMap(ExerciseEvent event, double viewportHeight) {
-    // The map renders below the top section (status/schedule + selector)
-    // inside the scrolling body, so it must leave room for that content —
-    // otherwise a near-full-viewport map pushes the page well past one
-    // screen. Reserve a chunk for the chrome above so the map stays inside
-    // the viewport rather than dominating it.
-    final map = _buildExercisePositionMap(
-      event,
-      height: (viewportHeight - 320).clamp(240.0, double.infinity),
-    );
-    if (map == null) {
-      return _buildMapPlaceholder(AppLocalizations.of(context)!);
-    }
-    return Padding(padding: const EdgeInsets.all(8.0), child: map);
-  }
-
   /// Placeholder shown in place of the all-stations map when no station has
   /// a position yet — shared by the compact/medium `Kart` segment and the
-  /// expanded body's permanent map pane.
-  Widget _buildMapPlaceholder(AppLocalizations localizations) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Center(
-        child: Text(
-          _exercise!.stations.isEmpty
-              ? localizations.notStationsCreated
-              : localizations.noLocation,
-          textAlign: TextAlign.center,
-        ),
-      ),
+  /// expanded body's permanent map pane. [height] is the clamped map height
+  /// in the single-column body (a fixed slot in a scrolling column) and
+  /// null in the expanded pane (it fills the pane).
+  Widget _buildMapPlaceholder(
+    AppLocalizations localizations, {
+    double? height,
+  }) {
+    return MapPlaceholder(
+      height: height,
+      icon: _exercise!.stations.isEmpty
+          ? Icons.wrong_location
+          : Icons.location_off,
+      message: _exercise!.stations.isEmpty
+          ? localizations.notStationsCreated
+          : localizations.noLocation,
     );
   }
 
