@@ -650,6 +650,12 @@ abstract class AppLocalizations {
   /// **'Map'**
   String get mapTab;
 
+  /// Tooltip for the FAB that opens an exercise's all-stations map in a bigger dialog/bottom sheet, from the coordinator screen's inline map.
+  ///
+  /// In en, this message translates to:
+  /// **'Open full map'**
+  String get expandMap;
+
   /// Bottom-nav label for the new Stations list tab introduced in DESIGN-002.
   ///
   /// In en, this message translates to:

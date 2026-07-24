@@ -14,6 +14,7 @@ import 'package:ringdrill/services/geocoding_service.dart';
 import 'package:ringdrill/services/map_settings.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/variable_values.dart';
+import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/map_command.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -30,6 +31,7 @@ class MapMarkerSpec<K> {
     required this.label,
     required this.point,
     required this.child,
+    this.shortLabel,
     this.clusterGroup,
     this.highlighted = false,
     this.onTap,
@@ -38,6 +40,15 @@ class MapMarkerSpec<K> {
   final K id;
   final String label;
   final LatLng point;
+
+  /// Optional compact chip text for overview zooms — e.g. a station's plan
+  /// number ("1.1" / "1a"). When set, the on-map label shows this from
+  /// [MapConfig.labelMinZoomFor] up, switching to the full [label] once the
+  /// camera passes [MapConfig.labelDetailZoomFor] — up close there is room
+  /// for the full text; the overlap problem only exists at overview zooms.
+  /// Null shows [label] whenever labels are visible at all, as before
+  /// (roleplay-placement and scenario-location markers).
+  final String? shortLabel;
 
   /// The icon widget rendered below the label. Must not render its own label.
   final Widget child;
@@ -99,7 +110,15 @@ class MapConfig {
   /// Below this zoom level, marker labels are hidden. Labels fade in between
   /// [labelMinZoom] - 1 and [labelMinZoom] via [AnimatedOpacity]. This is the
   /// compact-layout baseline; [labelMinZoomFor] relaxes it on wider windows.
-  static const double labelMinZoom = 14.0;
+  ///
+  /// Calibrated against flutter_map's own [Scalebar] bucketing
+  /// (`_metricScale`/`index = round(zoom - length.value)`, `length` default
+  /// `m` = -1): the "500 m" reading spans zoom ≈ 13.5-14.5. At the previous
+  /// value (14.0) labels sat at only ~50% opacity for the lower half of
+  /// that range — visible as "faded/gone" while the scale bar still read
+  /// "500 m" (reported: labels disappearing before the user expected). 13.0
+  /// reaches full opacity at zoom 13, safely before that bucket starts.
+  static const double labelMinZoom = 13.0;
 
   /// Zoom at which labels become fully visible, by window-size class. Wider
   /// layouts (tablets, desktop, split view) have far more room, so labels can
@@ -109,43 +128,378 @@ class MapConfig {
   static double labelMinZoomFor(WindowSizeClass sizeClass) =>
       switch (sizeClass) {
         WindowSizeClass.compact => labelMinZoom,
-        WindowSizeClass.medium => 12.5,
-        WindowSizeClass.expanded => 11.5,
+        WindowSizeClass.medium => 11.5,
+        WindowSizeClass.expanded => 10.5,
       };
 
+  /// Zoom at which a marker with a [MapMarkerSpec.shortLabel] switches its
+  /// chip from the compact form (the station number) to the full [label].
+  /// Five levels above [labelMinZoomFor] (by the same [Scalebar] bucketing
+  /// as [labelMinZoom]'s doc comment, landing the switch around the
+  /// "25 m" reading) — but never above [defaultAutoFitMaxZoom].
+  ///
+  /// That cap matters: [defaultAutoFitMaxZoom] limits how tight *every*
+  /// auto-fit is allowed to zoom, regardless of size class. Before this
+  /// cap was added here, `labelMinZoomFor(compact) + 5 = 18` sat *above*
+  /// `defaultAutoFitMaxZoom` (16.5) — meaning no auto-fit, and no tap of
+  /// "centre", could ever reach zoom 18 on a compact window; only a
+  /// manual pinch past what any built-in view would ever show could. On
+  /// medium (11.5 + 5 = 16.5, exactly the cap) and expanded (10.5 + 5 =
+  /// 15.5, comfortably under it) this coincidentally never bound, which is
+  /// exactly why those two "worked" and compact silently didn't (reported:
+  /// full labels only appearing well past where the scale bar read "25 m",
+  /// needing "10 m" instead — compact's 18 was simply unreachable by any
+  /// normal interaction). Capping at `min(labelMinZoomFor + 5,
+  /// defaultAutoFitMaxZoom)` keeps every size class's threshold reachable
+  /// by the same auto-fit a caller's own "centre" button would produce.
+  static double labelDetailZoomFor(WindowSizeClass sizeClass) => math.min(
+    labelMinZoomFor(sizeClass) + 5,
+    defaultAutoFitMaxZoom,
+  );
+
+  /// Visual scale applied to marker icons and labels for [sizeClass] —
+  /// mirrors [MapView]'s own per-instance marker scaling
+  /// (`_MapViewState._markerScale`) so [fitPadding]'s label-footprint
+  /// reserve below matches what will actually render.
+  static double markerScaleFor(WindowSizeClass sizeClass) =>
+      switch (sizeClass) {
+        WindowSizeClass.compact => 1.0,
+        WindowSizeClass.medium => 1.2,
+        WindowSizeClass.expanded => 1.35,
+      };
+
+  /// The rendered width of a single marker's label at scale 1.0 — mirrors
+  /// `_MapViewState._buildMarker`'s own `TextPainter` measurement and its
+  /// `math.max(80.0, ...)` floor exactly, so [fitPadding]'s footprint
+  /// reserve matches the real marker box, not a guess.
+  static double _labelWidth(String label) {
+    final painter = TextPainter(
+      text: TextSpan(text: label),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+    )..layout();
+    return math.max(80.0, painter.width);
+  }
+
+  /// Shrinks a flat "breathing room" padding constant proportionally to a
+  /// small [viewportExtent] instead of letting it consume a fixed pixel
+  /// amount regardless of how little room is actually available (a fixed
+  /// 64px margin is negligible on a full-height phone screen but can eat a
+  /// third of a short modal sheet's own height, forcing far more zoom-out
+  /// than the data warrants). Never grows past [flat], and never shrinks
+  /// past half of it — some minimum breathing room always survives, even
+  /// on a very small viewport.
+  ///
+  /// Only ever applied to *aesthetic* margin (nothing physically obstructs
+  /// there) — never to always-visible overlay chrome (the FAB command
+  /// stack, the search field), since those occlude markers for real if
+  /// under-reserved regardless of viewport size. The marker label
+  /// footprint sits between the two: real rendered space, but zoom-gated
+  /// invisible at overview zooms, so it gets its own viewport-fraction cap
+  /// in [fitPadding] instead of this one (whose `flat * 0.5` floor would
+  /// defeat a cap exactly when the label is widest).
+  static double _capAesthetic(
+    double flat,
+    double viewportExtent, {
+    double fraction = 0.12,
+  }) {
+    final cap = math.max(viewportExtent * fraction, flat * 0.5);
+    return math.min(flat, cap);
+  }
+
   /// Padding used when calling [MapController.fitCamera] so the fit
-  /// honours the on-map overlays. Because [MapController.fitCamera]
-  /// places the bounds *center* into the centre of the padded area,
-  /// asymmetric padding directly shifts where the centroid lands on
-  /// screen: a larger bottom padding pulls the camera so the centroid
-  /// appears higher in the visible area.
+  /// honours both the on-map overlays and the markers' own rendered
+  /// footprint. Because [MapController.fitCamera] places the bounds
+  /// *center* into the centre of the padded area, asymmetric padding
+  /// directly shifts where the centroid lands on screen: a larger bottom
+  /// padding pulls the camera so the centroid appears higher in the
+  /// visible area.
+  ///
+  /// [viewport] must be the *real* local size the [MapView] being fit will
+  /// actually render at — its own `LayoutBuilder` constraints, not
+  /// necessarily the full window (a map embedded in a narrower/shorter
+  /// dialog, sheet, or side pane renders at that pane's size, not the
+  /// window's). Every size-derived component below (marker scale, FAB
+  /// diameter, and the capped aesthetic margins) is derived from it, so a
+  /// map's fit always matches what will actually render in its own space —
+  /// callers without a real pre-layout size (e.g. computing a fit before
+  /// the `MapView` exists) should pass their best estimate, typically
+  /// `MediaQuery.sizeOf(context)`.
+  ///
+  /// A marker's own box (label above its icon) is anchored by its
+  /// *bottom* edge to the geographic point (`_MapViewState._buildMarker`),
+  /// so it only ever extends upward and sideways from that point, never
+  /// downward. Reserving only flat overlay clearance can still land a
+  /// marker's point close enough to an edge that its own label clips
+  /// outside the viewport, or slides under the FAB overlays — passing
+  /// [labels] (every marker's label in the set being fit) adds the actual
+  /// rendered footprint on top of the overlay margins below, scaled the
+  /// same way [MapView] itself would render it — capped to a fraction of
+  /// [viewport], since labels are zoom-gated invisible at the overview
+  /// zooms a small surface's fit lands on (see the inline comment in the
+  /// body). An empty [labels] (every label hidden via `MapView
+  /// .showLabels: false`) still reserves the icon's own footprint — it
+  /// renders regardless of whether its label does, and is anchored the
+  /// same bottom-up way, so it needs the same edge clearance, just not
+  /// the label box on top of it.
+  ///
+  /// Half of that footprint reserve is added to *both* top and bottom,
+  /// even though only the top physically needs it (labels never render
+  /// below their marker) — reserving it top-only would bias the fitted
+  /// centroid downward by exactly that amount (per the centroid-shift rule
+  /// above), which is visible as "every marker sits in the lower half" on
+  /// any fit with labels but no search field or FAB stack to counterbalance
+  /// it (e.g. a static mini-map preview). Splitting it rather than mirroring
+  /// a full second copy keeps top+bottom's combined total — and so the
+  /// resulting zoom level — unchanged from omitting the split entirely.
   ///
   /// Top and bottom insets are kept close to one another so a fit lands
   /// the markers near the visible centre rather than skewed upward. The
-  /// top inset clears the search field; the bottom inset only needs a
-  /// modest reserve because the FAB column sits in the bottom-*right*
-  /// corner, not full width, so a centred cluster never lands under it.
-  /// Reserving the full FAB-stack height (the old 200/268 px) pushed the
-  /// whole map up and left noticeably less space above than below.
+  /// top inset clears the search field (hard, unscaled — a real overlay
+  /// that's always fully opaque and always in the same place). The bottom
+  /// inset mirrors the bottom-right command column's *actual* composition
+  /// — locate, then zoom in/out, then centre, each `MapCommandSize
+  /// .diameter` tall with the same gaps [MapView] itself lays out with —
+  /// but unlike the search field, that reserve is capped against
+  /// [viewport] via [_capAesthetic] too: three stacked commands can total
+  /// 150+ px, and reserving all of it unconditionally forced far more
+  /// zoom-out than the floating, semi-transparent circular buttons
+  /// actually need to stay legible (reported: an all-stations map with
+  /// zoom + centre showing a "500 m" scale for the same markers a
+  /// command-free preview fit at "250 m"). `_capAesthetic`'s `flat * 0.5`
+  /// floor still guarantees at least half the natural stack height is
+  /// kept clear, so the buttons never fully swallow a marker, just no
+  /// longer demand the *entire* column stay untouched on a small viewport.
   ///
-  /// Horizontal padding stays the same regardless of overlays; it is
-  /// kept generous (64 px) on purpose so the outermost markers do not
-  /// hug the screen edges after a fit. A tighter value zoomed the
-  /// camera further than the data's natural extent warranted, which
-  /// made re-fits after toggling visibility feel cramped.
+  /// Horizontal padding is a capped 64 px floor when no [labels] are
+  /// given, so the outermost markers do not hug the screen edges after a
+  /// fit without eating a large fraction of a narrow viewport; a wide
+  /// label pushes it out further (uncapped — a real footprint requirement)
+  /// so its own text does not clip.
   static EdgeInsets fitPadding({
     bool withSearch = false,
     bool withZoom = false,
     bool withCenter = false,
     bool withLocate = false,
+    required Size viewport,
+    Iterable<String> labels = const [],
+  }) => _fitPaddingAndFootprint(
+    withSearch: withSearch,
+    withZoom: withZoom,
+    withCenter: withCenter,
+    withLocate: withLocate,
+    viewport: viewport,
+    labels: labels,
+  ).padding;
+
+  /// [fitPadding]'s own computation, additionally returning the raw
+  /// per-marker vertical footprint (`markerHeight`, *before* the top/bottom
+  /// split) — [fitFor] needs that same figure again for [centroidFit]'s
+  /// [_UnbiasedBoundsFit.markerAnchorHeight] correction, and recomputing it
+  /// independently would drift the two apart the next time this is tuned.
+  static ({EdgeInsets padding, double markerHeight}) _fitPaddingAndFootprint({
+    bool withSearch = false,
+    bool withZoom = false,
+    bool withCenter = false,
+    bool withLocate = false,
+    required Size viewport,
+    Iterable<String> labels = const [],
+    // False only when a caller (fitFor, for zero points) knows there is no
+    // marker at all to protect — distinct from "markers exist but their
+    // labels aren't shown," which still needs the icon-only footprint
+    // below. Defaults true: every other caller either has markers or
+    // doesn't distinguish the two, matching this function's original
+    // (markers-always-present) contract.
+    bool hasMarkers = true,
   }) {
-    // A modest reserve keeps the bottom edge of the cluster clear of the
-    // FAB column without dwarfing the top inset; balanced top/bottom keeps
-    // the markers centred instead of riding under the search field.
-    final double bottom = (withZoom || withCenter || withLocate) ? 120 : 48;
-    final double top = withSearch ? 112 : 48;
-    return EdgeInsets.fromLTRB(64, top, 64, bottom);
+    final sizeClass = WindowSizeClass.fromWidth(viewport.width);
+    final scale = markerScaleFor(sizeClass);
+    final commandSize = MapCommandSize.fromWidth(viewport.width);
+
+    // The label footprint is real rendered space, but unlike the search
+    // field and FAB stack (chrome that is always visible) it is zoom-gated:
+    // below MapConfig.labelMinZoomFor every label is fully transparent
+    // (_ZoomGatedLabel), and a small viewport's overview fit always lands
+    // below that zoom. So the footprint is capped to a fraction of the
+    // viewport — a plain min, NOT _capAesthetic, whose `flat * 0.5` floor
+    // would defeat the cap exactly when the label is widest. Uncapped, a
+    // single long label (~150 px half-width) reserved on BOTH sides of a
+    // 360 px mini-map starved the fit into a ~70 px strip and forced a
+    // massive zoom-out to protect labels that rendered at opacity 0. On
+    // any full-size surface the cap sits above every real label footprint
+    // and changes nothing.
+    // Even with no labels at all (an empty [labels] iterable, or every
+    // label suppressed via `showLabels: false`), the marker's own *icon*
+    // still renders and is anchored the same bottom-up way a label would
+    // be — it still needs top/bottom clearance to avoid clipping at the
+    // viewport edge, just not the extra label-box height on top of it.
+    // 32px matches the largest icon actually used across every
+    // MapMarkerSpec producer (Icons.place at size 32); a smaller icon just
+    // gets a touch more breathing room than strictly required.
+    const double iconOnlyHeight = 32;
+    const double iconOnlyHalfWidth = 16;
+
+    final labelList = labels.toList(growable: false);
+    final double markerHeight = !hasMarkers
+        ? 0
+        : labelList.isEmpty
+        ? iconOnlyHeight * scale
+        : math.min(64 * scale, viewport.height * 0.15);
+    final double markerHalfWidth = !hasMarkers
+        ? 0
+        : labelList.isEmpty
+        ? iconOnlyHalfWidth * scale
+        : math.min(
+            labelList.map(_labelWidth).reduce(math.max) * scale / 2,
+            viewport.width * 0.15,
+          );
+
+    // Mirrors MapView's own bottom-right Column: locate, then the zoom
+    // pair, then centre — 12 px between groups, 8 px between the two zoom
+    // buttons, 16 px outer padding.
+    double stack = 0;
+    var hasCommands = false;
+    void addGroup(double height) {
+      if (hasCommands) stack += 12;
+      stack += height;
+      hasCommands = true;
+    }
+
+    if (withLocate) addGroup(commandSize.diameter);
+    if (withZoom) addGroup(commandSize.diameter * 2 + 8);
+    if (withCenter) addGroup(commandSize.diameter);
+
+    final double sideFloor = _capAesthetic(64, viewport.width);
+    final double topNoSearch = _capAesthetic(48, viewport.height);
+    final double bottomNoCommands = _capAesthetic(48, viewport.height);
+
+    // markerHeight only clears a label that renders above its marker, so it
+    // is a top-only requirement in isolation — but reserving it solely on
+    // top biases the fitted centroid downward (see the class doc above),
+    // exactly the "markers sit below centre" symptom this splits away.
+    // Splitting it across both sides (rather than adding a second full
+    // copy) keeps top+bottom's *total* unchanged — no extra zoom-out — while
+    // still landing top == bottom whenever withSearch/commands don't
+    // themselves demand an imbalance.
+    final double bottomBase = hasCommands
+        ? _capAesthetic(stack + 16, viewport.height)
+        : bottomNoCommands;
+    final double topBase = withSearch ? 112 : topNoSearch;
+    final double bottom = bottomBase + markerHeight / 2;
+    final double top = topBase + markerHeight / 2;
+    final double side = math.max(sideFloor, markerHalfWidth);
+    return (
+      padding: EdgeInsets.fromLTRB(side, top, side, bottom),
+      markerHeight: markerHeight,
+    );
   }
+
+  /// Single source of truth for "camera fit that frames [points]", used by
+  /// every mini-map, sheet and full map screen so the initial framing a
+  /// caller shows always matches what pressing that same surface's "centre"
+  /// control would produce. Before this, callers each hand-rolled their own
+  /// mix of bbox-fit vs. centroid-fit and flat vs. overlay-aware padding,
+  /// which is why a sheet's initial view could show a different zoom than
+  /// its own centre button.
+  ///
+  /// The `withX` flags must mirror the flags passed to the [MapView] this
+  /// fit is framing, so [fitPadding] reserves the same overlay clearance
+  /// [MapView._toggleCenter] would. [viewport] must be the real local
+  /// render size that `MapView` will use (see [fitPadding]). Pass [labels]
+  /// (every fitted marker's label) so the fit also clears each marker's
+  /// own rendered footprint — omit it only when [points] don't correspond
+  /// to rendered markers at all (e.g. a raw search-result fit).
+  ///
+  /// Always returns a usable fit, for any number of [points] — zero, one
+  /// or many are the same call into [LatlngListX.centroidFit], which
+  /// itself needs no marker-count branch (see its own doc). Pass
+  /// [fallbackCenter] for the zero-points case (typically a caller's own
+  /// `initialCenter`); omit it to fall back to [MapConfig.initialCenter].
+  ///
+  /// [maxZoom] caps how tight a fit for closely-clustered points can zoom —
+  /// defaults to [defaultAutoFitMaxZoom] so a handful of markers a few
+  /// hundred metres apart still frame with some surrounding geographic
+  /// context (roads, terrain, the next-nearest landmark) instead of
+  /// zooming in only as far as the bare marker spread requires. Pass
+  /// `null` for a caller that genuinely wants an unbounded tight fit.
+  ///
+  /// The returned fit also corrects for a marker's own rendering: every
+  /// marker is anchored bottom-up (`_MapViewState._buildMarker`), so its
+  /// icon/label box only ever extends *above* its point — centring
+  /// strictly on the raw point centroid still leaves the rendered
+  /// graphics looking shifted up. `_fitPaddingAndFootprint`'s per-marker
+  /// footprint height feeds `centroidFit`'s `markerAnchorHeight`, which
+  /// nudges the camera centre north by half that height (see
+  /// `_UnbiasedBoundsFit`'s doc in `latlng_utils.dart` for the full
+  /// derivation) so the *visual* group ends up centred, not just the bare
+  /// anchor points.
+  static CameraFit fitFor(
+    Iterable<LatLng> points, {
+    bool withSearch = false,
+    bool withZoom = false,
+    bool withCenter = false,
+    bool withLocate = false,
+    required Size viewport,
+    Iterable<String> labels = const [],
+    double? maxZoom = defaultAutoFitMaxZoom,
+    LatLng? fallbackCenter,
+  }) {
+    final pts = points.toList(growable: false);
+    final result = _fitPaddingAndFootprint(
+      withSearch: withSearch,
+      withZoom: withZoom,
+      withCenter: withCenter,
+      withLocate: withLocate,
+      viewport: viewport,
+      labels: labels,
+      // No markers at all (as opposed to markers with hidden labels) means
+      // no icon is rendered either — nothing to reserve footprint for, and
+      // no visual anchor to correct centroidFit's markerAnchorHeight for.
+      hasMarkers: pts.isNotEmpty,
+    );
+    return pts.centroidFit(
+      result.padding,
+      maxZoom,
+      result.markerHeight,
+      fallbackCenter,
+    );
+  }
+
+  /// Default cap for [fitFor]'s zoom when points are closely clustered —
+  /// calibrated against flutter_map's [Scalebar] bucketing (see
+  /// [labelMinZoom]'s doc comment for the same math): 16.5 sits at the top
+  /// of the "100 m" reading, one bucket coarser than "50 m". Reported: an
+  /// auto-fit for 6 stations ~700 m apart landed at "50 m", zoomed in
+  /// tighter than wanted for seeing the surrounding area — nudge if this
+  /// doesn't land right on a real device.
+  static const double defaultAutoFitMaxZoom = 16.5;
+
+  /// Guidance, not an enforced check: the local viewport height a caller
+  /// should have available before passing `interactive: true` to
+  /// `StationMiniMap`/`RoleMiniMap`/`ExerciseMiniMap` (the
+  /// medium/expanded mini-map consolidation), so the resulting directly
+  /// interactive [MapView] (zoom + centre + layer-toggle commands) doesn't
+  /// overflow its own command stack — a list-tile thumbnail (140px tall)
+  /// is far too short to fit the bottom-right zoom+centre column
+  /// (56 + 8 + 56 + 12 + 56 = 188px of buttons, plus 32px of padding =
+  /// 220) without clipping, reported as a `RenderFlex overflowed` in a
+  /// station/roleplay list tile.
+  ///
+  /// This used to be enforced automatically, inside each mini-map's own
+  /// `LayoutBuilder`, gated on both this height *and* a local-width
+  /// `WindowSizeClass` check. Both were dropped in favour of a plain
+  /// caller-supplied `interactive` flag: the width check in particular
+  /// reproduced this same session's recurring "local pane vs. its own
+  /// sub-region" bug — `WideDetailMapSplit` caps its own left column at a
+  /// flat 440px, so an otherwise-expanded 900px detail pane leaves the map
+  /// itself only ~410px wide, reading as compact by a local-width measure
+  /// even though the screen had already committed to its expanded,
+  /// `fillHeight: true` layout. A caller (`StationPositionPanel`/
+  /// `RolePositionPanel` forwarding their own `fillHeight`) already knows
+  /// whether it has room; re-deriving the same answer from constraints
+  /// that don't tell the whole story was strictly worse than just asking
+  /// the caller directly.
+  static const double minInteractiveHeight = 220;
 
   /// Single long-living HTTP client shared by every [NetworkTileProvider]
   /// the app builds.
@@ -216,7 +570,7 @@ class MapView<K> extends StatefulWidget {
     this.withLocate = false,
     this.locateZoom = 16,
     this.resultZoom = 17,
-    this.initialZoom = 15,
+    this.initialZoom,
     this.minZoom = 2,
     this.maxZoom = 19,
     this.markers = const [],
@@ -231,6 +585,9 @@ class MapView<K> extends StatefulWidget {
     this.initialCenter = MapConfig.initialCenter,
     this.onTap,
     this.geocodingService,
+    this.withFullscreen = false,
+    this.fullscreenHeader,
+    this.commandSizeOverride,
   });
 
   final bool withCross;
@@ -260,7 +617,14 @@ class MapView<K> extends StatefulWidget {
   /// inside a group badge. The camera never zooms *out* to reach it: if the
   /// user is already closer the current zoom is kept.
   final double resultZoom;
-  final double initialZoom;
+
+  /// Ceiling on how tight the internal default fit is allowed to zoom —
+  /// see `_MapViewState._effectiveMaxZoom`. Null (the default) lets
+  /// `MapView` use [MapConfig.defaultAutoFitMaxZoom] uniformly, for any
+  /// number of markers. Pass an explicit value only when a caller
+  /// genuinely needs something else (e.g. `MapPickerScreen`'s pick-mode
+  /// framing).
+  final double? initialZoom;
   final double minZoom;
   final double maxZoom;
   final LatLng initialCenter;
@@ -313,6 +677,33 @@ class MapView<K> extends StatefulWidget {
   /// domain-agnostic: the caller just reports how much space it needs.
   final double bottomOverlayInset;
 
+  /// Shows an "expand to fullscreen" command alongside the layer-toggle
+  /// FAB. Tapping it pushes a genuine full-screen route (on the root
+  /// navigator — not a dialog, not a bottom sheet, regardless of
+  /// [WindowSizeClass]) containing a fresh, fully-interactive clone of
+  /// this same map — see `_MapViewState._openFullscreen`. Building this as
+  /// an internal command (sized from the same local `commandSize` every
+  /// other built-in command uses) also avoids a real bug a caller-supplied
+  /// `topRightCommands` entry has: with no explicit `size:`, such a widget
+  /// resolves via [MapCommandSize.of] (full-window `MediaQuery`), which can
+  /// visibly mismatch the internal commands' local-viewport-derived size
+  /// whenever this `MapView` is embedded narrower than the full window.
+  final bool withFullscreen;
+
+  /// `AppBar` shown only in the route [withFullscreen] pushes — the inline
+  /// embed itself never shows an app bar. Null renders a minimal `AppBar`
+  /// with just a close affordance ([MasterDetailLeading]).
+  final PreferredSizeWidget? fullscreenHeader;
+
+  /// Forces every command (layer toggle, zoom, centre, locate, fullscreen)
+  /// to this size instead of deriving it from the local `LayoutBuilder`
+  /// constraints. Set internally by `_MapViewState._openFullscreen` on the
+  /// clone it pushes, so "expand to fullscreen" reads as "the same map,
+  /// more room" rather than growing every button just because the pushed
+  /// route's own window happens to be wider than the embed the user
+  /// tapped from. Not meant for external callers — omit it.
+  final MapCommandSize? commandSizeOverride;
+
   @override
   State<MapView<K>> createState() => _MapViewState();
 }
@@ -347,6 +738,107 @@ class _MapViewState<K> extends State<MapView<K>> {
   /// spinner while this is true.
   bool _locating = false;
 
+  /// This build's [LayoutBuilder] constraints — the real local size this
+  /// `MapView` is actually rendering at, which may be much narrower/shorter
+  /// than the full window (a dialog, a bottom sheet, a mini-map thumbnail,
+  /// a master/detail side pane). Populated as the first line of `build`'s
+  /// `LayoutBuilder.builder`, so it is always set before anything below
+  /// (the default fit, `_toggleCenter`, `_onResultTap`) needs it — none of
+  /// those run before the first `build`.
+  BoxConstraints? _lastConstraints;
+
+  /// The `commandSize` most recently computed in `build()` (or
+  /// `widget.commandSizeOverride`, if set) — captured so `_openFullscreen`
+  /// can freeze it onto the clone it pushes instead of letting that clone
+  /// re-derive its own, likely different, size from the pushed route's own
+  /// (usually wider) constraints.
+  MapCommandSize? _lastCommandSize;
+
+  /// [_lastConstraints]'s size, when known and finite in both axes. Null
+  /// only if this `MapView` hasn't laid out yet, or an ancestor handed it
+  /// unbounded constraints (not observed in any current embedding — every
+  /// caller gives `MapView` a bounded box, directly or via `Expanded`/a
+  /// fixed-height `SizedBox` — but guarded defensively regardless).
+  Size? get _knownViewport {
+    final c = _lastConstraints;
+    if (c == null || !c.hasBoundedWidth || !c.hasBoundedHeight) return null;
+    return c.biggest;
+  }
+
+  /// The real local viewport when known, else the full window as a
+  /// fallback — matches what every caller's own [WindowSizeClass.of] guess
+  /// was already implicitly reading before this existed, so it's never
+  /// worse than the old behaviour, just more accurate once layout has run.
+  Size _effectiveViewport(BuildContext context) =>
+      _knownViewport ?? MediaQuery.sizeOf(context);
+
+  /// The default "fit every visible marker" camera fit, computed from this
+  /// `MapView`'s own real render size — used as [MapOptions.initialCameraFit]
+  /// whenever the caller doesn't pass an explicit [MapView.initialFit] (the
+  /// common case: every mini-map/sheet/full-map screen that just wants to
+  /// frame what it's showing). Callers that need something else entirely —
+  /// e.g. `MapPickerScreen`'s "centre on the pick point, frame the sibling
+  /// context markers" — keep passing an explicit [MapView.initialFit].
+  ///
+  /// Always returns a fit — for any number of [specs], zero included. Zero
+  /// or one marker used to be a separate `null` case with its own
+  /// `initialCenter`/`initialZoom` fallback at every call site; now the
+  /// same [MapConfig.fitFor] call handles it directly, landing on
+  /// [widget.initialCenter] at [_effectiveMaxZoom] instead of needing a
+  /// distinct code path (see [LatlngListX.centroidFit]'s doc for why that's
+  /// safe). A single marker was previously zoomed to
+  /// [MapConfig.labelDetailZoomFor] on the reasoning that nothing else is
+  /// nearby to crowd — but that threshold answers a different question
+  /// (when a multi-marker fit's label can expand from a number chip to
+  /// full text) and had nothing to do with a good default framing for a
+  /// lone point; reported: a single station previewed at a "25 m" scale
+  /// reading, tighter than wanted.
+  CameraFit _defaultFitFor(
+    BuildContext context,
+    Iterable<MapMarkerSpec<K>> specs,
+  ) {
+    final points = specs.map((e) => e.point).toList(growable: false);
+    // Debug-only trace for diagnosing wrong default fits on a real device:
+    // shows whether this instance used its real laid-out size or fell back
+    // to the full window, which no widget test has reproduced going wrong.
+    assert(() {
+      debugPrint(
+        'MapView(${widget.key ?? 'no-key'}) default fit: '
+        'viewport=${_effectiveViewport(context)} '
+        'bounded=${_knownViewport != null} markers=${points.length}',
+      );
+      return true;
+    }());
+    return MapConfig.fitFor(
+      points,
+      withSearch: widget.withSearch,
+      withZoom: widget.withZoom && MapSettings.instance.showZoomControls.value,
+      withCenter: widget.withCenter,
+      withLocate: widget.withLocate,
+      viewport: _effectiveViewport(context),
+      maxZoom: _effectiveMaxZoom,
+      fallbackCenter: widget.initialCenter,
+      // The fit reserves label footprint only when labels actually render —
+      // a showLabels: false surface (the static mini-map previews) must not
+      // zoom out to protect text it never draws. The default fit always
+      // lands on an overview zoom (framing every marker), which is always
+      // below labelDetailZoomFor — so a marker with a shortLabel reserves
+      // that shorter chip's width, not the full label it won't show yet.
+      labels: widget.showLabels
+          ? specs.map((e) => e.shortLabel ?? e.label)
+          : const Iterable<String>.empty(),
+    );
+  }
+
+  /// Ceiling on the internal default fit's zoom, for any marker count —
+  /// an explicit [MapView.initialZoom] always wins; otherwise
+  /// [MapConfig.defaultAutoFitMaxZoom], the same "give some surrounding
+  /// geographic context" zoom that already capped the multi-marker fit,
+  /// so there's no jarring jump in zoom level as a filter/data change
+  /// moves a surface between marker counts.
+  double get _effectiveMaxZoom =>
+      widget.initialZoom ?? MapConfig.defaultAutoFitMaxZoom;
+
   @override
   void initState() {
     super.initState();
@@ -369,37 +861,155 @@ class _MapViewState<K> extends State<MapView<K>> {
       if (widget.initialCenter != oldWidget.initialCenter) {
         _mapController.move(widget.initialCenter, _mapController.camera.zoom);
       }
-      if (widget.initialZoom != oldWidget.initialZoom) {
-        _mapController.move(_mapController.camera.center, widget.initialZoom);
+      // Only an *explicit* zoom change moves the camera here — a caller
+      // clearing its override (explicit -> null) falls through to the
+      // internal-default-fit branch below instead, same as `initialFit`.
+      if (widget.initialZoom != null &&
+          widget.initialZoom != oldWidget.initialZoom) {
+        _mapController.move(_mapController.camera.center, widget.initialZoom!);
       }
       if (widget.initialFit != null &&
           widget.initialFit != oldWidget.initialFit) {
+        // Caller-supplied override: unchanged re-fit-on-identity-change,
+        // same as before this widget could compute its own default fit.
         _mapController.fitCamera(widget.initialFit!);
+      } else if (widget.initialFit == null && oldWidget.initialFit == null) {
+        // Internal-default-fit path: only re-fit when the actual marker
+        // point set changed, not on every unrelated parent rebuild — a
+        // caller typically rebuilds `markers` as a fresh List instance on
+        // every build even when the underlying data hasn't changed, and
+        // re-fitting then would fight the user's own pan/zoom.
+        final oldPoints = oldWidget.markers
+            .map((e) => e.point)
+            .toList(growable: false);
+        final newPoints = widget.markers
+            .map((e) => e.point)
+            .toList(growable: false);
+        if (!_pointsEqual(oldPoints, newPoints)) {
+          _mapController.fitCamera(_defaultFitFor(context, widget.markers));
+        }
       }
     }
     super.didUpdateWidget(oldWidget);
   }
 
+  /// Mirrors `SearchResult._listEquals` — element-wise `LatLng` equality,
+  /// used by [didUpdateWidget] to tell "the marker set actually changed"
+  /// apart from "the caller rebuilt `markers` as a new `List` instance with
+  /// the same data," which happens on essentially every unrelated parent
+  /// rebuild and must not retrigger a fit.
+  static bool _pointsEqual(List<LatLng> a, List<LatLng> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  /// Pushes a genuine full-screen route on the root navigator — not a
+  /// dialog, not a bottom sheet, regardless of [WindowSizeClass] — with a
+  /// fresh, fully-interactive clone of this map. `widget.markers` (already
+  /// resolved `MapMarkerSpec`s, labels baked in as plain strings) is reused
+  /// as-is: unlike `openFormSurface` (which exists for *forms* that
+  /// resolve plan-variable scope live), there is nothing here that needs
+  /// re-provisioning from the calling context's `InheritedWidget` ancestry.
+  /// A marker's own `onTap` closure keeps referencing whatever
+  /// `BuildContext` built it originally, which stays mounted (just
+  /// visually covered by the new route), so it behaves exactly as it does
+  /// from the non-fullscreen embed.
+  void _openFullscreen() {
+    // Freeze the embed's current command size onto the pushed clone — see
+    // MapView.commandSizeOverride's doc for why: otherwise the clone would
+    // recompute its own, usually larger, size purely because the pushed
+    // route's own window is wider than the embed the user tapped from.
+    final frozenCommandSize = _lastCommandSize;
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (routeContext) => Scaffold(
+          appBar:
+              widget.fullscreenHeader ??
+              AppBar(
+                leading: MasterDetailLeading(
+                  onClose: () => Navigator.of(routeContext).pop(),
+                ),
+              ),
+          body: MapView<K>(
+            layers: widget.layers,
+            withCross: widget.withCross,
+            withSearch: widget.withSearch,
+            // Fullscreen always means fully interactive, regardless of
+            // what the smaller embed itself opted into.
+            withCenter: true,
+            withToggle: true,
+            withZoom: true,
+            withLocate: widget.withLocate,
+            locateZoom: widget.locateZoom,
+            resultZoom: widget.resultZoom,
+            minZoom: widget.minZoom,
+            maxZoom: widget.maxZoom,
+            markers: widget.markers,
+            clusterStyles: widget.clusterStyles,
+            showLabels: widget.showLabels,
+            withClustering: widget.withClustering,
+            searchTargets: widget.searchTargets,
+            topRightCommands: widget.topRightCommands,
+            interactionFlags: MapConfig.interactive,
+            initialCenter: widget.initialCenter,
+            onTap: widget.onTap,
+            geocodingService: widget.geocodingService,
+            commandSizeOverride: frozenCommandSize,
+            // No controller: forwarded — this pushed clone gets its own
+            // fresh MapController; sharing one across two simultaneously
+            // mounted MapViews would fight over camera state.
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final withToggle = widget.withToggle && widget.layers.length > 1;
-    final hasTopRightColumn = widget.topRightCommands.isNotEmpty || withToggle;
-    final commandSize = MapCommandSize.of(context);
+    final hasTopRightColumn =
+        widget.topRightCommands.isNotEmpty || withToggle || widget.withFullscreen;
     // Zoom buttons follow the user's setting (Map → show zoom buttons),
     // which itself defaults off on touch where pinch-to-zoom suffices.
     final showZoom =
         widget.withZoom && MapSettings.instance.showZoomControls.value;
-    // Distance from the right edge to the *visible* command circle, plus a
-    // 10 px gap so the search field never butts up against it. The command
-    // column itself is inset 10 px from the right and its small-FAB visual
-    // sits `tapInset` in from its hit box.
-    final topRightInset = 10 + commandSize.tapInset + commandSize.diameter + 10;
-    // The visible command circle starts `tapInset` below the column's 16 px
-    // top padding, so the search field drops by the same amount to keep the
-    // tops aligned.
-    final searchTopInset = 16 + commandSize.tapInset;
     return LayoutBuilder(
       builder: (context, constraints) {
+        _lastConstraints = constraints;
+        // Derived from these *local* constraints, not MapCommandSize.of/
+        // WindowSizeClass.of(context)'s full-window read — a map embedded in
+        // a narrower/shorter dialog, sheet, or side pane must render (and
+        // reserve fit padding for) the size it actually has, not the whole
+        // window's. See MapConfig.fitPadding's own viewport parameter.
+        //
+        // widget.commandSizeOverride wins when set: the fullscreen route
+        // _openFullscreen pushes is a brand-new, usually much wider Scaffold
+        // than the embed the user tapped "expand" from, so measuring its own
+        // constraints from scratch would grow the buttons (compact →
+        // regular) purely because the window is bigger — a jarring size
+        // change for what's meant to read as "the same map, more room,"
+        // not "different controls." _openFullscreen freezes the size the
+        // embed was actually using at the moment it was tapped and forwards
+        // it here instead of letting it re-derive.
+        final commandSize =
+            widget.commandSizeOverride ??
+            MapCommandSize.fromWidth(constraints.maxWidth);
+        _lastCommandSize = commandSize;
+        // Distance from the right edge to the *visible* command circle, plus
+        // a 10 px gap so the search field never butts up against it. The
+        // command column itself is inset 10 px from the right and its
+        // small-FAB visual sits `tapInset` in from its hit box.
+        final topRightInset =
+            10 + commandSize.tapInset + commandSize.diameter + 10;
+        // The visible command circle starts `tapInset` below the column's
+        // 16 px top padding, so the search field drops by the same amount to
+        // keep the tops aligned.
+        final searchTopInset = 16 + commandSize.tapInset;
+        final effectiveInitialFit =
+            widget.initialFit ?? _defaultFitFor(context, widget.markers);
         // The search field follows the same "size that fits the layout" rule
         // as the commands: it fills the available width on compact (the
         // screen is narrow anyway) but is capped on wider layouts so it does
@@ -420,9 +1030,9 @@ class _MapViewState<K> extends State<MapView<K>> {
             FlutterMap(
               mapController: _mapController,
               options: MapOptions(
-                initialZoom: widget.initialZoom,
+                initialZoom: _effectiveMaxZoom,
                 initialCenter: widget.initialCenter,
-                initialCameraFit: widget.initialFit,
+                initialCameraFit: effectiveInitialFit,
                 // TileLayer.minZoom/maxZoom only gate which tiles are
                 // fetched; they do not constrain the camera. Without these
                 // the user could pinch/scroll past the tile layer's range
@@ -445,7 +1055,7 @@ class _MapViewState<K> extends State<MapView<K>> {
               ),
               children: [
                 widget.layers[_currentLayerIndex],
-                ..._buildMarkerLayers(),
+                ..._buildMarkerLayers(_effectiveViewport(context)),
                 if (_currentLocation != null)
                   MarkerLayer(
                     markers: [
@@ -533,12 +1143,23 @@ class _MapViewState<K> extends State<MapView<K>> {
                           icon: Icons.layers,
                           size: commandSize,
                         ),
+                      if (widget.withFullscreen) ...[
+                        if (withToggle) const SizedBox(height: 8),
+                        MapCommand(
+                          heroTag: (_heroScope, 'fullscreen'),
+                          tooltip: AppLocalizations.of(context)!.expandMap,
+                          onPressed: _openFullscreen,
+                          icon: Icons.open_in_full,
+                          size: commandSize,
+                        ),
+                      ],
                       for (
                         var i = 0;
                         i < widget.topRightCommands.length;
                         i++
                       ) ...[
-                        if (i > 0 || withToggle) const SizedBox(height: 8),
+                        if (i > 0 || withToggle || widget.withFullscreen)
+                          const SizedBox(height: 8),
                         widget.topRightCommands[i],
                       ],
                     ],
@@ -748,28 +1369,21 @@ class _MapViewState<K> extends State<MapView<K>> {
   /// expect from a "centre" control and matches the initial fit.
   void _toggleCenter() {
     final points = widget.markers.map((e) => e.point).toList(growable: false);
-    if (points.isEmpty) {
-      _mapController.move(widget.initialCenter, _mapController.camera.zoom);
+    if (points.length < 2) {
+      // No extent to fit — recentre on the single marker (or
+      // widget.initialCenter, if there are none) and keep the user's
+      // current zoom, unlike the initial-fit case, which has no "current
+      // zoom" yet to preserve.
+      _mapController.move(
+        points.average(widget.initialCenter),
+        _mapController.camera.zoom,
+      );
       return;
     }
-    if (points.length == 1) {
-      // A single marker has no extent to fit; just recentre on it and keep
-      // the user's current zoom.
-      _mapController.move(points.first, _mapController.camera.zoom);
-      return;
-    }
-    // Overlay-aware padding so the cluster lands in the visible centre rather
-    // than under the search field (top) or the FAB column (bottom-right).
-    final padding = MapConfig.fitPadding(
-      withSearch: widget.withSearch,
-      withZoom: widget.withZoom && MapSettings.instance.showZoomControls.value,
-      withCenter: widget.withCenter,
-      withLocate: widget.withLocate,
-    );
-    final fit =
-        points.centroidFit(padding) ??
-        CameraFit.coordinates(padding: padding, coordinates: points);
-    _mapController.fitCamera(fit);
+    // Same computation _defaultFitFor uses for the initial view (real local
+    // viewport, overlay + marker-footprint aware padding), so "centre" and
+    // "the view you land on" are provably identical.
+    _mapController.fitCamera(_defaultFitFor(context, widget.markers));
   }
 
   Widget _buildSearchTool(
@@ -975,12 +1589,13 @@ class _MapViewState<K> extends State<MapView<K>> {
   /// On compact phones the base size is right; on the larger maps shown at
   /// medium/expanded widths the 32 dp icon and small label read as too tiny,
   /// so they are bumped to keep pace with the bigger canvas (and the larger
-  /// FAB controls, which already scale via [MapCommandSize]).
-  double get _markerScale => switch (WindowSizeClass.of(context)) {
-    WindowSizeClass.compact => 1.0,
-    WindowSizeClass.medium => 1.2,
-    WindowSizeClass.expanded => 1.35,
-  };
+  /// FAB controls, which already scale via [MapCommandSize]). Takes the
+  /// real local [viewport] (not `WindowSizeClass.of(context)`'s full-window
+  /// read) and delegates to [MapConfig.markerScaleFor] so
+  /// [MapConfig.fitPadding]'s footprint reserve can never drift from what
+  /// actually renders here, in this MapView's own space.
+  double _markerScaleFor(Size viewport) =>
+      MapConfig.markerScaleFor(WindowSizeClass.fromWidth(viewport.width));
 
   /// True once per app session, after the first non-finite marker has been
   /// reported to Sentry. Subsequent drops are silent so a single bad row
@@ -1004,7 +1619,7 @@ class _MapViewState<K> extends State<MapView<K>> {
     );
   }
 
-  List<Widget> _buildMarkerLayers() {
+  List<Widget> _buildMarkerLayers(Size viewport) {
     if (widget.markers.isEmpty) return const [];
 
     // Last-line defence against non-finite points reaching flutter_map. A
@@ -1025,7 +1640,7 @@ class _MapViewState<K> extends State<MapView<K>> {
     }
     if (specs.isEmpty) return const [];
 
-    final scale = _markerScale;
+    final scale = _markerScaleFor(viewport);
 
     if (!widget.withClustering) {
       return [
@@ -1090,7 +1705,11 @@ class _MapViewState<K> extends State<MapView<K>> {
             mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _ZoomGatedLabel(label: spec.label, showLabels: widget.showLabels),
+              _ZoomGatedLabel(
+                label: spec.label,
+                shortLabel: spec.shortLabel,
+                showLabels: widget.showLabels,
+              ),
               spec.child,
             ],
           ),
@@ -1269,19 +1888,20 @@ class _MapViewState<K> extends State<MapView<K>> {
       onSelect(result);
     } else if (result.points.length >= 2) {
       // Centre on the geometric mean (centroid) of all the points, while
-      // still zooming out enough to include every point. Falls back to
-      // the bounding-box fit if the points happen to coincide. Padding
-      // is overlay-aware so the centroid does not land underneath the
-      // bottom FAB column.
-      final padding = MapConfig.fitPadding(
+      // still zooming out enough to include every point. Padding is
+      // overlay-aware so the centroid does not land underneath the bottom
+      // FAB column.
+      final fit = MapConfig.fitFor(
+        result.points,
         withSearch: widget.withSearch,
         withZoom: widget.withZoom,
         withCenter: widget.withCenter,
         withLocate: widget.withLocate,
+        viewport: _effectiveViewport(context),
+        // No per-point labels here — a SearchResult's points are camera
+        // targets, not rendered markers of their own, so there is no label
+        // footprint to reserve for (unlike widget.markers in _toggleCenter).
       );
-      final fit =
-          result.points.centroidFit(padding) ??
-          CameraFit.coordinates(padding: padding, coordinates: result.points);
       _mapController.fitCamera(fit);
     } else if (result.location != null) {
       // Snap to at least [resultZoom] so the marker leaves its cluster, but
@@ -1506,24 +2126,57 @@ class _CurrentLocationDot extends StatelessWidget {
 ///
 /// Reads the current zoom via [MapCamera.of] so it rebuilds automatically
 /// when the camera moves. Must be used inside a [FlutterMap] subtree.
+///
+/// When [shortLabel] is set, the rendered text itself is also zoom-tiered:
+/// [shortLabel] (e.g. a station's plan number) from [MapConfig
+/// .labelMinZoomFor] up, switching to the full [label] once the camera
+/// reaches [MapConfig.labelDetailZoomFor] — see that constant's doc for why.
+/// A null [shortLabel] always renders [label], as before. The switch is a
+/// content change, not a size change (the marker's box width already
+/// accommodates the longer of the two, measured in [_buildMarker]), so it
+/// does not trip the "no layout shift" concern above.
 class _ZoomGatedLabel extends StatelessWidget {
-  const _ZoomGatedLabel({required this.label, required this.showLabels});
+  const _ZoomGatedLabel({
+    required this.label,
+    this.shortLabel,
+    required this.showLabels,
+  });
 
   final String label;
+  final String? shortLabel;
   final bool showLabels;
 
   @override
   Widget build(BuildContext context) {
     if (!showLabels) return const SizedBox.shrink();
     final zoom = MapCamera.of(context).zoom;
-    final minZoom = MapConfig.labelMinZoomFor(WindowSizeClass.of(context));
+    // Deliberately WindowSizeClass.of(context) (full window), not
+    // MapCamera.of(context).nonRotatedSize.width (local map pane) — tried
+    // the latter on the theory that this was the same "local pane vs. full
+    // window" mismatch ADR-0053 fixed elsewhere, but confirmed wrong
+    // on-device: it made every form factor land on the compact ("10 m")
+    // threshold, because nonRotatedSize starts at MapCamera.kImpossibleSize
+    // (literally negative infinity — see flutter_map's own camera.dart)
+    // before the first real layout pass, and this widget's InheritedWidget
+    // dependency kept resolving to that placeholder rather than the real,
+    // later-updated size. The actual "labels only appear at 10 m on
+    // compact" bug was unrelated to this read and lived in
+    // labelDetailZoomFor's cap against defaultAutoFitMaxZoom (see that
+    // doc comment) — fixed there, not here.
+    final sizeClass = WindowSizeClass.of(context);
+    final minZoom = MapConfig.labelMinZoomFor(sizeClass);
     final opacity = zoom >= minZoom
         ? 1.0
         : (zoom - (minZoom - 1)).clamp(0.0, 1.0);
+    final short = shortLabel;
+    final text =
+        (short == null || zoom >= MapConfig.labelDetailZoomFor(sizeClass))
+        ? label
+        : short;
     return AnimatedOpacity(
       opacity: opacity,
       duration: const Duration(milliseconds: 200),
-      child: FeatureLabel(text: label),
+      child: FeatureLabel(text: text),
     );
   }
 }

@@ -384,6 +384,10 @@
   "@mapTab": {
     "description": "Bottom-nav label for the Map tab (formerly Stations, renamed to reflect that it shows a map of the stations)."
   },
+  "expandMap": "Open full map",
+  "@expandMap": {
+    "description": "Tooltip for the FAB that opens an exercise's all-stations map in a bigger dialog/bottom sheet, from the coordinator screen's inline map."
+  },
   "stationsTab": "Stations",
   "@stationsTab": {
     "description": "Bottom-nav label for the new Stations list tab introduced in DESIGN-002."

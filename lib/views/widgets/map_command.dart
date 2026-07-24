@@ -16,7 +16,17 @@ enum MapCommandSize {
   /// overlay stops crowding the map, while medium/expanded keep the larger
   /// target that pairs better with a pointer.
   static MapCommandSize of(BuildContext context) =>
-      WindowSizeClass.of(context) == WindowSizeClass.compact
+      fromWidth(MediaQuery.sizeOf(context).width);
+
+  /// Pure width-to-size mapping, mirroring [WindowSizeClass.fromWidth] — lets
+  /// callers that already have a real *local* viewport width (a `MapView`'s
+  /// own `LayoutBuilder` constraints, not necessarily the full window) derive
+  /// the command size without going through [of]'s full-window
+  /// [MediaQuery] read. [MapConfig.fitPadding] uses this so its reserved
+  /// FAB-stack clearance always matches the diameter that will actually
+  /// render in that same local viewport, not a full-window guess.
+  static MapCommandSize fromWidth(double width) =>
+      WindowSizeClass.fromWidth(width) == WindowSizeClass.compact
       ? MapCommandSize.compact
       : MapCommandSize.regular;
 
