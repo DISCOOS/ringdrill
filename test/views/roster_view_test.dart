@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/role_play.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/roster_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,7 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const _programUuid = 'prog-roster';
+const _planUuid = 'prog-roster';
 const _actorUuid = 'actor-r1';
 const _roleUuid = 'role-r1';
 
@@ -27,10 +27,10 @@ final _castRole = RolePlay(
 );
 
 Map<String, Object> _buildPrefs() => {
-  'app:activeProgram:v1': _programUuid,
+  'app:activePlan:v1': _planUuid,
   'app:librarySchema:v1': '1',
-  'p:$_programUuid': jsonEncode({
-    'uuid': _programUuid,
+  'p:$_planUuid': jsonEncode({
+    'uuid': _planUuid,
     'name': 'Roster Test Plan',
     'description': '',
     'metadata': {
@@ -45,13 +45,13 @@ Map<String, Object> _buildPrefs() => {
     'actors': [],
   }),
   // One actor with phone.
-  'pa:$_programUuid:$_actorUuid': jsonEncode({
+  'pa:$_planUuid:$_actorUuid': jsonEncode({
     'uuid': _actorUuid,
     'realName': 'Per Hansen',
     'phone': '99887766',
   }),
   // One role cast to the actor (used for the delete-block test).
-  'pr:$_programUuid:$_roleUuid': jsonEncode(_castRole.toJson()),
+  'pr:$_planUuid:$_roleUuid': jsonEncode(_castRole.toJson()),
 };
 
 // ---------------------------------------------------------------------------
@@ -82,7 +82,7 @@ Widget _buildView() {
 void main() {
   setUpAll(() async {
     SharedPreferences.setMockInitialValues(_buildPrefs());
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   testWidgets('actor name appears in the list', (tester) async {
@@ -162,7 +162,7 @@ void main() {
       // saveRolePlay was silent and the Roster's "Cast as …" line stayed
       // stale; with the rolePlaySaved event the view reloads and the line
       // disappears.
-      await ProgramService().saveRolePlay(
+      await PlanService().saveRolePlay(
         l10n,
         _castRole.copyWith(actorUuid: null),
       );
@@ -173,7 +173,7 @@ void main() {
       // Re-cast restores the original fixture state and the subtitle line
       // reappears, so the test leaves no residual mutation for the rest of
       // the file.
-      await ProgramService().saveRolePlay(l10n, _castRole);
+      await PlanService().saveRolePlay(l10n, _castRole);
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.castedAs(_castRole.name)), findsOneWidget);

@@ -21,7 +21,7 @@ class OptionalFieldSection<T> {
 }
 
 /// Renders the addable optional-section pattern shared by the entity forms
-/// (Program, Exercise, Station, RolePlay).
+/// (Plan, Exercise, Station, RolePlay).
 ///
 /// Active sections render as a labelled, multi-line [TextFormField] with a
 /// remove affordance. Sections not yet added render below as a wrap of

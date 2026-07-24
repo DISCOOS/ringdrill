@@ -7,7 +7,7 @@ import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/station_description_rollup.dart';
@@ -64,8 +64,8 @@ void main() {
 
   setUp(() async {
     await initActivePlan('Tile polish plan');
-    await ProgramService().saveExercise(l10n, _exercise());
-    await ProgramService().saveRolePlay(
+    await PlanService().saveExercise(l10n, _exercise());
+    await PlanService().saveRolePlay(
       l10n,
       const RolePlay(
         uuid: 'role-tile-polish',
@@ -77,7 +77,7 @@ void main() {
     );
   });
 
-  tearDown(() => ProgramService().clearAllForTest());
+  tearDown(() => PlanService().clearAllForTest());
 
   Future<void> expandFirstStation(WidgetTester tester) async {
     await tester.pumpWidget(

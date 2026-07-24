@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/team.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 
 import 'support/save_roundtrip_harness.dart';
@@ -20,13 +20,13 @@ void main() {
 
   setUp(() async {
     await initActivePlan('Team roundtrip plan');
-    await ProgramService().saveTeam(
+    await PlanService().saveTeam(
       l10n,
       const Team(uuid: 'team-rt-1', index: 0, name: 'Team A'),
     );
   });
 
-  tearDown(() => ProgramService().clearAllForTest());
+  tearDown(() => PlanService().clearAllForTest());
 
   testWidgets('editing a team from its sheet persists on save — twice in a '
       'row', (tester) async {
@@ -52,7 +52,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      ProgramService().getTeam(0)?.name,
+      PlanService().getTeam(0)?.name,
       'Team B',
       reason: 'first save from the sheet must persist',
     );
@@ -72,7 +72,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      ProgramService().getTeam(0)?.name,
+      PlanService().getTeam(0)?.name,
       'Team C',
       reason: 'second consecutive save must persist too',
     );

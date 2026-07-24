@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/notification_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/locale_utils.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
@@ -41,7 +41,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///   `requestPermissions: true` — that re-init is what triggers the
 ///   iOS/Android system dialog.
 /// * The final stage writes [AppConfig.keyOnboardingSeen] and
-///   navigates to [routeProgram], optionally installing the bundled
+///   navigates to [routePlan], optionally installing the bundled
 ///   example plan first.
 class ConceptPrimerScreen extends StatefulWidget {
   const ConceptPrimerScreen({super.key, this.isFirstLaunch = false});
@@ -88,7 +88,7 @@ class _ConceptPrimerScreenState extends State<ConceptPrimerScreen> {
     await prefs.setBool(AppConfig.keyAnalyticsConsent, consented);
     if (consented) {
       // Initialise Sentry inline so events that fire later in the
-      // boot (notification permission flow, first program load) are
+      // boot (notification permission flow, first plan load) are
       // captured with the same release/commit tags as everything
       // else from this boot session.
       await SentryFlutter.init(SentryConfig.apply);
@@ -117,16 +117,16 @@ class _ConceptPrimerScreenState extends State<ConceptPrimerScreen> {
     await prefs.setBool(AppConfig.keyOnboardingSeen, true);
     if (!mounted) return;
     // Guarantee an active plan exists before the user lands on
-    // `/program`. The Open-example path has already activated the
+    // `/plan`. The Open-example path has already activated the
     // installed plan via `installFromFile(activate: true)`, so
-    // `ensureActiveProgram` is a no-op there. For the Start-empty
+    // `ensureActivePlan` is a no-op there. For the Start-empty
     // path it creates the default plan up-front, so downstream
     // surfaces (AppBar header, overview, form actions) never have
-    // to defend against a null `activeProgram`.
+    // to defend against a null `activePlan`.
     final l10n = AppLocalizations.of(context)!;
-    await ProgramService().ensureActiveProgram(l10n);
+    await PlanService().ensureActivePlan(l10n);
     if (!mounted) return;
-    context.go(routeProgram);
+    context.go(routePlan);
   }
 
   Future<void> _openExample() async {
@@ -140,7 +140,7 @@ class _ConceptPrimerScreenState extends State<ConceptPrimerScreen> {
 
       final data = await rootBundle.load(assetPath);
       final file = DrillFile.fromBytes(assetName, data.buffer.asUint8List());
-      await ProgramService().installFromFile(file, activate: true);
+      await PlanService().installFromFile(file, activate: true);
     } catch (e, st) {
       // Degraded silently — a first-run user should never see a crash.
       // ignore: avoid_print

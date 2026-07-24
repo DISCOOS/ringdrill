@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/brief_screen.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
@@ -18,7 +18,7 @@ sealed class ContextSheetTarget {
 
 /// Returns the exercise UUID associated with [target], if any. Station,
 /// team, and role targets resolve to their parent exercise; targets that
-/// span a whole program (team overview, brief) yield null. Used by the
+/// span a whole plan (team overview, brief) yield null. Used by the
 /// docked/embedded mini player and the auto-upgrade-to-fullscreen flow to
 /// scope themselves to the selected item's owning exercise.
 String? exerciseUuidOf(ContextSheetTarget? target) => switch (target) {
@@ -26,7 +26,7 @@ String? exerciseUuidOf(ContextSheetTarget? target) => switch (target) {
   StationSheetTarget(:final exerciseUuid) => exerciseUuid,
   TeamSheetTarget(:final exerciseUuid) => exerciseUuid,
   RoleSheetTarget(:final rolePlayUuid) =>
-    ProgramService().getRolePlay(rolePlayUuid)?.exerciseUuid,
+    PlanService().getRolePlay(rolePlayUuid)?.exerciseUuid,
   _ => null,
 };
 
@@ -71,13 +71,13 @@ class RoleSheetTarget extends ContextSheetTarget {
 }
 
 class BriefSheetTarget extends ContextSheetTarget {
-  const BriefSheetTarget({this.programUuid, this.exerciseUuid, this.audience})
+  const BriefSheetTarget({this.planUuid, this.exerciseUuid, this.audience})
     : assert(
-        programUuid != null || exerciseUuid != null,
-        'programUuid or exerciseUuid must be provided',
+        planUuid != null || exerciseUuid != null,
+        'planUuid or exerciseUuid must be provided',
       );
 
-  final String? programUuid;
+  final String? planUuid;
   final String? exerciseUuid;
   final BriefAudience? audience;
 }
@@ -391,12 +391,12 @@ class _DefaultContextSheetBody extends StatelessWidget {
       ),
       BriefSheetTarget(
         :final exerciseUuid,
-        :final programUuid,
+        :final planUuid,
         :final audience,
       ) =>
         BriefSheetBody(
           exerciseUuid: exerciseUuid,
-          programUuid: programUuid,
+          planUuid: planUuid,
           audience: audience,
         ),
     };
@@ -404,7 +404,7 @@ class _DefaultContextSheetBody extends StatelessWidget {
   }
 
   Widget _teamBody(String exerciseUuid, int teamIndex) {
-    final exercise = ProgramService().getExercise(exerciseUuid);
+    final exercise = PlanService().getExercise(exerciseUuid);
     if (exercise == null) {
       return const Center(child: CircularProgressIndicator());
     }

@@ -158,7 +158,7 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
     final localizations = AppLocalizations.of(context)!;
     final colors = Theme.of(context).colorScheme;
     // Match the picker sheets (select_plans_dialog.dart,
-    // ProgramPageControllerBase.selectExercises): ExpandableTile cards use
+    // PlanPageControllerBase.selectExercises): ExpandableTile cards use
     // the default card surface, which only contrasts against a lighter
     // scaffold behind it. Paint the tab body with the scaffold colour so
     // "På nett" reads with the same card contrast as the pickers.

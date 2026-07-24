@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/services/catalog_status_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/widgets/catalog_browser.dart';
 
@@ -25,11 +25,11 @@ class PlanStatusBadge extends StatefulWidget {
 }
 
 class _PlanStatusBadgeState extends State<PlanStatusBadge> {
-  StreamSubscription<ProgramEvent>? _programEventsSub;
+  StreamSubscription<PlanEvent>? _planEventsSub;
 
   /// Whether the active catalog plan has local edits that have not been
-  /// published yet. Recomputed only on [ProgramEvent]s (not on every build)
-  /// so the program content hash is not re-run on each rebuild.
+  /// published yet. Recomputed only on [PlanEvent]s (not on every build)
+  /// so the plan content hash is not re-run on each rebuild.
   bool _hasUnpublishedChanges = false;
 
   @override
@@ -39,10 +39,10 @@ class _PlanStatusBadgeState extends State<PlanStatusBadge> {
     _scheduleProbeIfNeeded();
     // Re-evaluate when the active plan changes so switching to a fresh
     // catalog plan kicks off an initial probe. Also rebuild — the badge's
-    // build method reads program.source to choose between the local and
+    // build method reads plan.source to choose between the local and
     // online variants, so a publish that flips source from local to catalog
     // must propagate through build, not just trigger a probe.
-    _programEventsSub = ProgramService().events.listen((_) {
+    _planEventsSub = PlanService().events.listen((_) {
       if (!mounted) return;
       _refreshUnpublishedState();
       setState(() {});
@@ -52,15 +52,15 @@ class _PlanStatusBadgeState extends State<PlanStatusBadge> {
 
   @override
   void dispose() {
-    _programEventsSub?.cancel();
+    _planEventsSub?.cancel();
     super.dispose();
   }
 
   void _scheduleProbeIfNeeded() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final program = ProgramService().activeProgram;
-      if (program == null || !active_actions.isCatalogProgram(program)) {
+      final plan = PlanService().activePlan;
+      if (plan == null || !active_actions.isCatalogPlan(plan)) {
         return;
       }
       if (CatalogStatusService().value.state != CatalogServiceState.unknown) {
@@ -83,28 +83,28 @@ class _PlanStatusBadgeState extends State<PlanStatusBadge> {
   /// not pushed to the catalog until the user publishes, so a divergent
   /// content hash means "unpublished", never "unsaved".
   void _refreshUnpublishedState() {
-    final program = ProgramService().activeProgram;
+    final plan = PlanService().activePlan;
     _hasUnpublishedChanges =
-        program != null &&
-        active_actions.isCatalogProgram(program) &&
-        program.contentHash != null &&
-        program.computeContentHash() != program.contentHash;
+        plan != null &&
+        active_actions.isCatalogPlan(plan) &&
+        plan.contentHash != null &&
+        plan.computeContentHash() != plan.contentHash;
   }
 
   Future<void> _onPublishTap() async {
     // Reuse the shared publish flow. For an already-published catalog plan
     // this is a one-tap silent update, with 412-conflict handling and a
-    // result snackbar. A successful publish emits a ProgramEvent that
+    // result snackbar. A successful publish emits a PlanEvent that
     // flips this badge back to the plain online state.
     await active_actions.publishActivePlan(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    final program = ProgramService().activeProgram;
-    if (program == null) return const SizedBox.shrink();
+    final plan = PlanService().activePlan;
+    if (plan == null) return const SizedBox.shrink();
 
-    final isCatalog = active_actions.isCatalogProgram(program);
+    final isCatalog = active_actions.isCatalogPlan(plan);
     final localizations = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final foreground =

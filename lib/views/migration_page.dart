@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/data/bulk_export.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/web/trigger_download_web.dart'
     if (dart.library.io) 'package:ringdrill/web/trigger_download_stub.dart';
 
@@ -83,12 +83,12 @@ class MigrationPage extends StatelessWidget {
   }
 
   Future<void> _export(BuildContext context) async {
-    final shells = ProgramService().listPrograms();
-    final programs = shells
-        .map((s) => ProgramService().loadProgram(s.uuid))
-        .whereType<Program>()
+    final shells = PlanService().listPlans();
+    final plans = shells
+        .map((s) => PlanService().loadPlan(s.uuid))
+        .whereType<Plan>()
         .toList();
-    final bytes = exportAllPrograms(programs);
+    final bytes = exportAllPlans(plans);
     await triggerDownload(bulkExportFileName(DateTime.now()), bytes);
   }
 }

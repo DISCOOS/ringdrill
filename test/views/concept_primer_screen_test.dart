@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/concept_primer_screen.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
@@ -12,15 +12,15 @@ import 'package:ringdrill/views/widgets/concept_primer_content.dart';
 import 'package:ringdrill/views/widgets/ring_rotation_figure.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _programUuid = 'primer-test-program';
+const _planUuid = 'primer-test-plan';
 
 Map<String, Object> _basePrefs({bool onboardingSeen = false}) => {
-  'app:activeProgram:v1': _programUuid,
+  'app:activePlan:v1': _planUuid,
   'app:librarySchema:v1': '1',
   if (onboardingSeen) AppConfig.keyOnboardingSeen: true,
-  'p:$_programUuid': jsonEncode({
-    'uuid': _programUuid,
-    'name': 'Primer Test Program',
+  'p:$_planUuid': jsonEncode({
+    'uuid': _planUuid,
+    'name': 'Primer Test Plan',
     'description': '',
     'metadata': {
       'created': '2026-01-01T00:00:00.000Z',
@@ -51,7 +51,7 @@ Future<GoRouter> _pumpRouterWithGate(
   SharedPreferences.setMockInitialValues(
     _basePrefs(onboardingSeen: isOnboardingSeen),
   );
-  await ProgramService().init();
+  await PlanService().init();
   tester.view.physicalSize = const Size(400, 800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);

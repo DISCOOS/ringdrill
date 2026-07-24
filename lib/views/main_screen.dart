@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/services/catalog_refresh_indicator_registry.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
@@ -15,8 +15,8 @@ import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/drill_player/drill_player_coordinator.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_status_badge.dart';
-import 'package:ringdrill/views/program_form_screen.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/plan_form_screen.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/roster_view.dart';
 import 'package:ringdrill/views/shell/detail_empty_pane.dart';
@@ -91,8 +91,8 @@ class _MainScreenState extends State<MainScreen>
   late final TeamsPageController _teamsPageController =
       const TeamsPageController();
   late final RosterController _rosterController = RosterController();
-  late final ProgramPageController _programPageController =
-      ProgramPageController(
+  late final PlanPageController _planPageController =
+      PlanPageController(
         stationListController: _stationListController,
         rolePlaysController: _rolePlaysController,
         teamsPageController: _teamsPageController,
@@ -104,20 +104,20 @@ class _MainScreenState extends State<MainScreen>
   // pull-to-refresh RefreshIndicator is currently visible instead of running
   // the refresh with no visible progress at all — see
   // CatalogRefreshIndicatorRegistry and _activeRefreshIndicatorKey below.
-  final _programRefreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
+  final _planRefreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
   final _rosterRefreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
 
-  /// Order matches [routeProgram, routeMap, routeRoster]. Station, roleplay
-  /// and team views remain reachable as Program segments rather than
+  /// Order matches [routePlan, routeMap, routeRoster]. Station, roleplay
+  /// and team views remain reachable as Plan segments rather than
   /// standalone shell tabs.
   late final List<PageWidget> _pages = [
     PageWidget(
-      controller: _programPageController,
-      child: ProgramView(
-        controller: _programPageController,
+      controller: _planPageController,
+      child: PlanView(
+        controller: _planPageController,
         stationListController: _stationListController,
         rolePlaysController: _rolePlaysController,
-        refreshIndicatorKey: _programRefreshIndicatorKey,
+        refreshIndicatorKey: _planRefreshIndicatorKey,
       ),
     ),
     PageWidget(controller: StationsPageController(), child: StationsView()),
@@ -150,25 +150,25 @@ class _MainScreenState extends State<MainScreen>
     CatalogRefreshIndicatorRegistry().registerProvider(
       _activeRefreshIndicatorKey,
     );
-    _programPageController.activeSegment.addListener(_onProgramSegmentChanged);
+    _planPageController.activeSegment.addListener(_onPlanSegmentChanged);
     // Switching segments (Øvelser/Poster/Spill/Lag) restores that segment's
     // remembered selection (or null, when it has none/no-longer-valid one) so
     // `build`'s auto-select check (see the `useRail && !isMapTab` branch)
     // falls back to the new segment's first item only when there is nothing
     // to restore, instead of unconditionally discarding the previous pick.
-    _programPageController.activeSegment.addListener(
+    _planPageController.activeSegment.addListener(
       _onActiveSegmentChangedForSelectionMemory,
     );
     // Remembers every target the wide detail pane ends up showing while on
-    // the Program tab — explicit picks and auto-selected-first alike — so
+    // the Plan tab — explicit picks and auto-selected-first alike — so
     // the segment-switch restore above has something to read.
     _contextSheetController.targetNotifier.addListener(
       _onDetailTargetChangedForSelectionMemory,
     );
     // Rebuild when reorder mode toggles so the FAB (which is suppressed in
     // reorder mode) appears/disappears without waiting for another rebuild.
-    _programPageController.exerciseReorderMode.addListener(
-      _onProgramSegmentChanged,
+    _planPageController.exerciseReorderMode.addListener(
+      _onPlanSegmentChanged,
     );
     listen(NotificationService().events, (event) {
       if (event.action == NotificationAction.showSettings) {
@@ -177,7 +177,7 @@ class _MainScreenState extends State<MainScreen>
         }
       }
     });
-    listen(ProgramService().events, (event) {
+    listen(PlanService().events, (event) {
       if (mounted) setState(() {});
     });
     // Rebuild bottom chrome when an exercise starts or stops so the floating
@@ -200,7 +200,7 @@ class _MainScreenState extends State<MainScreen>
     // Defense-in-depth (ADR-0038): every path that lands on
     // [MainScreen] should have an active plan. The onboarding flow's
     // `_dismiss` does the heavy lifting — both Start-empty and
-    // Open-example guarantee `activeProgram != null` before the
+    // Open-example guarantee `activePlan != null` before the
     // user arrives here. This post-frame fallback catches the rare
     // edge cases (catalog deep links that activate nothing, plan
     // deletion that bypassed the last-plan guard, a hot restart
@@ -208,39 +208,39 @@ class _MainScreenState extends State<MainScreen>
     // the default plan rather than letting the surface render with
     // a null plan.
     //
-    // `ensureActiveProgram` is idempotent: it is a no-op whenever
-    // `activeProgramUuid` is already set, so this is cheap.
+    // `ensureActivePlan` is idempotent: it is a no-op whenever
+    // `activePlanUuid` is already set, so this is cheap.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final localizations = AppLocalizations.of(context)!;
-      await ProgramService().ensureActiveProgram(localizations);
+      await PlanService().ensureActivePlan(localizations);
     });
   }
 
   void _initTab() {
     final loc = widget.location;
-    final activeUuid = ProgramService().activeProgramUuid;
-    if (activeUuid != null && loc == programMapPath(activeUuid)) {
+    final activeUuid = PlanService().activePlanUuid;
+    if (activeUuid != null && loc == planMapPath(activeUuid)) {
       _currentTab = 1;
       return;
     }
-    if (activeUuid != null && loc == programRosterPath(activeUuid)) {
+    if (activeUuid != null && loc == planRosterPath(activeUuid)) {
       _currentTab = 2;
       return;
     }
-    if (loc.startsWith('$routeProgram/')) {
+    if (loc.startsWith('$routePlan/')) {
       _currentTab = 0;
       // ADR-0032 *Activation contract*: segment selection flows URL → state.
-      // The redirect gate promotes bare `/program/:uuid` to the default
+      // The redirect gate promotes bare `/plan/:uuid` to the default
       // segment path, so by the time we land here the third segment is the
       // segment slug. Detail paths (e.g. `team/:idx`) have a non-segment slug
       // in that slot; leave [activeSegment] alone so the backdrop keeps the
       // user's last choice.
       final segments = Uri.parse(loc).pathSegments;
       if (segments.length >= 3) {
-        final segment = programSegmentFromSlug(segments[2]);
+        final segment = planSegmentFromSlug(segments[2]);
         if (segment != null) {
-          _programPageController.activeSegment.value = segment;
+          _planPageController.activeSegment.value = segment;
         }
       }
       return;
@@ -277,7 +277,7 @@ class _MainScreenState extends State<MainScreen>
   /// registered across every tab switch for the life of [MainScreen].
   GlobalKey<RefreshIndicatorState>? _activeRefreshIndicatorKey() {
     return switch (_currentTab) {
-      0 => _programRefreshIndicatorKey,
+      0 => _planRefreshIndicatorKey,
       2 => _rosterRefreshIndicatorKey,
       _ => null,
     };
@@ -292,16 +292,16 @@ class _MainScreenState extends State<MainScreen>
       _onDetailTargetChangedForSelectionMemory,
     );
     _contextSheetController.dispose();
-    _programPageController.activeSegment.removeListener(
-      _onProgramSegmentChanged,
+    _planPageController.activeSegment.removeListener(
+      _onPlanSegmentChanged,
     );
-    _programPageController.activeSegment.removeListener(
+    _planPageController.activeSegment.removeListener(
       _onActiveSegmentChangedForSelectionMemory,
     );
-    _programPageController.exerciseReorderMode.removeListener(
-      _onProgramSegmentChanged,
+    _planPageController.exerciseReorderMode.removeListener(
+      _onPlanSegmentChanged,
     );
-    _programPageController.dispose();
+    _planPageController.dispose();
     _stationListController.dispose();
     // Field-held controller, never disposed before. Its filterExerciseUuid
     // ValueNotifier leaked on shell teardown. (DESIGN-006 stage 1 follow-up.)
@@ -310,7 +310,7 @@ class _MainScreenState extends State<MainScreen>
     super.dispose();
   }
 
-  void _onProgramSegmentChanged() {
+  void _onPlanSegmentChanged() {
     if (mounted) setState(() {});
   }
 
@@ -323,14 +323,14 @@ class _MainScreenState extends State<MainScreen>
   void _onActiveSegmentChangedForSelectionMemory() {
     if (_contextSheetController.isModal) return;
     _contextSheetController.adoptWideSelection(
-      _programPageController.rememberedTarget(
-        _programPageController.activeSegment.value,
+      _planPageController.rememberedTarget(
+        _planPageController.activeSegment.value,
       ),
     );
   }
 
   /// Remembers whatever the wide detail pane ends up showing while the
-  /// Program tab (segments live only there) is active, so a later segment
+  /// Plan tab (segments live only there) is active, so a later segment
   /// switch away and back can restore it via
   /// [_onActiveSegmentChangedForSelectionMemory]. Fires for explicit picks
   /// and for auto-selected-first targets alike — re-remembering the latter is
@@ -353,13 +353,13 @@ class _MainScreenState extends State<MainScreen>
     final target = _contextSheetController.targetNotifier.value;
     if (target == null) return;
     if (_contextSheetController.isModal) {
-      _programPageController.rememberSelection(target);
+      _planPageController.rememberSelection(target);
       return;
     }
     final owningSegment = segmentForTarget(target);
     if (owningSegment == null) return;
-    _programPageController.rememberSelection(target, segment: owningSegment);
-    if (_programPageController.activeSegment.value != owningSegment) {
+    _planPageController.rememberSelection(target, segment: owningSegment);
+    if (_planPageController.activeSegment.value != owningSegment) {
       // ADR-0032: segment selection flows URL → state. When the redirect fired
       // from a segment view, navigate the URL to the owning segment (like the
       // segment switcher and _onDestinationSelected do) rather than writing
@@ -369,12 +369,12 @@ class _MainScreenState extends State<MainScreen>
       // segment I came from" live-lock). `_initTab` writes `activeSegment` from
       // the new URL and the segment restore re-adopts the target set just above.
       //
-      // But a canonical detail deep link (e.g. `/program/:uuid/exercise/:e/
+      // But a canonical detail deep link (e.g. `/plan/:uuid/exercise/:e/
       // station/0`) is itself the current URL, and it carries no "origin
       // segment" to get stuck on. Navigating to the segment path there would
       // clobber the deep link and drop the user on the segment list instead of
       // the detail. Detect that case and only mirror the segment into state.
-      final uuid = ProgramService().activeProgramUuid;
+      final uuid = PlanService().activePlanUuid;
       if (uuid != null && _locationIsSegmentPath(widget.location)) {
         // This callback can fire mid-build: `_initTab` (in `didUpdateWidget`)
         // writes `activeSegment`, whose notifier cascade reaches here, and
@@ -384,28 +384,28 @@ class _MainScreenState extends State<MainScreen>
         // set just above already holds the target, so the deferred `go`
         // lands on the right selection. Mirrors the post-frame deferral
         // app_router.dart uses for the same reason.
-        final path = programSegmentPath(uuid, owningSegment.urlSlug);
+        final path = planSegmentPath(uuid, owningSegment.urlSlug);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) widget.router.go(path);
         });
       } else {
-        _programPageController.activeSegment.value = owningSegment;
+        _planPageController.activeSegment.value = owningSegment;
       }
     }
   }
 
-  /// Whether [location] is a bare Program-tab segment path
-  /// (`/program/:uuid/:segmentSlug`) rather than a canonical detail deep link
+  /// Whether [location] is a bare Plan-tab segment path
+  /// (`/plan/:uuid/:segmentSlug`) rather than a canonical detail deep link
   /// (`.../exercise/:e/station/0`, `.../team/:idx`, `.../roleplay/:uuid`, …),
   /// whose third path slug is an entity kind, not a segment slug. Mirrors the
   /// segment-slot check in [_initTab].
   bool _locationIsSegmentPath(String location) {
-    if (!location.startsWith('$routeProgram/')) return false;
+    if (!location.startsWith('$routePlan/')) return false;
     final segments = Uri.parse(location).pathSegments;
-    // `/program/:uuid` (length 2) is promoted to the default segment path by
+    // `/plan/:uuid` (length 2) is promoted to the default segment path by
     // the redirect gate before it reaches here, so treat it as a segment path.
     if (segments.length < 3) return true;
-    return programSegmentFromSlug(segments[2]) != null;
+    return planSegmentFromSlug(segments[2]) != null;
   }
 
   @override
@@ -421,12 +421,12 @@ class _MainScreenState extends State<MainScreen>
       child: TickerMode(enabled: false, child: widget.shellChild),
     );
     return PlanScope(
-      variables: ProgramService().activeProgram?.variables ?? const [],
-      // The program-scoped route (ADR-0032): the active program is known
-      // here, so this is where PlanScope's program facets (DESIGN-010's
+      variables: PlanService().activePlan?.variables ?? const [],
+      // The plan-scoped route (ADR-0032): the active plan is known
+      // here, so this is where PlanScope's plan facets (DESIGN-010's
       // resolve-context cascade) get their real values instead of null.
-      programName: ProgramService().activeProgram?.name,
-      programDescription: ProgramService().activeProgram?.description,
+      planName: PlanService().activePlan?.name,
+      planDescription: PlanService().activePlan?.description,
       child: LayoutBuilder(
         builder: (context, constraints) {
           // The rail + master/detail layout only earns its keep when there is
@@ -537,7 +537,7 @@ class _MainScreenState extends State<MainScreen>
                     // On the rail (master/detail) layout, forms open as a Dialog
                     // (see openFormSurface) which handles its own keyboard inset.
                     // Letting the background scaffold also resize for that keyboard
-                    // squeezes the fixed-height chrome (NavigationRail, program
+                    // squeezes the fixed-height chrome (NavigationRail, plan
                     // overview + segment switcher) and produces RenderFlex overflows.
                     // The dialog owns the inset here, so the background must not move.
                     resizeToAvoidBottomInset: !useRail,
@@ -668,19 +668,19 @@ class _MainScreenState extends State<MainScreen>
     required bool hasRail,
   }) {
     final pageTitle = page.controller.title(context);
-    // Only the Program tab's title is ever the active plan name itself
+    // Only the Plan tab's title is ever the active plan name itself
     // (other tabs' `title()` is a fixed section label, e.g. "Kart",
     // "Bemanning") — used below to decide which titles need to resolve
     // `{{var.<name>}}` (DESIGN-008 follow-up 11) and which are plain.
-    final planName = ProgramService().activeProgram?.name;
+    final planName = PlanService().activePlan?.name;
     final isPlanNameTitle = pageTitle == planName;
     // In master/detail mode, mirror the detail-screen `SheetTitle` pattern:
     // primary = tab title (e.g. "Markører"), secondary = active plan name.
     // The active plan was previously only visible via the tooltip on the
-    // program tab title, which made cross-tab orientation invisible.
+    // plan tab title, which made cross-tab orientation invisible.
     final activePlanName = hasRail ? planName : null;
     // Suppress the secondary line when it would just repeat the primary.
-    // The Program tab's title already is the active plan name, so without
+    // The Plan tab's title already is the active plan name, so without
     // this it printed the plan name twice. Other tabs (Map, Roster) keep
     // the plan name as orientation because their primary is a section name.
     final secondary = activePlanName == pageTitle ? null : activePlanName;
@@ -693,13 +693,13 @@ class _MainScreenState extends State<MainScreen>
         : (isPlanNameTitle ? RingDrillText.plain(pageTitle) : Text(pageTitle));
 
     final controller = page.controller;
-    if (controller is! ProgramPageControllerBase) return titleChild;
+    if (controller is! PlanPageControllerBase) return titleChild;
     final localizations = AppLocalizations.of(context)!;
     return Tooltip(
-      message: localizations.editProgram,
+      message: localizations.editPlan,
       child: InkWell(
         borderRadius: BorderRadius.circular(4),
-        onTap: () => _openProgramForm(context),
+        onTap: () => _openPlanForm(context),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: titleChild,
@@ -708,18 +708,18 @@ class _MainScreenState extends State<MainScreen>
     );
   }
 
-  /// Opens the full [ProgramFormScreen] for the active plan (name,
+  /// Opens the full [PlanFormScreen] for the active plan (name,
   /// description and the addable brief sections), replacing the old
   /// name-only rename dialog on the AppBar title tap.
-  Future<void> _openProgramForm(BuildContext context) async {
-    final program = ProgramService().activeProgram;
-    if (program == null) return;
-    final updated = await openFormSurface<Program>(
+  Future<void> _openPlanForm(BuildContext context) async {
+    final plan = PlanService().activePlan;
+    if (plan == null) return;
+    final updated = await openFormSurface<Plan>(
       context,
-      builder: (_) => ProgramFormScreen(program: program),
+      builder: (_) => PlanFormScreen(plan: plan),
     );
     if (updated != null && context.mounted) {
-      await ProgramService().replaceProgram(updated);
+      await PlanService().replacePlan(updated);
     }
   }
 
@@ -769,33 +769,33 @@ class _MainScreenState extends State<MainScreen>
   }
 
   String _routeForTab(int tab) {
-    final activeUuid = ProgramService().activeProgramUuid;
+    final activeUuid = PlanService().activePlanUuid;
     if (activeUuid == null) return widget.routes[tab];
     return switch (tab) {
       // Tab 0 preserves the currently-selected segment so switching to Map
       // and back lands on the same lens. The redirect gate handles bare
-      // `/program/:uuid` as a fallback, so even if the controller has not
+      // `/plan/:uuid` as a fallback, so even if the controller has not
       // been initialised yet the URL still resolves.
-      0 => programSegmentPath(
+      0 => planSegmentPath(
         activeUuid,
-        _programPageController.activeSegment.value.urlSlug,
+        _planPageController.activeSegment.value.urlSlug,
       ),
-      1 => programMapPath(activeUuid),
-      2 => programRosterPath(activeUuid),
+      1 => planMapPath(activeUuid),
+      2 => planRosterPath(activeUuid),
       _ => widget.routes[tab],
     };
   }
 
   List<Destination> _buildDestinations(AppLocalizations localizations) {
     return [
-      // The Program tab hosts the active training plan (the inner
+      // The Plan tab hosts the active training plan (the inner
       // segments are exercises, stations, markers, teams). Using
       // `exercise(2)` here used to land "Øvelser" both on the bottom
       // nav AND on the inner segment label, which read as the same
       // word at two levels of hierarchy and confused first-time
-      // users. `programTab` ("Plan" / "Øvingsplan") describes the
+      // users. `planTab` ("Plan" / "Øvingsplan") describes the
       // tab as a whole.
-      Destination(icon: Icons.update, label: localizations.programTab),
+      Destination(icon: Icons.update, label: localizations.planTab),
       Destination(icon: Icons.map, label: localizations.mapTab),
       Destination(icon: Icons.badge, label: localizations.rosterTab),
     ];
@@ -842,13 +842,13 @@ class _MainScreenState extends State<MainScreen>
 
   Widget _emptyPaneBuilderForCurrentTab(BuildContext context) {
     final content = switch (_currentTab) {
-      0 => ValueListenableBuilder<ProgramSegment>(
-        valueListenable: _programPageController.activeSegment,
+      0 => ValueListenableBuilder<PlanSegment>(
+        valueListenable: _planPageController.activeSegment,
         builder: (context, segment, _) => switch (segment) {
-          ProgramSegment.exercises => const ExerciseDetailEmpty(),
-          ProgramSegment.stations => const StationDetailEmpty(),
-          ProgramSegment.script => const RolePlayDetailEmpty(),
-          ProgramSegment.teams => const TeamDetailEmpty(),
+          PlanSegment.exercises => const ExerciseDetailEmpty(),
+          PlanSegment.stations => const StationDetailEmpty(),
+          PlanSegment.script => const RolePlayDetailEmpty(),
+          PlanSegment.teams => const TeamDetailEmpty(),
         },
       ),
       2 => const RosterDetailEmpty(),

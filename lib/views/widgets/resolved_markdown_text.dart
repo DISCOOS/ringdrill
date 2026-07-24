@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
 
-/// Renders a snippet of plan-scope markdown — `Program.briefIntroMd`,
-/// `commsMd` or `beforeRoundMd` — resolved against [program]:
-/// `{{var.<name>}}` tokens and `{{program.name}}`/`{{program.description}}`
+/// Renders a snippet of plan-scope markdown — `Plan.briefIntroMd`,
+/// `commsMd` or `beforeRoundMd` — resolved against [plan]:
+/// `{{var.<name>}}` tokens and `{{plan.name}}`/`{{plan.description}}`
 /// cross-references are substituted before display, the same way
 /// `BriefRenderer.render` resolves them in the full brief.
 ///
@@ -13,7 +13,7 @@ import 'package:ringdrill/services/brief/brief_renderer.dart';
 /// brief. Reading the raw model field straight into a `Text` widget skips
 /// resolution — a declared variable or cross-reference then shows up as a
 /// literal `{{...}}` token instead of its value (this is exactly what
-/// happened to the Program view's overview card before this widget
+/// happened to the Plan view's overview card before this widget
 /// existed). If a caller needs to post-process the text further (e.g.
 /// extracting a preview paragraph), call [resolve] directly and build its
 /// own `Text` from the result — resolution must still happen first, before
@@ -21,16 +21,16 @@ import 'package:ringdrill/services/brief/brief_renderer.dart';
 class ResolvedMarkdownText extends StatelessWidget {
   const ResolvedMarkdownText({
     super.key,
-    required this.program,
+    required this.plan,
     required this.content,
     this.style,
     this.maxLines,
     this.overflow,
   });
 
-  final Program program;
+  final Plan plan;
 
-  /// Raw markdown, e.g. `program.briefIntroMd`. Renders nothing when null
+  /// Raw markdown, e.g. `plan.briefIntroMd`. Renders nothing when null
   /// or empty (after resolution).
   final String? content;
 
@@ -38,18 +38,18 @@ class ResolvedMarkdownText extends StatelessWidget {
   final int? maxLines;
   final TextOverflow? overflow;
 
-  /// Resolves [content] against [program] — the single entry point both
+  /// Resolves [content] against [plan] — the single entry point both
   /// this widget and any caller that needs the resolved string (not just a
   /// widget) should use.
-  static String resolve(Program program, String content, AppLocalizations l10n) =>
-      BriefRenderer.resolveProgramScopeText(program, content, l10n);
+  static String resolve(Plan plan, String content, AppLocalizations l10n) =>
+      BriefRenderer.resolvePlanScopeText(plan, content, l10n);
 
   @override
   Widget build(BuildContext context) {
     final raw = content;
     if (raw == null || raw.isEmpty) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context)!;
-    final resolved = resolve(program, raw, l10n);
+    final resolved = resolve(plan, raw, l10n);
     if (resolved.isEmpty) return const SizedBox.shrink();
     return Text(resolved, style: style, maxLines: maxLines, overflow: overflow);
   }

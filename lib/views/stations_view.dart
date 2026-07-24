@@ -24,7 +24,7 @@ import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/role_mini_map.dart' show roleMarker;
 
 import '../models/exercise.dart' show Exercise, ExerciseX, StationLocation;
-import '../services/program_service.dart' show ProgramService;
+import '../services/plan_service.dart' show PlanService;
 import 'map_view.dart';
 
 /// Bumped by MainScreen every time the Stations tab is activated, so the
@@ -58,21 +58,21 @@ class _PendingPick {
 class _StationsViewState extends State<StationsView>
     with SubscriptionBag<StationsView> {
   final _mapController = MapController();
-  final _programService = ProgramService();
+  final _planService = PlanService();
   final _exerciseService = ExerciseService();
 
   /// The effective plan-variable map (ADR-0046) at [exercise]'s scope,
   /// optionally narrowed to [stationIndex]'s station. Empty when there is
   /// no active plan.
   Map<String, String> _overridesFor(Exercise exercise, {int? stationIndex}) {
-    final program = _programService.activeProgram;
-    if (program == null) return const {};
+    final plan = _planService.activePlan;
+    if (plan == null) return const {};
     final stations = exercise.stations;
     final station = (stationIndex != null && stationIndex < stations.length)
         ? stations[stationIndex]
         : null;
     return effectivePlanVariables(
-      program,
+      plan,
       exercise: exercise,
       station: station,
     );
@@ -97,11 +97,11 @@ class _StationsViewState extends State<StationsView>
   @override
   void initState() {
     super.initState();
-    // Rebuild when the active program or its stations change. The parent
+    // Rebuild when the active plan or its stations change. The parent
     // MainScreen keeps tabs alive in an IndexedStack with identical widget
     // instances, so its own setState does not propagate here. See
-    // active_plan_actions.dart and ProgramService.setActive/installFromFile.
-    listen(_programService.events, (_) {
+    // active_plan_actions.dart and PlanService.setActive/installFromFile.
+    listen(_planService.events, (_) {
       if (mounted) setState(() {});
     });
     // Rebuild on every exercise tick so the live-station highlight follows
@@ -148,7 +148,7 @@ class _StationsViewState extends State<StationsView>
   /// position whose owning exercise has not been hidden via the
   /// visibility sheet.
   List<StationLocation> _visibleLocations() {
-    final all = _programService.getLocations();
+    final all = _planService.getLocations();
     if (_hiddenExercises.isEmpty) return all;
     return all.where((m) => !_hiddenExercises.contains(m.$1.$1)).toList();
   }
@@ -157,7 +157,7 @@ class _StationsViewState extends State<StationsView>
   Widget build(BuildContext context) {
     final markers = _visibleLocations();
     // No "no stations created" nag: an empty Map tab is expected on a fresh
-    // plan, and the Program tab's teaching empty states plus onboarding now
+    // plan, and the Plan tab's teaching empty states plus onboarding now
     // carry the "you have nothing yet" message. A snackbar here just nagged on
     // first launch (DESIGN-007).
 
@@ -166,7 +166,7 @@ class _StationsViewState extends State<StationsView>
     // plotted yet, so there's no need to branch on emptiness here.
     final center = markers.average();
 
-    final allExercises = _programService.loadExercises();
+    final allExercises = _planService.loadExercises();
     final localizations = AppLocalizations.of(context)!;
 
     final hiddenCount = _hiddenExercises.length;
@@ -188,14 +188,14 @@ class _StationsViewState extends State<StationsView>
           )
         : <MapMarkerSpec<(String, int)>>[];
 
-    final roleplays = _programService
+    final roleplays = _planService
         .loadRolePlays()
         .where((rp) => rp.position.isFiniteOrNull)
         .toList();
     final roleSpecs = _showRoleplays
         ? roleplays
               .map((rp) {
-                final exercise = _programService.getExercise(rp.exerciseUuid);
+                final exercise = _planService.getExercise(rp.exerciseUuid);
                 final stationIndex = rp.stationIndex;
                 final station =
                     (exercise != null &&
@@ -502,8 +502,8 @@ class _StationsViewState extends State<StationsView>
                         final ex = exercises[index];
                         final isVisible = !_hiddenExercises.contains(ex.uuid);
                         final exerciseFormat =
-                            _programService
-                                .activeProgram
+                            _planService
+                                .activePlan
                                 ?.exerciseNumberFormat ??
                             ExerciseNumberFormat.hash;
                         return SwitchListTile.adaptive(
@@ -693,7 +693,7 @@ class _StationsViewState extends State<StationsView>
     // Drop the user near the other stations of the same exercise so they
     // do not have to pan in from far away. If no sibling has a position,
     // leave the camera where it is.
-    final exercise = _programService.getExercise(exerciseUuid);
+    final exercise = _planService.getExercise(exerciseUuid);
     if (exercise == null) return;
     final siblingStations = exercise.stations
         .where((s) => s.position != null && s.index != stationIndex)
@@ -721,7 +721,7 @@ class _StationsViewState extends State<StationsView>
     final localizations = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
 
-    final exercise = _programService.getExercise(pick.exerciseUuid);
+    final exercise = _planService.getExercise(pick.exerciseUuid);
     if (exercise == null || pick.stationIndex >= exercise.stations.length) {
       setState(() => _pickFor = null);
       messenger.showSnackBar(
@@ -736,7 +736,7 @@ class _StationsViewState extends State<StationsView>
         .copyWith(position: picked);
     final updatedExercise = exercise.copyWith(stations: updatedStations);
 
-    await _programService.saveExercise(localizations, updatedExercise);
+    await _planService.saveExercise(localizations, updatedExercise);
     if (!mounted) return;
     setState(() => _pickFor = null);
     messenger.showSnackBar(
@@ -753,10 +753,10 @@ class _StationsViewState extends State<StationsView>
   }
 
   List<SearchResult> _buildSearchTargets(BuildContext context) {
-    final exercises = _programService.loadExercises();
+    final exercises = _planService.loadExercises();
     final targets = <SearchResult>[];
     final stationNumberFormat =
-        _programService.activeProgram?.stationNumberFormat ??
+        _planService.activePlan?.stationNumberFormat ??
         StationNumberFormat.dotted;
 
     for (final exercise in exercises) {
@@ -843,7 +843,7 @@ class _StationsViewState extends State<StationsView>
   }
 
   void _onStationTap((String, int) id) {
-    final exercise = _programService.getExercise(id.$1);
+    final exercise = _planService.getExercise(id.$1);
     if (exercise != null) {
       final target = StationSheetTarget(
         exerciseUuid: exercise.uuid,

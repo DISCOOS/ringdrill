@@ -6,14 +6,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _programUuid = 'program-collapsible-master-pane';
+const _planUuid = 'plan-collapsible-master-pane';
 const _exerciseAUuid = 'exercise-collapsible-a';
 const _exerciseBUuid = 'exercise-collapsible-b';
 
@@ -59,11 +59,11 @@ final _exerciseB = Exercise(
 
 Map<String, Object> _prefs() {
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Collapsible Master Pane Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Collapsible Master Pane Plan',
       'description': '',
       'metadata': {
         'created': '2026-01-01T00:00:00.000Z',
@@ -76,8 +76,8 @@ Map<String, Object> _prefs() {
       'rolePlays': [],
       'actors': [],
     }),
-    'pe:$_programUuid:$_exerciseAUuid': jsonEncode(_exerciseA.toJson()),
-    'pe:$_programUuid:$_exerciseBUuid': jsonEncode(_exerciseB.toJson()),
+    'pe:$_planUuid:$_exerciseAUuid': jsonEncode(_exerciseA.toJson()),
+    'pe:$_planUuid:$_exerciseBUuid': jsonEncode(_exerciseB.toJson()),
   };
 }
 
@@ -87,7 +87,7 @@ Future<void> _pumpWideApp(WidgetTester tester) async {
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
-  await ProgramService().setActive(_programUuid);
+  await PlanService().setActive(_planUuid);
   final router = buildRouter(false, true);
   addTearDown(router.dispose);
   await tester.pumpWidget(
@@ -107,7 +107,7 @@ Future<void> _tapSegment(WidgetTester tester, String label) async {
   await tester.tap(
     find
         .descendant(
-          of: find.byType(SegmentedButton<ProgramSegment>),
+          of: find.byType(SegmentedButton<PlanSegment>),
           matching: find.text(label),
         )
         .hitTestable(),
@@ -118,7 +118,7 @@ Future<void> _tapSegment(WidgetTester tester, String label) async {
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(_prefs());
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   testWidgets(
@@ -211,7 +211,7 @@ void main() {
       // Leave the segment so the pick is only held in memory, then delete
       // the exercise it points at.
       await _tapSegment(tester, l10n.stationsTab);
-      await ProgramService().deleteExercise(_exerciseBUuid);
+      await PlanService().deleteExercise(_exerciseBUuid);
       await tester.pumpAndSettle();
 
       // Switching back to the exercises segment: the remembered target
@@ -243,7 +243,7 @@ void main() {
 
       // Expanded: the master pane's segment switcher is visible alongside
       // the sidebar toggle in the detail leading.
-      expect(find.byType(SegmentedButton<ProgramSegment>), findsOneWidget);
+      expect(find.byType(SegmentedButton<PlanSegment>), findsOneWidget);
       final toggle = find.byIcon(CupertinoIcons.sidebar_left);
       expect(toggle, findsOneWidget);
 
@@ -255,7 +255,7 @@ void main() {
       // The SegmentedButton is still in the element tree (kept mounted for
       // perf) but has 0 visible width, so it must not be hit-testable.
       expect(
-        find.byType(SegmentedButton<ProgramSegment>).hitTestable(),
+        find.byType(SegmentedButton<PlanSegment>).hitTestable(),
         findsNothing,
       );
       expect(find.text('Station A1'), findsOneWidget);
@@ -264,7 +264,7 @@ void main() {
       await tester.tap(find.byIcon(CupertinoIcons.sidebar_left));
       await tester.pumpAndSettle();
 
-      expect(find.byType(SegmentedButton<ProgramSegment>), findsOneWidget);
+      expect(find.byType(SegmentedButton<PlanSegment>), findsOneWidget);
     },
   );
 
@@ -277,7 +277,7 @@ void main() {
       await tester.pumpAndSettle();
       // Kept mounted but clipped to 0 width — must not be hit-testable.
       expect(
-        find.byType(SegmentedButton<ProgramSegment>).hitTestable(),
+        find.byType(SegmentedButton<PlanSegment>).hitTestable(),
         findsNothing,
       );
 
@@ -289,7 +289,7 @@ void main() {
       await _pumpWideApp(tester);
       // Kept mounted but clipped to 0 width — must not be hit-testable.
       expect(
-        find.byType(SegmentedButton<ProgramSegment>).hitTestable(),
+        find.byType(SegmentedButton<PlanSegment>).hitTestable(),
         findsNothing,
       );
     },
@@ -304,7 +304,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      await ProgramService().setActive(_programUuid);
+      await PlanService().setActive(_planUuid);
       final router = buildRouter(false, true);
       addTearDown(router.dispose);
       await tester.pumpWidget(

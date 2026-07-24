@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/views/about_page.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/feedback.dart';
 import 'package:ringdrill/views/migration_page.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/web/install_actions.dart'
     if (dart.library.io) 'package:ringdrill/views/install_actions_io.dart';
@@ -16,7 +16,7 @@ import 'package:ringdrill/web/legacy_host_web.dart'
 
 /// Navigation drawer for the app shell. Owns its own tile list and all
 /// "active plan" actions; the host shell only mounts it as
-/// `Scaffold.drawer`. State queries (active program, exercise service)
+/// `Scaffold.drawer`. State queries (active plan, exercise service)
 /// go through singletons, so the only thing the host has to wire is the
 /// "open settings" action — kept as a callback so this widget doesn't
 /// import its host.
@@ -32,10 +32,10 @@ class MainDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeProgram = ProgramService().activeProgram;
-    final hasActivePlan = activeProgram != null;
+    final activePlan = PlanService().activePlan;
+    final hasActivePlan = activePlan != null;
     final isCatalogActive =
-        activeProgram != null && active_actions.isCatalogProgram(activeProgram);
+        activePlan != null && active_actions.isCatalogPlan(activePlan);
     return NavigationDrawer(
       elevation: 8,
       children: [
@@ -63,7 +63,7 @@ class MainDrawer extends StatelessWidget {
         const SizedBox(height: 16.0),
         _DrawerTile(
           icon: Icons.folder_open,
-          title: localizations.openPlan,
+          title: localizations.openPlanAction,
           onTap: () async {
             // Popping the drawer unmounts this tile's BuildContext. The plan
             // actions await user input (dialogs, file pickers) and then check
@@ -92,7 +92,7 @@ class MainDrawer extends StatelessWidget {
             await active_actions.createNewPlan(actionContext);
           },
         ),
-        if (ProgramPageController.canSaveDrillFile)
+        if (PlanPageController.canSaveDrillFile)
           _DrawerTile(
             icon: Icons.download,
             title: localizations.libraryDownloadAction,
@@ -138,7 +138,7 @@ class MainDrawer extends StatelessWidget {
             await active_actions.shareActivePlan(actionContext);
           },
         ),
-        if (ProgramPageController.canSendDrillFile)
+        if (PlanPageController.canSendDrillFile)
           _DrawerTile(
             icon: Icons.send,
             title: localizations.sendToAction,

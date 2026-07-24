@@ -8,14 +8,14 @@ import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/app_config.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:universal_io/io.dart';
 
 const String baseUrl = 'https://ringdrill.app';
 
-class ProgramPageController extends ProgramPageControllerBase {
-  ProgramPageController({
+class PlanPageController extends PlanPageControllerBase {
+  PlanPageController({
     required super.stationListController,
     required super.rolePlaysController,
     required super.teamsPageController,
@@ -39,7 +39,7 @@ class ProgramPageController extends ProgramPageControllerBase {
   ) async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
-      dialogTitle: localizations.openProgram,
+      dialogTitle: localizations.openPlanAction,
       allowedExtensions: [DrillFile.drillExtension, 'zip'],
     );
 
@@ -80,7 +80,7 @@ class ProgramPageController extends ProgramPageControllerBase {
     // Create a temp folder for export.
     final String tempDirPath = path.join(
       (await getTemporaryDirectory()).path,
-      'program_send_to',
+      'plan_send_to',
     );
     if (!context.mounted) return false;
 

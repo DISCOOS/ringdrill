@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/numbering.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/utils/plan_variable_refs.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/variable_values.dart';
@@ -17,7 +17,7 @@ import 'package:ringdrill/views/widgets/variables_section.dart';
 const _kTagMaxLength = 40;
 
 /// ADR-0046 variable-name slug rule, enforced by [VariablesSection] itself
-/// on create/rename — re-checked here for [_ProgramFormScreenState]'s
+/// on create/rename — re-checked here for [_PlanFormScreenState]'s
 /// `_createVariableInline`, whose candidate name comes from the insertion
 /// menu's looser `\w*` filter capture, not user-typed dialog input.
 final _slugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
@@ -36,11 +36,11 @@ final _varTokenPattern = planVariableTokenPattern;
 /// "Post" prefix.
 String _describeReference(PlanVariableReference ref, AppLocalizations l) {
   final fieldLabel = switch (ref.field) {
-    PlanVariableField.programName => l.programName,
-    PlanVariableField.programDescription => l.programDescription,
-    PlanVariableField.programBriefIntro => l.briefSectionProgramIntro,
-    PlanVariableField.programComms => l.briefSectionProgramComms,
-    PlanVariableField.programBeforeRound => l.briefSectionProgramBeforeRound,
+    PlanVariableField.planName => l.planName,
+    PlanVariableField.planDescription => l.planDescription,
+    PlanVariableField.planBriefIntro => l.briefSectionPlanIntro,
+    PlanVariableField.planComms => l.briefSectionPlanComms,
+    PlanVariableField.planBeforeRound => l.briefSectionPlanBeforeRound,
     PlanVariableField.exerciseName => l.exerciseName,
     PlanVariableField.exerciseMethod => l.briefSectionExerciseMethod,
     PlanVariableField.exerciseLearningGoals =>
@@ -81,26 +81,26 @@ String _describeReference(PlanVariableReference ref, AppLocalizations l) {
   return fieldLabel;
 }
 
-/// Optional addable sections on [Program] beyond name + description.
+/// Optional addable sections on [Plan] beyond name + description.
 enum _Section { briefIntro, comms, beforeRound }
 
-/// Edit form for [Program] base fields (name + description) and the
+/// Edit form for [Plan] base fields (name + description) and the
 /// addable DESIGN-004 markdown brief sections (`briefIntroMd`, `commsMd`,
 /// `beforeRoundMd`).
 ///
-/// Pops with the updated [Program] on save, or `null` on cancel. The
-/// caller is responsible for persisting the result through the program
-/// save path (e.g. `ProgramService.replaceProgram`).
-class ProgramFormScreen extends StatefulWidget {
-  const ProgramFormScreen({super.key, required this.program});
+/// Pops with the updated [Plan] on save, or `null` on cancel. The
+/// caller is responsible for persisting the result through the plan
+/// save path (e.g. `PlanService.replacePlan`).
+class PlanFormScreen extends StatefulWidget {
+  const PlanFormScreen({super.key, required this.plan});
 
-  final Program program;
+  final Plan plan;
 
   @override
-  State<ProgramFormScreen> createState() => _ProgramFormScreenState();
+  State<PlanFormScreen> createState() => _PlanFormScreenState();
 }
 
-class _ProgramFormScreenState extends State<ProgramFormScreen> {
+class _PlanFormScreenState extends State<PlanFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
   /// Token-aware so `RingDrillTextField(tokenAware: true)` can drive its
@@ -136,7 +136,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
   @override
   void initState() {
     super.initState();
-    final p = widget.program;
+    final p = widget.plan;
     _nameController.text = p.name;
     _descriptionController.text = p.description;
     _tags = List<String>.from(p.tags);
@@ -173,7 +173,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     final tag = raw.trim().toLowerCase();
     if (tag.isEmpty) return;
     if (tag.length > _kTagMaxLength) {
-      setState(() => _tagError = l.programEditorTagTooLong);
+      setState(() => _tagError = l.planEditorTagTooLong);
       return;
     }
     if (_tags.contains(tag)) {
@@ -210,13 +210,13 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     });
   }
 
-  /// The in-memory [Program] as the editor currently stands — every
-  /// controller's live text plus [_variables] — not [widget.program], which
+  /// The in-memory [Plan] as the editor currently stands — every
+  /// controller's live text plus [_variables] — not [widget.plan], which
   /// is the value the editor was *opened* with. `plan_variable_refs.dart`'s
   /// rename/reference-count helpers need this live snapshot: a variable
   /// just typed into a section, or a rename not yet saved, must still be
   /// accounted for correctly while the editor is open.
-  Program _workingProgram() => widget.program.copyWith(
+  Plan _workingPlan() => widget.plan.copyWith(
     briefIntroMd: _readSection(_Section.briefIntro),
     commsMd: _readSection(_Section.comms),
     beforeRoundMd: _readSection(_Section.beforeRound),
@@ -227,17 +227,17 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     setState(() => _variables = [..._variables, variable]);
   }
 
-  /// Runs the ADR-0046 plan-wide rewrite over the live working program (not
+  /// Runs the ADR-0046 plan-wide rewrite over the live working plan (not
   /// just [_variables]): every markdown field's `{{var.<oldName>}}` becomes
   /// `{{var.<newName>}}`, every `variableOverrides` key is renamed, and the
   /// registry entry itself is renamed. The rewritten markdown then has to
   /// flow back into this editor's own controllers — `renameVariable`
-  /// returns a whole new `Program`, but `_briefIntroController` etc. are
+  /// returns a whole new `Plan`, but `_briefIntroController` etc. are
   /// what the section fields actually read. The renamed registry itself
   /// reaches every field automatically through [PlanScope] once this
   /// `setState` rebuild runs — no separate controller push needed.
   void _renameVariablePlanWide(String oldName, String newName) {
-    final renamed = renameVariable(_workingProgram(), oldName, newName);
+    final renamed = renameVariable(_workingPlan(), oldName, newName);
     setState(() {
       _briefIntroController.text = renamed.briefIntroMd ?? '';
       _commsController.text = renamed.commsMd ?? '';
@@ -284,7 +284,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     _addVariable(DrillVariable(name: name, value: ''));
   }
 
-  /// Program-scope markdown sections' `{{var.<name>}}` tokens where `name`
+  /// Plan-scope markdown sections' `{{var.<name>}}` tokens where `name`
   /// is not declared in [_variables] — Stage 5's save-blocking scope is
   /// deliberately just the fields *this* editor edits, not the whole plan
   /// (blocking save over an undeclared token in a station field the user
@@ -314,8 +314,8 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
         .allMatches(text)
         .any((m) => !declared.contains(m.group(1)));
     return [
-      if (hasUndeclared(_nameController.text)) l.programName,
-      if (hasUndeclared(_descriptionController.text)) l.programDescription,
+      if (hasUndeclared(_nameController.text)) l.planName,
+      if (hasUndeclared(_descriptionController.text)) l.planDescription,
     ];
   }
 
@@ -332,9 +332,9 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
   };
 
   String _labelFor(_Section section, AppLocalizations l) => switch (section) {
-    _Section.briefIntro => l.briefSectionProgramIntro,
-    _Section.comms => l.briefSectionProgramComms,
-    _Section.beforeRound => l.briefSectionProgramBeforeRound,
+    _Section.briefIntro => l.briefSectionPlanIntro,
+    _Section.comms => l.briefSectionPlanComms,
+    _Section.beforeRound => l.briefSectionPlanBeforeRound,
   };
 
   String? _readSection(_Section section) {
@@ -355,10 +355,10 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
   /// renaming the plan happens through the name field in the "Plan" section
   /// instead, one tap away.
   Widget _buildSectionNavigated(BuildContext context, AppLocalizations l) {
-    // The program editor only ever resolves program.* (DESIGN-009 follow-up
-    // 4b) — PlanFieldTokens.program(l) is the single source of truth shared
+    // The plan editor only ever resolves plan.* (DESIGN-009 follow-up
+    // 4b) — PlanFieldTokens.plan(l) is the single source of truth shared
     // with every other editor.
-    final planFields = PlanFieldTokens.program(l);
+    final planFields = PlanFieldTokens.plan(l);
 
     final activeMdSections = [
       for (final section in _Section.values)
@@ -411,31 +411,31 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
           ),
     ];
 
-    // Program scope has no overrides (ADR-0046), so every RingDrillTextArea
+    // Plan scope has no overrides (ADR-0046), so every RingDrillTextArea
     // above leaves its `overrides` param at the default empty map — a
     // variable's effective value here is always its declared default.
-    // Rebuilt from _variables (not widget.program.variables) on every
+    // Rebuilt from _variables (not widget.plan.variables) on every
     // build, so add/rename/delete/value-edit all flow straight into every
     // live token field automatically: each one reads this scope on its own
     // build, so there is no separate "push the rebuilt list by hand" step
     // (Stages 4-5's approach before PlanScope existed).
     return PlanScope(
       variables: _variables,
-      // This editor edits program.name/description directly (DESIGN-010):
-      // its own live controllers are the program facets, not the ambient
-      // PlanScope's last-saved ones, so a {{program.name}} reference in
+      // This editor edits plan.name/description directly (DESIGN-010):
+      // its own live controllers are the plan facets, not the ambient
+      // PlanScope's last-saved ones, so a {{plan.name}} reference in
       // e.g. briefIntroMd previews the name as it is currently being typed.
-      programName: _nameController.text,
-      programDescription: _descriptionController.text,
+      planName: _nameController.text,
+      planDescription: _descriptionController.text,
       child: Form(
         key: _formKey,
         child: SectionNavigatedForm(
-          title: l.editProgram,
+          title: l.editPlan,
           initialSectionId: 'plan',
           sections: [
             FormSection(
               id: 'plan',
-              label: l.programSectionPlan,
+              label: l.planSectionPlan,
               icon: Icons.assignment_outlined,
               builder: (ctx) => _buildPlanSectionBody(ctx, l),
             ),
@@ -454,9 +454,9 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
                 onDelete: _deleteVariable,
                 onUpdate: _updateVariable,
                 referenceCount: (name) =>
-                    variableReferenceCount(_workingProgram(), name),
+                    variableReferenceCount(_workingPlan(), name),
                 referenceDescriptions: (name) => [
-                  for (final ref in variableReferences(_workingProgram(), name))
+                  for (final ref in variableReferences(_workingPlan(), name))
                     _describeReference(ref, l),
                 ],
               ),
@@ -472,7 +472,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     );
   }
 
-  /// The DESIGN-008 default section for [Program]: the short structural
+  /// The DESIGN-008 default section for [Plan]: the short structural
   /// fields that never become their own section (name, description,
   /// station-number-format, language, tags).
   Widget _buildPlanSectionBody(BuildContext context, AppLocalizations l) {
@@ -485,7 +485,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
             children: [
               RingDrillTextField(
                 controller: _nameController,
-                label: l.programName,
+                label: l.planName,
                 autofocus: true,
                 tokenAware: true,
                 validator: (value) => value != null && value.trim().isNotEmpty
@@ -495,8 +495,8 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
               const SizedBox(height: 16),
               RingDrillTextArea(
                 controller: _descriptionController,
-                label: l.programDescription,
-                hintText: l.programDescriptionHint,
+                label: l.planDescription,
+                hintText: l.planDescriptionHint,
                 minLines: 1,
                 maxLines: 4,
                 tokenAware: true,
@@ -527,9 +527,9 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
                 errorText: _tagError,
                 onSubmit: () => _submitTag(l),
                 onRemove: _removeTag,
-                label: l.programEditorTagsLabel,
-                hint: l.programEditorTagsHint,
-                removeTooltip: l.programEditorTagRemoveTooltip,
+                label: l.planEditorTagsLabel,
+                hint: l.planEditorTagsHint,
+                removeTooltip: l.planEditorTagRemoveTooltip,
               ),
               const SizedBox(height: 4),
             ],
@@ -550,7 +550,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
       final sections = offending.join(', ');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l.programSaveBlockedUndeclaredVariable(sections)),
+          content: Text(l.planSaveBlockedUndeclaredVariable(sections)),
         ),
       );
       return;
@@ -574,7 +574,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
       );
       return;
     }
-    final updated = widget.program.copyWith(
+    final updated = widget.plan.copyWith(
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim(),
       tags: List<String>.unmodifiable(_tags),
@@ -590,7 +590,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
             value: canonicalizeVariableValue(v.type, v.value) ?? v.value,
           ),
       ]),
-      metadata: widget.program.metadata.copyWith(
+      metadata: widget.plan.metadata.copyWith(
         updated: DateTime.now(),
         languageCode: _languageCode,
       ),

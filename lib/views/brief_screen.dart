@@ -7,7 +7,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
@@ -32,22 +32,22 @@ class BriefScreen extends StatefulWidget {
   const BriefScreen({
     super.key,
     this.exerciseUuid,
-    this.programUuid,
+    this.planUuid,
     this.initialAudience,
     this.isSheet = false,
     this.onClose,
   }) : assert(
-         (exerciseUuid == null) != (programUuid == null),
-         'exactly one of exerciseUuid or programUuid must be provided',
+         (exerciseUuid == null) != (planUuid == null),
+         'exactly one of exerciseUuid or planUuid must be provided',
        );
 
   /// When non-null, the brief is scoped to this single exercise.
   final String? exerciseUuid;
 
-  /// When non-null, the brief covers the whole program. Currently a marker
-  /// only; the active program is resolved via `ProgramService` because the
-  /// app holds at most one active program at a time.
-  final String? programUuid;
+  /// When non-null, the brief covers the whole plan. Currently a marker
+  /// only; the active plan is resolved via `PlanService` because the
+  /// app holds at most one active plan at a time.
+  final String? planUuid;
 
   final BriefAudience? initialAudience;
 
@@ -127,12 +127,12 @@ class _BriefScreenState extends State<BriefScreen> {
   }
 
   Future<String> _buildRenderFuture(AppLocalizations l10n) {
-    final program = ProgramService().activeProgram;
-    if (program == null) return Future.value('');
+    final plan = PlanService().activePlan;
+    if (plan == null) return Future.value('');
 
     Exercise? exercise;
     if (widget.exerciseUuid != null) {
-      exercise = program.exercises.cast<Exercise?>().firstWhere(
+      exercise = plan.exercises.cast<Exercise?>().firstWhere(
         (e) => e?.uuid == widget.exerciseUuid,
         orElse: () => null,
       );
@@ -140,7 +140,7 @@ class _BriefScreenState extends State<BriefScreen> {
     }
 
     return BriefRenderer().render(
-      program: program,
+      plan: plan,
       exercise: exercise,
       audience: _audience,
       l10n: l10n,
@@ -174,18 +174,18 @@ class _BriefScreenState extends State<BriefScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final theme = BriefTheme.of(context);
-    final program = ProgramService().activeProgram;
+    final plan = PlanService().activePlan;
 
-    if (program == null) {
+    if (plan == null) {
       return Scaffold(
         appBar: AppBar(title: Text(localizations.briefScreenTitle)),
-        body: Center(child: Text(localizations.briefMissingProgram)),
+        body: Center(child: Text(localizations.briefMissingPlan)),
       );
     }
 
     Exercise? exercise;
     if (widget.exerciseUuid != null) {
-      exercise = program.exercises.cast<Exercise?>().firstWhere(
+      exercise = plan.exercises.cast<Exercise?>().firstWhere(
         (e) => e?.uuid == widget.exerciseUuid,
         orElse: () => null,
       );
@@ -197,31 +197,31 @@ class _BriefScreenState extends State<BriefScreen> {
       }
     }
 
-    if (widget.programUuid != null && widget.programUuid != program.uuid) {
+    if (widget.planUuid != null && widget.planUuid != plan.uuid) {
       debugPrint(
-        '[BriefScreen] programUuid ${widget.programUuid} does not match '
-        'active program ${program.uuid}; rendering active program.',
+        '[BriefScreen] planUuid ${widget.planUuid} does not match '
+        'active plan ${plan.uuid}; rendering active plan.',
       );
     }
 
     // Slim-app-bar title reflects what the reader is actually viewing.
-    // Single-exercise mode shows the exercise name; program mode shows the
-    // program name. Falls back to the generic localized label when neither
+    // Single-exercise mode shows the exercise name; plan mode shows the
+    // plan name. Falls back to the generic localized label when neither
     // resolves (e.g. before data is loaded).
-    final appBarTitle = exercise?.name ?? program.name;
+    final appBarTitle = exercise?.name ?? plan.name;
     final appBarTitleOverrides = effectivePlanVariables(
-      program,
+      plan,
       exercise: exercise,
     );
 
     return PlanScope(
-      // The brief renders an explicit program (DESIGN-008 follow-up 11):
-      // seeded from `program` (the one this screen actually resolved),
+      // The brief renders an explicit plan (DESIGN-008 follow-up 11):
+      // seeded from `plan` (the one this screen actually resolved),
       // not the ambient default the modal choke point already provides —
-      // `program` and the active plan agree today (see the mismatch
+      // `plan` and the active plan agree today (see the mismatch
       // debugPrint above), but the title/body must stay correct if that
       // ever changes.
-      variables: program.variables,
+      variables: plan.variables,
       child: Theme(
         data: Theme.of(context).copyWith(
           appBarTheme: AppBarTheme(
@@ -614,8 +614,8 @@ class _BriefScreenState extends State<BriefScreen> {
   String _briefViewerUrl() {
     final audience = _audience.name;
     final base = AppConfig.briefViewerBaseUrl;
-    if (widget.programUuid != null) {
-      return '$base/brief/program/${widget.programUuid}?audience=$audience';
+    if (widget.planUuid != null) {
+      return '$base/brief/plan/${widget.planUuid}?audience=$audience';
     }
     return '$base/brief/${widget.exerciseUuid}?audience=$audience';
   }
@@ -649,7 +649,7 @@ class _BriefScreenState extends State<BriefScreen> {
               ),
               Divider(height: 1, color: theme.borders.subtle),
               Expanded(
-                // Outline starts at exercise (H2). H1 is the program title —
+                // Outline starts at exercise (H2). H1 is the plan title —
                 // the document name, not a navigation target — and H4+ are
                 // per-section metadata headings the outline deliberately
                 // collapses.
@@ -752,7 +752,7 @@ class _BriefScreenState extends State<BriefScreen> {
             Expanded(
               // Rebuilds on scroll so the active-heading highlight tracks the
               // reading position. Outline starts at exercise (H2); H1 is the
-              // program title (not a navigation target) and H4+ are
+              // plan title (not a navigation target) and H4+ are
               // per-section metadata headings the sidebar collapses.
               child: ListenableBuilder(
                 listenable: _briefController,
@@ -925,19 +925,19 @@ class BriefSheetBody extends StatelessWidget {
   const BriefSheetBody({
     super.key,
     this.exerciseUuid,
-    this.programUuid,
+    this.planUuid,
     this.audience,
   });
 
   final String? exerciseUuid;
-  final String? programUuid;
+  final String? planUuid;
   final BriefAudience? audience;
 
   @override
   Widget build(BuildContext context) {
     return BriefScreen(
       exerciseUuid: exerciseUuid,
-      programUuid: programUuid,
+      planUuid: planUuid,
       initialAudience: audience,
       isSheet: true,
       onClose: () => Navigator.pop(context),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/utils/word_diff.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 
@@ -99,13 +99,13 @@ class DiffItemTile extends StatelessWidget {
 }
 
 /// Maps a [FieldChange.field] key to its localized display label. Keys are
-/// plain, non-localized identifiers chosen in lib/models/program.dart (e.g.
+/// plain, non-localized identifiers chosen in lib/models/plan.dart (e.g.
 /// `"name"`, `"methodMd"`) — this is the single place that turns them into
 /// user-facing text, reusing existing field labels from elsewhere in the app
 /// so the same field reads the same way wherever it appears.
 ///
 /// `'name'` is shared by exercises, teams and role plays alike (each has its
-/// own `add('name', ...)` in program.dart), so it stays a plain "Name"
+/// own `add('name', ...)` in plan.dart), so it stays a plain "Name"
 /// rather than "Exercise name" — the item's own card already names its
 /// type via context (the section title above it), so a role play's name
 /// change showing "Exercise name changed" would be actively wrong, not
@@ -125,7 +125,7 @@ String fieldChangeLabel(AppLocalizations l, String field) => switch (field) {
   'startedAt' => l.catalogDiffFieldStartedAt,
   'endedAt' => l.catalogDiffFieldEndedAt,
   'age' => l.roleAge,
-  'signalement' => l.roleSignalement,
+  'roleDescription' => l.roleDescription,
   'background' => l.roleBackground,
   'behavior' => l.roleBehavior,
   'propsMd' => l.catalogDiffFieldProps,
@@ -155,7 +155,7 @@ String _present(String? value) {
   return trimmed.isEmpty ? '—' : trimmed;
 }
 
-/// Full grouped rendering of a [ProgramDiff] for the catalog conflict
+/// Full grouped rendering of a [PlanDiff] for the catalog conflict
 /// dialog: plan-level changes first (if any), then one section per entity
 /// category in the same order the old flat layout used (exercises, teams,
 /// sessions, role plays). Each category collapses to nothing when it has no
@@ -168,14 +168,14 @@ String _present(String? value) {
 /// widget itself) — its own toggle lives in the dialog's fixed bottom row so
 /// it stays reachable even when this view's content scrolls, rather than
 /// scrolling away with it.
-class ProgramDiffView extends StatelessWidget {
-  const ProgramDiffView({
+class PlanDiffView extends StatelessWidget {
+  const PlanDiffView({
     super.key,
     required this.diff,
     required this.showDeletions,
   });
 
-  final ProgramDiff diff;
+  final PlanDiff diff;
   final bool showDeletions;
 
   @override
@@ -240,7 +240,7 @@ class ProgramDiffView extends StatelessWidget {
           showDeletions: showDeletions,
         ),
         // "Script" is this app's own name for the role-play feature (see
-        // ProgramSegment.script) — reused here rather than coining a
+        // PlanSegment.script) — reused here rather than coining a
         // separate "Role plays" label.
         _EntitySection(
           title: localizations.scriptSegment,
@@ -311,7 +311,7 @@ class _DiffSection extends StatelessWidget {
 }
 
 /// One entity category (exercises/teams/sessions/role plays) within
-/// [ProgramDiffView]. Collapses to nothing when there is no added, removed
+/// [PlanDiffView]. Collapses to nothing when there is no added, removed
 /// or modified item to show.
 class _EntitySection extends StatelessWidget {
   const _EntitySection({
@@ -360,7 +360,7 @@ class _EntitySection extends StatelessWidget {
 
 /// One changed item's card: its name (plus [ItemDiff.number] badge when the
 /// entity type has a numbering scheme — disambiguates identically-named
-/// exercises, which a drill program routinely has, e.g. the same round
+/// exercises, which a drill plan routinely has, e.g. the same round
 /// repeated per team) followed by every fact about what changed on it,
 /// reorder and field edits alike, as a single per-item group instead of
 /// being split across separate by-change-type sections.
@@ -499,7 +499,7 @@ class _FieldChangeLine extends StatelessWidget {
     if (change.field == 'order') {
       // 'order' stores the catalog's (old) position as `remote` and the
       // local plan's (new) position as `local` — see _diffItems in
-      // program.dart — so "from" is remote and "to" is local, matching the
+      // plan.dart — so "from" is remote and "to" is local, matching the
       // rest of this dialog's local-vs-catalog framing.
       return Text(
         l.catalogDiffReorderedFromTo(change.remote ?? '', change.local ?? ''),

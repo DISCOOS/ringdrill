@@ -6,11 +6,11 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/exercise_form_screen.dart';
 
 /// DESIGN-008 Stage 1: ExerciseFormScreen rebuilds the Exercise via
-/// ProgramService.generateSchedule on save, which does not itself know
+/// PlanService.generateSchedule on save, which does not itself know
 /// about variableOverrides — the screen must pass the existing exercise's
 /// overrides through explicitly (see exercise_form_screen.dart's call to
 /// generateSchedule). This is the widget-level counterpart to the
-/// generateSchedule-level coverage in test/models/program_variables_test.dart.
+/// generateSchedule-level coverage in test/models/plan_variables_test.dart.
 Exercise _exerciseWithOverrides() => Exercise(
   uuid: 'ex-vars-1',
   name: 'Original name',

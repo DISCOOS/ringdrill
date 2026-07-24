@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/role_play.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/page_widget.dart';
@@ -21,7 +21,7 @@ class RosterController extends ScreenController {
 
   /// Listenable that fires whenever the controller saves or deletes an actor
   /// so that [RosterView] can call setState without waiting for a
-  /// [ProgramService] event (actor CRUD does not emit one).
+  /// [PlanService] event (actor CRUD does not emit one).
   Listenable get reloadSignal => _reloadTick;
 
   void dispose() {
@@ -30,11 +30,11 @@ class RosterController extends ScreenController {
 
   @override
   String title(BuildContext context) =>
-      // Mirror the Program tab header so the Roster tab anchors in the
-      // active plan (DESIGN-006: Roster is a program-scoped layer). Falls
+      // Mirror the Plan tab header so the Roster tab anchors in the
+      // active plan (DESIGN-006: Roster is a plan-scoped layer). Falls
       // back to the bottom-nav label when no plan is active yet so the
       // header still reads cleanly on first launch.
-      ProgramService().activeProgram?.name ??
+      PlanService().activePlan?.name ??
       AppLocalizations.of(context)!.rosterTab;
 
   @override
@@ -64,7 +64,7 @@ class RosterController extends ScreenController {
     );
     if (result == null || !context.mounted) return;
     if (result case ActorFormSave(:final actor)) {
-      await ProgramService().saveActor(localizations, actor);
+      await PlanService().saveActor(localizations, actor);
       if (context.mounted) _reloadTick.value++;
     }
   }
@@ -74,15 +74,15 @@ class RosterController extends ScreenController {
 // View
 // ---------------------------------------------------------------------------
 
-/// Flat registry of every [Actor] in the active program.
+/// Flat registry of every [Actor] in the active plan.
 ///
 /// Promoted from the cast-roster sheet that lives in the Spill segment —
 /// that sheet remains as the inline quick-cast affordance. This view is the
 /// primary home for [Actor] records on the dedicated Roster tab.
 ///
-/// Reads and writes go exclusively through [ProgramService] actor CRUD
-/// ([ProgramService.loadActors], [ProgramService.saveActor],
-/// [ProgramService.deleteActor]) — no actor data is pushed to any
+/// Reads and writes go exclusively through [PlanService] actor CRUD
+/// ([PlanService.loadActors], [PlanService.saveActor],
+/// [PlanService.deleteActor]) — no actor data is pushed to any
 /// publish / wire path.
 class RosterView extends StatefulWidget {
   const RosterView({
@@ -105,7 +105,7 @@ class RosterView extends StatefulWidget {
 }
 
 class _RosterViewState extends State<RosterView> {
-  final _service = ProgramService();
+  final _service = PlanService();
   StreamSubscription? _subscription;
 
   List<Actor> _actors = [];
@@ -188,7 +188,7 @@ class _RosterViewState extends State<RosterView> {
 
     final Widget content;
     if (_actors.isEmpty) {
-      // Same teaching affordance as the empty Program segments so the
+      // Same teaching affordance as the empty Plan segments so the
       // Roster tab reads with the same visual language (icon disc +
       // title + body) instead of a bare centered string. The cast
       // roster sheet keeps the compact noActorsInRoster one-liner.
@@ -276,11 +276,11 @@ class _RosterViewState extends State<RosterView> {
 
     // Drag-to-update is only meaningful for a plan installed from the online
     // catalog — local plans have nothing to refresh against. Reuses the same
-    // `refreshActivePlanFromCatalog` flow as the Program tab's segments and
+    // `refreshActivePlanFromCatalog` flow as the Plan tab's segments and
     // the drawer's "Oppdater fra katalog" entry.
-    final program = _service.activeProgram;
+    final plan = _service.activePlan;
     final isCatalogPlan =
-        program != null && active_actions.isCatalogProgram(program);
+        plan != null && active_actions.isCatalogPlan(plan);
     if (!isCatalogPlan) return content;
     return RefreshIndicator(
       key: widget.refreshIndicatorKey,

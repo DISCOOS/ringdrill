@@ -9,7 +9,7 @@ import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/brief_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,7 +19,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 // Fixtures (shared with brief_screen_test)
 // ---------------------------------------------------------------------------
 
-const _programUuid = 'prog-sheet';
+const _planUuid = 'prog-sheet';
 const _exerciseUuid = 'ex-sheet';
 const _actorUuid = 'actor-sheet';
 
@@ -31,7 +31,7 @@ const _rolePlay = RolePlay(
   exerciseUuid: _exerciseUuid,
   name: 'Sheet Role',
   age: 30,
-  signalement: 'Tall',
+  description: 'Tall',
   behavior: 'Calm',
   stationIndex: 0,
   actorUuid: _actorUuid,
@@ -67,11 +67,11 @@ Map<String, Object> _buildPrefs() {
     'version': '1.1',
   };
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Sheet Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Sheet Plan',
       'description': '',
       'metadata': meta,
       'exercises': [],
@@ -80,28 +80,28 @@ Map<String, Object> _buildPrefs() {
       'rolePlays': [],
       'actors': [],
     }),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
-    'pr:$_programUuid:rp-sheet': jsonEncode(_rolePlay.toJson()),
-    'pa:$_programUuid:$_actorUuid': jsonEncode(_actor.toJson()),
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
+    'pr:$_planUuid:rp-sheet': jsonEncode(_rolePlay.toJson()),
+    'pa:$_planUuid:$_actorUuid': jsonEncode(_actor.toJson()),
   };
 }
 
-Widget _buildLauncher({String? exerciseUuid, String? programUuid}) {
+Widget _buildLauncher({String? exerciseUuid, String? planUuid}) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: _BriefSheetHarness(
       exerciseUuid: exerciseUuid,
-      programUuid: programUuid,
+      planUuid: planUuid,
     ),
   );
 }
 
 class _BriefSheetHarness extends StatefulWidget {
-  const _BriefSheetHarness({this.exerciseUuid, this.programUuid});
+  const _BriefSheetHarness({this.exerciseUuid, this.planUuid});
 
   final String? exerciseUuid;
-  final String? programUuid;
+  final String? planUuid;
 
   @override
   State<_BriefSheetHarness> createState() => _BriefSheetHarnessState();
@@ -118,7 +118,7 @@ class _BriefSheetHarnessState extends State<_BriefSheetHarness> {
         context,
         BriefSheetTarget(
           exerciseUuid: widget.exerciseUuid,
-          programUuid: widget.programUuid,
+          planUuid: widget.planUuid,
         ),
       );
     });
@@ -173,7 +173,7 @@ void main() {
   setUpAll(() async {
     VisibilityDetectorController.instance.updateInterval = Duration.zero;
     SharedPreferences.setMockInitialValues(_buildPrefs());
-    await ProgramService().init();
+    await PlanService().init();
     // Pre-warm the rootBundle cache so loadString resolves via microtask.
     await rootBundle.loadString(
       'assets/templates/ringdrill-standard-v1.nb.md.mustache',

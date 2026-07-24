@@ -7,16 +7,16 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
-import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/services/plan_service.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _emptyProgramUuid = 'empty-program';
-const _fullProgramUuid = 'full-program';
+const _emptyPlanUuid = 'empty-plan';
+const _fullPlanUuid = 'full-plan';
 const _exerciseUuid = 'teaching-exercise';
 
 final _exercise = Exercise(
@@ -49,9 +49,9 @@ final _rolePlay = RolePlay(
 
 final _team = Team(uuid: 'teaching-team', index: 0, name: 'Teaching Team');
 
-Map<String, Object?> _programJson(String uuid) => {
+Map<String, Object?> _planJson(String uuid) => {
   'uuid': uuid,
-  'name': 'Teaching Program',
+  'name': 'Teaching Plan',
   'description': '',
   'metadata': {
     'created': '2026-01-01T00:00:00.000Z',
@@ -67,18 +67,18 @@ Map<String, Object?> _programJson(String uuid) => {
 
 Map<String, Object> _prefs() {
   return {
-    'app:activeProgram:v1': _emptyProgramUuid,
+    'app:activePlan:v1': _emptyPlanUuid,
     'app:librarySchema:v1': '1',
-    'p:$_emptyProgramUuid': jsonEncode(_programJson(_emptyProgramUuid)),
-    'p:$_fullProgramUuid': jsonEncode(_programJson(_fullProgramUuid)),
-    'pe:$_fullProgramUuid:$_exerciseUuid': jsonEncode(_exercise.toJson()),
-    'pt:$_fullProgramUuid:${_team.uuid}': jsonEncode(_team.toJson()),
-    'pr:$_fullProgramUuid:${_rolePlay.uuid}': jsonEncode(_rolePlay.toJson()),
+    'p:$_emptyPlanUuid': jsonEncode(_planJson(_emptyPlanUuid)),
+    'p:$_fullPlanUuid': jsonEncode(_planJson(_fullPlanUuid)),
+    'pe:$_fullPlanUuid:$_exerciseUuid': jsonEncode(_exercise.toJson()),
+    'pt:$_fullPlanUuid:${_team.uuid}': jsonEncode(_team.toJson()),
+    'pr:$_fullPlanUuid:${_rolePlay.uuid}': jsonEncode(_rolePlay.toJson()),
   };
 }
 
-class _TestProgramController extends ProgramPageControllerBase {
-  _TestProgramController({
+class _TestPlanController extends PlanPageControllerBase {
+  _TestPlanController({
     required super.stationListController,
     required super.rolePlaysController,
     required super.teamsPageController,
@@ -90,7 +90,7 @@ class _HarnessControllers {
     : stationList = StationListController(),
       rolePlays = RolePlaysController(),
       teams = const TeamsPageController() {
-    program = _TestProgramController(
+    plan = _TestPlanController(
       stationListController: stationList,
       rolePlaysController: rolePlays,
       teamsPageController: teams,
@@ -100,32 +100,32 @@ class _HarnessControllers {
   final StationListController stationList;
   final RolePlaysController rolePlays;
   final TeamsPageController teams;
-  late final _TestProgramController program;
+  late final _TestPlanController plan;
 
   void dispose() {
-    program.dispose();
+    plan.dispose();
     stationList.dispose();
     rolePlays.dispose();
   }
 }
 
-Widget _programHarness(_HarnessControllers controllers) {
+Widget _planHarness(_HarnessControllers controllers) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: ValueListenableBuilder<ProgramSegment>(
-      valueListenable: controllers.program.activeSegment,
+    home: ValueListenableBuilder<PlanSegment>(
+      valueListenable: controllers.plan.activeSegment,
       builder: (context, _, child) {
         return Scaffold(
           body: child,
-          floatingActionButton: controllers.program.buildFAB(
+          floatingActionButton: controllers.plan.buildFAB(
             context,
             const BoxConstraints(),
           ),
         );
       },
-      child: ProgramView(
-        controller: controllers.program,
+      child: PlanView(
+        controller: controllers.plan,
         stationListController: controllers.stationList,
         rolePlaysController: controllers.rolePlays,
       ),
@@ -133,8 +133,8 @@ Widget _programHarness(_HarnessControllers controllers) {
   );
 }
 
-void _select(_HarnessControllers controllers, ProgramSegment segment) {
-  controllers.program.activeSegment.value = segment;
+void _select(_HarnessControllers controllers, PlanSegment segment) {
+  controllers.plan.activeSegment.value = segment;
 }
 
 Finder _teachingIcon(IconData icon) {
@@ -147,18 +147,18 @@ Finder _teachingIcon(IconData icon) {
 void main() {
   setUpAll(() async {
     SharedPreferences.setMockInitialValues(_prefs());
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   testWidgets('Exercises segment teaches when empty and keeps create FAB', (
     tester,
   ) async {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    await ProgramService().setActive(_emptyProgramUuid);
+    await PlanService().setActive(_emptyPlanUuid);
     final controllers = _HarnessControllers();
     addTearDown(controllers.dispose);
 
-    await tester.pumpWidget(_programHarness(controllers));
+    await tester.pumpWidget(_planHarness(controllers));
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.emptyExercisesTitle), findsOneWidget);
@@ -166,7 +166,7 @@ void main() {
     expect(_teachingIcon(Icons.update), findsOneWidget);
     expect(find.byType(FloatingActionButton).hitTestable(), findsOneWidget);
 
-    await ProgramService().setActive(_fullProgramUuid);
+    await PlanService().setActive(_fullPlanUuid);
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.emptyExercisesTitle), findsNothing);
@@ -178,12 +178,12 @@ void main() {
     tester,
   ) async {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    await ProgramService().setActive(_emptyProgramUuid);
+    await PlanService().setActive(_emptyPlanUuid);
     final controllers = _HarnessControllers();
     addTearDown(controllers.dispose);
-    _select(controllers, ProgramSegment.stations);
+    _select(controllers, PlanSegment.stations);
 
-    await tester.pumpWidget(_programHarness(controllers));
+    await tester.pumpWidget(_planHarness(controllers));
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.emptyStationsTitle), findsOneWidget);
@@ -191,7 +191,7 @@ void main() {
     expect(_teachingIcon(Icons.place), findsOneWidget);
     expect(find.byType(FloatingActionButton).hitTestable(), findsNothing);
 
-    await ProgramService().setActive(_fullProgramUuid);
+    await PlanService().setActive(_fullPlanUuid);
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.emptyStationsTitle), findsNothing);
@@ -203,12 +203,12 @@ void main() {
     tester,
   ) async {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    await ProgramService().setActive(_emptyProgramUuid);
+    await PlanService().setActive(_emptyPlanUuid);
     final controllers = _HarnessControllers();
     addTearDown(controllers.dispose);
-    _select(controllers, ProgramSegment.script);
+    _select(controllers, PlanSegment.script);
 
-    await tester.pumpWidget(_programHarness(controllers));
+    await tester.pumpWidget(_planHarness(controllers));
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.emptyRolesTitle), findsOneWidget);
@@ -216,7 +216,7 @@ void main() {
     expect(_teachingIcon(Icons.theater_comedy), findsOneWidget);
     expect(find.byType(FloatingActionButton).hitTestable(), findsNothing);
 
-    await ProgramService().setActive(_fullProgramUuid);
+    await PlanService().setActive(_fullPlanUuid);
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.emptyRolesTitle), findsNothing);
@@ -229,12 +229,12 @@ void main() {
     tester,
   ) async {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    await ProgramService().setActive(_emptyProgramUuid);
+    await PlanService().setActive(_emptyPlanUuid);
     final controllers = _HarnessControllers();
     addTearDown(controllers.dispose);
-    _select(controllers, ProgramSegment.teams);
+    _select(controllers, PlanSegment.teams);
 
-    await tester.pumpWidget(_programHarness(controllers));
+    await tester.pumpWidget(_planHarness(controllers));
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.emptyTeamsTitle), findsOneWidget);
@@ -242,7 +242,7 @@ void main() {
     expect(_teachingIcon(Icons.group), findsOneWidget);
     expect(find.byType(FloatingActionButton).hitTestable(), findsNothing);
 
-    await ProgramService().setActive(_fullProgramUuid);
+    await PlanService().setActive(_fullPlanUuid);
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.emptyTeamsTitle), findsNothing);

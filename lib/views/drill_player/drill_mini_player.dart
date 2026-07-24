@@ -6,7 +6,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/drill_player/exercise_picker_sheet.dart';
 import 'package:ringdrill/views/drill_player/mini_round_row.dart';
 import 'package:ringdrill/views/drill_player/phase_colors.dart';
@@ -205,15 +205,15 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
     final accentBg =
         accent.background ?? Theme.of(context).colorScheme.primaryContainer;
 
-    final program = ProgramService().activeProgram;
-    final exerciseNumber = program == null
+    final plan = PlanService().activePlan;
+    final exerciseNumber = plan == null
         ? 1
-        : program.exercises
+        : plan.exercises
                   .indexWhere((e) => e.uuid == event.exercise.uuid)
                   .clamp(0, 1 << 30) +
               1;
     final exerciseLabel = Numbering.exercise(
-      program?.exerciseNumberFormat ?? ExerciseNumberFormat.hash,
+      plan?.exerciseNumberFormat ?? ExerciseNumberFormat.hash,
       exerciseNumber,
     );
 
@@ -444,15 +444,15 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
     final event = ExerciseEvent.pending(exercise);
     final scheme = Theme.of(context).colorScheme;
 
-    final program = ProgramService().activeProgram;
-    final exerciseNumber = program == null
+    final plan = PlanService().activePlan;
+    final exerciseNumber = plan == null
         ? 1
-        : program.exercises
+        : plan.exercises
                   .indexWhere((e) => e.uuid == exercise.uuid)
                   .clamp(0, 1 << 30) +
               1;
     final exerciseLabel = Numbering.exercise(
-      program?.exerciseNumberFormat ?? ExerciseNumberFormat.hash,
+      plan?.exerciseNumberFormat ?? ExerciseNumberFormat.hash,
       exerciseNumber,
     );
 

@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/drill_format_messages.dart';
-import 'package:ringdrill/views/library_view.dart' show programSubtitle;
-import 'package:ringdrill/views/program_diff_widgets.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/library_view.dart' show planSubtitle;
+import 'package:ringdrill/views/plan_diff_widgets.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/widgets/catalog_browser.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/picker_error_banner.dart';
@@ -46,9 +46,9 @@ Future<void> showAddExercisesDialog(BuildContext context) {
   );
 }
 
-Program projectMergedProgram(
-  Program active,
-  Program source,
+Plan projectMergedPlan(
+  Plan active,
+  Plan source,
   List<String> selectedExerciseUuids,
 ) {
   final selected = source.exercises.where(
@@ -60,12 +60,12 @@ Program projectMergedProgram(
   );
 }
 
-Program applyProjectedMerge(
-  Program active,
-  Program source,
+Plan applyProjectedMerge(
+  Plan active,
+  Plan source,
   List<String> selectedExerciseUuids,
 ) {
-  return projectMergedProgram(active, source, selectedExerciseUuids);
+  return projectMergedPlan(active, source, selectedExerciseUuids);
 }
 
 List<T> _unionByUuid<T>(
@@ -89,7 +89,7 @@ class _AddExercisesBody extends StatefulWidget {
 
 class _AddExercisesBodyState extends State<_AddExercisesBody>
     with SingleTickerProviderStateMixin {
-  final _programService = ProgramService();
+  final _planService = PlanService();
   late final TabController _tabController;
 
   /// Last error message produced by the From-File tab's picker flow.
@@ -196,10 +196,10 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
 
   Widget _buildFromPlans(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final activeUuid = _programService.activeProgramUuid;
-    final programs = _programService
-        .listPrograms()
-        .where((program) => program.uuid != activeUuid)
+    final activeUuid = _planService.activePlanUuid;
+    final plans = _planService
+        .listPlans()
+        .where((plan) => plan.uuid != activeUuid)
         .toList();
 
     // Mirror the "Åpne plan" dialog's "Mine planer" tab
@@ -212,7 +212,7 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
       child: Column(
         children: [
           Expanded(
-            child: programs.isEmpty
+            child: plans.isEmpty
                 ? EmptyState(
                     icon: Icons.folder_open_outlined,
                     text: localizations.addExercisesEmptyMyPlans,
@@ -221,19 +221,19 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
                     // Matches _buildMyPlansList: ExpandableTile's own 5px
                     // vertical margin plus this 5px makes every edge 10px.
                     padding: const EdgeInsets.symmetric(vertical: 5),
-                    itemCount: programs.length,
+                    itemCount: plans.length,
                     itemBuilder: (context, index) {
-                      final program = programs[index];
+                      final plan = plans[index];
                       final loaded =
-                          _programService.loadProgram(program.uuid) ?? program;
+                          _planService.loadPlan(plan.uuid) ?? plan;
                       return ExpandableTile(
                         // Neutral leading: this list is a source to pull
                         // exercises from, not a single-select of the active
                         // plan, so it uses an add glyph rather than the
                         // active/inactive radio the "Mine planer" tab shows.
                         leading: const Icon(Icons.playlist_add, size: 24),
-                        title: Text(program.name),
-                        subtitle: Text(programSubtitle(localizations, loaded)),
+                        title: Text(plan.name),
+                        subtitle: Text(planSubtitle(localizations, loaded)),
                         onOpen: () => _mergeIntoActivePlan(context, loaded),
                       );
                     },
@@ -262,16 +262,16 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
   }
 
   String? _activeCatalogSlug() {
-    return _programService.activeProgram?.source.whenOrNull(
+    return _planService.activePlan?.source.whenOrNull(
       catalog: (slug, latestEtag, installedAt, latestVersion) => slug,
     );
   }
 
   Set<String> _installedCatalogSlugs() {
-    return _programService
-        .listPrograms()
+    return _planService
+        .listPlans()
         .map(
-          (program) => program.source.whenOrNull(
+          (plan) => plan.source.whenOrNull(
             catalog: (slug, latestEtag, installedAt, latestVersion) => slug,
           ),
         )
@@ -289,7 +289,7 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
         item.slug,
       );
       if (!context.mounted) return;
-      final source = download.file.program();
+      final source = download.file.plan();
       await _mergeIntoActivePlan(context, source);
     } on Exception catch (e, stackTrace) {
       if (context.mounted) {
@@ -304,7 +304,7 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
     // bad pick should read as a fresh attempt, not a stuck error.
     if (_fromFileError != null) setState(() => _fromFileError = null);
     final localizations = AppLocalizations.of(context)!;
-    final drillFile = await ProgramPageController.pickOpenFile(
+    final drillFile = await PlanPageController.pickOpenFile(
       context,
       _constraintsFor(context),
       localizations,
@@ -312,17 +312,17 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
     if (!context.mounted || drillFile == null) return;
 
     try {
-      final source = drillFile.program();
+      final source = drillFile.plan();
       final selectedUuids = await _selectAndConfirmMerge(context, source);
       if (!context.mounted || selectedUuids == null) return;
 
-      final program = await _programService.importProgram(
+      final plan = await _planService.importPlan(
         localizations,
         drillFile,
         onSelect: (items) async =>
             items.where((exercise) => selectedUuids.contains(exercise.uuid)),
       );
-      if (!context.mounted || program == null) return;
+      if (!context.mounted || plan == null) return;
       _showSnackBar(context, localizations.importSuccess(drillFile.fileName));
       Navigator.pop(context);
     } on DrillFormatException catch (e) {
@@ -351,9 +351,9 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
 
   Future<void> _mergeIntoActivePlan(
     BuildContext context,
-    Program source,
+    Plan source,
   ) async {
-    final merged = await mergeProgramIntoActivePlan(context, source);
+    final merged = await mergePlanIntoActivePlan(context, source);
     if (!context.mounted || merged == null) return;
     Navigator.pop(context);
   }
@@ -367,28 +367,28 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
 /// same "LEGG TIL"/addAction wording, same diff confirmation — instead of a
 /// second, less complete "import" path with its own label.
 ///
-/// Returns the merged active [Program], or null if the user cancelled at
+/// Returns the merged active [Plan], or null if the user cancelled at
 /// any step (no selection, or declined the diff confirmation).
-Future<Program?> mergeProgramIntoActivePlan(
+Future<Plan?> mergePlanIntoActivePlan(
   BuildContext context,
-  Program source,
+  Plan source,
 ) async {
   final localizations = AppLocalizations.of(context)!;
   final selectedUuids = await _selectAndConfirmMerge(context, source);
   if (!context.mounted || selectedUuids == null) return null;
 
-  return ProgramService().mergeFromProgram(localizations, source, selectedUuids);
+  return PlanService().mergeFromPlan(localizations, source, selectedUuids);
 }
 
 Future<List<String>?> _selectAndConfirmMerge(
   BuildContext context,
-  Program source,
+  Plan source,
 ) async {
   final localizations = AppLocalizations.of(context)!;
-  final active = ProgramService().activeProgram;
+  final active = PlanService().activePlan;
   if (active == null) return null;
 
-  final selectedUuids = await ProgramPageControllerBase.selectExercises(
+  final selectedUuids = await PlanPageControllerBase.selectExercises(
     context,
     localizations.addExercisesTitle,
     source.exercises,
@@ -396,12 +396,12 @@ Future<List<String>?> _selectAndConfirmMerge(
     confirmLabel: localizations.addAction,
     preselectAll: true,
     showSelectAllControls: true,
-    program: source,
+    plan: source,
   );
   if (!context.mounted || selectedUuids.isEmpty) return null;
 
-  final projected = projectMergedProgram(active, source, selectedUuids);
-  final diff = diffPrograms(active, projected);
+  final projected = projectMergedPlan(active, source, selectedUuids);
+  final diff = diffPlans(active, projected);
   if (diff.modifiedExercises.isEmpty && diff.modifiedTeams.isEmpty) {
     return selectedUuids;
   }

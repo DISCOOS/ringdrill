@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -32,28 +32,28 @@ class StartHerePill extends StatefulWidget {
 
 class _StartHerePillState extends State<StartHerePill> {
   bool _seen = true; // conservative default — overwritten in initState
-  StreamSubscription<ProgramEvent>? _sub;
+  StreamSubscription<PlanEvent>? _sub;
 
-  /// Program-service events that count as "user knows what they are
+  /// Plan-service events that count as "user knows what they are
   /// doing" and dismiss the start-here cue. Limited to user-driven
-  /// modifications — passive lifecycle events (programOpened,
-  /// programActivated, programCreated by the defense-in-depth
-  /// ensureActiveProgram, etc.) do not count, otherwise the pill
+  /// modifications — passive lifecycle events (planOpened,
+  /// planActivated, planCreated by the defense-in-depth
+  /// ensureActivePlan, etc.) do not count, otherwise the pill
   /// would dismiss before the user has done anything.
-  static const _dismissingEvents = <ProgramEventType>{
-    ProgramEventType.exerciseAdded,
-    ProgramEventType.teamSaved,
-    ProgramEventType.rolePlaySaved,
-    ProgramEventType.programRefreshed,
-    ProgramEventType.programImported,
-    ProgramEventType.programInstalled,
+  static const _dismissingEvents = <PlanEventType>{
+    PlanEventType.exerciseAdded,
+    PlanEventType.teamSaved,
+    PlanEventType.rolePlaySaved,
+    PlanEventType.planRefreshed,
+    PlanEventType.planImported,
+    PlanEventType.planInstalled,
   };
 
   @override
   void initState() {
     super.initState();
     _loadFlag();
-    _sub = ProgramService().events.listen((event) {
+    _sub = PlanService().events.listen((event) {
       if (_dismissingEvents.contains(event.type)) {
         _markSeen();
       }

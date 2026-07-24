@@ -5,7 +5,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart' show kDrillAccentFontSize;
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
@@ -24,8 +24,8 @@ class TeamsView extends StatefulWidget {
 }
 
 class _TeamsViewState extends State<TeamsView> {
-  final _programService = ProgramService();
-  StreamSubscription<ProgramEvent>? _programSubscription;
+  final _planService = PlanService();
+  StreamSubscription<PlanEvent>? _planSubscription;
 
   /// Which team row is currently expanded to its rotation peek. Single-open
   /// (mirrors the exercise list's expand mutex).
@@ -34,28 +34,28 @@ class _TeamsViewState extends State<TeamsView> {
   @override
   void initState() {
     super.initState();
-    // Rebuild when the active program or its teams change. The parent
+    // Rebuild when the active plan or its teams change. The parent
     // MainScreen keeps tabs alive in an IndexedStack with identical widget
     // instances, so its own setState does not propagate here. See
-    // active_plan_actions.dart and ProgramService.setActive/installFromFile.
-    _programSubscription = _programService.events.listen((_) {
+    // active_plan_actions.dart and PlanService.setActive/installFromFile.
+    _planSubscription = _planService.events.listen((_) {
       if (mounted) setState(() {});
     });
   }
 
   @override
   void dispose() {
-    _programSubscription?.cancel();
+    _planSubscription?.cancel();
     super.dispose();
   }
 
   /// Returns the sliver content for the team rows, meant to be embedded
-  /// directly in program_view.dart's per-segment `CustomScrollView`.
+  /// directly in plan_view.dart's per-segment `CustomScrollView`.
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final teams = _programService.loadTeams();
-    final exercises = _programService.loadExercises();
+    final teams = _planService.loadTeams();
+    final exercises = _planService.loadExercises();
     final targetNotifier = MasterDetailScope.maybeOf(context)?.target;
 
     if (teams.isEmpty) {
@@ -276,7 +276,7 @@ class _TeamsViewState extends State<TeamsView> {
       builder: (_) => TeamFormScreen(team: team),
     );
     if (!mounted || updated == null) return;
-    await _programService.saveTeam(localizations, updated);
+    await _planService.saveTeam(localizations, updated);
   }
 }
 

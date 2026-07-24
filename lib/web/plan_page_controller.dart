@@ -8,12 +8,12 @@ import 'package:path/path.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/web/web_env.dart';
 import 'package:share_plus/share_plus.dart';
 
-class ProgramPageController extends ProgramPageControllerBase {
-  ProgramPageController({
+class PlanPageController extends PlanPageControllerBase {
+  PlanPageController({
     required super.stationListController,
     required super.rolePlaysController,
     required super.teamsPageController,
@@ -38,7 +38,7 @@ class ProgramPageController extends ProgramPageControllerBase {
   ) async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
-      dialogTitle: localizations.openProgram,
+      dialogTitle: localizations.openPlanAction,
       allowedExtensions: [DrillFile.drillExtension, 'zip'],
     );
 

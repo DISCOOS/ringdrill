@@ -36,7 +36,7 @@ final _variableSlugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 /// [LocationFormScreen]'s result: the saved [Location] plus any
 /// [PlanAdditions] created inline this session from its own token-aware
 /// `place`/`note` fields (ADR-0047, DESIGN-009 follow-up 4/"Inline creation
-/// and write-back") -- a new `var.*` (-> `Program`) or a sibling
+/// and write-back") -- a new `var.*` (-> `Plan`) or a sibling
 /// `station.loc.*`/`station.person.*` (-> the station this [Location]
 /// itself joins, which this form does not own and never writes to
 /// directly). The caller applies both together in one save.
@@ -136,7 +136,7 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
   late Set<String> _originalPersonSlugs;
 
   /// The ambient `PlanScope`'s declared variables as of open time -- this
-  /// form does not own `Program.variables` either, so a `var.*` created
+  /// form does not own `Plan.variables` either, so a `var.*` created
   /// inline is tracked in [_pendingVariables] instead and carried up the
   /// same way.
   late List<DrillVariable> _declaredVariables;
@@ -379,7 +379,7 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            l10n.programSaveBlockedUndeclaredVariable(undeclared.join(', ')),
+            l10n.planSaveBlockedUndeclaredVariable(undeclared.join(', ')),
           ),
         ),
       );
@@ -446,7 +446,7 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
     // never `PlanFieldTokens.roleplay`, which only resolves inside a
     // roleplay's own scope, not a station-owned Location's.
     final planFields = [
-      ...PlanFieldTokens.program(l10n),
+      ...PlanFieldTokens.plan(l10n),
       ...PlanFieldTokens.exercise(l10n),
       ...PlanFieldTokens.station(l10n),
     ];
@@ -464,8 +464,8 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
     final ambientStation = StationScope.maybeOf(context);
     return PlanScope(
       variables: [..._declaredVariables, ..._pendingVariables],
-      programName: ambientPlan.programName,
-      programDescription: ambientPlan.programDescription,
+      planName: ambientPlan.planName,
+      planDescription: ambientPlan.planDescription,
       child: StationScope(
         locations: _workingLocations,
         persons: _workingPersons,

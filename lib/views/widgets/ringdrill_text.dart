@@ -22,7 +22,7 @@ String _stripChipMarkup(String text) => text
 
 /// Read-only counterpart to [Text] that resolves the full DESIGN-010 token
 /// pipeline before rendering — `{{var.<name>}}` (ADR-0046), plus whatever
-/// `{{program.*}}`/`{{exercise.*}}`/`{{station.*}}`/`{{roleplay.*}}`
+/// `{{plan.*}}`/`{{exercise.*}}`/`{{station.*}}`/`{{roleplay.*}}`
 /// cross-references the ancestor scopes offer — the display-surface half of
 /// DESIGN-008's token-aware fields. Delegates to [resolveScopedField]
 /// (ADR-0048), the same cascade the per-section preview and rollup already
@@ -39,7 +39,7 @@ String _stripChipMarkup(String text) => text
 ///   the prose reads exactly as it does in the brief / detail card. For
 ///   description bodies and scenario prose.
 ///
-/// Reads [PlanScope.maybeOf], not [PlanScope.of]: a surface outside a program
+/// Reads [PlanScope.maybeOf], not [PlanScope.of]: a surface outside a plan
 /// context degrades to plain, unresolved [text] rather than throwing. Likewise
 /// a missing `ExerciseScope`/`StationScope` simply leaves that level's
 /// cross-references unresolved (ADR-0048) — never a crash. `{{roleplay.*}}`

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
-import 'package:ringdrill/views/library_view.dart' show programSubtitle;
+import 'package:ringdrill/views/library_view.dart' show planSubtitle;
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 
 /// Multi-select picker for choosing which plans go into a drill-library
-/// download. Visually mirrors [ProgramPageControllerBase.selectExercises]
-/// in `program_view.dart`: every plan starts checked, a "VELG ALLE"/"VELG
+/// download. Visually mirrors [PlanPageControllerBase.selectExercises]
+/// in `plan_view.dart`: every plan starts checked, a "VELG ALLE"/"VELG
 /// INGEN" row plus a "N av M valgt" counter sit above the list, the
 /// primary button is disabled until at least one plan is checked, and
 /// each row is the same [ExpandableTile] card the exercise picker uses —
@@ -15,7 +15,7 @@ import 'package:ringdrill/views/widgets/expandable_tile.dart';
 /// exercises to export. Unlike exercises, plans have no inherent order
 /// within the library, so rows skip the numbered badge (it would read as
 /// a meaningless priority) and have no expand affordance (nothing to
-/// preview inline). Each row's subtitle is [programSubtitle] — the same
+/// preview inline). Each row's subtitle is [planSubtitle] — the same
 /// source · exercise count · last-updated line shown in the "Mine
 /// planer" tab — so a plan carries enough context to decide whether to
 /// include it without leaving the picker.
@@ -23,12 +23,12 @@ import 'package:ringdrill/views/widgets/expandable_tile.dart';
 /// Returns the selected UUIDs, or `null` if the user cancels.
 Future<List<String>?> showSelectPlansDialog(
   BuildContext context, {
-  required List<Program> programs,
+  required List<Plan> plans,
   required AppLocalizations localizations,
   required String title,
   required String actionLabel,
 }) {
-  final allUuids = programs.map((p) => p.uuid).toList();
+  final allUuids = plans.map((p) => p.uuid).toList();
   final selected = List<String>.from(allUuids);
 
   return showResponsiveSheetOrDialog<List<String>>(
@@ -45,7 +45,7 @@ Future<List<String>?> showSelectPlansDialog(
           // card surface, which only contrasts against a lighter scaffold
           // behind it. The action sheet's own surface flattens that
           // contrast, so paint the picker body with the scaffold colour —
-          // same fix as `ProgramPageControllerBase.selectExercises`.
+          // same fix as `PlanPageControllerBase.selectExercises`.
           final sheetBackground = Theme.of(context).scaffoldBackgroundColor;
           return ColoredBox(
             color: sheetBackground,
@@ -66,13 +66,13 @@ Future<List<String>?> showSelectPlansDialog(
                           child: Text(
                             localizations.selectedOfTotal(
                               selected.length,
-                              programs.length,
+                              plans.length,
                             ),
                             style: headerLabelStyle,
                           ),
                         ),
                         TextButton(
-                          onPressed: selected.length == programs.length
+                          onPressed: selected.length == plans.length
                               ? null
                               : () {
                                   setState(() {
@@ -97,10 +97,10 @@ Future<List<String>?> showSelectPlansDialog(
                     Expanded(
                       child: ListView.builder(
                         shrinkWrap: true,
-                        itemCount: programs.length,
+                        itemCount: plans.length,
                         itemBuilder: (context, index) {
-                          final program = programs[index];
-                          final uuid = program.uuid;
+                          final plan = plans[index];
+                          final uuid = plan.uuid;
                           final checked = selected.contains(uuid);
                           void toggle() {
                             setState(() {
@@ -117,9 +117,9 @@ Future<List<String>?> showSelectPlansDialog(
                               value: checked,
                               onChanged: (_) => toggle(),
                             ),
-                            title: Text(program.name),
+                            title: Text(plan.name),
                             subtitle: Text(
-                              programSubtitle(localizations, program),
+                              planSubtitle(localizations, plan),
                             ),
                             onOpen: toggle,
                           );

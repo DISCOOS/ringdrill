@@ -38,7 +38,7 @@ typedef SortAction = ({String label, VoidCallback onPressed});
 ///
 /// If the host supplies [reorderMode], this widget listens to it and lets the
 /// host flip it externally (e.g. `exerciseReorderMode` on the
-/// `ProgramPageControllerBase` so a segment switch can force-exit reorder
+/// `PlanPageControllerBase` so a segment switch can force-exit reorder
 /// mode). When [reorderMode] is null, the widget owns an internal notifier.
 class ReorderableSection<T> extends StatefulWidget {
   const ReorderableSection({
@@ -108,7 +108,7 @@ class ReorderableSection<T> extends StatefulWidget {
 
   /// When true, [build] returns a sliver (a [SliverMainAxisGroup] combining
   /// the header and the list) instead of a box widget, for embedding directly
-  /// in a [CustomScrollView.slivers] list — e.g. program_view.dart's
+  /// in a [CustomScrollView.slivers] list — e.g. plan_view.dart's
   /// per-segment scroll view, where the header and list need to share one
   /// real scroll position so a pinned switcher and a wrapping
   /// [RefreshIndicator] both work normally. Mutually exclusive with
@@ -333,7 +333,7 @@ class _ReorderableSectionState<T> extends State<ReorderableSection<T>> {
       shrinkWrap: widget.shrinkWrap,
       // AlwaysScrollableScrollPhysics (rather than the platform default) lets
       // a list shorter than the viewport still generate the overscroll a
-      // wrapping RefreshIndicator needs to trigger (program_view.dart's
+      // wrapping RefreshIndicator needs to trigger (plan_view.dart's
       // catalog-refresh pull-to-refresh) — otherwise ClampingScrollPhysics on
       // Android refuses to move at all once content already fits.
       physics: widget.shrinkWrap

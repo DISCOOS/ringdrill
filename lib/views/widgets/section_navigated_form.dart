@@ -9,7 +9,7 @@ import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 /// [builder] renders the section body on demand — only the selected
 /// section's builder is invoked. [removable] gates the section's own
 /// overflow "remove" action (ADR-0031: never a per-row pencil); the default
-/// section of an entity (e.g. "Plan" for `Program`) is never removable.
+/// section of an entity (e.g. "Plan" for `Plan`) is never removable.
 class FormSection {
   const FormSection({
     required this.id,

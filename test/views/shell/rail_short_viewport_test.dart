@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,7 +44,7 @@ void main() {
     'medium-width viewport (a landscape phone)',
     (tester) async {
       SharedPreferences.setMockInitialValues({
-        'app:activeProgram:v1': _p,
+        'app:activePlan:v1': _p,
         'app:librarySchema:v1': '1',
         'p:$_p': jsonEncode({
           'uuid': _p,
@@ -63,8 +63,8 @@ void main() {
         }),
         'pe:$_p:$_exA': jsonEncode(_a.toJson()),
       });
-      await ProgramService().init();
-      await ProgramService().setActive(_p);
+      await PlanService().init();
+      await PlanService().setActive(_p);
 
       // Wide enough for the master-detail rail shell — the wide layout needs
       // `maxWidth - railWidth(72) - masterWidth(320) >= 360`, so ~752px up,

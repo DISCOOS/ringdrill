@@ -8,12 +8,12 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/brief_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-const _programUuid = 'copy-program';
+const _planUuid = 'copy-plan';
 const _exerciseUuid = 'copy-exercise';
 
 void main() {
@@ -23,7 +23,7 @@ void main() {
   setUpAll(() async {
     VisibilityDetectorController.instance.updateInterval = Duration.zero;
     SharedPreferences.setMockInitialValues(_prefs());
-    await ProgramService().init();
+    await PlanService().init();
     await rootBundle.loadString(
       'assets/templates/ringdrill-standard-v1.nb.md.mustache',
     );
@@ -73,11 +73,11 @@ void main() {
     expect(copied.split('\n\n→ ').first.trim(), isNotEmpty);
   });
 
-  testWidgets('program brief copy appends viewer link', (tester) async {
+  testWidgets('plan brief copy appends viewer link', (tester) async {
     await tester.pumpWidget(
       _app(
         const BriefScreen(
-          programUuid: _programUuid,
+          planUuid: _planUuid,
           initialAudience: BriefAudience.director,
         ),
       ),
@@ -91,7 +91,7 @@ void main() {
     expect(
       copied,
       endsWith(
-        '→ https://ringdrill.app/brief/program/$_programUuid?audience=director',
+        '→ https://ringdrill.app/brief/plan/$_planUuid?audience=director',
       ),
     );
     expect(copied.split('\n\n→ ').first.trim(), isNotEmpty);
@@ -130,11 +130,11 @@ Map<String, Object> _prefs() {
     'version': '1.1',
   };
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Copy Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Copy Plan',
       'description': 'Copy body',
       'metadata': meta,
       'exercises': [],
@@ -143,7 +143,7 @@ Map<String, Object> _prefs() {
       'rolePlays': [],
       'actors': [],
     }),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(_exercise().toJson()),
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(_exercise().toJson()),
   };
 }
 

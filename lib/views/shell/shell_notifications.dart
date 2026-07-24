@@ -6,7 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 
 /// Shows a passive notice that the auto-stop fired. The persistent
@@ -16,12 +16,12 @@ import 'package:ringdrill/utils/plan_variables.dart';
 void showAutoStoppedSnackBar(BuildContext context, ExerciseEvent event) {
   final localizations = AppLocalizations.of(context)!;
   final messenger = ScaffoldMessenger.of(context);
-  final program = ProgramService().activeProgram;
-  final exerciseName = program == null
+  final plan = PlanService().activePlan;
+  final exerciseName = plan == null
       ? event.exercise.name
       : substitutePlanVariables(
           event.exercise.name,
-          effectivePlanVariables(program, exercise: event.exercise),
+          effectivePlanVariables(plan, exercise: event.exercise),
         );
   messenger
     ..hideCurrentSnackBar()
@@ -38,7 +38,7 @@ void showAutoStoppedSnackBar(BuildContext context, ExerciseEvent event) {
 }
 
 /// One-shot snackbar shown the first time the shell rebuilds after a
-/// `ProgramService` library-schema migration. Schedules itself on the
+/// `PlanService` library-schema migration. Schedules itself on the
 /// post-frame callback so it doesn't collide with the build that
 /// triggered the check, and clears the service-side flag when the
 /// snackbar is dismissed so it isn't re-raised on the next rebuild.
@@ -54,7 +54,7 @@ void maybeShowLibraryMigrationSnackBar(
 }) {
   if (hasChecked) return;
   onChecked();
-  if (!ProgramService().librarySchemaJustMigrated) return;
+  if (!PlanService().librarySchemaJustMigrated) return;
   WidgetsBinding.instance.addPostFrameCallback((_) async {
     if (!isStillMounted()) return;
     final localizations = AppLocalizations.of(context)!;
@@ -68,6 +68,6 @@ void maybeShowLibraryMigrationSnackBar(
           ),
         )
         .closed
-        .then((_) => ProgramService().clearLibrarySchemaJustMigrated());
+        .then((_) => PlanService().clearLibrarySchemaJustMigrated());
   });
 }

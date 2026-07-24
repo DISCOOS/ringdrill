@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/open_file_widget.dart';
@@ -24,7 +24,7 @@ Future<void> handleInstallLink(BuildContext context, String slug) async {
 
   final client = _buildCatalogClient();
   final item = MarketFeedItem(
-    programId: '',
+    planId: '',
     slug: cleanSlug,
     name: cleanSlug,
     tags: const [],
@@ -46,14 +46,14 @@ Future<void> handleInstallLink(BuildContext context, String slug) async {
       loadFile: () async => (await download()).file,
       // installFromCatalogFile (not plain installFromFile) so the result
       // keeps its catalog-source tag (slug/etag) for later "refresh from
-      // catalog" — see ProgramService.installFromCatalogFile.
-      openProgram: (_) async => ProgramService().installFromCatalogFile(
+      // catalog" — see PlanService.installFromCatalogFile.
+      openPlan: (_) async => PlanService().installFromCatalogFile(
         item,
         await download(),
         activate: true,
       ),
       isOnline: true,
-      location: routeProgram,
+      location: routePlan,
     ),
   );
 }

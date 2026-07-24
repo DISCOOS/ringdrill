@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
-import 'package:ringdrill/views/program_form_screen.dart';
+import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/views/plan_form_screen.dart';
 
-Program _baseProgram({
+Plan _basePlan({
   String name = 'Vinterøvelse',
   String description = '',
   String? briefIntroMd,
@@ -13,11 +13,11 @@ Program _baseProgram({
   String? languageCode,
 }) {
   final now = DateTime.utc(2026, 1, 1);
-  return Program(
+  return Plan(
     uuid: 'pgm-1',
     name: name,
     description: description,
-    metadata: ProgramMetadata(
+    metadata: PlanMetadata(
       created: now,
       updated: now,
       version: '1.0',
@@ -32,8 +32,8 @@ Program _baseProgram({
   );
 }
 
-Future<Program?> _openForm(WidgetTester tester, Program program) async {
-  Program? result;
+Future<Plan?> _openForm(WidgetTester tester, Plan plan) async {
+  Plan? result;
   await tester.pumpWidget(
     MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -41,10 +41,10 @@ Future<Program?> _openForm(WidgetTester tester, Program program) async {
       home: Builder(
         builder: (ctx) => TextButton(
           onPressed: () async {
-            result = await Navigator.push<Program>(
+            result = await Navigator.push<Plan>(
               ctx,
               MaterialPageRoute(
-                builder: (_) => ProgramFormScreen(program: program),
+                builder: (_) => PlanFormScreen(plan: plan),
               ),
             );
           },
@@ -62,18 +62,18 @@ void main() {
   testWidgets('renders base fields with seeded values', (tester) async {
     await _openForm(
       tester,
-      _baseProgram(description: 'En kjent rute'),
+      _basePlan(description: 'En kjent rute'),
     );
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-    expect(find.text(l10n.programName), findsOneWidget);
-    expect(find.text(l10n.programDescription), findsOneWidget);
+    expect(find.text(l10n.planName), findsOneWidget);
+    expect(find.text(l10n.planDescription), findsOneWidget);
     expect(find.text('Vinterøvelse'), findsOneWidget);
     expect(find.text('En kjent rute'), findsOneWidget);
   });
 
   testWidgets('save edits name, description and a brief field', (tester) async {
-    Program? captured;
+    Plan? captured;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -81,11 +81,11 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              captured = await Navigator.push<Program>(
+              captured = await Navigator.push<Plan>(
                 ctx,
                 MaterialPageRoute(
-                  builder: (_) => ProgramFormScreen(
-                    program: _baseProgram(languageCode: 'nb'),
+                  builder: (_) => PlanFormScreen(
+                    plan: _basePlan(languageCode: 'nb'),
                   ),
                 ),
               );
@@ -106,7 +106,7 @@ void main() {
       'Vårøvelse',
     );
     await tester.enterText(
-      find.widgetWithText(TextFormField, l10n.programDescription),
+      find.widgetWithText(TextFormField, l10n.planDescription),
       'Ny undertittel',
     );
 
@@ -115,7 +115,7 @@ void main() {
     // lists the addable section directly — no switcher sheet needed.
     await tester.tap(find.text(l10n.formSectionAddAction));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(l10n.briefSectionProgramIntro));
+    await tester.tap(find.text(l10n.briefSectionPlanIntro));
     await tester.pumpAndSettle();
     // Only one section is mounted at a time, so its field is the sole
     // TextFormField in the tree (the section now also shows its own
@@ -138,7 +138,7 @@ void main() {
   testWidgets('seeded optional sections appear pre-active and are editable', (
     tester,
   ) async {
-    Program? captured;
+    Plan? captured;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -146,11 +146,11 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              captured = await Navigator.push<Program>(
+              captured = await Navigator.push<Plan>(
                 ctx,
                 MaterialPageRoute(
-                  builder: (_) => ProgramFormScreen(
-                    program: _baseProgram(
+                  builder: (_) => PlanFormScreen(
+                    plan: _basePlan(
                       briefIntroMd: 'gammel intro',
                       languageCode: 'nb',
                     ),
@@ -171,7 +171,7 @@ void main() {
     // The intro section is already active — switch to it directly via the
     // rail (default surface is wide/medium; no add-button for it since it
     // is not addable).
-    await tester.tap(find.text(l10n.briefSectionProgramIntro));
+    await tester.tap(find.text(l10n.briefSectionPlanIntro));
     await tester.pumpAndSettle();
     expect(find.text('gammel intro'), findsOneWidget);
 
@@ -187,7 +187,7 @@ void main() {
   testWidgets('removing an active section clears its value on save', (
     tester,
   ) async {
-    Program? captured;
+    Plan? captured;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -195,11 +195,11 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              captured = await Navigator.push<Program>(
+              captured = await Navigator.push<Plan>(
                 ctx,
                 MaterialPageRoute(
-                  builder: (_) => ProgramFormScreen(
-                    program: _baseProgram(
+                  builder: (_) => PlanFormScreen(
+                    plan: _basePlan(
                       briefIntroMd: 'noe innhold',
                       languageCode: 'nb',
                     ),
@@ -217,7 +217,7 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text(l10n.briefSectionProgramIntro));
+    await tester.tap(find.text(l10n.briefSectionPlanIntro));
     await tester.pumpAndSettle();
 
     // Remove the active intro section via its overflow menu.
@@ -233,7 +233,7 @@ void main() {
   });
 
   testWidgets('selecting a plan language saves languageCode', (tester) async {
-    Program? captured;
+    Plan? captured;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -241,10 +241,10 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              captured = await Navigator.push<Program>(
+              captured = await Navigator.push<Plan>(
                 ctx,
                 MaterialPageRoute(
-                  builder: (_) => ProgramFormScreen(program: _baseProgram()),
+                  builder: (_) => PlanFormScreen(plan: _basePlan()),
                 ),
               );
             },
@@ -272,7 +272,7 @@ void main() {
   testWidgets('blocks save and shows an error when no language is chosen', (
     tester,
   ) async {
-    Program? captured;
+    Plan? captured;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -280,10 +280,10 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              captured = await Navigator.push<Program>(
+              captured = await Navigator.push<Plan>(
                 ctx,
                 MaterialPageRoute(
-                  builder: (_) => ProgramFormScreen(program: _baseProgram()),
+                  builder: (_) => PlanFormScreen(plan: _basePlan()),
                 ),
               );
             },

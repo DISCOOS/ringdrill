@@ -8,7 +8,7 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
@@ -37,7 +37,7 @@ class TeamExerciseScreen extends StatefulWidget {
 
 class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
   final _exerciseService = ExerciseService();
-  final _programService = ProgramService();
+  final _planService = PlanService();
 
   int currentIndex = 0;
 
@@ -50,15 +50,15 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
   /// The effective plan-variable map (ADR-0046) at [widget.exercise]'s
   /// scope. Empty when there is no active plan.
   Map<String, String> get _exerciseOverrides {
-    final program = _programService.activeProgram;
-    if (program == null) return const {};
-    return effectivePlanVariables(program, exercise: widget.exercise);
+    final plan = _planService.activePlan;
+    if (plan == null) return const {};
+    return effectivePlanVariables(plan, exercise: widget.exercise);
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final team = _programService.getTeam(widget.teamIndex);
+    final team = _planService.getTeam(widget.teamIndex);
     final teamLabel =
         team?.name ?? '${localizations.team(1)} ${widget.teamIndex + 1}';
     return Scaffold(
@@ -182,9 +182,9 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
       roundIndex,
     );
     final station = widget.exercise.stations[stationIndex];
-    final program = _programService.activeProgram;
+    final plan = _planService.activePlan;
     final exerciseNumber =
-        _programService.loadExercises().indexWhere(
+        _planService.loadExercises().indexWhere(
           (e) => e.uuid == widget.exercise.uuid,
         ) +
         1;
@@ -193,16 +193,16 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
       label: isNow ? l10n.statusNow : l10n.nextLabel,
       time: time,
       badge: Numbering.station(
-        program?.stationNumberFormat ?? StationNumberFormat.dotted,
+        plan?.stationNumberFormat ?? StationNumberFormat.dotted,
         exerciseNumber: exerciseNumber < 1 ? 1 : exerciseNumber,
         stationIndex: stationIndex,
       ),
-      value: program == null
+      value: plan == null
           ? station.name
           : substitutePlanVariables(
               station.name,
               effectivePlanVariables(
-                program,
+                plan,
                 exercise: widget.exercise,
                 station: station,
               ),
@@ -228,11 +228,11 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
 
   Widget _buildScheduleCard(ExerciseEvent event) {
     final localizations = AppLocalizations.of(context)!;
-    final program = _programService.activeProgram;
-    final format = program?.stationNumberFormat ?? StationNumberFormat.dotted;
+    final plan = _planService.activePlan;
+    final format = plan?.stationNumberFormat ?? StationNumberFormat.dotted;
     final exerciseNumber = () {
       final n =
-          _programService.loadExercises().indexWhere(
+          _planService.loadExercises().indexWhere(
             (e) => e.uuid == widget.exercise.uuid,
           ) +
           1;
@@ -252,12 +252,12 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
       );
       return ScheduleTableRow(
         roundIndex: index,
-        label: program == null
+        label: plan == null
             ? postLabel
             : substitutePlanVariables(
                 postLabel,
                 effectivePlanVariables(
-                  program,
+                  plan,
                   exercise: widget.exercise,
                   station: station,
                 ),
@@ -302,7 +302,7 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
 
   Future<void> _editTeam() async {
     final localizations = AppLocalizations.of(context)!;
-    final team = _programService.getTeam(widget.teamIndex);
+    final team = _planService.getTeam(widget.teamIndex);
     if (team == null) return;
     final updated = await openFormSurface<Team>(
       context,
@@ -311,7 +311,7 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
     // No mounted gate on the save: openFormSurface disposes this State when
     // it dismisses the hosting context sheet around the form push.
     if (updated == null) return;
-    await _programService.saveTeam(localizations, updated);
+    await _planService.saveTeam(localizations, updated);
     if (mounted) setState(() {});
   }
 }

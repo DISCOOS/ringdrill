@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:ringdrill/data/bulk_export.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/views/select_plans_dialog.dart';
 import 'package:ringdrill/views/widgets/name_step_sheet.dart';
 
 /// Result returned by [showDownloadAllPlansDialog].
 class DownloadPlansInput {
-  const DownloadPlansInput({required this.fileName, required this.programs});
+  const DownloadPlansInput({required this.fileName, required this.plans});
 
   /// The file name (without `.zip` suffix) the user wants to save as.
   final String fileName;
 
   /// The plans the user wants included in the bundle.
-  final List<Program> programs;
+  final List<Plan> plans;
 }
 
 /// Combined download-flow dialog for the whole library ("Last ned alle").
@@ -33,7 +33,7 @@ class DownloadPlansInput {
 /// dialog only gathers user intent).
 Future<DownloadPlansInput?> showDownloadAllPlansDialog(
   BuildContext context, {
-  required List<Program> programs,
+  required List<Plan> plans,
   required AppLocalizations localizations,
   required String title,
   required String actionLabel,
@@ -48,7 +48,7 @@ Future<DownloadPlansInput?> showDownloadAllPlansDialog(
     title: title,
     actionLabel: actionLabel,
     allIncludedHint: localizations.exportAllPlansHint,
-    hasItems: programs.isNotEmpty,
+    hasItems: plans.isNotEmpty,
     chooseDisabledTooltip: localizations.selectPlansDisabledTooltip,
     localizations: localizations,
   );
@@ -59,21 +59,21 @@ Future<DownloadPlansInput?> showDownloadAllPlansDialog(
   if (fileName.isEmpty) return null;
 
   if (result.action == NameStepAction.confirmAll) {
-    return DownloadPlansInput(fileName: fileName, programs: programs);
+    return DownloadPlansInput(fileName: fileName, plans: plans);
   }
 
   // chooseItems — show the plan picker with everything pre-selected.
   if (!context.mounted) return null;
   final selectedUuids = await showSelectPlansDialog(
     context,
-    programs: programs,
+    plans: plans,
     localizations: localizations,
     title: title,
     actionLabel: actionLabel,
   );
   if (selectedUuids == null || selectedUuids.isEmpty) return null;
-  final selected = programs
-      .where((program) => selectedUuids.contains(program.uuid))
+  final selected = plans
+      .where((plan) => selectedUuids.contains(plan.uuid))
       .toList();
-  return DownloadPlansInput(fileName: fileName, programs: selected);
+  return DownloadPlansInput(fileName: fileName, plans: selected);
 }

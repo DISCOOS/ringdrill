@@ -6,11 +6,11 @@ import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -20,7 +20,7 @@ import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/page_widget.dart';
-import 'package:ringdrill/views/program_form_screen.dart';
+import 'package:ringdrill/views/plan_form_screen.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
@@ -50,51 +50,51 @@ import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 import 'exercise_form_screen.dart';
 import 'plan_additions.dart';
 
-export 'package:ringdrill/web/program_page_controller.dart'
-    if (dart.library.io) 'program_page_controller.dart';
+export 'package:ringdrill/web/plan_page_controller.dart'
+    if (dart.library.io) 'plan_page_controller.dart';
 
-enum ProgramSegment { exercises, stations, script, teams }
+enum PlanSegment { exercises, stations, script, teams }
 
-/// URL slug for a [ProgramSegment]. Mirrors the constants in
+/// URL slug for a [PlanSegment]. Mirrors the constants in
 /// [app_routes.dart] and is used by the segment switcher and the router
 /// redirect gate (ADR-0032 *Activation contract*).
-extension ProgramSegmentUrl on ProgramSegment {
+extension PlanSegmentUrl on PlanSegment {
   String get urlSlug => switch (this) {
-    ProgramSegment.exercises => programSegmentExercisesSlug,
-    ProgramSegment.stations => programSegmentStationsSlug,
-    ProgramSegment.script => programSegmentScriptSlug,
-    ProgramSegment.teams => programSegmentTeamsSlug,
+    PlanSegment.exercises => planSegmentExercisesSlug,
+    PlanSegment.stations => planSegmentStationsSlug,
+    PlanSegment.script => planSegmentScriptSlug,
+    PlanSegment.teams => planSegmentTeamsSlug,
   };
 }
 
-/// Inverse of [ProgramSegmentUrl.urlSlug]. Returns `null` for unknown
+/// Inverse of [PlanSegmentUrl.urlSlug]. Returns `null` for unknown
 /// slugs so the redirect gate can fall back to the default segment.
-ProgramSegment? programSegmentFromSlug(String slug) => switch (slug) {
-  programSegmentExercisesSlug => ProgramSegment.exercises,
-  programSegmentStationsSlug => ProgramSegment.stations,
-  programSegmentScriptSlug => ProgramSegment.script,
-  programSegmentTeamsSlug => ProgramSegment.teams,
+PlanSegment? planSegmentFromSlug(String slug) => switch (slug) {
+  planSegmentExercisesSlug => PlanSegment.exercises,
+  planSegmentStationsSlug => PlanSegment.stations,
+  planSegmentScriptSlug => PlanSegment.script,
+  planSegmentTeamsSlug => PlanSegment.teams,
   _ => null,
 };
 
-/// The [ProgramSegment] that owns [target], so a redirect that changes the
+/// The [PlanSegment] that owns [target], so a redirect that changes the
 /// detail target (e.g. a cross-entity link such as the Spill viewer's
 /// post-context card) can drive the wide master pane to follow. Returns
 /// `null` for [BriefSheetTarget]: the brief is a modal, not a master-detail
 /// selection, so the master is left untouched. Centralizes the mapping so
 /// callers never need their own `is StationSheetTarget` checks.
-ProgramSegment? segmentForTarget(ContextSheetTarget target) => switch (target) {
-  ExerciseSheetTarget() => ProgramSegment.exercises,
-  StationSheetTarget() => ProgramSegment.stations,
-  RoleSheetTarget() => ProgramSegment.script,
-  TeamSheetTarget() || TeamOverviewSheetTarget() => ProgramSegment.teams,
+PlanSegment? segmentForTarget(ContextSheetTarget target) => switch (target) {
+  ExerciseSheetTarget() => PlanSegment.exercises,
+  StationSheetTarget() => PlanSegment.stations,
+  RoleSheetTarget() => PlanSegment.script,
+  TeamSheetTarget() || TeamOverviewSheetTarget() => PlanSegment.teams,
   BriefSheetTarget() => null,
 };
 
 enum _SortAction { byStartTime, alphabetically }
 
-class ProgramView extends StatefulWidget {
-  const ProgramView({
+class PlanView extends StatefulWidget {
+  const PlanView({
     super.key,
     required this.controller,
     required this.stationListController,
@@ -102,7 +102,7 @@ class ProgramView extends StatefulWidget {
     this.refreshIndicatorKey,
   });
 
-  final ProgramPageControllerBase controller;
+  final PlanPageControllerBase controller;
   final StationListController stationListController;
   final RolePlaysController rolePlaysController;
 
@@ -114,11 +114,11 @@ class ProgramView extends StatefulWidget {
   final GlobalKey<RefreshIndicatorState>? refreshIndicatorKey;
 
   @override
-  State<ProgramView> createState() => _ProgramViewState();
+  State<PlanView> createState() => _PlanViewState();
 }
 
-class _ProgramViewState extends State<ProgramView> {
-  final _programService = ProgramService();
+class _PlanViewState extends State<PlanView> {
+  final _planService = PlanService();
   final List<StreamSubscription> _subscriptions = [];
   List<Exercise> _exercises = [];
   ExerciseEvent? _liveEvent;
@@ -141,9 +141,9 @@ class _ProgramViewState extends State<ProgramView> {
 
     // Listen to exercise changes
     _subscriptions.add(
-      _programService.events.listen((event) {
+      _planService.events.listen((event) {
         setState(() {
-          _exercises = _programService.loadExercises();
+          _exercises = _planService.loadExercises();
         });
       }),
     );
@@ -211,7 +211,7 @@ class _ProgramViewState extends State<ProgramView> {
       final markers = exercise.getNumberedLocations(
         exerciseNumber: index + 1,
         format:
-            _programService.activeProgram?.stationNumberFormat ??
+            _planService.activePlan?.stationNumberFormat ??
             StationNumberFormat.dotted,
       );
       final selectedTarget = targetNotifier?.value;
@@ -224,7 +224,7 @@ class _ProgramViewState extends State<ProgramView> {
         // suspended (no onOpen, onLongPress, onToggle).
         return ExerciseCard(
           exercise: exercise,
-          program: _programService.activeProgram,
+          plan: _planService.activePlan,
           exerciseNumber: index + 1,
           localizations: l10n,
           markers: markers,
@@ -270,7 +270,7 @@ class _ProgramViewState extends State<ProgramView> {
         },
         child: ExerciseCard(
           exercise: exercise,
-          program: _programService.activeProgram,
+          plan: _planService.activePlan,
           exerciseNumber: index + 1,
           localizations: l10n,
           markers: markers,
@@ -337,7 +337,7 @@ class _ProgramViewState extends State<ProgramView> {
             onCommitReorder: (newOrder) {
               // Show the committed order immediately (no async round-trip).
               setState(() => _exercises = newOrder);
-              _programService.reorderExercises(
+              _planService.reorderExercises(
                 newOrder.map((e) => e.uuid).toList(),
               );
             },
@@ -372,11 +372,11 @@ class _ProgramViewState extends State<ProgramView> {
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
-            child: _ProgramOverview(
+            child: _PlanOverview(
               expanded: _overviewExpanded,
               onToggleExpanded: () =>
                   setState(() => _overviewExpanded = !_overviewExpanded),
-              onEdit: () => _openProgramForm(context, l10n),
+              onEdit: () => _openPlanForm(context, l10n),
             ),
           ),
           SliverPersistentHeader(
@@ -403,11 +403,11 @@ class _ProgramViewState extends State<ProgramView> {
       );
     }
 
-    final program = _programService.activeProgram;
+    final plan = _planService.activePlan;
     final isCatalogPlan =
-        program != null && active_actions.isCatalogProgram(program);
+        plan != null && active_actions.isCatalogPlan(plan);
 
-    final segmentedBody = ValueListenableBuilder<ProgramSegment>(
+    final segmentedBody = ValueListenableBuilder<PlanSegment>(
       valueListenable: widget.controller.activeSegment,
       builder: (context, activeSegment, _) {
         return IndexedStack(
@@ -450,10 +450,10 @@ class _ProgramViewState extends State<ProgramView> {
   }
 
   void _initExercises() {
-    _exercises = _programService.loadExercises();
+    _exercises = _planService.loadExercises();
   }
 
-  Future<void> _openProgramForm(
+  Future<void> _openPlanForm(
     BuildContext context,
     AppLocalizations localizations,
   ) async {
@@ -462,18 +462,18 @@ class _ProgramViewState extends State<ProgramView> {
     // adding an exercise. The previous early-return left the button
     // doing nothing; instead, create the default plan on demand
     // (same pattern as `saveExercise` and friends) so the form has
-    // something to edit. After `ensureActiveProgram`,
-    // `activeProgram` is guaranteed non-null.
-    await _programService.ensureActiveProgram(localizations);
-    final program = _programService.activeProgram;
-    if (program == null || !context.mounted) return;
-    final updated = await openFormSurface<Program>(
+    // something to edit. After `ensureActivePlan`,
+    // `activePlan` is guaranteed non-null.
+    await _planService.ensureActivePlan(localizations);
+    final plan = _planService.activePlan;
+    if (plan == null || !context.mounted) return;
+    final updated = await openFormSurface<Plan>(
       context,
-      builder: (_) => ProgramFormScreen(program: program),
+      builder: (_) => PlanFormScreen(plan: plan),
     );
     if (updated != null && context.mounted) {
-      await _programService.replaceProgram(updated);
-      // The overview reads from ProgramService.activeProgram on each build,
+      await _planService.replacePlan(updated);
+      // The overview reads from PlanService.activePlan on each build,
       // but the description/briefIntro shown comes from that snapshot —
       // setState forces a rebuild so the new prose appears immediately
       // instead of waiting for the next external event.
@@ -486,28 +486,28 @@ class _ProgramViewState extends State<ProgramView> {
     AppLocalizations localizations,
     Exercise exercise,
   ) async {
-    final numberOfTeams = _programService.loadTeams().length;
+    final numberOfTeams = _planService.loadTeams().length;
     final result = await openFormSurface<ExerciseFormResult>(
       context,
       builder: (_) => ExerciseFormScreen(
         exercise: exercise,
         numberOfTeams: numberOfTeams == 0 ? null : numberOfTeams,
-        variables: _programService.activeProgram?.variables ?? const [],
+        variables: _planService.activePlan?.variables ?? const [],
       ),
     );
     if (result == null || !context.mounted) return;
     switch (result) {
       case ExerciseFormSave(:final exercise, :final additions):
-        await applyVariableAdditionsToActiveProgram(_programService, additions);
-        await _programService.saveExercise(localizations, exercise);
+        await applyVariableAdditionsToActivePlan(_planService, additions);
+        await _planService.saveExercise(localizations, exercise);
       case ExerciseFormDelete(:final exercise):
-        await _programService.deleteExercise(exercise.uuid);
+        await _planService.deleteExercise(exercise.uuid);
     }
     if (mounted) setState(_initExercises);
   }
 
   /// One-shot sort: rewrites all exercise indices in the chosen order via
-  /// [ProgramService.reorderExercises] and refreshes the list. Available
+  /// [PlanService.reorderExercises] and refreshes the list. Available
   /// without entering reorder mode (ADR-0035 §"One-shot sort").
   Future<void> _sortExercises(_SortAction action) async {
     final sorted = [..._exercises];
@@ -517,7 +517,7 @@ class _ProgramViewState extends State<ProgramView> {
       case _SortAction.alphabetically:
         sorted.sort((a, b) => a.name.compareTo(b.name));
     }
-    await _programService.reorderExercises(sorted.map((e) => e.uuid).toList());
+    await _planService.reorderExercises(sorted.map((e) => e.uuid).toList());
     if (mounted) setState(_initExercises);
   }
 
@@ -530,8 +530,8 @@ class _ProgramViewState extends State<ProgramView> {
   }
 }
 
-/// Pins [_ProgramSegmentSwitcher] to the top of a segment's `CustomScrollView`
-/// (below the collapsing [_ProgramOverview]) so it stays visible while the
+/// Pins [_PlanSegmentSwitcher] to the top of a segment's `CustomScrollView`
+/// (below the collapsing [_PlanOverview]) so it stays visible while the
 /// rows scroll beneath it, matching the pre-sliver layout where the switcher
 /// was an always-visible row above an `Expanded` list.
 ///
@@ -543,9 +543,9 @@ class _ProgramViewState extends State<ProgramView> {
 class _SwitcherHeaderDelegate extends SliverPersistentHeaderDelegate {
   _SwitcherHeaderDelegate({required this.controller});
 
-  final ProgramPageControllerBase controller;
+  final PlanPageControllerBase controller;
 
-  // Tallest natural height of `_ProgramSegmentSwitcher` across platforms
+  // Tallest natural height of `_PlanSegmentSwitcher` across platforms
   // (its 8px top padding plus the SegmentedButton's 48px row on mobile,
   // where standard visual density and padded tap targets apply). A
   // SliverPersistentHeaderDelegate must report a fixed extent since it
@@ -575,7 +575,7 @@ class _SwitcherHeaderDelegate extends SliverPersistentHeaderDelegate {
         color: Theme.of(context).scaffoldBackgroundColor,
         child: Align(
           alignment: Alignment.topCenter,
-          child: _ProgramSegmentSwitcher(controller: controller),
+          child: _PlanSegmentSwitcher(controller: controller),
         ),
       ),
     );
@@ -587,10 +587,10 @@ class _SwitcherHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 }
 
-class _ProgramSegmentSwitcher extends StatelessWidget {
-  const _ProgramSegmentSwitcher({required this.controller});
+class _PlanSegmentSwitcher extends StatelessWidget {
+  const _PlanSegmentSwitcher({required this.controller});
 
-  final ProgramPageControllerBase controller;
+  final PlanPageControllerBase controller;
 
   @override
   Widget build(BuildContext context) {
@@ -598,14 +598,14 @@ class _ProgramSegmentSwitcher extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final iconOnly = constraints.maxWidth < 340;
-        return ValueListenableBuilder<ProgramSegment>(
+        return ValueListenableBuilder<PlanSegment>(
           valueListenable: controller.activeSegment,
           builder: (context, activeSegment, _) {
             return Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
               child: SizedBox(
                 width: double.infinity,
-                child: SegmentedButton<ProgramSegment>(
+                child: SegmentedButton<PlanSegment>(
                   expandedInsets: EdgeInsets.zero,
                   // No check on the selected segment. It would add width on
                   // the selected item and wrap its label in the narrow
@@ -613,25 +613,25 @@ class _ProgramSegmentSwitcher extends StatelessWidget {
                   showSelectedIcon: false,
                   segments: [
                     _segment(
-                      value: ProgramSegment.exercises,
+                      value: PlanSegment.exercises,
                       icon: Icons.update,
                       label: localizations.exercise(2),
                       iconOnly: iconOnly,
                     ),
                     _segment(
-                      value: ProgramSegment.stations,
+                      value: PlanSegment.stations,
                       icon: Icons.place,
                       label: localizations.stationsTab,
                       iconOnly: iconOnly,
                     ),
                     _segment(
-                      value: ProgramSegment.script,
+                      value: PlanSegment.script,
                       icon: Icons.theater_comedy,
                       label: localizations.scriptSegment,
                       iconOnly: iconOnly,
                     ),
                     _segment(
-                      value: ProgramSegment.teams,
+                      value: PlanSegment.teams,
                       icon: Icons.group,
                       label: localizations.team(2),
                       iconOnly: iconOnly,
@@ -643,15 +643,15 @@ class _ProgramSegmentSwitcher extends StatelessWidget {
                     // flows URL → state. Push the canonical path and let
                     // MainScreen._initTab write `activeSegment` when the
                     // router rebuilds. Falls back to a direct write only
-                    // if no program is active (defensive — the switcher
+                    // if no plan is active (defensive — the switcher
                     // should not be visible in that case).
-                    final uuid = ProgramService().activeProgramUuid;
+                    final uuid = PlanService().activePlanUuid;
                     if (uuid == null) {
                       controller.activeSegment.value = selected.single;
                       return;
                     }
                     context.go(
-                      programSegmentPath(uuid, selected.single.urlSlug),
+                      planSegmentPath(uuid, selected.single.urlSlug),
                     );
                   },
                 ),
@@ -663,13 +663,13 @@ class _ProgramSegmentSwitcher extends StatelessWidget {
     );
   }
 
-  ButtonSegment<ProgramSegment> _segment({
-    required ProgramSegment value,
+  ButtonSegment<PlanSegment> _segment({
+    required PlanSegment value,
     required IconData icon,
     required String label,
     required bool iconOnly,
   }) {
-    return ButtonSegment<ProgramSegment>(
+    return ButtonSegment<PlanSegment>(
       value: value,
       // Never show icon and label together: four icon+label segments
       // overflow the master pane (320-420 px) and wrap the label. Show the
@@ -690,19 +690,19 @@ class _ProgramSegmentSwitcher extends StatelessWidget {
 
 /// Collapsing read-only overview rendered above the segment switcher.
 /// Scrolls off as the user moves down the active segment list.
-class _ProgramOverview extends StatelessWidget {
-  const _ProgramOverview({
+class _PlanOverview extends StatelessWidget {
+  const _PlanOverview({
     required this.expanded,
     required this.onToggleExpanded,
     required this.onEdit,
   });
 
-  /// Whether the prose is shown in full. Owned by [_ProgramViewState] so it
+  /// Whether the prose is shown in full. Owned by [_PlanViewState] so it
   /// survives the overview being hidden and shown by the scroll collapse.
   final bool expanded;
   final VoidCallback onToggleExpanded;
 
-  /// Opens the [ProgramFormScreen] so the active plan's description and brief
+  /// Opens the [PlanFormScreen] so the active plan's description and brief
   /// markdown sections can be edited from the overview. The AppBar title still
   /// owns the quick-rename action; this is the deeper edit entry point.
   final VoidCallback onEdit;
@@ -712,7 +712,7 @@ class _ProgramOverview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final program = ProgramService().activeProgram;
+    final plan = PlanService().activePlan;
 
     // The "no content" branch covers two cases that present the same
     // way to the user: there is no plan yet at all (first launch
@@ -720,22 +720,22 @@ class _ProgramOverview extends StatelessWidget {
     // description / brief sections are empty. Render the same
     // teaching affordance in both — the row turns the otherwise
     // empty space above the segmented switcher into a discoverable
-    // entry point for the ProgramFormScreen.
-    final description = program?.description.trim() ?? '';
-    final briefIntro = program == null
+    // entry point for the PlanFormScreen.
+    final description = plan?.description.trim() ?? '';
+    final briefIntro = plan == null
         ? null
         : _firstParagraphText(
-            _resolveProgramText(program, program.briefIntroMd, l10n),
+            _resolvePlanText(plan, plan.briefIntroMd, l10n),
           );
-    final comms = program == null
+    final comms = plan == null
         ? null
         : _firstParagraphText(
-            _resolveProgramText(program, program.commsMd, l10n),
+            _resolvePlanText(plan, plan.commsMd, l10n),
           );
-    final beforeRound = program == null
+    final beforeRound = plan == null
         ? null
         : _firstParagraphText(
-            _resolveProgramText(program, program.beforeRoundMd, l10n),
+            _resolvePlanText(plan, plan.beforeRoundMd, l10n),
           );
     final hasContent =
         description.isNotEmpty ||
@@ -770,7 +770,7 @@ class _ProgramOverview extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      l10n.editProgram,
+                      l10n.editPlan,
                       style: textTheme.bodyMedium?.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
@@ -792,7 +792,7 @@ class _ProgramOverview extends StatelessWidget {
     // Render the filled state in the SAME soft container the empty
     // state uses, so the visual language is consistent: same muted
     // surface, same rounded corners, same tap target opening the
-    // ProgramFormScreen. The content inside the container changes
+    // PlanFormScreen. The content inside the container changes
     // (description + optional brief sections + Show more/less),
     // but the container itself is one stable element above the
     // segmented switcher — no competing Card elevation.
@@ -804,10 +804,10 @@ class _ProgramOverview extends StatelessWidget {
     );
     final briefSections = <({String label, String text})>[
       if (briefIntro != null)
-        (label: l10n.briefSectionProgramIntro, text: briefIntro),
-      if (comms != null) (label: l10n.briefSectionProgramComms, text: comms),
+        (label: l10n.briefSectionPlanIntro, text: briefIntro),
+      if (comms != null) (label: l10n.briefSectionPlanComms, text: comms),
       if (beforeRound != null)
-        (label: l10n.briefSectionProgramBeforeRound, text: beforeRound),
+        (label: l10n.briefSectionPlanBeforeRound, text: beforeRound),
     ];
     final maxLines = expanded ? null : _collapsedLines;
     final overflow = expanded ? TextOverflow.clip : TextOverflow.ellipsis;
@@ -919,19 +919,19 @@ class _ProgramOverview extends StatelessWidget {
     return painter.didExceedMaxLines;
   }
 
-  /// Resolves `{{var.<name>}}` tokens and program-scope cross-references
+  /// Resolves `{{var.<name>}}` tokens and plan-scope cross-references
   /// before this preview truncates to the first paragraph, via the same
   /// [ResolvedMarkdownText.resolve] entry point used everywhere a
   /// plan-scope markdown field is shown outside the full brief — see that
   /// widget's doc comment for why the raw model field must never be read
   /// directly.
-  String? _resolveProgramText(
-    Program program,
+  String? _resolvePlanText(
+    Plan plan,
     String? md,
     AppLocalizations l10n,
   ) {
     if (md == null) return null;
-    return ResolvedMarkdownText.resolve(program, md, l10n);
+    return ResolvedMarkdownText.resolve(plan, md, l10n);
   }
 
   /// Returns the first paragraph of a markdown string stripped of leading
@@ -953,7 +953,7 @@ class ExerciseCard extends StatefulWidget {
   const ExerciseCard({
     super.key,
     required this.exercise,
-    this.program,
+    this.plan,
     this.exerciseNumber,
     required this.localizations,
     this.trailing,
@@ -978,12 +978,12 @@ class ExerciseCard extends StatefulWidget {
   final Widget? trailing;
   final Exercise exercise;
 
-  /// Owning program, used to resolve [exerciseNumberFormat] for the badge.
+  /// Owning plan, used to resolve [exerciseNumberFormat] for the badge.
   /// When null, no badge is shown in [leading] and the live indicator
   /// falls back to the standard [LiveAccent.indicator] behaviour.
-  final Program? program;
+  final Plan? plan;
 
-  /// 1-based position of [exercise] in [program.exercises]. When null,
+  /// 1-based position of [exercise] in [plan.exercises]. When null,
   /// no badge is shown (picker mode, no numbering needed).
   final int? exerciseNumber;
 
@@ -1074,11 +1074,11 @@ class _ExerciseCardState extends State<ExerciseCard> {
     ];
 
     final exerciseNum = widget.exerciseNumber;
-    final program = widget.program;
-    final Widget? badge = (exerciseNum != null && program != null)
+    final plan = widget.plan;
+    final Widget? badge = (exerciseNum != null && plan != null)
         ? ExerciseNumberBadge(
             label: Numbering.exercise(
-              program.exerciseNumberFormat,
+              plan.exerciseNumberFormat,
               exerciseNum,
             ),
             highlight: isLive,
@@ -1104,9 +1104,9 @@ class _ExerciseCardState extends State<ExerciseCard> {
       leading: leading,
       title: RingDrillText.plain(
         exercise.name,
-        overrides: widget.program == null
+        overrides: widget.plan == null
             ? const {}
-            : effectivePlanVariables(widget.program!, exercise: exercise),
+            : effectivePlanVariables(widget.plan!, exercise: exercise),
         style: TextStyle(fontWeight: FontWeight.bold, color: accent.foreground),
       ),
       subtitle: Text(subtitleParts.join(' | '), style: accent.textStyle),
@@ -1199,18 +1199,18 @@ class _ExerciseCardState extends State<ExerciseCard> {
         // reads as "1a", "2c" etc. here too. `stationIndex` is already the
         // 0-based position within this exercise, so the sub-index restarts
         // per exercise. Falls back to the live-accent indicator only when
-        // the card has no owning program / exercise number to format with.
+        // the card has no owning plan / exercise number to format with.
         final exerciseNum = widget.exerciseNumber;
-        final program = widget.program;
-        final hasRoles = ProgramService().loadRolePlays().any(
+        final plan = widget.plan;
+        final hasRoles = PlanService().loadRolePlays().any(
           (rp) =>
               rp.exerciseUuid == exercise.uuid &&
               rp.stationIndex == station.index,
         );
-        final leading = (exerciseNum != null && program != null)
+        final leading = (exerciseNum != null && plan != null)
             ? StationNumberBadge(
                 label: Numbering.station(
-                  program.stationNumberFormat,
+                  plan.stationNumberFormat,
                   exerciseNumber: exerciseNum,
                   stationIndex: stationIndex,
                 ),
@@ -1227,10 +1227,10 @@ class _ExerciseCardState extends State<ExerciseCard> {
           leading: leading,
           title: RingDrillText.plain(
             station.name,
-            overrides: program == null
+            overrides: plan == null
                 ? const {}
                 : effectivePlanVariables(
-                    program,
+                    plan,
                     exercise: exercise,
                     station: station,
                   ),
@@ -1315,7 +1315,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
     Exercise exercise,
     Station station,
   ) async {
-    final programService = ProgramService();
+    final planService = PlanService();
     final exerciseService = ExerciseService();
     if (exerciseService.isStarted) {
       final runningExercise = exerciseService.last?.exercise;
@@ -1333,7 +1333,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
     // DESIGN-009 prompt 5/4j: the delete-guard, save-block and the Persons
     // section's inline marker row all need to know which roleplays are
     // already linked to this station.
-    final roleplays = programService
+    final roleplays = planService
         .loadRolePlays()
         .where(
           (r) =>
@@ -1345,16 +1345,16 @@ class _ExerciseCardState extends State<ExerciseCard> {
       context,
       builder: (_) => StationFormScreen(
         station: station,
-        markers: programService.getLocations().toMarkerSpecs(),
-        variables: programService.activeProgram?.variables ?? const [],
+        markers: planService.getLocations().toMarkerSpecs(),
+        variables: planService.activePlan?.variables ?? const [],
         parentExercise: exercise,
         roleplays: roleplays,
       ),
     );
     if (!mounted || result == null) return;
 
-    await applyVariableAdditionsToActiveProgram(
-      programService,
+    await applyVariableAdditionsToActivePlan(
+      planService,
       result.additions,
     );
     // A marker authored/edited inline from the Persons section's "Legg til
@@ -1362,17 +1362,17 @@ class _ExerciseCardState extends State<ExerciseCard> {
     // the post editor's own working copy, written back here alongside the
     // station's own save.
     await applyPendingRolePlayAdditions(
-      programService,
+      planService,
       localizations,
       result.additions,
     );
-    final current = programService.getExercise(exercise.uuid);
+    final current = planService.getExercise(exercise.uuid);
     if (current == null) return;
     final stations = [...current.stations];
     final idxInList = stations.indexWhere((s) => s.index == station.index);
     if (idxInList < 0) return;
     stations[idxInList] = result.station;
-    await programService.saveExercise(
+    await planService.saveExercise(
       localizations,
       current.copyWith(stations: stations),
     );
@@ -1385,7 +1385,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
   /// inside the already-expanded card.
   Widget _buildStationDetail(Exercise exercise, Station station) {
     final description = station.description;
-    final program = widget.program;
+    final plan = widget.plan;
     // Seed this station's own scope so `{{station.*}}` resolves in the
     // Exercises-tab expanded card instead of showing literally.
     return StationScope.forStation(
@@ -1398,10 +1398,10 @@ class _ExerciseCardState extends State<ExerciseCard> {
           if (description != null && description.trim().isNotEmpty) ...[
             RingDrillText.rich(
               description,
-              overrides: program == null
+              overrides: plan == null
                   ? const {}
                   : effectivePlanVariables(
-                      program,
+                      plan,
                       exercise: exercise,
                       station: station,
                     ),
@@ -1424,20 +1424,20 @@ class _ExerciseCardState extends State<ExerciseCard> {
   }
 }
 
-abstract class ProgramPageControllerBase extends ScreenController {
-  ProgramPageControllerBase({
+abstract class PlanPageControllerBase extends ScreenController {
+  PlanPageControllerBase({
     required this.stationListController,
     required this.rolePlaysController,
     required this.teamsPageController,
   });
 
   @protected
-  final programService = ProgramService();
+  final planService = PlanService();
   final StationListController stationListController;
   final RolePlaysController rolePlaysController;
   final TeamsPageController teamsPageController;
-  final ValueNotifier<ProgramSegment> activeSegment =
-      ValueNotifier<ProgramSegment>(ProgramSegment.exercises);
+  final ValueNotifier<PlanSegment> activeSegment =
+      ValueNotifier<PlanSegment>(PlanSegment.exercises);
 
   /// Whether the Øvelser segment is currently in reorder mode.
   ///
@@ -1453,12 +1453,12 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
   @override
   String title(BuildContext context) =>
-      programService.activeProgram?.name ??
+      planService.activePlan?.name ??
       // Generic tab label when no plan is active yet (first launch
       // before any plan has been created). Matches the bottom nav
       // label so the user sees a consistent name in both chrome
       // surfaces.
-      AppLocalizations.of(context)!.programTab;
+      AppLocalizations.of(context)!.planTab;
 
   @override
   Widget? buildFAB(BuildContext context, BoxConstraints constraints) {
@@ -1466,21 +1466,21 @@ abstract class ProgramPageControllerBase extends ScreenController {
     // mode: it floats over the trailing drag handles and blocks dragging the
     // bottom rows. Reorder mode has its own "Done" affordance in the list
     // header (ADR-0035/0036), so no FAB is needed there.
-    if (activeSegment.value == ProgramSegment.exercises &&
+    if (activeSegment.value == PlanSegment.exercises &&
         exerciseReorderMode.value) {
       return null;
     }
     return switch (activeSegment.value) {
-      ProgramSegment.exercises => _buildExercisesFAB(context),
-      ProgramSegment.stations => stationListController.buildFAB(
+      PlanSegment.exercises => _buildExercisesFAB(context),
+      PlanSegment.stations => stationListController.buildFAB(
         context,
         constraints,
       ),
-      ProgramSegment.script => rolePlaysController.buildFAB(
+      PlanSegment.script => rolePlaysController.buildFAB(
         context,
         constraints,
       ),
-      ProgramSegment.teams => teamsPageController.buildFAB(
+      PlanSegment.teams => teamsPageController.buildFAB(
         context,
         constraints,
       ),
@@ -1495,7 +1495,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
     // FAB widgets briefly alive (in its internal Stack) when the user switches
     // tabs faster than the FAB scale-in/out animation completes — that
     // produced the "multiple heroes that share the same tag" assertion seen
-    // when bouncing between /program and /stations. Disabling the Hero wrapper
+    // when bouncing between /plan and /stations. Disabling the Hero wrapper
     // entirely is the safe fix.
     final label = AppLocalizations.of(context)!.newExercise;
     // On a phone the extended FAB is wide enough to cover the bottom list
@@ -1518,7 +1518,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
       );
     }
 
-    if (programService.loadExercises().isEmpty) {
+    if (planService.loadExercises().isEmpty) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1537,19 +1537,19 @@ abstract class ProgramPageControllerBase extends ScreenController {
     final result = await openFormSurface<ExerciseFormResult>(
       context,
       builder: (context) => ExerciseFormScreen(
-        variables: programService.activeProgram?.variables ?? const [],
+        variables: planService.activePlan?.variables ?? const [],
       ),
     );
 
     // Creating a new exercise — only a save (or cancel), never a delete.
     if (result is ExerciseFormSave && context.mounted) {
       final localizations = AppLocalizations.of(context)!;
-      await applyVariableAdditionsToActiveProgram(
-        programService,
+      await applyVariableAdditionsToActivePlan(
+        planService,
         result.additions,
       );
       // Add the new exercise and reload the list
-      await programService.saveExercise(localizations, result.exercise);
+      await planService.saveExercise(localizations, result.exercise);
     }
   }
 
@@ -1559,16 +1559,16 @@ abstract class ProgramPageControllerBase extends ScreenController {
     // ReorderableSection header rather than the AppBar (ADR-0035 §"List
     // header", ADR-0036). The AppBar only carries segment-independent actions.
     final segmentActions = switch (activeSegment.value) {
-      ProgramSegment.exercises => null,
-      ProgramSegment.stations => stationListController.buildActions(
+      PlanSegment.exercises => null,
+      PlanSegment.stations => stationListController.buildActions(
         context,
         constraints,
       ),
-      ProgramSegment.script => rolePlaysController.buildActions(
+      PlanSegment.script => rolePlaysController.buildActions(
         context,
         constraints,
       ),
-      ProgramSegment.teams => teamsPageController.buildActions(
+      PlanSegment.teams => teamsPageController.buildActions(
         context,
         constraints,
       ),
@@ -1589,15 +1589,15 @@ abstract class ProgramPageControllerBase extends ScreenController {
   @override
   ContextSheetTarget? firstDetailTarget(BuildContext context) {
     return switch (activeSegment.value) {
-      ProgramSegment.exercises => _firstExerciseTarget(),
-      ProgramSegment.stations => _firstStationTarget(),
-      ProgramSegment.script => _firstRoleTarget(),
-      ProgramSegment.teams => _firstTeamTarget(),
+      PlanSegment.exercises => _firstExerciseTarget(),
+      PlanSegment.stations => _firstStationTarget(),
+      PlanSegment.script => _firstRoleTarget(),
+      PlanSegment.teams => _firstTeamTarget(),
     };
   }
 
   ContextSheetTarget? _firstExerciseTarget() {
-    final exercise = programService.loadExercises().firstOrNull;
+    final exercise = planService.loadExercises().firstOrNull;
     return exercise == null
         ? null
         : ExerciseSheetTarget(exerciseUuid: exercise.uuid);
@@ -1605,7 +1605,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
   ContextSheetTarget? _firstStationTarget() {
     final filterUuid = stationListController.filterExerciseUuid.value;
-    for (final exercise in programService.loadExercises()) {
+    for (final exercise in planService.loadExercises()) {
       if (filterUuid != null && exercise.uuid != filterUuid) continue;
       final stations = [...exercise.stations]
         ..sort((a, b) => a.index.compareTo(b.index));
@@ -1622,8 +1622,8 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
   ContextSheetTarget? _firstRoleTarget() {
     final filterUuid = rolePlaysController.filterExerciseUuid.value;
-    final rolePlays = programService.loadRolePlays();
-    for (final exercise in programService.loadExercises()) {
+    final rolePlays = planService.loadRolePlays();
+    for (final exercise in planService.loadExercises()) {
       if (filterUuid != null && exercise.uuid != filterUuid) continue;
       final roles =
           rolePlays.where((rp) => rp.exerciseUuid == exercise.uuid).toList()
@@ -1635,7 +1635,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
   }
 
   ContextSheetTarget? _firstTeamTarget() {
-    final team = programService.loadTeams().firstOrNull;
+    final team = planService.loadTeams().firstOrNull;
     return team == null ? null : TeamOverviewSheetTarget(teamIndex: team.index);
   }
 
@@ -1644,7 +1644,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
   /// picked instead of re-running auto-select-first over it (fix for the
   /// collapsible-master-pane regression: segment switches used to reset the
   /// shared detail target unconditionally).
-  final Map<ProgramSegment, ContextSheetTarget?> _rememberedSelection = {};
+  final Map<PlanSegment, ContextSheetTarget?> _rememberedSelection = {};
 
   /// Records [target] as [segment]'s selection (the active segment when
   /// omitted). Called for explicit in-segment picks, auto-selected-first
@@ -1653,21 +1653,21 @@ abstract class ProgramPageControllerBase extends ScreenController {
   /// re-remembering an already-current target is harmless since it is what
   /// [rememberedTarget] would already return for a segment with no other
   /// memory.
-  void rememberSelection(ContextSheetTarget target, {ProgramSegment? segment}) {
+  void rememberSelection(ContextSheetTarget target, {PlanSegment? segment}) {
     _rememberedSelection[segment ?? activeSegment.value] = target;
   }
 
   /// The remembered selection for [segment], or null when there is none yet
   /// or the remembered item no longer exists (deleted/reordered away) — the
   /// caller falls back to [firstDetailTarget] in that case.
-  ContextSheetTarget? rememberedTarget(ProgramSegment segment) {
+  ContextSheetTarget? rememberedTarget(PlanSegment segment) {
     final target = _rememberedSelection[segment];
     if (target == null || !_targetStillExists(target)) return null;
     return target;
   }
 
   bool _targetStillExists(ContextSheetTarget target) {
-    final exercises = programService.loadExercises();
+    final exercises = planService.loadExercises();
     return switch (target) {
       ExerciseSheetTarget(:final exerciseUuid) => exercises.any(
         (e) => e.uuid == exerciseUuid,
@@ -1679,9 +1679,9 @@ abstract class ProgramPageControllerBase extends ScreenController {
               e.stations.any((s) => s.index == stationIndex),
         ),
       RoleSheetTarget(:final rolePlayUuid) =>
-        programService.loadRolePlays().any((r) => r.uuid == rolePlayUuid),
+        planService.loadRolePlays().any((r) => r.uuid == rolePlayUuid),
       TeamOverviewSheetTarget(:final teamIndex) =>
-        programService.loadTeams().any((t) => t.index == teamIndex),
+        planService.loadTeams().any((t) => t.index == teamIndex),
       TeamSheetTarget(:final exerciseUuid, :final teamIndex) => exercises.any(
         (e) => e.uuid == exerciseUuid && e.numberOfTeams > teamIndex,
       ),
@@ -1690,15 +1690,15 @@ abstract class ProgramPageControllerBase extends ScreenController {
   }
 
   List<Widget>? _briefAction(BuildContext context) {
-    final activeProgram = programService.activeProgram;
-    if (activeProgram == null) return null;
+    final activePlan = planService.activePlan;
+    if (activePlan == null) return null;
     final localizations = AppLocalizations.of(context)!;
     return [
       IconButton(
         icon: const Icon(Icons.menu_book),
         tooltip: localizations.briefAction,
         onPressed: () =>
-            GoRouter.of(context).push(programBriefPath(activeProgram.uuid)),
+            GoRouter.of(context).push(planBriefPath(activePlan.uuid)),
       ),
     ];
   }
@@ -1726,7 +1726,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
     String? confirmLabel,
     bool preselectAll = false,
     bool showSelectAllControls = false,
-    Program? program,
+    Plan? plan,
   }) async {
     final List<String> selected = preselectAll
         ? exercises.map((e) => e.uuid).toList()
@@ -1817,20 +1817,20 @@ abstract class ProgramPageControllerBase extends ScreenController {
                             final markers = exercise.getNumberedLocations(
                               exerciseNumber: index + 1,
                               format:
-                                  ProgramService()
-                                      .activeProgram
+                                  PlanService()
+                                      .activePlan
                                       ?.stationNumberFormat ??
                                   StationNumberFormat.dotted,
                             );
                             return ExerciseCard(
                               exercise: exercise,
                               // Reuse the exercises-tab rendering: passing the
-                              // program + 1-based number gives the same #N badge
-                              // and dark-mode card styling. When [program] is
+                              // plan + 1-based number gives the same #N badge
+                              // and dark-mode card styling. When [plan] is
                               // null (import/add without numbering) no badge is
                               // shown, same as before.
-                              program: program,
-                              exerciseNumber: program == null
+                              plan: plan,
+                              exerciseNumber: plan == null
                                   ? null
                                   : index + 1,
                               localizations: localizations,

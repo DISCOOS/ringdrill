@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,7 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// open a sheet to a real default body (CoordinatorScreen, TeamScreen, …),
 /// tap its edit affordance so `openFormSurface` dismisses the sheet and
 /// pushes the real form, save, and assert the change landed in
-/// [ProgramService]. This is the seam none of the form-in-isolation or
+/// [PlanService]. This is the seam none of the form-in-isolation or
 /// service-level tests cover — the editors pop a result and rely on the
 /// (possibly since-disposed) caller to persist it.
 
@@ -29,16 +29,16 @@ void useCompactWindow(WidgetTester tester) {
   addTearDown(tester.view.resetDevicePixelRatio);
 }
 
-/// Resets the (singleton) [ProgramService] state and activates a fresh
+/// Resets the (singleton) [PlanService] state and activates a fresh
 /// empty plan named [planName]. Entities are then seeded through the
 /// service's own save methods by each test file. Pair with
-/// `tearDown(() => ProgramService().clearAllForTest())`.
+/// `tearDown(() => PlanService().clearAllForTest())`.
 Future<void> initActivePlan(String planName) async {
   SharedPreferences.setMockInitialValues({});
-  await ProgramService().init();
-  await ProgramService().clearAllForTest();
-  final program = await ProgramService().createProgram(name: planName);
-  await ProgramService().setActive(program.uuid);
+  await PlanService().init();
+  await PlanService().clearAllForTest();
+  final plan = await PlanService().createPlan(name: planName);
+  await PlanService().setActive(plan.uuid);
 }
 
 /// Minimal valid exercise with two stations and one team/round, mirroring

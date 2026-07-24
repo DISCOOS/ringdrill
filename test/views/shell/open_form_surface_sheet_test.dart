@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/team.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 
@@ -14,7 +14,7 @@ import '../support/save_roundtrip_harness.dart';
 /// form pops. `ContextSheetController.show()` only resolves when the
 /// re-opened sheet is *dismissed*, so awaiting it parked `openFormSurface`
 /// before `return result` — the caller's `await openFormSurface(...)` never
-/// resolved and its `ProgramService.save*` call never ran. Every editor
+/// resolved and its `PlanService.save*` call never ran. Every editor
 /// (exercise, station, roleplay, team, actor) persists through this seam,
 /// so all of them silently dropped edits made from a sheet.
 void main() {
@@ -29,13 +29,13 @@ void main() {
     // target below — a custom bodyBuilder does not survive the close/re-open
     // cycle), so the service must hold a matching team.
     await initActivePlan('Seam test plan');
-    await ProgramService().saveTeam(
+    await PlanService().saveTeam(
       l10n,
       const Team(uuid: 'team-seam-1', index: 0, name: 'Seam Team'),
     );
   });
 
-  tearDown(() => ProgramService().clearAllForTest());
+  tearDown(() => PlanService().clearAllForTest());
 
   testWidgets(
     'result reaches the caller as soon as the form pops, while the '

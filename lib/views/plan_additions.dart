@@ -2,15 +2,15 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 
 /// Write-back payload an editor returns alongside its own edited entity, for
 /// additions created inline (the `/`/`{{` picker's "Create …" entries) whose
 /// *owner* the editor does not itself hold (ADR-0047, DESIGN-009 follow-up
-/// 4): new plan variables belong to `Program`; new locations/persons belong
+/// 4): new plan variables belong to `Plan`; new locations/persons belong
 /// to a target station; a new or edited roleplay authored inline from the
 /// post editor's Persons section (DESIGN-009 prompt 4j) belongs to the
 /// plan's roleplay registry, not the station. The station editor owns its
@@ -57,21 +57,21 @@ PlanAdditions variableAdditions(
   rolePlays: rolePlays,
 );
 
-/// Applies [additions.variables] to [program], skipping any name already
+/// Applies [additions.variables] to [plan], skipping any name already
 /// declared. Defensive: an editor's own inline-create already checks this
 /// locally against what *it* has declared/seen, but the plan owner is the
 /// single point where every sub-editor's session ultimately lands, so a
 /// name that became declared through some other path in the meantime must
 /// not be duplicated.
-Program applyVariableAdditions(Program program, PlanAdditions additions) {
-  if (additions.variables.isEmpty) return program;
-  final existing = program.variables.map((v) => v.name).toSet();
+Plan applyVariableAdditions(Plan plan, PlanAdditions additions) {
+  if (additions.variables.isEmpty) return plan;
+  final existing = plan.variables.map((v) => v.name).toSet();
   final toAdd = [
     for (final v in additions.variables)
       if (!existing.contains(v.name)) v,
   ];
-  if (toAdd.isEmpty) return program;
-  return program.copyWith(variables: [...program.variables, ...toAdd]);
+  if (toAdd.isEmpty) return plan;
+  return plan.copyWith(variables: [...plan.variables, ...toAdd]);
 }
 
 /// Applies [additions.stationLocations]/[stationPersons] to [station] — the
@@ -100,18 +100,18 @@ Station applyStationAdditions(Station station, PlanAdditions additions) {
   );
 }
 
-/// Applies [additions.variables] to [service]'s active program and persists
+/// Applies [additions.variables] to [service]'s active plan and persists
 /// it — the common `openFormSurface` call-site shape for Exercise/Station
 /// editors' write-back. A no-op when there is nothing to add or (should it
-/// ever happen) there is no active program.
-Future<void> applyVariableAdditionsToActiveProgram(
-  ProgramService service,
+/// ever happen) there is no active plan.
+Future<void> applyVariableAdditionsToActivePlan(
+  PlanService service,
   PlanAdditions additions,
 ) async {
   if (additions.variables.isEmpty) return;
-  final program = service.activeProgram;
-  if (program == null) return;
-  await service.replaceProgram(applyVariableAdditions(program, additions));
+  final plan = service.activePlan;
+  if (plan == null) return;
+  await service.replacePlan(applyVariableAdditions(plan, additions));
 }
 
 /// Applies [additions.stationLocations]/[stationPersons] to the station at
@@ -124,7 +124,7 @@ Future<void> applyVariableAdditionsToActiveProgram(
 /// longer be found (e.g. deleted concurrently — defensive, not expected in
 /// normal use).
 Future<void> applyStationAdditionsTo(
-  ProgramService service,
+  PlanService service,
   AppLocalizations l10n, {
   required String exerciseUuid,
   required int? stationIndex,
@@ -146,17 +146,17 @@ Future<void> applyStationAdditionsTo(
 }
 
 /// A `RolePlayFormScreen` session's full write-back (ADR-0047, DESIGN-009
-/// follow-up 4): new plan variables to the active program, and new station
+/// follow-up 4): new plan variables to the active plan, and new station
 /// locations/persons to [rolePlay]'s own linked station — the common
 /// `openFormSurface` call-site shape, combining
-/// [applyVariableAdditionsToActiveProgram] and [applyStationAdditionsTo].
+/// [applyVariableAdditionsToActivePlan] and [applyStationAdditionsTo].
 Future<void> applyRolePlayAdditions(
-  ProgramService service,
+  PlanService service,
   AppLocalizations l10n,
   RolePlay rolePlay,
   PlanAdditions additions,
 ) async {
-  await applyVariableAdditionsToActiveProgram(service, additions);
+  await applyVariableAdditionsToActivePlan(service, additions);
   await applyStationAdditionsTo(
     service,
     l10n,
@@ -166,17 +166,17 @@ Future<void> applyRolePlayAdditions(
   );
 }
 
-/// Persists [additions.rolePlays] via [ProgramService.saveRolePlay]
+/// Persists [additions.rolePlays] via [PlanService.saveRolePlay]
 /// (DESIGN-009 prompt 4j) — the write-back target for a marker authored
 /// inline from the post editor's Persons section ("Legg til spill" /
 /// re-opening an existing one): unlike a station's own locations/persons, a
-/// `RolePlay` is not nested inside `Station`/`Program`, so each one is
+/// `RolePlay` is not nested inside `Station`/`Plan`, so each one is
 /// saved directly through the repo, the same as any other roleplay edit —
 /// held in the post editor's own working copy until this call, so an
 /// aborted post edit never leaves a half-saved marker on disk. A no-op
 /// when there is nothing to add.
 Future<void> applyPendingRolePlayAdditions(
-  ProgramService service,
+  PlanService service,
   AppLocalizations l10n,
   PlanAdditions additions,
 ) async {

@@ -20,7 +20,7 @@ import 'package:ringdrill/views/widgets/exercise_scope.dart';
 /// copy) and by the roleplay editor (the linked station's `locations`/
 /// `persons`, plus its own pending inline-created ones — a roleplay does
 /// not own a station's collections, so it always reads someone else's).
-/// Omitted (no ancestor) for editors with no station in scope (Program,
+/// Omitted (no ancestor) for editors with no station in scope (Plan,
 /// Exercise) — a field's `StationScope.maybeOf` lookup returning null means
 /// "no station tokens here", not an error, mirroring how `PlanScope` is
 /// mandatory but this one is optional.
@@ -96,7 +96,7 @@ class StationScope extends InheritedWidget {
   ///
   /// [stationCode] is the one facet this scope cannot compute the same way:
   /// its brief value needs the exercise's 1-based position in
-  /// `Program.exercises` and `Program.stationNumberFormat`, neither of
+  /// `Plan.exercises` and `Plan.stationNumberFormat`, neither of
   /// which any DESIGN-010 scope carries, and the brief itself never leaves
   /// it null. Duplicating `Numbering.station`'s cascade here to recover
   /// them would risk exactly the drift ADR-0048 exists to avoid, so

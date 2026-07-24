@@ -4,7 +4,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/theme.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 
 Exercise _exercise({

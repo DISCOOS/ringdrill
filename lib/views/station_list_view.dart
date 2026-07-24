@@ -8,7 +8,7 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/page_widget.dart';
@@ -46,17 +46,17 @@ class StationListView extends StatefulWidget {
 }
 
 class _StationListViewState extends State<StationListView> {
-  final _programService = ProgramService();
+  final _planService = PlanService();
   StreamSubscription? _subscription;
   StreamSubscription<ExerciseEvent>? _exerciseSubscription;
 
   /// The effective plan-variable map (ADR-0046) at [station]'s scope. Empty
   /// when there is no active plan.
   Map<String, String> _overridesFor(Exercise exercise, Station station) {
-    final program = _programService.activeProgram;
-    if (program == null) return const {};
+    final plan = _planService.activePlan;
+    if (plan == null) return const {};
     return effectivePlanVariables(
-      program,
+      plan,
       exercise: exercise,
       station: station,
     );
@@ -75,7 +75,7 @@ class _StationListViewState extends State<StationListView> {
 
   // Optimistic display of the committed reorder order. Set synchronously in
   // onCommitReorder so the new order is shown immediately without waiting for
-  // the async save round-trip (same pattern as _exercises in ProgramView).
+  // the async save round-trip (same pattern as _exercises in PlanView).
   // Cleared when the service fires a refresh event (new data loaded).
   List<(int, Exercise, Station)>? _stagedRows;
 
@@ -100,7 +100,7 @@ class _StationListViewState extends State<StationListView> {
     // Drop `done` events so a stopped exercise's stations stop being
     // highlighted with the live-accent treatment on the badge and tile.
     _liveEvent = _filterLive(ExerciseService().last);
-    _subscription = _programService.events.listen((_) {
+    _subscription = _planService.events.listen((_) {
       if (mounted) setState(() => _stagedRows = null);
     });
     // Track the running exercise so rows belonging to it get the same
@@ -146,7 +146,7 @@ class _StationListViewState extends State<StationListView> {
   /// across filter toggles so badge codes do not jump when the user
   /// narrows the view.
   List<(int, Exercise, Station)> _collectRows() {
-    final exercises = _programService.loadExercises();
+    final exercises = _planService.loadExercises();
     final filterUuid = _controller.filterExerciseUuid.value;
     final rows = <(int, Exercise, Station)>[];
     for (var i = 0; i < exercises.length; i++) {
@@ -167,7 +167,7 @@ class _StationListViewState extends State<StationListView> {
   /// "has markører" treatment doesn't re-scan roleplays per row.
   Set<(String, int)> _collectStationsWithRoles() {
     final pairs = <(String, int)>{};
-    for (final rp in _programService.loadRolePlays()) {
+    for (final rp in _planService.loadRolePlays()) {
       final idx = rp.stationIndex;
       if (idx == null) continue;
       pairs.add((rp.exerciseUuid, idx));
@@ -186,11 +186,11 @@ class _StationListViewState extends State<StationListView> {
   Exercise? _filterExercise() {
     final uuid = _controller.filterExerciseUuid.value;
     if (uuid == null) return null;
-    return _programService.getExercise(uuid);
+    return _planService.getExercise(uuid);
   }
 
   /// Returns the sliver content for the station rows, meant to be embedded
-  /// directly in program_view.dart's per-segment `CustomScrollView` (see
+  /// directly in plan_view.dart's per-segment `CustomScrollView` (see
   /// [ReorderableSection.sliver]). The exercise filter banner is a separate
   /// widget ([StationFilterBanner]) rendered by the host outside the scroll
   /// view — it needs to stay pinned to the bottom of the segment's viewport
@@ -198,7 +198,7 @@ class _StationListViewState extends State<StationListView> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final allExercises = _programService.loadExercises();
+    final allExercises = _planService.loadExercises();
     final hasAnyStation = allExercises.any((e) => e.stations.isNotEmpty);
 
     // Use staged rows (synchronous post-commit display) when available so the
@@ -296,7 +296,7 @@ class _StationListViewState extends State<StationListView> {
             final exerciseUuid = filterExercise.uuid;
             setState(() => _stagedRows = newOrder);
             final orderedOldIndices = newOrder.map((r) => r.$3.index).toList();
-            _programService.reorderStations(exerciseUuid, orderedOldIndices);
+            _planService.reorderStations(exerciseUuid, orderedOldIndices);
           },
           itemBuilder: buildStationRow,
         );
@@ -337,7 +337,7 @@ class _StationListViewState extends State<StationListView> {
 
     final badge = StationNumberBadge(
       label: Numbering.station(
-        _programService.activeProgram?.stationNumberFormat ??
+        _planService.activePlan?.stationNumberFormat ??
             StationNumberFormat.dotted,
         exerciseNumber: exerciseNumber,
         // rowIndex is the station's position within its own exercise (see
@@ -518,7 +518,7 @@ class _StationListViewState extends State<StationListView> {
     // DESIGN-009 prompt 5: the delete-guard and save-block need to know
     // whether a roleplay linked to this station references a Location/
     // Person before letting the author remove or leave one dangling.
-    final roleplays = _programService
+    final roleplays = _planService
         .loadRolePlays()
         .where(
           (r) =>
@@ -530,16 +530,16 @@ class _StationListViewState extends State<StationListView> {
       context,
       builder: (_) => StationFormScreen(
         station: station,
-        markers: _programService.getLocations().toMarkerSpecs(),
-        variables: _programService.activeProgram?.variables ?? const [],
+        markers: _planService.getLocations().toMarkerSpecs(),
+        variables: _planService.activePlan?.variables ?? const [],
         parentExercise: exercise,
         roleplays: roleplays,
       ),
     );
     if (!mounted || result == null) return;
 
-    await applyVariableAdditionsToActiveProgram(
-      _programService,
+    await applyVariableAdditionsToActivePlan(
+      _planService,
       result.additions,
     );
     // A marker authored/edited inline from the Persons section's "Legg til
@@ -547,18 +547,18 @@ class _StationListViewState extends State<StationListView> {
     // the post editor's own working copy, written back here alongside the
     // station's own save.
     await applyPendingRolePlayAdditions(
-      _programService,
+      _planService,
       localizations,
       result.additions,
     );
     // Persist the edited station back into its owning exercise.
-    final current = _programService.getExercise(exercise.uuid);
+    final current = _planService.getExercise(exercise.uuid);
     if (current == null) return;
     final stations = [...current.stations];
     final idxInList = stations.indexWhere((s) => s.index == station.index);
     if (idxInList < 0) return;
     stations[idxInList] = result.station;
-    await _programService.saveExercise(
+    await _planService.saveExercise(
       localizations,
       current.copyWith(stations: stations),
     );
@@ -566,7 +566,7 @@ class _StationListViewState extends State<StationListView> {
 }
 
 /// Fixed banner shown below the Stations tab's scroll view while filtered to
-/// one exercise. Rendered by program_view.dart as a sibling of the segment's
+/// one exercise. Rendered by plan_view.dart as a sibling of the segment's
 /// `CustomScrollView` (not inside it) so it stays pinned to the bottom of the
 /// viewport instead of scrolling with the rows — mirrors the pre-sliver
 /// `Column(Expanded(list), banner)` layout. Renders nothing when no filter is
@@ -583,7 +583,7 @@ class StationFilterBanner extends StatelessWidget {
       builder: (context, uuid, _) {
         final exercise = uuid == null
             ? null
-            : ProgramService().getExercise(uuid);
+            : PlanService().getExercise(uuid);
         if (exercise == null) return const SizedBox.shrink();
         final localizations = AppLocalizations.of(context)!;
         final theme = Theme.of(context);
@@ -604,10 +604,10 @@ class StationFilterBanner extends StatelessWidget {
                   Expanded(
                     child: RingDrillText.plain(
                       localizations.showingStationsIn(exercise.name),
-                      overrides: ProgramService().activeProgram == null
+                      overrides: PlanService().activePlan == null
                           ? const {}
                           : effectivePlanVariables(
-                              ProgramService().activeProgram!,
+                              PlanService().activePlan!,
                               exercise: exercise,
                             ),
                       style: TextStyle(
@@ -656,7 +656,7 @@ class StationListController extends ScreenController {
   @override
   List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
     final localizations = AppLocalizations.of(context)!;
-    final hasActiveProgram = ProgramService().activeProgramUuid != null;
+    final hasActivePlan = PlanService().activePlanUuid != null;
     return [
       ValueListenableBuilder<String?>(
         valueListenable: filterExerciseUuid,
@@ -664,7 +664,7 @@ class StationListController extends ScreenController {
           final button = IconButton(
             icon: const Icon(Icons.filter_list),
             tooltip: localizations.selectExercises,
-            onPressed: hasActiveProgram ? () => openFilterSheet(context) : null,
+            onPressed: hasActivePlan ? () => openFilterSheet(context) : null,
           );
           if (active == null) return button;
           return Badge.count(count: 1, child: button);
@@ -675,10 +675,10 @@ class StationListController extends ScreenController {
 
   Future<void> openFilterSheet(BuildContext context) async {
     final localizations = AppLocalizations.of(context)!;
-    final program = ProgramService().activeProgram;
-    final exercises = ProgramService().loadExercises();
+    final plan = PlanService().activePlan;
+    final exercises = PlanService().loadExercises();
     final exerciseFormat =
-        program?.exerciseNumberFormat ?? ExerciseNumberFormat.hash;
+        plan?.exerciseNumberFormat ?? ExerciseNumberFormat.hash;
     final current = filterExerciseUuid.value;
     // Adaptive picker (ADR-0049): bottom sheet on compact, dialog on
     // medium/expanded. Tap applies the filter (a check marks the active

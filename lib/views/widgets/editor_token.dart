@@ -1,8 +1,8 @@
 /// A view-layer projection of one declared plan variable (ADR-0046) — just
 /// enough for [TokenTextEditingController] to resolve a `{{var.<name>}}`
 /// chip's state and for the insertion menu to show its effective value.
-/// Deliberately not coupled to `BriefRenderer` or the `Program` model: the
-/// caller (e.g. `ProgramFormScreen`) builds this list from whichever scope
+/// Deliberately not coupled to `BriefRenderer` or the `Plan` model: the
+/// caller (e.g. `PlanFormScreen`) builds this list from whichever scope
 /// it is editing.
 class VariableToken {
   const VariableToken({
@@ -30,7 +30,7 @@ class VariableToken {
 class PlanFieldToken {
   const PlanFieldToken({required this.name, required this.label, this.hint});
 
-  /// The mustache path, e.g. `program.name` or `exercise.name`.
+  /// The mustache path, e.g. `plan.name` or `exercise.name`.
   final String name;
 
   /// Localized label shown in the picker.

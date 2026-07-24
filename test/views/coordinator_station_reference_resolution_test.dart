@@ -5,7 +5,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
@@ -59,10 +59,10 @@ void main() {
 
   setUp(() async {
     await initActivePlan('Coord ref plan');
-    await ProgramService().saveExercise(l10n, _exercise());
+    await PlanService().saveExercise(l10n, _exercise());
   });
 
-  tearDown(() => ProgramService().clearAllForTest());
+  tearDown(() => PlanService().clearAllForTest());
 
   testWidgets(
     'expanding a post resolves {{station.position}} in its description',

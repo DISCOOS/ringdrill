@@ -18,7 +18,7 @@ import 'package:ringdrill/views/widgets/variable_type_labels.dart';
 /// the same "declared value, then override wins" rule
 /// `BriefRenderer._effectiveVariables` applies server-side (ADR-0046). A
 /// field only ever has one `overrides` map (its own entity's
-/// `variableOverrides`, or none at program scope), so there is no
+/// `variableOverrides`, or none at plan scope), so there is no
 /// exercise/station cascade to apply here — the caller already resolved
 /// which single map (if any) applies to this field's scope.
 ///
@@ -77,7 +77,7 @@ Widget _wrapTokenAware({
   tokenController.variables = variables;
   // Optional: only a caller editing under a StationScope (station and
   // roleplay editors) gets `station.loc`/`station.person` chip coloring
-  // (ADR-0047, DESIGN-009 follow-up 4). Program/Exercise fields have no
+  // (ADR-0047, DESIGN-009 follow-up 4). Plan/Exercise fields have no
   // station in scope, so this stays null there and the tokens render as
   // plain text, same as before this field existed.
   final stationScope = StationScope.maybeOf(context);
@@ -255,7 +255,7 @@ class RingDrillTextField extends StatefulWidget {
   final bool tokenAware;
 
   /// This field's own scope override map (e.g. an `Exercise`'s
-  /// `variableOverrides`), or empty at a scope with none (e.g. program).
+  /// `variableOverrides`), or empty at a scope with none (e.g. plan).
   final Map<String, String> overrides;
   final List<PlanFieldToken> planFields;
   final ValueChanged<String>? onCreateVariable;
@@ -429,7 +429,7 @@ class RingDrillTextArea extends StatefulWidget {
   final bool tokenAware;
 
   /// This field's own scope override map (e.g. a `Station`'s
-  /// `variableOverrides`), or empty at a scope with none (e.g. program).
+  /// `variableOverrides`), or empty at a scope with none (e.g. plan).
   final Map<String, String> overrides;
   final List<PlanFieldToken> planFields;
   final ValueChanged<String>? onCreateVariable;

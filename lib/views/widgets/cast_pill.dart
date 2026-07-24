@@ -25,7 +25,7 @@ enum CastPillVariant {
 /// "add face" glyph. Two-masks stays on the section header, naming the list.
 ///
 /// [onTap] null renders a non-interactive indicator (the read-only
-/// `StationRoleSummary` call sites — program/coordinator detail).
+/// `StationRoleSummary` call sites — plan/coordinator detail).
 class CastPill extends StatelessWidget {
   const CastPill({
     super.key,

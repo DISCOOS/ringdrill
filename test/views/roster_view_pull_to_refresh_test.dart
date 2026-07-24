@@ -3,25 +3,25 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/roster_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Fixture identifiers — must not collide with roster_view_test.dart (separate
 // isolate, but keeps the intent clear).
-const _programUuid = 'roster-pull-refresh';
+const _planUuid = 'roster-pull-refresh';
 const _actorUuid = 'actor-pull-refresh';
 
-/// A program installed from the catalog (`source.runtimeType == 'catalog'`),
-/// the precondition `active_actions.isCatalogProgram` checks before
+/// A plan installed from the catalog (`source.runtimeType == 'catalog'`),
+/// the precondition `active_actions.isCatalogPlan` checks before
 /// roster_view.dart wraps its list in a `RefreshIndicator`.
-Map<String, Object> _catalogProgramPrefs() {
+Map<String, Object> _catalogPlanPrefs() {
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Catalog Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Catalog Plan',
       'description': '',
       'metadata': {
         'created': '2026-01-01T00:00:00.000Z',
@@ -40,7 +40,7 @@ Map<String, Object> _catalogProgramPrefs() {
       'rolePlays': [],
       'actors': [],
     }),
-    'pa:$_programUuid:$_actorUuid': jsonEncode({
+    'pa:$_planUuid:$_actorUuid': jsonEncode({
       'uuid': _actorUuid,
       'realName': 'Per Hansen',
     }),
@@ -61,8 +61,8 @@ void main() {
   testWidgets(
     'dragging down on a catalog-sourced plan triggers RefreshIndicator',
     (tester) async {
-      SharedPreferences.setMockInitialValues(_catalogProgramPrefs());
-      await ProgramService().init();
+      SharedPreferences.setMockInitialValues(_catalogPlanPrefs());
+      await PlanService().init();
 
       await tester.pumpWidget(_harness());
       await tester.pumpAndSettle();

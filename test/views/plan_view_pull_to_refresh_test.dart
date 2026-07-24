@@ -4,16 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/services/plan_service.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Fixture identifiers — must not collide with other program_view_*_test.dart
+// Fixture identifiers — must not collide with other plan_view_*_test.dart
 // files (separate isolate, but keeps the intent clear).
-const _programUuid = 'program-pull-refresh';
+const _planUuid = 'plan-pull-refresh';
 const _exerciseUuid = 'ex-pull-refresh-0';
 
 Exercise _exercise() => Exercise(
@@ -36,16 +36,16 @@ Exercise _exercise() => Exercise(
   endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
 );
 
-/// A program installed from the catalog (`source.runtimeType == 'catalog'`),
-/// the precondition `active_actions.isCatalogProgram` checks before
-/// program_view.dart wraps the segment scroll view in a `RefreshIndicator`.
-Map<String, Object> _catalogProgramPrefs() {
+/// A plan installed from the catalog (`source.runtimeType == 'catalog'`),
+/// the precondition `active_actions.isCatalogPlan` checks before
+/// plan_view.dart wraps the segment scroll view in a `RefreshIndicator`.
+Map<String, Object> _catalogPlanPrefs() {
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Catalog Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Catalog Plan',
       'description': '',
       'metadata': {
         'created': '2026-01-01T00:00:00.000Z',
@@ -64,12 +64,12 @@ Map<String, Object> _catalogProgramPrefs() {
       'rolePlays': [],
       'actors': [],
     }),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(_exercise().toJson()),
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(_exercise().toJson()),
   };
 }
 
-class _TestProgramController extends ProgramPageControllerBase {
-  _TestProgramController({
+class _TestPlanController extends PlanPageControllerBase {
+  _TestPlanController({
     required super.stationListController,
     required super.rolePlaysController,
     required super.teamsPageController,
@@ -77,7 +77,7 @@ class _TestProgramController extends ProgramPageControllerBase {
 }
 
 Widget _harness() {
-  final controller = _TestProgramController(
+  final controller = _TestPlanController(
     stationListController: StationListController(),
     rolePlaysController: RolePlaysController(),
     teamsPageController: const TeamsPageController(),
@@ -89,7 +89,7 @@ Widget _harness() {
     // No GoRouter: this test only drags the scroll view, it never taps the
     // segmented switcher (whose `onSelectionChanged` calls `context.go`).
     home: Scaffold(
-      body: ProgramView(
+      body: PlanView(
         controller: controller,
         stationListController: controller.stationListController,
         rolePlaysController: controller.rolePlaysController,
@@ -102,8 +102,8 @@ void main() {
   testWidgets(
     'dragging down on a catalog-sourced plan triggers RefreshIndicator',
     (tester) async {
-      SharedPreferences.setMockInitialValues(_catalogProgramPrefs());
-      await ProgramService().init();
+      SharedPreferences.setMockInitialValues(_catalogPlanPrefs());
+      await PlanService().init();
 
       await tester.pumpWidget(_harness());
       await tester.pumpAndSettle();

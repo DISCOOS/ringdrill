@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -30,18 +30,18 @@ class PublishPlanInput {
 /// Shows the publish-to-catalog dialog and returns the user's input.
 ///
 /// Returns `null` if the user cancels. The slug field is always editable; the
-/// initial value is derived from [program]'s current catalog slug if it has
+/// initial value is derived from [plan]'s current catalog slug if it has
 /// one, otherwise from its name.
 Future<PublishPlanInput?> showPublishPlanDialog(
   BuildContext context, {
-  required Program program,
+  required Plan plan,
   required PublishDialogMode mode,
 }) {
   final initialSlug =
-      program.source.whenOrNull(
+      plan.source.whenOrNull(
         catalog: (slug, latestEtag, installedAt, latestVersion) => slug,
       ) ??
-      sanitizeSlug(program.name);
+      sanitizeSlug(plan.name);
 
   return showAdaptiveDialog<PublishPlanInput>(
     context: context,
@@ -140,7 +140,7 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
   }
 }
 
-/// Publish [programUuid] under its current slug (or [slug] for first-time
+/// Publish [planUuid] under its current slug (or [slug] for first-time
 /// publish) and show a snackbar describing the outcome.
 ///
 /// On 412 (stale view) the function triggers a catalog refresh, shows the
@@ -148,52 +148,52 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
 /// and the new remote state, and acts on their choice (publish anyway,
 /// overwrite local, fork, or cancel). The caller therefore never has to
 /// handle 412 itself.
-Future<Program?> runPublishProgram(
+Future<Plan?> runPublishPlan(
   BuildContext context, {
-  required String programUuid,
+  required String planUuid,
   required String slug,
   required DrillClient client,
 }) {
   return _runUpload(
     context,
     slug: slug,
-    programUuid: programUuid,
+    planUuid: planUuid,
     client: client,
-    upload: () => ProgramService().publishProgram(
-      programUuid,
+    upload: () => PlanService().publishPlan(
+      planUuid,
       slug: slug,
       client: client,
     ),
   );
 }
 
-/// Publish [programUuid] at [slug], forking the local plan if the slug differs
+/// Publish [planUuid] at [slug], forking the local plan if the slug differs
 /// from the plan's current catalog slug. Shows a snackbar describing the
 /// outcome.
-Future<Program?> runPublishProgramAs(
+Future<Plan?> runPublishPlanAs(
   BuildContext context, {
-  required String programUuid,
+  required String planUuid,
   required String slug,
   required DrillClient client,
 }) {
   return _runUpload(
     context,
     slug: slug,
-    programUuid: programUuid,
+    planUuid: planUuid,
     client: client,
-    upload: () => ProgramService().publishProgramAs(
-      programUuid,
+    upload: () => PlanService().publishPlanAs(
+      planUuid,
       slug: slug,
       client: client,
     ),
   );
 }
 
-Future<Program?> _runUpload(
+Future<Plan?> _runUpload(
   BuildContext context, {
-  required Future<({Program program, bool notModified})> Function() upload,
+  required Future<({Plan plan, bool notModified})> Function() upload,
   required String slug,
-  required String programUuid,
+  required String planUuid,
   required DrillClient client,
 }) async {
   final localizations = AppLocalizations.of(context)!;
@@ -202,7 +202,7 @@ Future<Program?> _runUpload(
     final result = await upload();
     final message = result.notModified
         ? localizations.libraryPublishNoChange
-        : localizations.libraryPublishSuccess(result.program.name);
+        : localizations.libraryPublishSuccess(result.plan.name);
     messenger.showSnackBar(
       SnackBar(
         showCloseIcon: true,
@@ -210,7 +210,7 @@ Future<Program?> _runUpload(
         content: Text(message),
       ),
     );
-    return result.program;
+    return result.plan;
   } on DrillApiException catch (e, stackTrace) {
     if (e.status == 412 && context.mounted) {
       // Stale view — hand off to the catalog-conflict flow so the user can
@@ -218,7 +218,7 @@ Future<Program?> _runUpload(
       // overwrite / fork / publish-anyway / cancel.
       return await _resolvePublishConflict(
         context,
-        programUuid: programUuid,
+        planUuid: planUuid,
         client: client,
       );
     }
@@ -257,16 +257,16 @@ Future<Program?> _runUpload(
 /// "Refresh from catalog" — the only difference is that we got here because
 /// the user already attempted to publish, so [CatalogConflictChoice
 /// .publishMyChanges] re-runs the upload with the fresh etag.
-Future<Program?> _resolvePublishConflict(
+Future<Plan?> _resolvePublishConflict(
   BuildContext context, {
-  required String programUuid,
+  required String planUuid,
   required DrillClient client,
 }) async {
   final localizations = AppLocalizations.of(context)!;
   final messenger = ScaffoldMessenger.of(context);
   try {
-    final outcome = await ProgramService().refreshCatalogItem(
-      programUuid,
+    final outcome = await PlanService().refreshCatalogItem(
+      planUuid,
       client,
       onConflict:
           (
@@ -285,7 +285,7 @@ Future<Program?> _resolvePublishConflict(
           ),
     );
     if (outcome.kind == CatalogRefreshKind.published) {
-      final published = ProgramService().loadProgram(outcome.programUuid);
+      final published = PlanService().loadPlan(outcome.planUuid);
       if (published != null) {
         messenger.showSnackBar(
           SnackBar(

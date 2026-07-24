@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/team_screen.dart';
@@ -22,7 +22,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // ScheduleCard.
 // ---------------------------------------------------------------------------
 
-const _programUuid = 'prog-team-screen';
+const _planUuid = 'prog-team-screen';
 const _exerciseUuid = 'ex-team-screen';
 
 Exercise _exercise() => Exercise(
@@ -56,11 +56,11 @@ Exercise _exercise() => Exercise(
 Map<String, Object> _basePrefs() {
   final ex = _exercise();
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Test Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Test Plan',
       'description': '',
       'metadata': {
         'created': '2024-01-01T00:00:00.000Z',
@@ -73,13 +73,13 @@ Map<String, Object> _basePrefs() {
       'rolePlays': [],
       'actors': [],
     }),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
   };
 }
 
 Future<void> _seedAndInit() async {
   SharedPreferences.setMockInitialValues(_basePrefs());
-  await ProgramService().init();
+  await PlanService().init();
 }
 
 Widget _harness(Widget widget) => MaterialApp(

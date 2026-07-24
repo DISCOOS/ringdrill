@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -32,10 +32,10 @@ List<MapMarkerSpec<int>> exerciseStationMarkers(
   Exercise exercise, {
   ExerciseEvent? liveEvent,
 }) {
-  final program = ProgramService().activeProgram;
-  Map<String, String> overridesFor(Station station) => program == null
+  final plan = PlanService().activePlan;
+  Map<String, String> overridesFor(Station station) => plan == null
       ? const {}
-      : effectivePlanVariables(program, exercise: exercise, station: station);
+      : effectivePlanVariables(plan, exercise: exercise, station: station);
 
   final markers = <MapMarkerSpec<int>>[];
   for (
@@ -245,7 +245,7 @@ Future<void> openExerciseMapSheet(
 
 /// Mirrors `_MapSheetHeader`/`_RoleMapSheetHeader`: the header computes its
 /// own exercise number and title from [exercise] alone via
-/// [ProgramService]. Public (not the private `_ExerciseMapSheetHeader` this
+/// [PlanService]. Public (not the private `_ExerciseMapSheetHeader` this
 /// started as) — `coordinator_screen.dart`'s inline map needs it too, for
 /// its own `MapView.fullscreenHeader`.
 class ExerciseMapSheetHeader extends StatelessWidget
@@ -259,10 +259,10 @@ class ExerciseMapSheetHeader extends StatelessWidget
 
   @override
   Widget build(BuildContext context) {
-    final program = ProgramService().activeProgram;
-    final overrides = program == null
+    final plan = PlanService().activePlan;
+    final overrides = plan == null
         ? const <String, String>{}
-        : effectivePlanVariables(program, exercise: exercise);
+        : effectivePlanVariables(plan, exercise: exercise);
     return AppBar(
       leading: MasterDetailLeading(onClose: () => Navigator.of(context).pop()),
       toolbarHeight: 72,

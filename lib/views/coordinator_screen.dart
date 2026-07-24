@@ -9,7 +9,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
@@ -88,7 +88,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     with SubscriptionBag<CoordinatorScreen> {
   late bool _isStarted;
 
-  final _programService = ProgramService();
+  final _planService = PlanService();
   final _exerciseService = ExerciseService();
   Exercise? _exercise;
   bool _promptShowNotification = false;
@@ -98,10 +98,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// optionally narrowed to [station]'s — mirrors `StationScreen`.
   /// Empty when there is no active plan.
   Map<String, String> _overridesFor(Exercise exercise, {Station? station}) {
-    final program = _programService.activeProgram;
-    if (program == null) return const {};
+    final plan = _planService.activePlan;
+    if (plan == null) return const {};
     return effectivePlanVariables(
-      program,
+      plan,
       exercise: exercise,
       station: station,
     );
@@ -121,7 +121,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
 
   // Optimistic display of the committed station reorder order. Set
   // synchronously in onCommitReorder so the new order is shown immediately
-  // without waiting for the async save round-trip. Cleared when the program
+  // without waiting for the async save round-trip. Cleared when the plan
   // refresh event arrives (new data loaded from the service).
   List<Station>? _stagedStations;
 
@@ -143,20 +143,20 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   void initState() {
     _isStarted = _exerciseService.isStartedOn(widget.uuid);
 
-    // Listen to ProgramService state changes. React to direct exercise events
-    // (exerciseAdded, etc.) and to programRefreshed events (emitted by
+    // Listen to PlanService state changes. React to direct exercise events
+    // (exerciseAdded, etc.) and to planRefreshed events (emitted by
     // reorderStations and reorderExercises which carry no exercise reference).
-    listen(_programService.events, (event) {
+    listen(_planService.events, (event) {
       final directMatch = event.exercise?.uuid == widget.uuid;
-      final isRefresh = event.type == ProgramEventType.programRefreshed;
+      final isRefresh = event.type == PlanEventType.planRefreshed;
       if (directMatch || isRefresh) {
         if (mounted) {
           setState(() {
             // Prefer the event's exercise object when available (avoids an
             // extra service lookup for the common case). Fall back to a fresh
-            // load when the event carries no exercise (e.g. programRefreshed).
+            // load when the event carries no exercise (e.g. planRefreshed).
             _exercise =
-                event.exercise ?? _programService.getExercise(widget.uuid);
+                event.exercise ?? _planService.getExercise(widget.uuid);
             _stagedStations = null;
           });
         }
@@ -199,7 +199,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
 
   @override
   void didChangeDependencies() {
-    _exercise = _programService.getExercise(widget.uuid);
+    _exercise = _planService.getExercise(widget.uuid);
     assert(_exercise != null, 'Exercise with uuid [${widget.uuid}] not found');
     _isStarted = _exerciseService.isStartedOn(widget.uuid);
     super.didChangeDependencies();
@@ -260,7 +260,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
 
     if (context.mounted && confirmed) {
-      await _programService.deleteExercise(_exercise!.uuid);
+      await _planService.deleteExercise(_exercise!.uuid);
       if (context.mounted) {
         // The exercise this coordinator showed is gone — close the viewer the
         // same master/detail-aware way the AppBar close does (back to the
@@ -279,17 +279,17 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // Captured before the await: in compact layout openFormSurface dismisses
     // the hosting context sheet around the form push, which disposes this
     // State — the context is gone by the time the form pops. The save must
-    // still run (ProgramService needs no context); only UI work below is
+    // still run (PlanService needs no context); only UI work below is
     // gated on mounted.
     final localizations = AppLocalizations.of(context)!;
-    final numberOfTeams = _programService.loadTeams().length;
+    final numberOfTeams = _planService.loadTeams().length;
     // Navigate to the edit exercise screen
     final result = await openFormSurface<ExerciseFormResult>(
       context,
       builder: (context) => ExerciseFormScreen(
         exercise: _exercise,
         numberOfTeams: numberOfTeams == 0 ? null : numberOfTeams,
-        variables: _programService.activeProgram?.variables ?? const [],
+        variables: _planService.activePlan?.variables ?? const [],
       ),
     );
     switch (result) {
@@ -299,14 +299,14 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         // Apply the write-back (any variable created inline, ADR-0047) before
         // the exercise itself, so a chip the exercise's own save might
         // validate against is already declared.
-        await applyVariableAdditionsToActiveProgram(_programService, additions);
-        await _programService.saveExercise(localizations, exercise);
+        await applyVariableAdditionsToActivePlan(_planService, additions);
+        await _planService.saveExercise(localizations, exercise);
         if (!mounted) return;
         setState(() {
           _exercise = exercise;
         });
       case ExerciseFormDelete(:final exercise):
-        await _programService.deleteExercise(exercise.uuid);
+        await _planService.deleteExercise(exercise.uuid);
         if (!mounted) return;
         // The exercise this coordinator showed is gone — close the viewer the
         // same master/detail-aware way the AppBar close does. Use the State's
@@ -334,7 +334,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         final raw = asyncSnapshot.data;
         final event = (raw != null && raw.exercise.uuid == widget.uuid)
             ? raw
-            : ExerciseEvent.pending(_programService.getExercise(widget.uuid)!);
+            : ExerciseEvent.pending(_planService.getExercise(widget.uuid)!);
         return Scaffold(
           appBar: AppBar(
             // Matches the other detail screens (`StationScreen`,
@@ -1279,7 +1279,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     final exercise = _exercise!;
     // Use staged stations (synchronous post-commit display) when available so
     // the new order is shown immediately after Done without snap-back.
-    // _stagedStations is cleared when the programRefreshed event arrives.
+    // _stagedStations is cleared when the planRefreshed event arrives.
     final stations = _stagedStations ?? exercise.stations;
 
     // Resolve the exercise's 1-based number the same way the Stations segment
@@ -1287,7 +1287,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // matches what the Stations segment shows (ADR-0036 §"Coordinator station
     // badge").
     final exerciseNumber =
-        (_programService.loadExercises().indexWhere(
+        (_planService.loadExercises().indexWhere(
           (e) => e.uuid == exercise.uuid,
         ) +
         1);
@@ -1309,7 +1309,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
 
       final badge = StationNumberBadge(
         label: Numbering.station(
-          _programService.activeProgram?.stationNumberFormat ??
+          _planService.activePlan?.stationNumberFormat ??
               StationNumberFormat.dotted,
           exerciseNumber: exerciseNumber,
           // Use position (list index) so the badge renumbers live during a
@@ -1462,7 +1462,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           // Show the new order immediately (synchronous), then persist async.
           setState(() => _stagedStations = newOrder);
           final orderedOldIndices = newOrder.map((s) => s.index).toList();
-          _programService.reorderStations(exercise.uuid, orderedOldIndices);
+          _planService.reorderStations(exercise.uuid, orderedOldIndices);
         },
         itemBuilder: buildStationRow,
       ),
@@ -1482,7 +1482,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // DESIGN-009 prompt 5/4j: the delete-guard, save-block and the Persons
     // section's inline marker row all need to know which roleplays are
     // already linked to this station.
-    final roleplays = _programService
+    final roleplays = _planService
         .loadRolePlays()
         .where(
           (r) =>
@@ -1494,8 +1494,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       context,
       builder: (_) => StationFormScreen(
         station: _exercise!.stations[stationIndex],
-        markers: _programService.getLocations().toMarkerSpecs(),
-        variables: _programService.activeProgram?.variables ?? const [],
+        markers: _planService.getLocations().toMarkerSpecs(),
+        variables: _planService.activePlan?.variables ?? const [],
         parentExercise: _exercise,
         roleplays: roleplays,
       ),
@@ -1503,8 +1503,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // No mounted gate on the save: openFormSurface disposes this State when
     // it dismisses the hosting context sheet around the form push.
     if (result == null) return;
-    await applyVariableAdditionsToActiveProgram(
-      _programService,
+    await applyVariableAdditionsToActivePlan(
+      _planService,
       result.additions,
     );
     // A marker authored/edited inline from the Persons section's "Legg til
@@ -1512,13 +1512,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // the post editor's own working copy, written back here alongside the
     // station's own save.
     await applyPendingRolePlayAdditions(
-      _programService,
+      _planService,
       localizations,
       result.additions,
     );
     final stations = [..._exercise!.stations];
     stations[stationIndex] = result.station;
-    await _programService.saveExercise(
+    await _planService.saveExercise(
       localizations,
       _exercise!.copyWith(stations: stations),
     );
@@ -1594,10 +1594,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   Widget _buildTeamList(ExerciseEvent event) {
     final localizations = context.l10n;
     final format =
-        ProgramService().activeProgram?.stationNumberFormat ??
+        PlanService().activePlan?.stationNumberFormat ??
         StationNumberFormat.dotted;
     final exNum =
-        ProgramService().loadExercises().indexWhere(
+        PlanService().loadExercises().indexWhere(
           (e) => e.uuid == _exercise!.uuid,
         ) +
         1;
@@ -1634,7 +1634,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           final isLive = event.isRunning;
           final accent = LiveAccent.of(context, isLive: isLive);
           final teamName =
-              _programService.getTeam(teamIndex)?.name ??
+              _planService.getTeam(teamIndex)?.name ??
               '${localizations.team(1)} ${teamIndex + 1}';
           return ExpandableTile(
             onLongPress: () => _editTeam(teamIndex),
@@ -1722,7 +1722,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       );
       return;
     }
-    final team = _programService.getTeam(teamIndex);
+    final team = _planService.getTeam(teamIndex);
     if (team == null) return;
     final updated = await openFormSurface<Team>(
       context,
@@ -1731,7 +1731,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // No mounted gate on the save: openFormSurface disposes this State when
     // it dismisses the hosting context sheet around the form push.
     if (updated == null) return;
-    await _programService.saveTeam(localizations, updated);
+    await _planService.saveTeam(localizations, updated);
     if (mounted) setState(() {});
   }
 
@@ -1742,10 +1742,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   Widget _buildTeamDetail(int teamIndex, ExerciseEvent event) {
     final localizations = AppLocalizations.of(context)!;
     final format =
-        ProgramService().activeProgram?.stationNumberFormat ??
+        PlanService().activePlan?.stationNumberFormat ??
         StationNumberFormat.dotted;
     final exNum =
-        ProgramService().loadExercises().indexWhere(
+        PlanService().loadExercises().indexWhere(
           (e) => e.uuid == _exercise!.uuid,
         ) +
         1;

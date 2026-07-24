@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 
@@ -42,7 +42,7 @@ class DockedDrillMiniPlayer extends StatelessWidget {
         final selectedExerciseUuid = exerciseUuidOf(target);
         final selectedExercise = selectedExerciseUuid == null
             ? null
-            : ProgramService().getExercise(selectedExerciseUuid);
+            : PlanService().getExercise(selectedExerciseUuid);
         final idleExercise = ExerciseService().isStarted
             ? null
             : selectedExercise;

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 
 /// Seeds a [PlanScope] from the active plan for a sheet/dialog choke point
 /// (DESIGN-008 follow-up 11): `showModalBottomSheet`/`showDialog` push onto
 /// the Navigator's `Overlay`, a sibling of — not a descendant of —
 /// `MainScreen`, so the `PlanScope` wrapping `MainScreen` never reaches
-/// anything opened this way without this. Harmless for a cross-program
+/// anything opened this way without this. Harmless for a cross-plan
 /// picker: it simply never reads the scope (follow-up 09).
 Widget _withDefaultPlanScope(Widget child) => PlanScope(
-  variables: ProgramService().activeProgram?.variables ?? const [],
+  variables: PlanService().activePlan?.variables ?? const [],
   child: child,
 );
 

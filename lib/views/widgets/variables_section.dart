@@ -24,13 +24,13 @@ final _slugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 /// set afterward on the card itself) matches `PersonsSection`/
 /// `LocationsSection`'s own bar.
 ///
-/// Presentation-only, mirroring how `_TagsEditor` and `ProgramFormScreen`'s
+/// Presentation-only, mirroring how `_TagsEditor` and `PlanFormScreen`'s
 /// `_activeSections` are owned by the parent form: [variables] and the
 /// mutation callbacks are owned by the caller. Rename and delete need
 /// plan-wide knowledge (every markdown field, every `variableOverrides`
 /// map) this widget doesn't have — [referenceCount] and
 /// [referenceDescriptions] are injected so the caller (which holds the
-/// working `Program`) can answer "is this referenced, and where".
+/// working `Plan`) can answer "is this referenced, and where".
 class VariablesSection extends StatefulWidget {
   const VariablesSection({
     super.key,
@@ -624,7 +624,7 @@ class _VariableCardState extends State<_VariableCard> {
 /// [DropdownButtonFormField], sized and aligned to match the value field's
 /// own height (a bespoke pill button previously sat noticeably smaller and
 /// misaligned against it). [IntrinsicWidth] keeps it sized to its content
-/// in the surrounding `Row`, matching `program_form_screen.dart`'s
+/// in the surrounding `Row`, matching `plan_form_screen.dart`'s
 /// `_LanguagePicker` — the same pattern already used for a compact,
 /// content-sized dropdown beside another field.
 class _TypeDropdown extends StatelessWidget {

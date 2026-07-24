@@ -7,7 +7,7 @@ import 'package:ringdrill/views/widgets/variable_type_labels.dart';
 import 'package:ringdrill/views/widgets/variable_value_field.dart';
 
 /// DESIGN-008 "Variabler" **override** section shape (as opposed to
-/// [VariablesSection]'s **declaration** shape on `Program`), reshaped by
+/// [VariablesSection]'s **declaration** shape on `Plan`), reshaped by
 /// follow-up 11 (`variable-overrides.html`): a card per declared plan
 /// variable with the name, the parent-scope default in parentheses after it
 /// — formatted for the variable's type (a time as `12:00`, a location as
@@ -15,15 +15,15 @@ import 'package:ringdrill/views/widgets/variable_value_field.dart';
 /// [overrides]. An empty local value means "inherit" (the name is absent
 /// from [overrides]); setting one overrides for this subtree; the
 /// "Tilbakestill" action clears it back to inherit. No add/rename/delete —
-/// a variable's identity (and its type) is only ever declared on `Program`
+/// a variable's identity (and its type) is only ever declared on `Plan`
 /// (ADR-0046); this table can only override an existing value.
 ///
 /// Presentation-only, mirroring `VariablesSection`: [variables], [inherited]
 /// and [overrides] are owned by the caller, and so is [onChanged]. The
 /// caller also computes [inherited] — the parent scope's effective value —
-/// since that needs the whole `Program` (`effectivePlanVariables`), which
+/// since that needs the whole `Plan` (`effectivePlanVariables`), which
 /// this widget does not have; an `Exercise` editor's inherited value is
-/// simply the program's declared default (no scope between program and
+/// simply the plan's declared default (no scope between plan and
 /// exercise), while a `Station` editor's (follow-up 07) is the *exercise's*
 /// effective value, cascading through the exercise's own overrides.
 class VariableOverridesSection extends StatelessWidget {

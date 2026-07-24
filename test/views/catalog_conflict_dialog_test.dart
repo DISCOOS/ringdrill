@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 
 /// Coverage for the responsive presentation (bottom sheet on mobile, larger
@@ -16,7 +16,7 @@ void main() {
   // old/stored value — the dialog reads old → new (remote → local), so the
   // strings below are deliberately named to catch a regression if that
   // order ever flips back (see the "field change direction" test below).
-  final diff = ProgramDiff(
+  final diff = PlanDiff(
     modifiedExercises: [
       ItemDiff(
         name: 'Ladder',
@@ -417,7 +417,7 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
-    final planFirstDiff = ProgramDiff(
+    final planFirstDiff = PlanDiff(
       nameLocal: 'My plan',
       nameRemote: 'My plan (catalog)',
       modifiedExercises: diff.modifiedExercises,
@@ -463,7 +463,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      final planRenameDiff = ProgramDiff(
+      final planRenameDiff = PlanDiff(
         nameLocal: 'My plan',
         nameRemote: 'My plan (catalog)',
       );
@@ -547,7 +547,7 @@ void main() {
         endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
       );
 
-  Future<void> openRealDiffDialog(WidgetTester tester, ProgramDiff realDiff) async {
+  Future<void> openRealDiffDialog(WidgetTester tester, PlanDiff realDiff) async {
     result = null;
     await tester.pumpWidget(
       MaterialApp(
@@ -583,13 +583,13 @@ void main() {
 
       // Mirrors the reported bug: two exercises sharing a name (a routine
       // occurrence — the same round repeated) swap positions. Built via the
-      // real diffPrograms(), not a hand-authored ProgramDiff, so this is an
+      // real diffPlans(), not a hand-authored PlanDiff, so this is an
       // end-to-end regression check on the diff engine itself.
-      final local = Program(
+      final local = Plan(
         uuid: 'p1',
         name: 'Test',
         description: '',
-        metadata: ProgramMetadata(
+        metadata: PlanMetadata(
           created: DateTime(2026),
           updated: DateTime(2026),
           version: '1.0',
@@ -607,7 +607,7 @@ void main() {
           buildExercise('ex-2', 'Førsteinnsats søk', index: 0),
         ],
       );
-      final realDiff = diffPrograms(local, remote);
+      final realDiff = diffPlans(local, remote);
 
       await openRealDiffDialog(tester, realDiff);
 
@@ -636,11 +636,11 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      final local = Program(
+      final local = Plan(
         uuid: 'p1',
         name: 'Test',
         description: '',
-        metadata: ProgramMetadata(
+        metadata: PlanMetadata(
           created: DateTime(2026),
           updated: DateTime(2026),
           version: '1.0',
@@ -662,7 +662,7 @@ void main() {
           ).copyWith(methodMd: 'New method'),
         ],
       );
-      final realDiff = diffPrograms(local, remote);
+      final realDiff = diffPlans(local, remote);
 
       await openRealDiffDialog(tester, realDiff);
 
@@ -686,11 +686,11 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      final local = Program(
+      final local = Plan(
         uuid: 'p1',
         name: 'Test',
         description: '',
-        metadata: ProgramMetadata(
+        metadata: PlanMetadata(
           created: DateTime(2026),
           updated: DateTime(2026),
           version: '1.0',
@@ -710,7 +710,7 @@ void main() {
           ),
         ],
       );
-      final realDiff = diffPrograms(local, remote);
+      final realDiff = diffPlans(local, remote);
 
       await openRealDiffDialog(tester, realDiff);
 
@@ -740,11 +740,11 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      final local = Program(
+      final local = Plan(
         uuid: 'p1',
         name: 'Test',
         description: '',
-        metadata: ProgramMetadata(
+        metadata: PlanMetadata(
           created: DateTime(2026),
           updated: DateTime(2026),
           version: '1.0',
@@ -770,7 +770,7 @@ void main() {
           ),
         ],
       );
-      final realDiff = diffPrograms(local, remote);
+      final realDiff = diffPlans(local, remote);
 
       // Name-based matching pairs each station with itself regardless of
       // position, so the swap is not mistaken for a rewrite of every
@@ -805,11 +805,11 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      final local = Program(
+      final local = Plan(
         uuid: 'p1',
         name: 'Test',
         description: '',
-        metadata: ProgramMetadata(
+        metadata: PlanMetadata(
           created: DateTime(2026),
           updated: DateTime(2026),
           version: '1.0',
@@ -841,7 +841,7 @@ void main() {
               .copyWith(methodMd: 'Old method'),
         ],
       );
-      final realDiff = diffPrograms(local, remote);
+      final realDiff = diffPlans(local, remote);
       expect(realDiff.modifiedExercises, hasLength(2));
 
       await openRealDiffDialog(tester, realDiff);
@@ -860,11 +860,11 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      final local = Program(
+      final local = Plan(
         uuid: 'p1',
         name: 'Test',
         description: '',
-        metadata: ProgramMetadata(
+        metadata: PlanMetadata(
           created: DateTime(2026),
           updated: DateTime(2026),
           version: '1.0',
@@ -883,7 +883,7 @@ void main() {
           ),
         ],
       );
-      final realDiff = diffPrograms(local, remote);
+      final realDiff = diffPlans(local, remote);
 
       await openRealDiffDialog(tester, realDiff);
 

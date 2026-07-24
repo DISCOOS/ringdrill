@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/drill_player/exercise_picker_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// same badge/name/subtitle/current-check content, now inside the adaptive
 /// picker surface instead of a bespoke `showRingdrillActionSheet` body.
 
-const _programUuid = 'prog-1';
+const _planUuid = 'prog-1';
 
 final _exercise1 = Exercise(
   uuid: 'ex-1',
@@ -46,11 +46,11 @@ final _exercise2 = Exercise(
 
 Future<void> _seedAndInit() async {
   SharedPreferences.setMockInitialValues({
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Test Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Test Plan',
       'description': '',
       'metadata': {
         'created': '2024-01-01T00:00:00.000Z',
@@ -63,10 +63,10 @@ Future<void> _seedAndInit() async {
       'rolePlays': [],
       'actors': [],
     }),
-    'pe:$_programUuid:${_exercise1.uuid}': jsonEncode(_exercise1.toJson()),
-    'pe:$_programUuid:${_exercise2.uuid}': jsonEncode(_exercise2.toJson()),
+    'pe:$_planUuid:${_exercise1.uuid}': jsonEncode(_exercise1.toJson()),
+    'pe:$_planUuid:${_exercise2.uuid}': jsonEncode(_exercise2.toJson()),
   });
-  await ProgramService().init();
+  await PlanService().init();
 }
 
 /// `tester.view.physicalSize` keeps layout and MediaQuery consistent (see

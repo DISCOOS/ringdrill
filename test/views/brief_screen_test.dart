@@ -11,7 +11,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/brief_screen.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,7 +21,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 // Fixtures — based on the DESIGN-004 brief_renderer_test fixture
 // ---------------------------------------------------------------------------
 
-const _programUuid = 'prog-bs';
+const _planUuid = 'prog-bs';
 const _exerciseUuid = 'ex-3';
 const _actorUuid = 'actor-12';
 
@@ -37,7 +37,7 @@ const _rolePlay = RolePlay(
   exerciseUuid: _exerciseUuid,
   name: 'Anne Glemsk',
   age: 39,
-  signalement: '160 cm, grått hår, blå anorakk',
+  description: '160 cm, grått hår, blå anorakk',
   behavior: 'Du spiller en dement dame i god fysisk form.',
   stationIndex: 0,
   actorUuid: _actorUuid,
@@ -95,11 +95,11 @@ Map<String, Object> _buildPrefs() {
     'version': '1.1',
   };
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Test Program BS',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Test Plan BS',
       'description': '',
       'metadata': meta,
       'exercises': [],
@@ -108,15 +108,15 @@ Map<String, Object> _buildPrefs() {
       'rolePlays': [],
       'actors': [],
     }),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
-    'pr:$_programUuid:rp-anne': jsonEncode(_rolePlay.toJson()),
-    'pa:$_programUuid:$_actorUuid': jsonEncode(_actor.toJson()),
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
+    'pr:$_planUuid:rp-anne': jsonEncode(_rolePlay.toJson()),
+    'pa:$_planUuid:$_actorUuid': jsonEncode(_actor.toJson()),
   };
 }
 
 Widget _buildScreen({
   String? exerciseUuid,
-  String? programUuid,
+  String? planUuid,
   BriefAudience? initialAudience,
 }) {
   return MaterialApp(
@@ -124,7 +124,7 @@ Widget _buildScreen({
     supportedLocales: AppLocalizations.supportedLocales,
     home: BriefScreen(
       exerciseUuid: exerciseUuid,
-      programUuid: programUuid,
+      planUuid: planUuid,
       initialAudience: initialAudience,
     ),
   );
@@ -191,13 +191,13 @@ void main() {
 
   // Set up once for the whole test file:
   // - Disable visibility_detector debounce to avoid pending-timer failures.
-  // - Load ProgramService with the exercise fixture once; ProgramService is a
+  // - Load PlanService with the exercise fixture once; PlanService is a
   //   singleton whose init() skips on subsequent calls, so we call it once here
   //   and all tests in this file share the same loaded state.
   setUpAll(() async {
     VisibilityDetectorController.instance.updateInterval = Duration.zero;
     SharedPreferences.setMockInitialValues(_buildPrefs());
-    await ProgramService().init();
+    await PlanService().init();
     // Pre-warm the rootBundle cache in the real async zone so that subsequent
     // loadString calls inside fake-async test zones see an already-completed
     // Future and resolve via microtask (a single pump() is then sufficient).
@@ -267,12 +267,12 @@ void main() {
   });
 
   group('BriefScreen — empty states', () {
-    // These tests verify that BriefScreen reads from ProgramService at
-    // build time. Since ProgramService has the exercise fixture loaded,
+    // These tests verify that BriefScreen reads from PlanService at
+    // build time. Since PlanService has the exercise fixture loaded,
     // we test "missing exercise" via a non-existent UUID. For "missing
-    // program" we cannot reinitialize the singleton, so we test the
-    // programUuid mismatch path instead (the screen still renders with
-    // the active program, logging a debug warning).
+    // plan" we cannot reinitialize the singleton, so we test the
+    // planUuid mismatch path instead (the screen still renders with
+    // the active plan, logging a debug warning).
     testWidgets('missing exercise shows empty state', (tester) async {
       await tester.pumpWidget(_buildScreen(exerciseUuid: 'does-not-exist'));
       await tester.pump();
@@ -280,12 +280,12 @@ void main() {
       expect(find.text('Exercise not found'), findsOneWidget);
     });
 
-    testWidgets('programUuid renders the active program brief', (tester) async {
-      // The active program IS loaded; opening via programUuid should render.
-      await tester.pumpWidget(_buildScreen(programUuid: _programUuid));
+    testWidgets('planUuid renders the active plan brief', (tester) async {
+      // The active plan IS loaded; opening via planUuid should render.
+      await tester.pumpWidget(_buildScreen(planUuid: _planUuid));
       await _awaitRender(tester);
 
-      expect(_markdownData(tester), contains('Test Program BS'));
+      expect(_markdownData(tester), contains('Test Plan BS'));
     });
   });
 
@@ -474,11 +474,11 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      // The in-doc TOC only renders in multi-exercise (program) mode; the
-      // single-exercise template suppresses the program-level header block
-      // entirely. Use programUuid so isSingleExercise=false and the
+      // The in-doc TOC only renders in multi-exercise (plan) mode; the
+      // single-exercise template suppresses the plan-level header block
+      // entirely. Use planUuid so isSingleExercise=false and the
       // {{#if_in_doc_toc}} block emits the "## Innholdsfortegnelse" section.
-      await tester.pumpWidget(_buildScreen(programUuid: _programUuid));
+      await tester.pumpWidget(_buildScreen(planUuid: _planUuid));
       await _awaitRender(tester);
 
       expect(

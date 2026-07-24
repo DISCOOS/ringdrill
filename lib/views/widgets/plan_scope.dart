@@ -11,27 +11,27 @@ import 'package:ringdrill/models/drill_variable.dart';
 /// registry and rebuilt whenever the author edits it (create, rename,
 /// delete, value edit — so the scope always reflects the live, unsaved
 /// state, not just what was last saved); and, later, around the
-/// program-scoped routes for the live app, so read-only display surfaces
+/// plan-scoped routes for the live app, so read-only display surfaces
 /// can resolve `{{var.name}}` too.
 class PlanScope extends InheritedWidget {
   const PlanScope({
     super.key,
     required this.variables,
-    this.programName,
-    this.programDescription,
+    this.planName,
+    this.planDescription,
     required super.child,
   });
 
   final List<DrillVariable> variables;
 
-  /// The program's `{{program.name}}`/`{{program.description}}`
+  /// The plan's `{{plan.name}}`/`{{plan.description}}`
   /// cross-reference facets (DESIGN-010's resolve-context cascade — the
-  /// program level of the cascade `BriefRenderer`'s `refContext` already
-  /// mirrors). Null where the provider has no program in scope to source
-  /// them from; the program-scoped route (ADR-0032) always sets both,
-  /// since it sits highest in the tree, where the active program is known.
-  final String? programName;
-  final String? programDescription;
+  /// plan level of the cascade `BriefRenderer`'s `refContext` already
+  /// mirrors). Null where the provider has no plan in scope to source
+  /// them from; the plan-scoped route (ADR-0032) always sets both,
+  /// since it sits highest in the tree, where the active plan is known.
+  final String? planName;
+  final String? planDescription;
 
   /// The nearest enclosing [PlanScope], or `null` outside one — for callers
   /// that tolerate having no plan-variable registry available (e.g. the
@@ -60,6 +60,6 @@ class PlanScope extends InheritedWidget {
   @override
   bool updateShouldNotify(PlanScope oldWidget) =>
       !listEquals(variables, oldWidget.variables) ||
-      programName != oldWidget.programName ||
-      programDescription != oldWidget.programDescription;
+      planName != oldWidget.planName ||
+      planDescription != oldWidget.planDescription;
 }

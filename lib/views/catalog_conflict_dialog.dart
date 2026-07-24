@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
-import 'package:ringdrill/views/program_diff_widgets.dart';
+import 'package:ringdrill/views/plan_diff_widgets.dart';
 
 /// Bottom sheet on mobile, a larger dialog on wide form factors — mirrors
 /// showSelectPlansDialog/name_step_sheet. The diff itself can be long once
@@ -16,7 +16,7 @@ import 'package:ringdrill/views/program_diff_widgets.dart';
 /// has to choose consciously instead of swiping the sheet away.
 Future<CatalogConflictChoice> showCatalogConflictDialog(
   BuildContext context, {
-  required ProgramDiff diff,
+  required PlanDiff diff,
   required bool ownedSlug,
   bool remoteUnchanged = false,
   String? localVersion,
@@ -51,7 +51,7 @@ class _CatalogConflictContent extends StatefulWidget {
     this.catalogVersion,
   });
 
-  final ProgramDiff diff;
+  final PlanDiff diff;
   final bool remoteUnchanged;
   final String? localVersion;
   final String? catalogVersion;
@@ -91,7 +91,7 @@ class _CatalogConflictContentState extends State<_CatalogConflictContent> {
             Row(
               children: [
                 // Leading, not trailing — RingDrill's bottom sheets put the
-                // close "x" on the left (mirrors ProgramFormScreen's AppBar
+                // close "x" on the left (mirrors PlanFormScreen's AppBar
                 // leading close icon). Needed here specifically because
                 // this sheet is non-dismissable — no drag-down, no barrier
                 // tap — so without it there would be no visible way out
@@ -133,7 +133,7 @@ class _CatalogConflictContentState extends State<_CatalogConflictContent> {
                       catalogVersion: catalogVersion,
                     ),
                     const SizedBox(height: 16),
-                    ProgramDiffView(diff: diff, showDeletions: _showDeletions),
+                    PlanDiffView(diff: diff, showDeletions: _showDeletions),
                   ],
                 ),
               ),

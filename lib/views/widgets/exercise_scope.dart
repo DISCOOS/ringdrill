@@ -16,7 +16,7 @@ import 'package:ringdrill/models/exercise.dart';
 ///
 /// Carries the data only; nothing reads this scope for resolution yet — that
 /// starts with DESIGN-010 stage 2. Omitted for a not-yet-saved exercise
-/// (nothing to carry) and for editors with no exercise in scope (Program),
+/// (nothing to carry) and for editors with no exercise in scope (Plan),
 /// mirroring [StationScope]'s optional-ancestor pattern.
 class ExerciseScope extends InheritedWidget {
   const ExerciseScope({

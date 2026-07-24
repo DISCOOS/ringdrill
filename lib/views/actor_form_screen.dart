@@ -14,7 +14,7 @@ import 'package:ringdrill/views/dialog_widgets.dart';
 ///
 /// When [modal] is true the caller provided a bottom-sheet context and the
 /// save button text is "Add" rather than "Save". The widget is stateless
-/// with respect to persistence — the caller persists via [ProgramService].
+/// with respect to persistence — the caller persists via [PlanService].
 class ActorFormScreen extends StatefulWidget {
   const ActorFormScreen({super.key, this.actor, this.modal = false});
 

@@ -124,7 +124,7 @@ class _Harness extends StatelessWidget {
                     TextButton(
                       onPressed: () => ContextSheet.of(context).show(
                         context,
-                        const BriefSheetTarget(programUuid: 'program-1'),
+                        const BriefSheetTarget(planUuid: 'plan-1'),
                       ),
                       child: const Text('show brief'),
                     ),

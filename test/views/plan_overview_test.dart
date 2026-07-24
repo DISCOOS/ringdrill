@@ -8,17 +8,17 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/app_routes.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Fixture identifiers — must not collide with program_view_test.dart (separate
+// Fixture identifiers — must not collide with plan_view_test.dart (separate
 // isolate, but keeps the intent clear).
-const _programUuid = 'program-overview';
+const _planUuid = 'plan-overview';
 const _exerciseUuid0 = 'ex-overview-0';
 
 Exercise _makeExercise(int i) => Exercise(
@@ -56,12 +56,12 @@ final _rolePlay = RolePlay(
 
 Map<String, Object> _prefs() {
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Overview Program',
-      'description': 'Program description text',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Overview Plan',
+      'description': 'Plan description text',
       'metadata': {
         'created': '2026-01-01T00:00:00.000Z',
         'updated': '2026-01-01T00:00:00.000Z',
@@ -74,15 +74,15 @@ Map<String, Object> _prefs() {
       'actors': [],
     }),
     for (final ex in _exercises)
-      'pe:$_programUuid:${ex.uuid}': jsonEncode(ex.toJson()),
-    'pt:$_programUuid:${_team0.uuid}': jsonEncode(_team0.toJson()),
-    'pt:$_programUuid:${_team1.uuid}': jsonEncode(_team1.toJson()),
-    'pr:$_programUuid:${_rolePlay.uuid}': jsonEncode(_rolePlay.toJson()),
+      'pe:$_planUuid:${ex.uuid}': jsonEncode(ex.toJson()),
+    'pt:$_planUuid:${_team0.uuid}': jsonEncode(_team0.toJson()),
+    'pt:$_planUuid:${_team1.uuid}': jsonEncode(_team1.toJson()),
+    'pr:$_planUuid:${_rolePlay.uuid}': jsonEncode(_rolePlay.toJson()),
   };
 }
 
-class _TestProgramController extends ProgramPageControllerBase {
-  _TestProgramController({
+class _TestPlanController extends PlanPageControllerBase {
+  _TestPlanController({
     required super.stationListController,
     required super.rolePlaysController,
     required super.teamsPageController,
@@ -94,7 +94,7 @@ class _HarnessControllers {
     : stationList = StationListController(),
       rolePlays = RolePlaysController(),
       teams = const TeamsPageController() {
-    program = _TestProgramController(
+    plan = _TestPlanController(
       stationListController: stationList,
       rolePlaysController: rolePlays,
       teamsPageController: teams,
@@ -104,10 +104,10 @@ class _HarnessControllers {
   final StationListController stationList;
   final RolePlaysController rolePlays;
   final TeamsPageController teams;
-  late final _TestProgramController program;
+  late final _TestPlanController plan;
 
   void dispose() {
-    program.dispose();
+    plan.dispose();
     stationList.dispose();
     rolePlays.dispose();
   }
@@ -118,7 +118,7 @@ Widget _harness(
   bool chrome = false,
   ThemeData? theme,
 }) {
-  return _ProgramOverviewHarness(
+  return _PlanOverviewHarness(
     controllers: controllers,
     chrome: chrome,
     theme: theme,
@@ -127,15 +127,15 @@ Widget _harness(
 
 /// Stateful wrapper that owns the in-test [GoRouter] so its `dispose()` is
 /// invoked when the Flutter test tears down the widget tree. The router
-/// exists because [_ProgramSegmentSwitcher] in `program_view.dart` pushes
-/// canonical `/program/:uuid/:segment` paths through `context.go(...)` per
+/// exists because [_PlanSegmentSwitcher] in `plan_view.dart` pushes
+/// canonical `/plan/:uuid/:segment` paths through `context.go(...)` per
 /// ADR-0032 *Activation contract* — the URL is the source of truth, and the
 /// controller's `activeSegment` is updated by the redirect gate, not by the
 /// switcher itself. The redirect here mirrors `MainScreen._initTab` in
 /// production: when the URL ends in a recognised segment slug, write that
 /// slug into the controller so the segmented button reflects the tap.
-class _ProgramOverviewHarness extends StatefulWidget {
-  const _ProgramOverviewHarness({
+class _PlanOverviewHarness extends StatefulWidget {
+  const _PlanOverviewHarness({
     required this.controllers,
     required this.chrome,
     this.theme,
@@ -146,34 +146,34 @@ class _ProgramOverviewHarness extends StatefulWidget {
   final ThemeData? theme;
 
   @override
-  State<_ProgramOverviewHarness> createState() =>
-      _ProgramOverviewHarnessState();
+  State<_PlanOverviewHarness> createState() =>
+      _PlanOverviewHarnessState();
 }
 
-class _ProgramOverviewHarnessState extends State<_ProgramOverviewHarness> {
+class _PlanOverviewHarnessState extends State<_PlanOverviewHarness> {
   late final GoRouter _router;
 
   @override
   void initState() {
     super.initState();
     _router = GoRouter(
-      initialLocation: programSegmentPath(
-        _programUuid,
-        programSegmentDefaultSlug,
+      initialLocation: planSegmentPath(
+        _planUuid,
+        planSegmentDefaultSlug,
       ),
       redirect: (context, state) {
         final segments = state.uri.pathSegments;
-        if (segments.length >= 3 && segments[0] == 'program') {
-          final segment = programSegmentFromSlug(segments[2]);
+        if (segments.length >= 3 && segments[0] == 'plan') {
+          final segment = planSegmentFromSlug(segments[2]);
           if (segment != null) {
-            widget.controllers.program.activeSegment.value = segment;
+            widget.controllers.plan.activeSegment.value = segment;
           }
         }
         return null;
       },
       routes: [
         GoRoute(
-          path: '/program/:uuid/:segment',
+          path: '/plan/:uuid/:segment',
           builder: (context, _) => _buildBody(context),
         ),
       ],
@@ -187,14 +187,14 @@ class _ProgramOverviewHarnessState extends State<_ProgramOverviewHarness> {
   }
 
   Widget _buildBody(BuildContext context) {
-    return ValueListenableBuilder<ProgramSegment>(
-      valueListenable: widget.controllers.program.activeSegment,
+    return ValueListenableBuilder<PlanSegment>(
+      valueListenable: widget.controllers.plan.activeSegment,
       builder: (context, _, child) {
         return Scaffold(
           appBar: widget.chrome
               ? AppBar(
                   actions: [
-                    ...?widget.controllers.program.buildActions(
+                    ...?widget.controllers.plan.buildActions(
                       context,
                       const BoxConstraints(),
                     ),
@@ -203,15 +203,15 @@ class _ProgramOverviewHarnessState extends State<_ProgramOverviewHarness> {
               : null,
           body: child!,
           floatingActionButton: widget.chrome
-              ? widget.controllers.program.buildFAB(
+              ? widget.controllers.plan.buildFAB(
                   context,
                   const BoxConstraints(),
                 )
               : null,
         );
       },
-      child: ProgramView(
-        controller: widget.controllers.program,
+      child: PlanView(
+        controller: widget.controllers.plan,
         stationListController: widget.controllers.stationList,
         rolePlaysController: widget.controllers.rolePlays,
       ),
@@ -232,7 +232,7 @@ class _ProgramOverviewHarnessState extends State<_ProgramOverviewHarness> {
 void main() {
   setUpAll(() async {
     SharedPreferences.setMockInitialValues(_prefs());
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   testWidgets('overview renders summary line with team and exercise counts', (
@@ -265,7 +265,7 @@ void main() {
     await tester.pumpWidget(_harness(controllers));
     await tester.pumpAndSettle();
 
-    expect(find.text('Program description text'), findsOneWidget);
+    expect(find.text('Plan description text'), findsOneWidget);
   });
 
   testWidgets(
@@ -285,16 +285,16 @@ void main() {
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       // Overview description and switcher are both visible initially.
       expect(
-        find.text('Program description text').hitTestable(),
+        find.text('Plan description text').hitTestable(),
         findsOneWidget,
       );
       expect(
-        find.byType(SegmentedButton<ProgramSegment>).hitTestable(),
+        find.byType(SegmentedButton<PlanSegment>).hitTestable(),
         findsOneWidget,
       );
 
       // The overview and switcher are real slivers ahead of the active
-      // segment's rows in one CustomScrollView (see program_view.dart's
+      // segment's rows in one CustomScrollView (see plan_view.dart's
       // `buildSegmentScrollView`): the switcher is a pinned
       // SliverPersistentHeader, so it stays put while the overview — an
       // ordinary sliver above it — scrolls away once the rows need the room.
@@ -304,17 +304,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Program description text').hitTestable(), findsNothing);
+      expect(find.text('Plan description text').hitTestable(), findsNothing);
       // Pinned switcher remains visible and usable.
       expect(
-        find.byType(SegmentedButton<ProgramSegment>).hitTestable(),
+        find.byType(SegmentedButton<PlanSegment>).hitTestable(),
         findsOneWidget,
       );
       // Can still switch segments via the pinned bar.
       await tester.tap(
         find
             .descendant(
-              of: find.byType(SegmentedButton<ProgramSegment>),
+              of: find.byType(SegmentedButton<PlanSegment>),
               matching: find.text(l10n.stationsTab),
             )
             .hitTestable(),
@@ -322,11 +322,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         tester
-            .widget<SegmentedButton<ProgramSegment>>(
-              find.byType(SegmentedButton<ProgramSegment>),
+            .widget<SegmentedButton<PlanSegment>>(
+              find.byType(SegmentedButton<PlanSegment>),
             )
             .selected,
-        {ProgramSegment.stations},
+        {PlanSegment.stations},
       );
     },
   );
@@ -350,7 +350,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Program description text').hitTestable(),
+        find.text('Plan description text').hitTestable(),
         findsOneWidget,
       );
 
@@ -360,7 +360,7 @@ void main() {
         const Offset(0, -300),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Program description text').hitTestable(), findsNothing);
+      expect(find.text('Plan description text').hitTestable(), findsNothing);
 
       // Scroll back to the top WITHOUT switching segments.
       await tester.drag(
@@ -372,14 +372,14 @@ void main() {
       // Still on the exercises segment, and the overview is back.
       expect(
         tester
-            .widget<SegmentedButton<ProgramSegment>>(
-              find.byType(SegmentedButton<ProgramSegment>),
+            .widget<SegmentedButton<PlanSegment>>(
+              find.byType(SegmentedButton<PlanSegment>),
             )
             .selected,
-        {ProgramSegment.exercises},
+        {PlanSegment.exercises},
       );
       expect(
-        find.text('Program description text').hitTestable(),
+        find.text('Plan description text').hitTestable(),
         findsOneWidget,
       );
     },
@@ -414,7 +414,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final box = tester.renderObject<RenderBox>(
-        find.byType(SegmentedButton<ProgramSegment>),
+        find.byType(SegmentedButton<PlanSegment>),
       );
       expect(
         box.size.height,

@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/services/plan_service.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
@@ -16,7 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const _programUuid = 'program-order-test';
+const _planUuid = 'plan-order-test';
 
 final _station = Station(index: 0, name: 'Post 1');
 
@@ -53,10 +53,10 @@ final _exBeta = _ex('ex-beta', 'Beta', 2, startHour: 9);
 const _canonicalOrder = ['ex-gamma', 'ex-alpha', 'ex-beta'];
 
 Map<String, Object> _prefs() => {
-  'app:activeProgram:v1': _programUuid,
+  'app:activePlan:v1': _planUuid,
   'app:librarySchema:v1': '1',
-  'p:$_programUuid': jsonEncode({
-    'uuid': _programUuid,
+  'p:$_planUuid': jsonEncode({
+    'uuid': _planUuid,
     'name': 'Order Test Plan',
     'description': '',
     'metadata': {
@@ -70,17 +70,17 @@ Map<String, Object> _prefs() => {
     'rolePlays': [],
     'actors': [],
   }),
-  'pe:$_programUuid:ex-gamma': jsonEncode(_exGamma.toJson()),
-  'pe:$_programUuid:ex-alpha': jsonEncode(_exAlpha.toJson()),
-  'pe:$_programUuid:ex-beta': jsonEncode(_exBeta.toJson()),
+  'pe:$_planUuid:ex-gamma': jsonEncode(_exGamma.toJson()),
+  'pe:$_planUuid:ex-alpha': jsonEncode(_exAlpha.toJson()),
+  'pe:$_planUuid:ex-beta': jsonEncode(_exBeta.toJson()),
 };
 
 // ---------------------------------------------------------------------------
 // Harness
 // ---------------------------------------------------------------------------
 
-class _TestProgramController extends ProgramPageControllerBase {
-  _TestProgramController({
+class _TestPlanController extends PlanPageControllerBase {
+  _TestPlanController({
     required super.stationListController,
     required super.rolePlaysController,
     required super.teamsPageController,
@@ -92,7 +92,7 @@ class _HarnessControllers {
     : stationList = StationListController(),
       rolePlays = RolePlaysController(),
       teams = const TeamsPageController() {
-    program = _TestProgramController(
+    plan = _TestPlanController(
       stationListController: stationList,
       rolePlaysController: rolePlays,
       teamsPageController: teams,
@@ -102,10 +102,10 @@ class _HarnessControllers {
   final StationListController stationList;
   final RolePlaysController rolePlays;
   final TeamsPageController teams;
-  late final _TestProgramController program;
+  late final _TestPlanController plan;
 
   void dispose() {
-    program.dispose();
+    plan.dispose();
     stationList.dispose();
     rolePlays.dispose();
   }
@@ -119,12 +119,12 @@ Widget _harness(_HarnessControllers controllers) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: ValueListenableBuilder<ProgramSegment>(
-      valueListenable: controllers.program.activeSegment,
+    home: ValueListenableBuilder<PlanSegment>(
+      valueListenable: controllers.plan.activeSegment,
       builder: (context, _, child) => Scaffold(
         appBar: AppBar(
           actions: [
-            ...?controllers.program.buildActions(
+            ...?controllers.plan.buildActions(
               context,
               const BoxConstraints(),
             ),
@@ -132,8 +132,8 @@ Widget _harness(_HarnessControllers controllers) {
         ),
         body: child!,
       ),
-      child: ProgramView(
-        controller: controllers.program,
+      child: PlanView(
+        controller: controllers.plan,
         stationListController: controllers.stationList,
         rolePlaysController: controllers.rolePlays,
       ),
@@ -147,17 +147,17 @@ Widget _harness(_HarnessControllers controllers) {
 
 void main() {
   // setUpAll: load mock SharedPreferences with the 3-exercise plan ONCE and
-  // initialise ProgramService. Each mutating test restores canonical order
+  // initialise PlanService. Each mutating test restores canonical order
   // in its own setUp to avoid state leaking between tests.
   setUpAll(() async {
     SharedPreferences.setMockInitialValues(_prefs());
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   /// Restore the initial exercise order (Gamma, Alpha, Beta) before each
   /// test that mutates state, so tests do not depend on each other's results.
   setUp(() async {
-    await ProgramService().reorderExercises(_canonicalOrder);
+    await PlanService().reorderExercises(_canonicalOrder);
   });
 
   /// Helper: collect exercise-name Text widgets in render order.
@@ -235,7 +235,7 @@ void main() {
     // Start times: Alpha 08h < Beta 09h < Gamma 10h.
     expect(renderedOrder(tester), ['Alpha', 'Beta', 'Gamma']);
 
-    final exercises = ProgramService().loadExercises();
+    final exercises = PlanService().loadExercises();
     final byName = {for (final e in exercises) e.name: e.index};
     expect(byName['Alpha'], 0);
     expect(byName['Beta'], 1);
@@ -259,7 +259,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Locate the SliverReorderableList (exercises segment body in reorder
-      // mode — a sliver embedded in program_view.dart's per-segment
+      // mode — a sliver embedded in plan_view.dart's per-segment
       // CustomScrollView, not a standalone ReorderableListView).
       final listView = tester.widget<SliverReorderableList>(
         find.byType(SliverReorderableList).first,
@@ -279,7 +279,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // After Done: storage reflects the new order.
-      final exercises = ProgramService().loadExercises();
+      final exercises = PlanService().loadExercises();
       final byName = {for (final e in exercises) e.name: e.index};
       expect(byName['Alpha'], 0);
       expect(byName['Beta'], 1);

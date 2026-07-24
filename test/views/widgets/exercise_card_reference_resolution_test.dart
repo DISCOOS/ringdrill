@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 
 /// Regression: the expanded ExerciseCard's ExerciseDescriptionRollup renders
@@ -12,7 +12,7 @@ import 'package:ringdrill/views/widgets/plan_scope.dart';
 /// `_buildExpandedBody` used to wrap only the station rows in their own
 /// StationScope, with no ExerciseScope around the rollup itself, so
 /// `{{exercise.numberOfRounds}}` (and friends) stayed a literal token there.
-/// program_view.dart now wraps the whole expanded body in one ExerciseScope.
+/// plan_view.dart now wraps the whole expanded body in one ExerciseScope.
 Exercise _exercise() => Exercise(
   uuid: 'exercise-card-ref',
   name: 'Reference exercise',

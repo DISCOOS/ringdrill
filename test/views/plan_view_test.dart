@@ -8,9 +8,9 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
@@ -20,8 +20,8 @@ import 'package:ringdrill/views/team_screen.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _programUuid = 'program-segments';
-const _emptyProgramUuid = 'program-segments-empty';
+const _planUuid = 'plan-segments';
+const _emptyPlanUuid = 'plan-segments-empty';
 const _exerciseUuid = 'exercise-segments';
 
 final _exercise = Exercise(
@@ -56,11 +56,11 @@ final _team = Team(uuid: 'team-segments', index: 0, name: 'Segment Team');
 
 Map<String, Object> _prefs() {
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Segment Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Segment Plan',
       'description': '',
       'metadata': {
         'created': '2026-01-01T00:00:00.000Z',
@@ -73,15 +73,15 @@ Map<String, Object> _prefs() {
       'rolePlays': [],
       'actors': [],
     }),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(_exercise.toJson()),
-    'pt:$_programUuid:${_team.uuid}': jsonEncode(_team.toJson()),
-    'pr:$_programUuid:${_rolePlay.uuid}': jsonEncode(_rolePlay.toJson()),
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(_exercise.toJson()),
+    'pt:$_planUuid:${_team.uuid}': jsonEncode(_team.toJson()),
+    'pr:$_planUuid:${_rolePlay.uuid}': jsonEncode(_rolePlay.toJson()),
     // A second, genuinely empty plan — nothing for the wide layout to
     // auto-select, so its exercises segment keeps showing the empty
     // placeholder (with the sidebar-toggle leading).
-    'p:$_emptyProgramUuid': jsonEncode({
-      'uuid': _emptyProgramUuid,
-      'name': 'Empty Segment Program',
+    'p:$_emptyPlanUuid': jsonEncode({
+      'uuid': _emptyPlanUuid,
+      'name': 'Empty Segment Plan',
       'description': '',
       'metadata': {
         'created': '2026-01-01T00:00:00.000Z',
@@ -97,8 +97,8 @@ Map<String, Object> _prefs() {
   };
 }
 
-class _TestProgramController extends ProgramPageControllerBase {
-  _TestProgramController({
+class _TestPlanController extends PlanPageControllerBase {
+  _TestPlanController({
     required super.stationListController,
     required super.rolePlaysController,
     required super.teamsPageController,
@@ -110,7 +110,7 @@ class _HarnessControllers {
     : stationList = StationListController(),
       rolePlays = RolePlaysController(),
       teams = const TeamsPageController() {
-    program = _TestProgramController(
+    plan = _TestPlanController(
       stationListController: stationList,
       rolePlaysController: rolePlays,
       teamsPageController: teams,
@@ -120,27 +120,27 @@ class _HarnessControllers {
   final StationListController stationList;
   final RolePlaysController rolePlays;
   final TeamsPageController teams;
-  late final _TestProgramController program;
+  late final _TestPlanController plan;
 
   void dispose() {
-    program.dispose();
+    plan.dispose();
     stationList.dispose();
     rolePlays.dispose();
   }
 }
 
-Widget _programHarness(_HarnessControllers controllers, {bool chrome = false}) {
+Widget _planHarness(_HarnessControllers controllers, {bool chrome = false}) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: ValueListenableBuilder<ProgramSegment>(
-      valueListenable: controllers.program.activeSegment,
+    home: ValueListenableBuilder<PlanSegment>(
+      valueListenable: controllers.plan.activeSegment,
       builder: (context, _, child) {
         return Scaffold(
           appBar: chrome
               ? AppBar(
                   actions: [
-                    ...?controllers.program.buildActions(
+                    ...?controllers.plan.buildActions(
                       context,
                       const BoxConstraints(),
                     ),
@@ -149,12 +149,12 @@ Widget _programHarness(_HarnessControllers controllers, {bool chrome = false}) {
               : null,
           body: child,
           floatingActionButton: chrome
-              ? controllers.program.buildFAB(context, const BoxConstraints())
+              ? controllers.plan.buildFAB(context, const BoxConstraints())
               : null,
         );
       },
-      child: ProgramView(
-        controller: controllers.program,
+      child: PlanView(
+        controller: controllers.plan,
         stationListController: controllers.stationList,
         rolePlaysController: controllers.rolePlays,
       ),
@@ -162,34 +162,34 @@ Widget _programHarness(_HarnessControllers controllers, {bool chrome = false}) {
   );
 }
 
-void _select(_HarnessControllers controllers, ProgramSegment segment) {
-  controllers.program.activeSegment.value = segment;
+void _select(_HarnessControllers controllers, PlanSegment segment) {
+  controllers.plan.activeSegment.value = segment;
 }
 
 void main() {
   setUpAll(() async {
     SharedPreferences.setMockInitialValues(_prefs());
-    await ProgramService().init();
+    await PlanService().init();
   });
 
-  testWidgets('renders and switches all four program segments', (tester) async {
+  testWidgets('renders and switches all four plan segments', (tester) async {
     final controllers = _HarnessControllers();
     addTearDown(controllers.dispose);
-    await tester.pumpWidget(_programHarness(controllers));
+    await tester.pumpWidget(_planHarness(controllers));
     await tester.pumpAndSettle();
 
-    expect(find.byType(SegmentedButton<ProgramSegment>), findsOneWidget);
+    expect(find.byType(SegmentedButton<PlanSegment>), findsOneWidget);
     expect(find.text('Segment Exercise').hitTestable(), findsOneWidget);
 
-    _select(controllers, ProgramSegment.stations);
+    _select(controllers, PlanSegment.stations);
     await tester.pump();
     expect(find.text('Segment Station').hitTestable(), findsOneWidget);
 
-    _select(controllers, ProgramSegment.script);
+    _select(controllers, PlanSegment.script);
     await tester.pump();
     expect(find.text('Segment Role').hitTestable(), findsOneWidget);
 
-    _select(controllers, ProgramSegment.teams);
+    _select(controllers, PlanSegment.teams);
     await tester.pump();
     expect(find.text('Segment Team').hitTestable(), findsOneWidget);
   });
@@ -203,10 +203,10 @@ void main() {
   ) async {
     final controllers = _HarnessControllers();
     addTearDown(controllers.dispose);
-    await tester.pumpWidget(_programHarness(controllers));
+    await tester.pumpWidget(_planHarness(controllers));
     await tester.pumpAndSettle();
 
-    _select(controllers, ProgramSegment.stations);
+    _select(controllers, PlanSegment.stations);
     await tester.pump();
     await tester.tap(find.byIcon(Icons.expand_more).hitTestable());
     await tester.pumpAndSettle();
@@ -214,9 +214,9 @@ void main() {
     expect(find.text('Segment Role').hitTestable(), findsOneWidget);
 
     // Switching away and back keeps the expansion.
-    _select(controllers, ProgramSegment.script);
+    _select(controllers, PlanSegment.script);
     await tester.pump();
-    _select(controllers, ProgramSegment.stations);
+    _select(controllers, PlanSegment.stations);
     await tester.pumpAndSettle();
     expect(find.text('Segment Role').hitTestable(), findsOneWidget);
   });
@@ -226,7 +226,7 @@ void main() {
   ) async {
     final controllers = _HarnessControllers();
     addTearDown(controllers.dispose);
-    await tester.pumpWidget(_programHarness(controllers, chrome: true));
+    await tester.pumpWidget(_planHarness(controllers, chrome: true));
     await tester.pumpAndSettle();
 
     // Brief is an AppBar action on every lens (it renders the whole plan).
@@ -242,12 +242,12 @@ void main() {
 
     // Poster filters via an AppBar action (Icons.filter_list), like Markører,
     // not a body FAB. Brief stays present.
-    _select(controllers, ProgramSegment.stations);
+    _select(controllers, PlanSegment.stations);
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.filter_list).hitTestable(), findsOneWidget);
     expect(appBarBrief(), findsOneWidget);
 
-    _select(controllers, ProgramSegment.script);
+    _select(controllers, PlanSegment.script);
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.filter_list).hitTestable(), findsOneWidget);
     // The cast-roster shortcut (Icons.recent_actors) was retired once the
@@ -255,13 +255,13 @@ void main() {
     expect(find.byIcon(Icons.recent_actors), findsNothing);
     expect(appBarBrief(), findsOneWidget);
 
-    _select(controllers, ProgramSegment.teams);
+    _select(controllers, PlanSegment.teams);
     await tester.pumpAndSettle();
     expect(find.byType(FloatingActionButton).hitTestable(), findsNothing);
     expect(appBarBrief(), findsOneWidget);
   });
 
-  testWidgets('wide layout auto-selects each program segment\'s first item '
+  testWidgets('wide layout auto-selects each plan segment\'s first item '
       '(collapsible-master-pane)', (tester) async {
     tester.view.physicalSize = const Size(1200, 800);
     tester.view.devicePixelRatio = 1;
@@ -269,12 +269,12 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     // After ADR-0032 the segment switcher pushes canonical
-    // /program/:uuid/:segment paths through `context.go(...)`. The
+    // /plan/:uuid/:segment paths through `context.go(...)`. The
     // hand-rolled GoRouter we used before had no segment routes and never
     // re-rendered MainScreen with a new `location`, so taps short-circuited
     // with `No GoRouter found in context`. Pump the production router and
     // wrap it in `MaterialApp.router` so URL → state actually flows.
-    await ProgramService().setActive(_programUuid);
+    await PlanService().setActive(_planUuid);
     final router = buildRouter(false, true);
     addTearDown(router.dispose);
     await tester.pumpWidget(
@@ -296,7 +296,7 @@ void main() {
     await tester.tap(
       find
           .descendant(
-            of: find.byType(SegmentedButton<ProgramSegment>),
+            of: find.byType(SegmentedButton<PlanSegment>),
             matching: find.text(l10n.stationsTab),
           )
           .hitTestable(),
@@ -304,11 +304,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       tester
-          .widget<SegmentedButton<ProgramSegment>>(
-            find.byType(SegmentedButton<ProgramSegment>),
+          .widget<SegmentedButton<PlanSegment>>(
+            find.byType(SegmentedButton<PlanSegment>),
           )
           .selected,
-      {ProgramSegment.stations},
+      {PlanSegment.stations},
     );
     expect(find.text(l10n.detailEmptyStation), findsNothing);
     expect(find.byType(StationScreen), findsOneWidget);
@@ -316,7 +316,7 @@ void main() {
     await tester.tap(
       find
           .descendant(
-            of: find.byType(SegmentedButton<ProgramSegment>),
+            of: find.byType(SegmentedButton<PlanSegment>),
             matching: find.text(l10n.scriptSegment),
           )
           .hitTestable(),
@@ -328,7 +328,7 @@ void main() {
     await tester.tap(
       find
           .descendant(
-            of: find.byType(SegmentedButton<ProgramSegment>),
+            of: find.byType(SegmentedButton<PlanSegment>),
             matching: find.text(l10n.team(2)),
           )
           .hitTestable(),
@@ -346,7 +346,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      await ProgramService().setActive(_emptyProgramUuid);
+      await PlanService().setActive(_emptyPlanUuid);
       final router = buildRouter(false, true);
       addTearDown(router.dispose);
       await tester.pumpWidget(

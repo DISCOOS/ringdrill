@@ -10,7 +10,7 @@ import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 
 /// DESIGN-010 stage 1 — the resolve-context scope cascade: `PlanScope`'s
-/// program facets, the new `ExerciseScope`, and `openFormSurface`
+/// plan facets, the new `ExerciseScope`, and `openFormSurface`
 /// re-providing all three (whichever are present) across the Navigator push
 /// that otherwise strands a pushed form/dialog outside the ancestor
 /// `InheritedWidget` tree. No widget reads these scopes for resolution yet
@@ -46,7 +46,7 @@ void main() {
   group('resolve-context scope cascade (DESIGN-010)', () {
     testWidgets(
       'a probe under the exercise editor sees a non-null ExerciseScope and '
-      'PlanScope carrying the program facets',
+      'PlanScope carrying the plan facets',
       (tester) async {
         late BuildContext probeContext;
         await tester.pumpWidget(
@@ -54,8 +54,8 @@ void main() {
             size: const Size(400, 800),
             child: PlanScope(
               variables: const [],
-              programName: 'Program One',
-              programDescription: 'Program description',
+              planName: 'Plan One',
+              planDescription: 'Plan description',
               child: ExerciseScope(
                 exercise: _exercise(),
                 variableOverrides: const {},
@@ -75,8 +75,8 @@ void main() {
         expect(exerciseScope, isNotNull);
         expect(exerciseScope!.exercise.name, 'Exercise 1');
         expect(planScope, isNotNull);
-        expect(planScope!.programName, 'Program One');
-        expect(planScope.programDescription, 'Program description');
+        expect(planScope!.planName, 'Plan One');
+        expect(planScope.planDescription, 'Plan description');
       },
     );
 
@@ -92,8 +92,8 @@ void main() {
             size: const Size(400, 800),
             child: PlanScope(
               variables: const [DrillVariable(name: 'v', value: 'val')],
-              programName: 'Program One',
-              programDescription: 'Program description',
+              planName: 'Plan One',
+              planDescription: 'Plan description',
               child: ExerciseScope(
                 exercise: _exercise(),
                 variableOverrides: const {'v': 'override'},
@@ -126,7 +126,7 @@ void main() {
         final stationScope = StationScope.maybeOf(formContext);
 
         expect(planScope, isNotNull);
-        expect(planScope!.programName, 'Program One');
+        expect(planScope!.planName, 'Plan One');
         expect(planScope.variables.single.name, 'v');
         expect(exerciseScope, isNotNull);
         expect(exerciseScope!.variableOverrides, {'v': 'override'});
@@ -161,11 +161,11 @@ void main() {
         expect(ExerciseScope.maybeOf(formContext), isNull);
         expect(StationScope.maybeOf(formContext), isNull);
         // PlanScope itself is never absent (openFormSurface's pre-DESIGN-010
-        // fallback to the active program's variables), but carries no
-        // program facets when nothing ambient set them.
+        // fallback to the active plan's variables), but carries no
+        // plan facets when nothing ambient set them.
         final planScope = PlanScope.maybeOf(formContext);
         expect(planScope, isNotNull);
-        expect(planScope!.programName, isNull);
+        expect(planScope!.planName, isNull);
       },
     );
   });

@@ -4,7 +4,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/numbering.dart' show StationNumberFormat;
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
@@ -16,15 +16,15 @@ import 'package:ringdrill/views/widgets/sheet_title.dart';
 /// active plan's declared values overlaid by [exercise]'s overrides, then
 /// [station]'s. Empty when there is no active plan.
 Map<String, String> _stationOverrides(Exercise exercise, Station station) {
-  final program = ProgramService().activeProgram;
-  if (program == null) return const {};
-  return effectivePlanVariables(program, exercise: exercise, station: station);
+  final plan = PlanService().activePlan;
+  if (plan == null) return const {};
+  return effectivePlanVariables(plan, exercise: exercise, station: station);
 }
 
 /// The app-wide station-position-marker numbering convention, computed
 /// once here so every map surface that plots a station's own position
 /// agrees: [shortLabel] is the plan number alone ("1.1"/"1a", matching
-/// [StationNumberBadge] and `ProgramService.getLocations`), [rawLabel] is
+/// [StationNumberBadge] and `PlanService.getLocations`), [rawLabel] is
 /// that number joined with the station's own *unresolved* name ("1.1
 /// Turgåer") — the full text a pin shows once zoomed in past
 /// [MapConfig.labelDetailZoomFor].
@@ -38,9 +38,9 @@ Map<String, String> _stationOverrides(Exercise exercise, Station station) {
   Exercise exercise,
   Station station,
 ) {
-  final service = ProgramService();
+  final service = PlanService();
   final format =
-      service.activeProgram?.stationNumberFormat ?? StationNumberFormat.dotted;
+      service.activePlan?.stationNumberFormat ?? StationNumberFormat.dotted;
   final exNum =
       service.loadExercises().indexWhere((e) => e.uuid == exercise.uuid) + 1;
   final exerciseNumber = exNum < 1 ? 1 : exNum;
@@ -304,8 +304,8 @@ class _MapSheetHeader extends StatelessWidget implements PreferredSizeWidget {
     // station header, viewed bigger" instead of inventing its own chrome.
     // This map sheet is always a modal (dialog or bottom sheet), never an
     // inline MasterDetailPane body, so `onClose` always just pops it.
-    final service = ProgramService();
-    final program = service.activeProgram;
+    final service = PlanService();
+    final plan = service.activePlan;
     final exerciseNumber =
         service.loadExercises().indexWhere((e) => e.uuid == exercise.uuid) + 1;
     return AppBar(
@@ -313,14 +313,14 @@ class _MapSheetHeader extends StatelessWidget implements PreferredSizeWidget {
       toolbarHeight: 72,
       title: SheetTitle(
         primary: station.numberAndName(
-          program?.stationNumberFormat ?? StationNumberFormat.dotted,
+          plan?.stationNumberFormat ?? StationNumberFormat.dotted,
           exerciseNumber: exerciseNumber < 1 ? 1 : exerciseNumber,
         ),
         secondary: exercise.name,
         primaryOverrides: _stationOverrides(exercise, station),
-        secondaryOverrides: program == null
+        secondaryOverrides: plan == null
             ? const {}
-            : effectivePlanVariables(program, exercise: exercise),
+            : effectivePlanVariables(plan, exercise: exercise),
       ),
     );
   }

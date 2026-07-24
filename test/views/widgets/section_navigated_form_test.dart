@@ -5,7 +5,7 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
 
 /// DESIGN-008 follow-up 02 — prev/next section commands on
-/// [SectionNavigatedForm], exercised directly (no [Program]/flag needed;
+/// [SectionNavigatedForm], exercised directly (no [Plan]/flag needed;
 /// this widget is presentation-only, per its own doc comment).
 
 List<FormSection> _sections([int count = 3]) => [

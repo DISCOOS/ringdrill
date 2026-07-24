@@ -5,17 +5,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/views/widgets/start_here_pill.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _emptyProgramUuid = 'start-here-empty';
-const _fullProgramUuid = 'start-here-full';
+const _emptyPlanUuid = 'start-here-empty';
+const _fullPlanUuid = 'start-here-full';
 const _exerciseUuid = 'start-here-ex';
 
 final _exercise = Exercise(
@@ -38,9 +38,9 @@ final _exercise = Exercise(
   endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
 );
 
-Map<String, Object> _programJson(String uuid) => {
+Map<String, Object> _planJson(String uuid) => {
   'uuid': uuid,
-  'name': 'Start Here Program',
+  'name': 'Start Here Plan',
   'description': '',
   'metadata': {
     'created': '2026-01-01T00:00:00.000Z',
@@ -54,17 +54,17 @@ Map<String, Object> _programJson(String uuid) => {
   'actors': [],
 };
 
-// Both programs seeded once so ProgramRepository's prefs ref stays valid.
+// Both plans seeded once so PlanRepository's prefs ref stays valid.
 Map<String, Object> _basePrefs() => {
-  'app:activeProgram:v1': _emptyProgramUuid,
+  'app:activePlan:v1': _emptyPlanUuid,
   'app:librarySchema:v1': '1',
-  'p:$_emptyProgramUuid': jsonEncode(_programJson(_emptyProgramUuid)),
-  'p:$_fullProgramUuid': jsonEncode(_programJson(_fullProgramUuid)),
-  'pe:$_fullProgramUuid:$_exerciseUuid': jsonEncode(_exercise.toJson()),
+  'p:$_emptyPlanUuid': jsonEncode(_planJson(_emptyPlanUuid)),
+  'p:$_fullPlanUuid': jsonEncode(_planJson(_fullPlanUuid)),
+  'pe:$_fullPlanUuid:$_exerciseUuid': jsonEncode(_exercise.toJson()),
 };
 
-class _TestProgramController extends ProgramPageControllerBase {
-  _TestProgramController({
+class _TestPlanController extends PlanPageControllerBase {
+  _TestPlanController({
     required super.stationListController,
     required super.rolePlaysController,
     required super.teamsPageController,
@@ -76,7 +76,7 @@ class _HarnessControllers {
     : stationList = StationListController(),
       rolePlays = RolePlaysController(),
       teams = const TeamsPageController() {
-    program = _TestProgramController(
+    plan = _TestPlanController(
       stationListController: stationList,
       rolePlaysController: rolePlays,
       teamsPageController: teams,
@@ -86,32 +86,32 @@ class _HarnessControllers {
   final StationListController stationList;
   final RolePlaysController rolePlays;
   final TeamsPageController teams;
-  late final _TestProgramController program;
+  late final _TestPlanController plan;
 
   void dispose() {
-    program.dispose();
+    plan.dispose();
     stationList.dispose();
     rolePlays.dispose();
   }
 }
 
-Widget _programHarness(_HarnessControllers controllers) {
+Widget _planHarness(_HarnessControllers controllers) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: ValueListenableBuilder<ProgramSegment>(
-      valueListenable: controllers.program.activeSegment,
+    home: ValueListenableBuilder<PlanSegment>(
+      valueListenable: controllers.plan.activeSegment,
       builder: (context, _, child) {
         return Scaffold(
           body: child,
-          floatingActionButton: controllers.program.buildFAB(
+          floatingActionButton: controllers.plan.buildFAB(
             context,
             const BoxConstraints(),
           ),
         );
       },
-      child: ProgramView(
-        controller: controllers.program,
+      child: PlanView(
+        controller: controllers.plan,
         stationListController: controllers.stationList,
         rolePlaysController: controllers.rolePlays,
       ),
@@ -140,13 +140,13 @@ void main() {
 
   setUpAll(() async {
     SharedPreferences.setMockInitialValues(_basePrefs());
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   setUp(() async {
-    // Reset flag and active program before each test so they are independent.
+    // Reset flag and active plan before each test so they are independent.
     await _clearStartHereFlag();
-    await ProgramService().setActive(_emptyProgramUuid);
+    await PlanService().setActive(_emptyPlanUuid);
   });
 
   // ---------------------------------------------------------------------------
@@ -160,7 +160,7 @@ void main() {
     final controllers = _HarnessControllers();
     addTearDown(controllers.dispose);
 
-    await tester.pumpWidget(_programHarness(controllers));
+    await tester.pumpWidget(_planHarness(controllers));
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.startHereCue), findsOneWidget);
@@ -172,19 +172,19 @@ void main() {
     final controllers = _HarnessControllers();
     addTearDown(controllers.dispose);
 
-    await tester.pumpWidget(_programHarness(controllers));
+    await tester.pumpWidget(_planHarness(controllers));
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.startHereCue), findsNothing);
   });
 
   testWidgets('pill hidden when Øvelser has exercises', (tester) async {
-    await ProgramService().setActive(_fullProgramUuid);
+    await PlanService().setActive(_fullPlanUuid);
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     final controllers = _HarnessControllers();
     addTearDown(controllers.dispose);
 
-    await tester.pumpWidget(_programHarness(controllers));
+    await tester.pumpWidget(_planHarness(controllers));
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.startHereCue), findsNothing);
@@ -194,9 +194,9 @@ void main() {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     final controllers = _HarnessControllers();
     addTearDown(controllers.dispose);
-    controllers.program.activeSegment.value = ProgramSegment.script;
+    controllers.plan.activeSegment.value = PlanSegment.script;
 
-    await tester.pumpWidget(_programHarness(controllers));
+    await tester.pumpWidget(_planHarness(controllers));
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.startHereCue), findsNothing);
@@ -226,7 +226,7 @@ void main() {
   // First exercise created dismisses the pill via the event stream
   // ---------------------------------------------------------------------------
 
-  testWidgets('first exercise created via ProgramService dismisses pill', (
+  testWidgets('first exercise created via PlanService dismisses pill', (
     tester,
   ) async {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
@@ -236,7 +236,7 @@ void main() {
 
     expect(find.text(l10n.startHereCue), findsOneWidget);
 
-    await ProgramService().saveExercise(
+    await PlanService().saveExercise(
       await AppLocalizations.delegate.load(const Locale('en')),
       _exercise,
     );

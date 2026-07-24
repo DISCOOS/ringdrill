@@ -322,7 +322,7 @@ void _printUpload(DrillUploadResponse r, bool jsonOut) {
     stdout.writeln(
       jsonEncode({
         'slug': r.slug,
-        'programId': r.programId,
+        'planId': r.planId,
         'version': r.version,
         'etag': r.etag,
         'latest': r.latestUrl.toString(),
@@ -333,7 +333,7 @@ void _printUpload(DrillUploadResponse r, bool jsonOut) {
     return;
   }
   stdout.writeln('✔ uploaded ${r.slug}');
-  stdout.writeln('  programId : ${r.programId}');
+  stdout.writeln('  planId : ${r.planId}');
   stdout.writeln('  version   : ${r.version}');
   stdout.writeln('  etag      : ${r.etag}');
   stdout.writeln('  latest    : ${r.latestUrl}');
@@ -350,7 +350,7 @@ void _printFeed(MarketFeedPageResponse page, bool jsonOut) {
         'items': page.items
             .map(
               (i) => {
-                'programId': i.programId,
+                'planId': i.planId,
                 'slug': i.slug,
                 'name': i.name,
                 'tags': i.tags,
@@ -452,7 +452,7 @@ void _printListOne(AdminListItem i, bool jsonOut) {
       jsonEncode({
         'slug': i.slug,
         'ownerId': i.ownerId,
-        'programId': i.programId,
+        'planId': i.planId,
         'published': i.published,
         'versionCount': i.versionCount,
         if (i.latest != null) 'latest': i.latest,
@@ -467,7 +467,7 @@ void _printListOne(AdminListItem i, bool jsonOut) {
       ? ' (unpublished)'
       : '';
   stdout.writeln('✔ ${i.slug}$pub');
-  stdout.writeln('  programId: ${i.programId}');
+  stdout.writeln('  planId: ${i.planId}');
   stdout.writeln('  versions : ${i.versionCount ?? 0}');
   if (i.latest != null) {
     stdout.writeln(
@@ -492,7 +492,7 @@ void _printListPage(AdminListPageResponse page, bool jsonOut) {
               (i) => {
                 'slug': i.slug,
                 'ownerId': i.ownerId,
-                'programId': i.programId,
+                'planId': i.planId,
                 'published': i.published,
                 'versionCount': i.versionCount,
                 if (i.latest != null) 'latest': i.latest,

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/services/catalog_status_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/plan_status_badge.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,14 +16,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// The catalog status is pre-set to `online` so the badge's first-show probe
 /// short-circuits and the test never touches the network.
 void main() {
-  Program buildCatalogProgram(String uuid) {
+  Plan buildCatalogPlan(String uuid) {
     final now = DateTime.utc(2026, 6, 2);
-    final base = Program(
+    final base = Plan(
       uuid: uuid,
       name: 'Plan',
       description: '',
-      metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
-      source: ProgramSource.catalog(
+      metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
+      source: PlanSource.catalog(
         slug: 'plan-slug',
         latestEtag: 'etag-1',
         installedAt: now,
@@ -45,7 +45,7 @@ void main() {
 
   setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   setUp(() {
@@ -54,18 +54,18 @@ void main() {
   });
 
   tearDown(() async {
-    await ProgramService().clearAllForTest();
+    await PlanService().clearAllForTest();
   });
 
   testWidgets('shows the unpublished badge when a catalog plan diverges', (
     tester,
   ) async {
-    final service = ProgramService();
-    final base = buildCatalogProgram('prog-unpub');
-    await service.replaceProgram(base);
-    // A local edit. replaceProgram does not recompute contentHash, so the
+    final service = PlanService();
+    final base = buildCatalogPlan('prog-unpub');
+    await service.replacePlan(base);
+    // A local edit. replacePlan does not recompute contentHash, so the
     // stored hash now lags the live content — i.e. unpublished changes.
-    await service.replaceProgram(base.copyWith(name: 'Edited name'));
+    await service.replacePlan(base.copyWith(name: 'Edited name'));
     await service.setActive('prog-unpub');
 
     await tester.pumpWidget(harness());
@@ -79,9 +79,9 @@ void main() {
   testWidgets('hides the unpublished badge when a catalog plan is in sync', (
     tester,
   ) async {
-    final service = ProgramService();
-    final base = buildCatalogProgram('prog-sync');
-    await service.replaceProgram(base);
+    final service = PlanService();
+    final base = buildCatalogPlan('prog-sync');
+    await service.replacePlan(base);
     await service.setActive('prog-sync');
 
     await tester.pumpWidget(harness());

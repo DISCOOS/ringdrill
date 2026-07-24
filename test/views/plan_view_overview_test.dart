@@ -2,42 +2,42 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
-import 'package:ringdrill/models/program.dart';
-import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/services/plan_service.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// The Program view's collapsed overview card (`_ProgramOverview`) is an
+/// The Plan view's collapsed overview card (`_PlanOverview`) is an
 /// independent, ad-hoc preview of `briefIntroMd`/`commsMd`/`beforeRoundMd`
 /// (a stripped first-paragraph extract) that does not go through
 /// `BriefRenderer.render` — it bypasses the DESIGN-008 variable/cross-
 /// reference resolution pipeline entirely, so a `{{var.frekvens}}` or
-/// `{{program.name}}` token used in one of those fields showed up literally
+/// `{{plan.name}}` token used in one of those fields showed up literally
 /// in this preview even after BriefRenderer itself resolved it correctly.
 
-class _TestProgramController extends ProgramPageControllerBase {
-  _TestProgramController({
+class _TestPlanController extends PlanPageControllerBase {
+  _TestPlanController({
     required super.stationListController,
     required super.rolePlaysController,
     required super.teamsPageController,
   });
 }
 
-const _programUuid = 'overview-program';
+const _planUuid = 'overview-plan';
 
-Program _baseProgram({
+Plan _basePlan({
   String? briefIntroMd,
   List<DrillVariable> variables = const [],
 }) {
   final now = DateTime.utc(2026, 1, 1);
-  return Program(
-    uuid: _programUuid,
+  return Plan(
+    uuid: _planUuid,
     name: 'Vinterøvelse Nordland',
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.1'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.1'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -51,7 +51,7 @@ Program _baseProgram({
 Widget _harness() {
   final stationList = StationListController();
   final rolePlays = RolePlaysController();
-  final controller = _TestProgramController(
+  final controller = _TestPlanController(
     stationListController: stationList,
     rolePlaysController: rolePlays,
     teamsPageController: const TeamsPageController(),
@@ -60,7 +60,7 @@ Widget _harness() {
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(
-      body: ProgramView(
+      body: PlanView(
         controller: controller,
         stationListController: stationList,
         rolePlaysController: rolePlays,
@@ -70,24 +70,24 @@ Widget _harness() {
 }
 
 void main() {
-  // ProgramService.init() is guarded by an internal "already ready" flag —
+  // PlanService.init() is guarded by an internal "already ready" flag —
   // only the first call in this isolate actually loads from
-  // SharedPreferences, so later scenarios go through replaceProgram
+  // SharedPreferences, so later scenarios go through replacePlan
   // instead of re-seeding prefs + calling init() again.
   setUpAll(() async {
     SharedPreferences.setMockInitialValues({
-      'app:activeProgram:v1': _programUuid,
+      'app:activePlan:v1': _planUuid,
       'app:librarySchema:v1': '1',
     });
-    await ProgramService().init();
-    await ProgramService().replaceProgram(_baseProgram());
+    await PlanService().init();
+    await PlanService().replacePlan(_basePlan());
   });
 
   testWidgets('resolves a declared variable in the overview card preview', (
     tester,
   ) async {
-    await ProgramService().replaceProgram(
-      _baseProgram(
+    await PlanService().replacePlan(
+      _basePlan(
         briefIntroMd: 'Samband på kanal {{var.frekvens}}.',
         variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
       ),
@@ -100,11 +100,11 @@ void main() {
     expect(find.textContaining('{{var.frekvens}}'), findsNothing);
   });
 
-  testWidgets('resolves {{program.name}} in the overview card preview', (
+  testWidgets('resolves {{plan.name}} in the overview card preview', (
     tester,
   ) async {
-    await ProgramService().replaceProgram(
-      _baseProgram(briefIntroMd: 'Velkommen til {{program.name}}.'),
+    await PlanService().replacePlan(
+      _basePlan(briefIntroMd: 'Velkommen til {{plan.name}}.'),
     );
 
     await tester.pumpWidget(_harness());
@@ -114,14 +114,14 @@ void main() {
       find.textContaining('Velkommen til Vinterøvelse Nordland.'),
       findsOneWidget,
     );
-    expect(find.textContaining('{{program.name}}'), findsNothing);
+    expect(find.textContaining('{{plan.name}}'), findsNothing);
   });
 
   testWidgets(
     'an undeclared variable still shows the localized placeholder, not the raw token',
     (tester) async {
-      await ProgramService().replaceProgram(
-        _baseProgram(briefIntroMd: 'Kanal {{var.mangler}}.'),
+      await PlanService().replacePlan(
+        _basePlan(briefIntroMd: 'Kanal {{var.mangler}}.'),
       );
 
       await tester.pumpWidget(_harness());

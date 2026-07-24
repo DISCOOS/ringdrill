@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/data/bulk_export.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/external_links.dart';
 import 'package:ringdrill/views/migration_page.dart';
@@ -132,12 +132,12 @@ class _MigrationBannerState extends State<MigrationBanner> {
     }
     setState(() => _exporting = true);
     try {
-      final shells = ProgramService().listPrograms();
-      final programs = shells
-          .map((s) => ProgramService().loadProgram(s.uuid))
-          .whereType<Program>()
+      final shells = PlanService().listPlans();
+      final plans = shells
+          .map((s) => PlanService().loadPlan(s.uuid))
+          .whereType<Plan>()
           .toList();
-      final bytes = exportAllPrograms(programs);
+      final bytes = exportAllPlans(plans);
       final now = widget.nowOverride?.call() ?? DateTime.now();
       await triggerDownload(bulkExportFileName(now), bytes);
     } finally {

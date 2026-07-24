@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 
 import 'support/save_roundtrip_harness.dart';
@@ -20,13 +20,13 @@ void main() {
 
   setUp(() async {
     await initActivePlan('Station roundtrip plan');
-    await ProgramService().saveExercise(
+    await PlanService().saveExercise(
       l10n,
       makeExercise(uuid: 'ex-rt-st', name: 'Station Exercise'),
     );
   });
 
-  tearDown(() => ProgramService().clearAllForTest());
+  tearDown(() => PlanService().clearAllForTest());
 
   Future<void> renameViaSheet(
     WidgetTester tester, {
@@ -59,7 +59,7 @@ void main() {
     // Round 1: sheet body (StationScreen) → edit → rename → save.
     await renameViaSheet(tester, from: 'Post 1', to: 'Post X');
     expect(
-      ProgramService().getExercise('ex-rt-st')?.stations[0].name,
+      PlanService().getExercise('ex-rt-st')?.stations[0].name,
       'Post X',
       reason: 'first save from the sheet must persist',
     );
@@ -70,7 +70,7 @@ void main() {
     // regressed (the stale first re-open future swallowed the result).
     await renameViaSheet(tester, from: 'Post X', to: 'Post Y');
     expect(
-      ProgramService().getExercise('ex-rt-st')?.stations[0].name,
+      PlanService().getExercise('ex-rt-st')?.stations[0].name,
       'Post Y',
       reason: 'second consecutive save must persist too',
     );

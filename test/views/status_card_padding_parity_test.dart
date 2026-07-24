@@ -7,7 +7,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
@@ -21,7 +21,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // same viewport width.
 // ---------------------------------------------------------------------------
 
-const _programUuid = 'prog-status-card-padding-parity';
+const _planUuid = 'prog-status-card-padding-parity';
 const _exerciseUuid = 'ex-status-card-padding-parity';
 
 /// A fixed morning reference, safely clear of midnight for the offset used
@@ -68,18 +68,18 @@ Exercise _exercise({required SimpleTimeOfDay startTime}) => Exercise(
   endTime: const SimpleTimeOfDay(hour: 9, minute: 0),
 );
 
-// `ProgramService` is a lazily-initialized singleton that only reads
+// `PlanService` is a lazily-initialized singleton that only reads
 // SharedPreferences once (`_isReady` guards `init()`), so — unlike the
 // other status-card fixtures, which each run in their own test file — this
-// test renders both surfaces from the *same* seeded exercise/program
+// test renders both surfaces from the *same* seeded exercise/plan
 // instead of re-seeding between them.
 Future<void> _seedAndInit(Exercise exercise) async {
   SharedPreferences.setMockInitialValues({
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Test Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Test Plan',
       'description': '',
       'metadata': {
         'created': '2024-01-01T00:00:00.000Z',
@@ -92,9 +92,9 @@ Future<void> _seedAndInit(Exercise exercise) async {
       'rolePlays': [],
       'actors': [],
     }),
-    'pe:$_programUuid:${exercise.uuid}': jsonEncode(exercise.toJson()),
+    'pe:$_planUuid:${exercise.uuid}': jsonEncode(exercise.toJson()),
   });
-  await ProgramService().init();
+  await PlanService().init();
 }
 
 Widget _coordinatorHarness(String uuid) => MaterialApp(

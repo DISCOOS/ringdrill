@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
@@ -14,7 +14,7 @@ import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 /// started. Resolves to the picked [Exercise], or `null` if the user
 /// dismissed the picker without choosing.
 ///
-/// Reads the list from [ProgramService.activeProgram]; the [current]
+/// Reads the list from [PlanService.activePlan]; the [current]
 /// exercise is shown highlighted and tapping it just closes the picker
 /// (no-op switch).
 Future<Exercise?> showExercisePickerSheet(
@@ -22,14 +22,14 @@ Future<Exercise?> showExercisePickerSheet(
   required Exercise current,
 }) {
   final localizations = AppLocalizations.of(context)!;
-  final program = ProgramService().activeProgram;
-  final exercises = program?.exercises ?? const <Exercise>[];
+  final plan = PlanService().activePlan;
+  final exercises = plan?.exercises ?? const <Exercise>[];
 
-  String label(Exercise exercise) => program == null
+  String label(Exercise exercise) => plan == null
       ? exercise.name
       : substitutePlanVariables(
           exercise.name,
-          effectivePlanVariables(program, exercise: exercise),
+          effectivePlanVariables(plan, exercise: exercise),
         );
 
   return showRingdrillPicker<Exercise>(
@@ -41,7 +41,7 @@ Future<Exercise?> showExercisePickerSheet(
       final isCurrent = exercise.uuid == current.uuid;
       final index = exercises.indexWhere((e) => e.uuid == exercise.uuid);
       final numberLabel = Numbering.exercise(
-        program?.exerciseNumberFormat ?? ExerciseNumberFormat.hash,
+        plan?.exerciseNumberFormat ?? ExerciseNumberFormat.hash,
         index + 1,
       );
       final st = exercise.startTime.toMaterial();

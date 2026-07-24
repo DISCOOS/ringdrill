@@ -3,28 +3,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/program.dart';
-import 'package:ringdrill/views/program_form_screen.dart';
+import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/views/plan_form_screen.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 import 'package:ringdrill/views/widgets/variable_value_field.dart';
 
 /// DESIGN-008 Stage 5 (+ follow-ups 01, 11, 12) — the Variabler declaration
-/// section end-to-end inside the Program editor: declare (name+hint only),
+/// section end-to-end inside the Plan editor: declare (name+hint only),
 /// expand a card to set its type/value/hint, rename (plan-wide rewrite),
 /// delete via the context menu and via swipe (both reference-guarded), and
 /// save-time validation.
 
-Program _program({
+Plan _plan({
   String? briefIntroMd,
   String? commsMd,
   List<DrillVariable> variables = const [],
 }) {
   final now = DateTime.utc(2026, 1, 1);
-  return Program(
+  return Plan(
     uuid: 'pgm-1',
     name: 'Vinterøvelse',
     description: '',
-    metadata: ProgramMetadata(
+    metadata: PlanMetadata(
       created: now,
       updated: now,
       version: '1.1',
@@ -39,17 +39,17 @@ Program _program({
   );
 }
 
-/// Mutable holder for the popped [Program], since the value only becomes
+/// Mutable holder for the popped [Plan], since the value only becomes
 /// available once Save is eventually tapped — long after `_openForm`
 /// itself has returned (it only opens the form; awaiting `_openForm` does
 /// NOT wait for the editor to close).
 class _Captured {
-  Program? value;
+  Plan? value;
 }
 
 Future<void> _openForm(
   WidgetTester tester,
-  Program program,
+  Plan plan,
   _Captured captured,
 ) async {
   tester.view.physicalSize = const Size(400, 800);
@@ -64,10 +64,10 @@ Future<void> _openForm(
       home: Builder(
         builder: (ctx) => TextButton(
           onPressed: () async {
-            captured.value = await Navigator.push<Program>(
+            captured.value = await Navigator.push<Plan>(
               ctx,
               MaterialPageRoute(
-                builder: (_) => ProgramFormScreen(program: program),
+                builder: (_) => PlanFormScreen(plan: plan),
               ),
             );
           },
@@ -185,12 +185,12 @@ void main() {
 
   testWidgets(
     'declare a variable (name + hint only), expand its card to set a '
-    'value, reference it, save: the popped Program has both',
+    'value, reference it, save: the popped Plan has both',
     (tester) async {
       final captured = _Captured();
-      await _openForm(tester, _program(briefIntroMd: 'Intro'), captured);
+      await _openForm(tester, _plan(briefIntroMd: 'Intro'), captured);
 
-      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await _openSwitcherFrom(tester, l.planSectionPlan);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
 
@@ -217,10 +217,10 @@ void main() {
       await tester.pumpAndSettle();
 
       await _openSwitcherFrom(tester, l.variablesSectionTitle);
-      await tester.tap(find.text(l.briefSectionProgramIntro));
+      await tester.tap(find.text(l.briefSectionPlanIntro));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextFormField, l.briefSectionProgramIntro),
+        find.widgetWithText(TextFormField, l.briefSectionPlanIntro),
         'Kanal {{var.frekvens}}',
       );
 
@@ -238,10 +238,10 @@ void main() {
   testWidgets(
     'create-inline via the insertion menu declares an empty (amber) variable',
     (tester) async {
-      await _openForm(tester, _program(briefIntroMd: 'Intro'), _Captured());
+      await _openForm(tester, _plan(briefIntroMd: 'Intro'), _Captured());
 
-      await _openSwitcherFrom(tester, l.programSectionPlan);
-      await tester.tap(find.text(l.briefSectionProgramIntro));
+      await _openSwitcherFrom(tester, l.planSectionPlan);
+      await tester.tap(find.text(l.briefSectionPlanIntro));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byType(TextField));
@@ -256,7 +256,7 @@ void main() {
 
       expect(find.textContaining('{{var.freken}}'), findsOneWidget);
 
-      await _openSwitcherFrom(tester, l.briefSectionProgramIntro);
+      await _openSwitcherFrom(tester, l.briefSectionPlanIntro);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
 
@@ -272,13 +272,13 @@ void main() {
     (tester) async {
       await _openForm(
         tester,
-        _program(
+        _plan(
           variables: const [DrillVariable(name: 'frekvens', value: 'X')],
         ),
         _Captured(),
       );
 
-      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await _openSwitcherFrom(tester, l.planSectionPlan);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
 
@@ -302,7 +302,7 @@ void main() {
     (tester) async {
       await _openForm(
         tester,
-        _program(
+        _plan(
           variables: const [
             DrillVariable(name: 'frekvens', value: 'Kanal 6'),
             DrillVariable(name: 'talegruppe', value: 'VFOLD'),
@@ -311,7 +311,7 @@ void main() {
         _Captured(),
       );
 
-      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await _openSwitcherFrom(tester, l.planSectionPlan);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
 
@@ -344,7 +344,7 @@ void main() {
   ) async {
     await _openForm(
       tester,
-      _program(
+      _plan(
         briefIntroMd: 'Kanal {{var.frekvens}}',
         commsMd: 'Bruk {{var.frekvens}} her også',
         variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
@@ -352,7 +352,7 @@ void main() {
       _Captured(),
     );
 
-    await _openSwitcherFrom(tester, l.programSectionPlan);
+    await _openSwitcherFrom(tester, l.planSectionPlan);
     await tester.tap(find.text(l.variablesSectionTitle));
     await tester.pumpAndSettle();
     await _expandCard(tester, l, 'frekvens');
@@ -379,12 +379,12 @@ void main() {
     expect(find.text('frekvens'), findsNothing);
 
     await _openSwitcherFrom(tester, l.variablesSectionTitle);
-    await tester.tap(find.text(l.briefSectionProgramIntro));
+    await tester.tap(find.text(l.briefSectionPlanIntro));
     await tester.pumpAndSettle();
     expect(find.text('Kanal {{var.kanal}}'), findsOneWidget);
 
-    await _openSwitcherFrom(tester, l.briefSectionProgramIntro);
-    await tester.tap(find.text(l.briefSectionProgramComms));
+    await _openSwitcherFrom(tester, l.briefSectionPlanIntro);
+    await tester.tap(find.text(l.briefSectionPlanComms));
     await tester.pumpAndSettle();
     expect(find.text('Bruk {{var.kanal}} her også'), findsOneWidget);
   });
@@ -395,7 +395,7 @@ void main() {
     (tester) async {
       await _openForm(
         tester,
-        _program(
+        _plan(
           briefIntroMd: 'Kanal {{var.frekvens}}',
           variables: const [
             DrillVariable(name: 'frekvens', value: 'Kanal 6'),
@@ -405,7 +405,7 @@ void main() {
         _Captured(),
       );
 
-      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await _openSwitcherFrom(tester, l.planSectionPlan);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
 
@@ -439,7 +439,7 @@ void main() {
     (tester) async {
       await _openForm(
         tester,
-        _program(
+        _plan(
           briefIntroMd: 'Kanal {{var.frekvens}}',
           variables: const [
             DrillVariable(name: 'frekvens', value: 'Kanal 6'),
@@ -449,7 +449,7 @@ void main() {
         _Captured(),
       );
 
-      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await _openSwitcherFrom(tester, l.planSectionPlan);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
 
@@ -485,13 +485,13 @@ void main() {
     );
     await _openForm(
       tester,
-      _program(
+      _plan(
         variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
       ).copyWith(exercises: [exercise]),
       _Captured(),
     );
 
-    await _openSwitcherFrom(tester, l.programSectionPlan);
+    await _openSwitcherFrom(tester, l.planSectionPlan);
     await tester.tap(find.text(l.variablesSectionTitle));
     await tester.pumpAndSettle();
     await _expandCard(tester, l, 'frekvens');
@@ -512,7 +512,7 @@ void main() {
       final captured = _Captured();
       await _openForm(
         tester,
-        _program(briefIntroMd: 'Kanal {{var.mangler}}'),
+        _plan(briefIntroMd: 'Kanal {{var.mangler}}'),
         captured,
       );
 
@@ -526,7 +526,7 @@ void main() {
       // fully dismiss before tapping anything down there.
       await tester.pump(const Duration(seconds: 5));
 
-      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await _openSwitcherFrom(tester, l.planSectionPlan);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l.variablesSectionAddAction));
@@ -555,7 +555,7 @@ void main() {
       final captured = _Captured();
       await _openForm(
         tester,
-        _program(
+        _plan(
           briefIntroMd: 'Verdi:[{{var.tom}}]',
           variables: const [DrillVariable(name: 'tom')],
         ),
@@ -576,13 +576,13 @@ void main() {
   ) async {
     await _openForm(
       tester,
-      _program(
+      _plan(
         variables: const [DrillVariable(name: 'frekvens', value: 'X')],
       ),
       _Captured(),
     );
 
-    await _openSwitcherFrom(tester, l.programSectionPlan);
+    await _openSwitcherFrom(tester, l.planSectionPlan);
     await tester.tap(find.text(l.variablesSectionTitle));
     await tester.pumpAndSettle();
 
@@ -616,22 +616,22 @@ void main() {
       final captured = _Captured();
       await _openForm(
         tester,
-        _program(
+        _plan(
           briefIntroMd: 'Kanal {{var.frekvens}}',
           variables: const [DrillVariable(name: 'frekvens')],
         ),
         captured,
       );
 
-      await _openSwitcherFrom(tester, l.programSectionPlan);
-      await tester.tap(find.text(l.briefSectionProgramIntro));
+      await _openSwitcherFrom(tester, l.planSectionPlan);
+      await tester.tap(find.text(l.briefSectionPlanIntro));
       await tester.pumpAndSettle();
       expect(
         _tokenChipColor(tester, '{{var.frekvens}}'),
         Colors.amber.shade900,
       );
 
-      await _openSwitcherFrom(tester, l.briefSectionProgramIntro);
+      await _openSwitcherFrom(tester, l.briefSectionPlanIntro);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
 
@@ -643,7 +643,7 @@ void main() {
       expect(find.text('Kanal 6'), findsWidgets);
 
       await _openSwitcherFrom(tester, l.variablesSectionTitle);
-      await tester.tap(find.text(l.briefSectionProgramIntro));
+      await tester.tap(find.text(l.briefSectionPlanIntro));
       await tester.pumpAndSettle();
       expect(_tokenChipColor(tester, '{{var.frekvens}}'), Colors.blue.shade800);
 
@@ -662,14 +662,14 @@ void main() {
       final captured = _Captured();
       await _openForm(
         tester,
-        _program(
+        _plan(
           briefIntroMd: 'Kanal {{var.frekvens}}',
           variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
         ),
         captured,
       );
 
-      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await _openSwitcherFrom(tester, l.planSectionPlan);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
 
@@ -682,7 +682,7 @@ void main() {
       expect(find.text('Kanal 8'), findsWidgets);
 
       await _openSwitcherFrom(tester, l.variablesSectionTitle);
-      await tester.tap(find.text(l.briefSectionProgramIntro));
+      await tester.tap(find.text(l.briefSectionPlanIntro));
       await tester.pumpAndSettle();
       // The reference is unchanged — {{var.frekvens}}, not rewritten to
       // some other name.
@@ -702,13 +702,13 @@ void main() {
     final captured = _Captured();
     await _openForm(
       tester,
-      _program(
+      _plan(
         variables: const [DrillVariable(name: 'frekvens', value: 'X')],
       ),
       captured,
     );
 
-    await _openSwitcherFrom(tester, l.programSectionPlan);
+    await _openSwitcherFrom(tester, l.planSectionPlan);
     await tester.tap(find.text(l.variablesSectionTitle));
     await tester.pumpAndSettle();
 
@@ -736,13 +736,13 @@ void main() {
       final captured = _Captured();
       await _openForm(
         tester,
-        _program(
+        _plan(
           variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
         ),
         captured,
       );
 
-      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await _openSwitcherFrom(tester, l.planSectionPlan);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
       await _expandCard(tester, l, 'frekvens');
@@ -768,7 +768,7 @@ void main() {
       // Blocked from another section too — the state-level gate, since the
       // Variabler section (and its inline validator) is no longer mounted.
       await _openSwitcherFrom(tester, l.variablesSectionTitle);
-      await tester.tap(find.text(l.programSectionPlan));
+      await tester.tap(find.text(l.planSectionPlan));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
@@ -779,7 +779,7 @@ void main() {
       );
 
       // A valid value unblocks; "3,14" stores canonical "3.14".
-      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await _openSwitcherFrom(tester, l.planSectionPlan);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
       await _expandCard(tester, l, 'frekvens');
@@ -800,10 +800,10 @@ void main() {
     'deleting',
     (tester) async {
       final captured = _Captured();
-      await _openForm(tester, _program(briefIntroMd: 'Intro'), captured);
+      await _openForm(tester, _plan(briefIntroMd: 'Intro'), captured);
 
-      await _openSwitcherFrom(tester, l.programSectionPlan);
-      await tester.tap(find.text(l.briefSectionProgramIntro));
+      await _openSwitcherFrom(tester, l.planSectionPlan);
+      await tester.tap(find.text(l.briefSectionPlanIntro));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byType(TextField));
@@ -816,7 +816,7 @@ void main() {
       await tester.pump();
       expect(_tokenChipColor(tester, '{{var.freken}}'), Colors.amber.shade900);
 
-      await _openSwitcherFrom(tester, l.briefSectionProgramIntro);
+      await _openSwitcherFrom(tester, l.briefSectionPlanIntro);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
 
@@ -831,7 +831,7 @@ void main() {
       expect(find.text('Kanal 6'), findsWidgets);
 
       await _openSwitcherFrom(tester, l.variablesSectionTitle);
-      await tester.tap(find.text(l.briefSectionProgramIntro));
+      await tester.tap(find.text(l.briefSectionPlanIntro));
       await tester.pumpAndSettle();
       expect(_tokenChipColor(tester, '{{var.freken}}'), Colors.blue.shade800);
 
@@ -847,7 +847,7 @@ void main() {
     (tester) async {
       await _openForm(
         tester,
-        _program(
+        _plan(
           variables: const [
             DrillVariable(name: 'frekvens', value: 'Kanal 6', hint: 'Radio'),
             DrillVariable(name: 'talegruppe', value: 'VFOLD'),
@@ -856,7 +856,7 @@ void main() {
         _Captured(),
       );
 
-      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await _openSwitcherFrom(tester, l.planSectionPlan);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
 
@@ -898,13 +898,13 @@ void main() {
     (tester) async {
       await _openForm(
         tester,
-        _program(
+        _plan(
           variables: const [DrillVariable(name: 'frekvens', value: 'X')],
         ),
         _Captured(),
       );
 
-      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await _openSwitcherFrom(tester, l.planSectionPlan);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
 

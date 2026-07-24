@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/role_play.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 
-/// Bottom sheet listing all [Actor] records in the active program.
+/// Bottom sheet listing all [Actor] records in the active plan.
 ///
 /// Each row shows the actor's name and phone, with a footer listing the roles
 /// they are currently cast to. Tapping a row opens [ActorFormScreen] (edit).
@@ -14,7 +14,7 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 /// the actor is cast in one or more roles (uses [castDeleteBlocked] ARB key).
 /// The FAB inside the sheet opens [ActorFormScreen] in create mode.
 ///
-/// All mutations are immediately persisted via [ProgramService]. The sheet
+/// All mutations are immediately persisted via [PlanService]. The sheet
 /// rebuilds its state after each mutation via [setState].
 class CastRosterSheet extends StatefulWidget {
   const CastRosterSheet({super.key});
@@ -24,7 +24,7 @@ class CastRosterSheet extends StatefulWidget {
 }
 
 class _CastRosterSheetState extends State<CastRosterSheet> {
-  final _service = ProgramService();
+  final _service = PlanService();
 
   List<Actor> _actors = [];
   List<RolePlay> _rolePlays = [];

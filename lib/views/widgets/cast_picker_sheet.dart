@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/role_play.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
@@ -10,7 +10,7 @@ import 'package:ringdrill/views/widgets/face_badge_icon.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 
 /// Opens the marker sheet for [rolePlay] and applies whatever the user chose
-/// (select/clear) via [ProgramService.saveRolePlay] — the one apply step
+/// (select/clear) via [PlanService.saveRolePlay] — the one apply step
 /// every marker-management affordance shares (DESIGN-010 browser tile
 /// polish: unify on the bottom sheet). Both the Poster tile's marker-row
 /// icon (`StationRoleSummary.onTapMarker`) and the Spill tile's cast chip
@@ -31,7 +31,7 @@ Future<void> openCastPickerAndApply(
       rolePlay.actorUuid == null ? null : rolePlay.copyWith(actorUuid: null),
   };
   if (updated == null) return;
-  await ProgramService().saveRolePlay(localizations, updated);
+  await PlanService().saveRolePlay(localizations, updated);
 }
 
 /// Opens [CastPickerSheet] through ADR-0049's adaptive surface split — a
@@ -119,7 +119,7 @@ final class CastPickerClear extends CastPickerResult {
 }
 
 class _CastPickerSheetState extends State<CastPickerSheet> {
-  final _service = ProgramService();
+  final _service = PlanService();
   final _searchController = TextEditingController();
 
   List<Actor> _actors = [];

@@ -27,7 +27,7 @@ List<MapMarkerSpec<int>> stationScenarioMarkers(
   final position = station.position;
   if (position != null) {
     // Number-only at overview zooms (the app-wide station-marker
-    // convention, via stationNumbering — see ProgramService.getLocations),
+    // convention, via stationNumbering — see PlanService.getLocations),
     // switching to the full resolved "number name" once zoomed in close
     // enough to have room for it (MapConfig.labelDetailZoomFor) — like
     // every other station-position marker in the app.

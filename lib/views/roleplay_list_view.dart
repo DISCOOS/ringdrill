@@ -12,7 +12,7 @@ import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart'
     show ActionChipFormatter;
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_additions.dart';
@@ -51,7 +51,7 @@ class RolePlayListView extends StatefulWidget {
 }
 
 class _RolePlayListViewState extends State<RolePlayListView> {
-  final _service = ProgramService();
+  final _service = PlanService();
   StreamSubscription? _subscription;
 
   int? _expandedRowIndex;
@@ -61,15 +61,15 @@ class _RolePlayListViewState extends State<RolePlayListView> {
   /// overlaid by [exercise]'s overrides, then the assigned station's, if
   /// any. Empty when there is no active plan.
   Map<String, String> _overridesFor(Exercise exercise, RolePlay rolePlay) {
-    final program = _service.activeProgram;
-    if (program == null) return const {};
+    final plan = _service.activePlan;
+    if (plan == null) return const {};
     final stationIndex = rolePlay.stationIndex;
     final stations = exercise.stations;
     final station = (stationIndex != null && stationIndex < stations.length)
         ? stations[stationIndex]
         : null;
     return effectivePlanVariables(
-      program,
+      plan,
       exercise: exercise,
       station: station,
     );
@@ -147,7 +147,7 @@ class _RolePlayListViewState extends State<RolePlayListView> {
   bool get _hasAnyRole => _service.loadRolePlays().isNotEmpty;
 
   /// Returns the sliver content for the role rows, meant to be embedded
-  /// directly in program_view.dart's per-segment `CustomScrollView`. The
+  /// directly in plan_view.dart's per-segment `CustomScrollView`. The
   /// exercise filter banner and the "Ny rolle" FAB are separate widgets
   /// ([RolePlaysFilterBanner], [RolePlaysCreateFab]) rendered by the host
   /// outside the scroll view — they need to stay pinned to the bottom of the
@@ -156,9 +156,9 @@ class _RolePlayListViewState extends State<RolePlayListView> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    // No active program: loadRolePlays / loadExercises both return empty, so we
+    // No active plan: loadRolePlays / loadExercises both return empty, so we
     // fall through to the teaching empty state below (icon + title + body) for
-    // a consistent surface across all four Program segments per DESIGN-007
+    // a consistent surface across all four Plan segments per DESIGN-007
     // stage 1. The create FAB stays hidden (canCreateRole is false) and the
     // filter FAB is disabled in the controller's buildActions.
 
@@ -230,7 +230,7 @@ class _RolePlayListViewState extends State<RolePlayListView> {
   /// assigned yet (legacy data) the post/markør parts show as `?`.
   String _roleBadgeLabel(RolePlay rolePlay, int exerciseNumber) {
     final format =
-        _service.activeProgram?.stationNumberFormat ??
+        _service.activePlan?.stationNumberFormat ??
         StationNumberFormat.dotted;
     final stationIndex = rolePlay.stationIndex;
     final roleNumber = stationIndex == null
@@ -304,7 +304,7 @@ class _RolePlayListViewState extends State<RolePlayListView> {
           overflow: TextOverflow.ellipsis,
         ),
         // Deliberately NOT RingDrillText: this subtitle resolves from
-        // ProgramService().activeProgram via `_overridesFor`'s full
+        // PlanService().activePlan via `_overridesFor`'s full
         // effective-value map regardless of any PlanScope ancestor (unlike
         // the role-name title above, which needs one) — see
         // roleplays_view_variables_test.dart. Only `{{var.*}}` is in scope
@@ -317,7 +317,7 @@ class _RolePlayListViewState extends State<RolePlayListView> {
               ? localizations.roleSubtitleStation(
                   substitutePlanVariables(
                     exercise.stations[rolePlay.stationIndex!].numberAndName(
-                      _service.activeProgram?.stationNumberFormat ??
+                      _service.activePlan?.stationNumberFormat ??
                           StationNumberFormat.dotted,
                       exerciseNumber: exerciseNumber,
                     ),
@@ -510,7 +510,7 @@ class _RolePlayListViewState extends State<RolePlayListView> {
       builder: (_) => RolePlayFormScreen(
         rolePlay: rolePlay,
         exercise: exercise,
-        variables: _service.activeProgram?.variables ?? const [],
+        variables: _service.activePlan?.variables ?? const [],
         isExisting: true,
       ),
     );
@@ -541,7 +541,7 @@ class _RolePlayListViewState extends State<RolePlayListView> {
 }
 
 // ---------------------------------------------------------------------------
-// Fixed banner and FAB — rendered by program_view.dart as siblings of the
+// Fixed banner and FAB — rendered by plan_view.dart as siblings of the
 // Script segment's `CustomScrollView` (not inside it) so they stay pinned to
 // the viewport instead of scrolling with the rows. Mirrors StationFilterBanner
 // / the retired station filter-FAB layout.
@@ -562,7 +562,7 @@ class RolePlaysFilterBanner extends StatelessWidget {
       builder: (context, uuid, _) {
         final exercise = uuid == null
             ? null
-            : ProgramService().getExercise(uuid);
+            : PlanService().getExercise(uuid);
         if (exercise == null) return const SizedBox.shrink();
         final localizations = AppLocalizations.of(context)!;
         final theme = Theme.of(context);
@@ -583,10 +583,10 @@ class RolePlaysFilterBanner extends StatelessWidget {
                   Expanded(
                     child: RingDrillText.plain(
                       localizations.showingRolesIn(exercise.name),
-                      overrides: ProgramService().activeProgram == null
+                      overrides: PlanService().activePlan == null
                           ? const {}
                           : effectivePlanVariables(
-                              ProgramService().activeProgram!,
+                              PlanService().activePlan!,
                               exercise: exercise,
                             ),
                       style: TextStyle(
@@ -611,8 +611,8 @@ class RolePlaysFilterBanner extends StatelessWidget {
 }
 
 /// "Ny rolle" FAB for the Script tab, floating above whatever is rendered
-/// below it in program_view.dart's layout (the filter banner, when present).
-/// Hidden when there is no active program or no exercises to attach a role
+/// below it in plan_view.dart's layout (the filter banner, when present).
+/// Hidden when there is no active plan or no exercises to attach a role
 /// to, matching the previous `canCreateRole` gate.
 class RolePlaysCreateFab extends StatelessWidget {
   const RolePlaysCreateFab({super.key, required this.controller});
@@ -621,8 +621,8 @@ class RolePlaysCreateFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canCreateRole = ProgramService().loadExercises().isNotEmpty;
-    if (ProgramService().activeProgramUuid == null || !canCreateRole) {
+    final canCreateRole = PlanService().loadExercises().isNotEmpty;
+    if (PlanService().activePlanUuid == null || !canCreateRole) {
       return const SizedBox.shrink();
     }
     final localizations = AppLocalizations.of(context)!;
@@ -672,7 +672,7 @@ class RolePlaysController extends ScreenController {
   // instead of covering it. The create flow stays here.
   Future<void> openCreateRolePlay(BuildContext context) async {
     final localizations = AppLocalizations.of(context)!;
-    final service = ProgramService();
+    final service = PlanService();
     final exercises = service.loadExercises();
 
     // No exercises yet — nothing to attach a role to.
@@ -686,7 +686,7 @@ class RolePlaysController extends ScreenController {
     // Pick the exercise to create the role in — adaptive picker (ADR-0049):
     // bottom sheet on compact, dialog on medium/expanded.
     final exerciseFormat =
-        service.activeProgram?.exerciseNumberFormat ??
+        service.activePlan?.exerciseNumberFormat ??
         ExerciseNumberFormat.hash;
     final exercise = await showRingdrillPicker<Exercise>(
       context: context,
@@ -725,7 +725,7 @@ class RolePlaysController extends ScreenController {
       builder: (_) => RolePlayFormScreen(
         rolePlay: draft,
         exercise: exercise,
-        variables: service.activeProgram?.variables ?? const [],
+        variables: service.activePlan?.variables ?? const [],
       ),
     );
     // A fresh draft has no delete affordance, so only a save (or cancel) here.
@@ -742,7 +742,7 @@ class RolePlaysController extends ScreenController {
   @override
   List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
     final localizations = AppLocalizations.of(context)!;
-    final hasActiveProgram = ProgramService().activeProgramUuid != null;
+    final hasActivePlan = PlanService().activePlanUuid != null;
     return [
       // Filter by exercise — moved from the body FAB to the AppBar.
       // The cast-roster action (Icons.recent_actors) that used to live here
@@ -754,7 +754,7 @@ class RolePlaysController extends ScreenController {
           final button = IconButton(
             icon: const Icon(Icons.filter_list),
             tooltip: localizations.selectExercises,
-            onPressed: hasActiveProgram ? () => openFilterSheet(context) : null,
+            onPressed: hasActivePlan ? () => openFilterSheet(context) : null,
           );
           if (active == null) return button;
           return Badge.count(count: 1, child: button);
@@ -765,10 +765,10 @@ class RolePlaysController extends ScreenController {
 
   Future<void> openFilterSheet(BuildContext context) async {
     final localizations = AppLocalizations.of(context)!;
-    final program = ProgramService().activeProgram;
-    final exercises = ProgramService().loadExercises();
+    final plan = PlanService().activePlan;
+    final exercises = PlanService().loadExercises();
     final exerciseFormat =
-        program?.exerciseNumberFormat ?? ExerciseNumberFormat.hash;
+        plan?.exerciseNumberFormat ?? ExerciseNumberFormat.hash;
     final current = filterExerciseUuid.value;
     // "All exercises" first, then one choice per exercise. Adaptive picker
     // (ADR-0049): bottom sheet on compact, dialog on medium/expanded. Tap

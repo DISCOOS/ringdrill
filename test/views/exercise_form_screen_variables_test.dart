@@ -201,7 +201,7 @@ void main() {
       expect(
         find.text('Kanal 9'),
         findsOneWidget,
-        reason: 'the exercise-scope override shadows the program default',
+        reason: 'the exercise-scope override shadows the plan default',
       );
       expect(find.text('Kanal 6'), findsNothing);
     },
@@ -265,7 +265,7 @@ void main() {
       expect(captured.value, isNull);
       expect(
         find.text(
-          l.programSaveBlockedUndeclaredVariable(l.briefSectionExerciseMethod),
+          l.planSaveBlockedUndeclaredVariable(l.briefSectionExerciseMethod),
         ),
         findsOneWidget,
       );

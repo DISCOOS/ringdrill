@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/exercise_form_screen.dart';
 
 import 'support/save_roundtrip_harness.dart';
@@ -19,7 +19,7 @@ void main() {
   });
 
   setUp(() => initActivePlan('Create plan'));
-  tearDown(() => ProgramService().clearAllForTest());
+  tearDown(() => PlanService().clearAllForTest());
 
   testWidgets(
     'creating a new exercise from a blank form persists it in the active '
@@ -39,7 +39,7 @@ void main() {
                   ),
                 );
                 if (result != null) {
-                  await ProgramService().saveExercise(l10n, result.exercise);
+                  await PlanService().saveExercise(l10n, result.exercise);
                 }
               },
               child: const Text('New'),
@@ -61,7 +61,7 @@ void main() {
       await tester.tap(find.text(l10n.save));
       await tester.pumpAndSettle();
 
-      final names = ProgramService().loadExercises().map((e) => e.name);
+      final names = PlanService().loadExercises().map((e) => e.name);
       expect(names, contains('Fresh exercise'));
     },
   );

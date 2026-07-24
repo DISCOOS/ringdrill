@@ -3,7 +3,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/theme.dart' show kDrillAccentFontSize;
@@ -29,15 +29,15 @@ class TeamScreen extends StatefulWidget {
 
 class _TeamScreenState extends State<TeamScreen>
     with SubscriptionBag<TeamScreen> {
-  final ProgramService _programService = ProgramService();
+  final PlanService _planService = PlanService();
 
   @override
   void initState() {
     super.initState();
     // The team name and exercise list are read fresh in build(); rebuild on
-    // any program mutation elsewhere, not just this screen's own edits —
+    // any plan mutation elsewhere, not just this screen's own edits —
     // mirrors CoordinatorScreen.
-    listen(_programService.events, (_) {
+    listen(_planService.events, (_) {
       if (mounted) setState(() {});
     });
   }
@@ -45,10 +45,10 @@ class _TeamScreenState extends State<TeamScreen>
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final team = _programService.getTeam(widget.teamIndex);
+    final team = _planService.getTeam(widget.teamIndex);
     final teamLabel =
         team?.name ?? '${localizations.team(1)} ${widget.teamIndex + 1}';
-    final exercises = _programService
+    final exercises = _planService
         .loadExercises()
         .where((e) => e.numberOfTeams > widget.teamIndex)
         .toList();
@@ -138,7 +138,7 @@ class _TeamScreenState extends State<TeamScreen>
 
   Future<void> _editTeam() async {
     final localizations = AppLocalizations.of(context)!;
-    final team = _programService.getTeam(widget.teamIndex);
+    final team = _planService.getTeam(widget.teamIndex);
     if (team == null) return;
     final updated = await openFormSurface<Team>(
       context,
@@ -147,7 +147,7 @@ class _TeamScreenState extends State<TeamScreen>
     // No mounted gate on the save: openFormSurface disposes this State when
     // it dismisses the hosting context sheet around the form push.
     if (updated == null) return;
-    await _programService.saveTeam(localizations, updated);
+    await _planService.saveTeam(localizations, updated);
     if (mounted) setState(() {});
   }
 }
@@ -205,12 +205,12 @@ class _ExerciseSectionState extends State<_ExerciseSection> {
       leading: accent.indicator,
       title: Text(
         () {
-          final program = ProgramService().activeProgram;
-          return program == null
+          final plan = PlanService().activePlan;
+          return plan == null
               ? exercise.name
               : substitutePlanVariables(
                   exercise.name,
-                  effectivePlanVariables(program, exercise: exercise),
+                  effectivePlanVariables(plan, exercise: exercise),
                 );
         }(),
         // ADR-0037 drillAccent: match the player's accent tiles instead of 18.

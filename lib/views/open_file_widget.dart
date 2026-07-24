@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/views/add_exercises_dialog.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/drill_format_messages.dart';
@@ -23,7 +23,7 @@ class OpenFileWidget extends StatefulWidget {
     super.key,
     required this.fileName,
     required this.loadFile,
-    required this.openProgram,
+    required this.openPlan,
     required this.isOnline,
     required this.location,
   });
@@ -41,10 +41,10 @@ class OpenFileWidget extends StatefulWidget {
   /// done) by the time the user taps a button.
   final Future<DrillFile> Function() loadFile;
 
-  /// Installs [file] as the active program. Local `/o/` files use plain
+  /// Installs [file] as the active plan. Local `/o/` files use plain
   /// `installFromFile`; catalog `/i/` links use `installFromCatalogFile` so
   /// the result keeps its catalog-source tag (slug/etag) for later refresh.
-  final Future<Program> Function(DrillFile file) openProgram;
+  final Future<Plan> Function(DrillFile file) openPlan;
 
   final bool isOnline;
   final String location;
@@ -64,19 +64,19 @@ class _OpenFileWidgetState extends State<OpenFileWidget> {
   /// Display name for the sheet title: the plan's real name once parsed,
   /// falling back to [OpenFileWidget.fileName] while loading or on parse
   /// failure (the real error still surfaces once the user taps a button).
-  String? _programName;
+  String? _planName;
 
   late final Future<DrillFile> _fileFuture = widget.loadFile();
-  late final Future<Program> _programFuture = _fileFuture.then(
-    (file) => file.program(),
+  late final Future<Plan> _planFuture = _fileFuture.then(
+    (file) => file.plan(),
   );
 
   @override
   void initState() {
     super.initState();
-    _programFuture.then((program) {
-      if (mounted && program.name.isNotEmpty) {
-        setState(() => _programName = program.name);
+    _planFuture.then((plan) {
+      if (mounted && plan.name.isNotEmpty) {
+        setState(() => _planName = plan.name);
       }
     }, onError: (_) {});
   }
@@ -99,8 +99,8 @@ class _OpenFileWidgetState extends State<OpenFileWidget> {
           // Title
           Center(
             child: Text(
-              _programName ??
-                  '${localizations.programFile} ${widget.fileName}',
+              _planName ??
+                  '${localizations.planFile} ${widget.fileName}',
               style: Theme.of(context).textTheme.headlineSmall,
               overflow: TextOverflow.ellipsis,
             ),
@@ -109,7 +109,7 @@ class _OpenFileWidgetState extends State<OpenFileWidget> {
           // Content
           const SizedBox(height: 16.0),
           Text(
-            localizations.openProgramHint,
+            localizations.openPlanHint,
             style: Theme.of(context).textTheme.bodyMedium,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -190,20 +190,20 @@ class _OpenFileWidgetState extends State<OpenFileWidget> {
     setState(() => _busy = _Busy.opening);
 
     try {
-      final program = await widget.openProgram(await _fileFuture);
+      final plan = await widget.openPlan(await _fileFuture);
       if (navigator.canPop()) navigator.pop();
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
-          content: Text(localizations.openedAndActivated(program.name)),
+          content: Text(localizations.openedAndActivated(plan.name)),
           dismissDirection: DismissDirection.endToStart,
           showCloseIcon: true,
         ),
       );
       // ADR-0032 *Activation contract*: move the URL to the newly
-      // active plan; installFromFile already wrote `activeProgramUuid`,
+      // active plan; installFromFile already wrote `activePlanUuid`,
       // so the redirect gate short-circuits and only the URL catches up.
-      router.go(programPath(program.uuid));
+      router.go(planPath(plan.uuid));
     } on DrillFormatException catch (e) {
       // User picked the wrong file (or a half-downloaded one). Show the
       // specific reason and skip Sentry — this is bad input, not a bug.
@@ -240,7 +240,7 @@ class _OpenFileWidgetState extends State<OpenFileWidget> {
   ) async {
     final name = widget.fileName;
     // See _handleOpenFile for why the messenger is snapshotted up front.
-    // The sheet stays open under mergeProgramIntoActivePlan's own selection
+    // The sheet stays open under mergePlanIntoActivePlan's own selection
     // screen and diff-confirmation dialog (same as "Legg til øvelser
     // fra...") and only closes once that whole flow resolves.
     final messenger = ScaffoldMessenger.of(context);
@@ -249,9 +249,9 @@ class _OpenFileWidgetState extends State<OpenFileWidget> {
     setState(() => _busy = _Busy.importing);
 
     try {
-      final source = await _programFuture;
+      final source = await _planFuture;
       if (!context.mounted) return;
-      final merged = await mergeProgramIntoActivePlan(context, source);
+      final merged = await mergePlanIntoActivePlan(context, source);
       if (navigator.canPop()) navigator.pop();
       if (merged != null) {
         messenger.hideCurrentSnackBar();

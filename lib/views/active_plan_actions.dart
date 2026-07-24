@@ -9,11 +9,11 @@ import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/drill_library.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/services/catalog_refresh_indicator_registry.dart';
 import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/add_exercises_dialog.dart';
 import 'package:ringdrill/views/app_routes.dart';
@@ -22,7 +22,7 @@ import 'package:ringdrill/views/download_all_plans_dialog.dart';
 import 'package:ringdrill/views/drill_format_messages.dart';
 import 'package:ringdrill/views/export_plan_dialog.dart';
 import 'package:ringdrill/views/library_view.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/publish_plan_dialog.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/web/trigger_download_web.dart'
@@ -31,61 +31,61 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> openPlan(BuildContext context) => showOpenPlanDialog(context);
 
-/// Show the rename dialog for [program] and persist the new name. Shared
+/// Show the rename dialog for [plan] and persist the new name. Shared
 /// between the appbar title tap and the library dialog's plan actions so
 /// both surfaces use exactly the same prompt.
-Future<void> renamePlan(BuildContext context, Program program) async {
+Future<void> renamePlan(BuildContext context, Plan plan) async {
   final localizations = AppLocalizations.of(context)!;
   final name = await showAdaptiveDialog<String>(
     context: context,
     builder: (context) => _PlanNameDialog(
       title: localizations.libraryRename,
-      initialText: program.name,
+      initialText: plan.name,
       actionLabel: localizations.save,
       cancelLabel: localizations.cancel,
     ),
   );
   if (name == null || name.isEmpty) return;
-  final programService = ProgramService();
-  final loaded = programService.loadProgram(program.uuid) ?? program;
+  final planService = PlanService();
+  final loaded = planService.loadPlan(plan.uuid) ?? plan;
   final updated = loaded.copyWith(
     name: name,
-    metadata: program.metadata.copyWith(updated: DateTime.now()),
+    metadata: plan.metadata.copyWith(updated: DateTime.now()),
   );
-  await programService.replaceProgram(updated);
+  await planService.replacePlan(updated);
 }
 
 /// Convenience wrapper that renames the currently active plan. Used by the
 /// appbar title tap; shows a snackbar when there is no active plan.
 Future<void> renameActivePlan(BuildContext context) async {
   final localizations = AppLocalizations.of(context)!;
-  final program = ProgramService().activeProgram;
-  if (program == null) {
+  final plan = PlanService().activePlan;
+  if (plan == null) {
     _showSnackBar(context, localizations.requiresActivePlan);
     return;
   }
-  await renamePlan(context, program);
+  await renamePlan(context, plan);
 }
 
-/// Pulls the latest version of a catalog-sourced [program] and merges it
-/// into the local copy via [ProgramService.refreshCatalogItem], using the
+/// Pulls the latest version of a catalog-sourced [plan] and merges it
+/// into the local copy via [PlanService.refreshCatalogItem], using the
 /// shared catalog-conflict dialog to resolve any divergence.
 ///
 /// No dedicated "in progress" UI here — callers are expected to already be
-/// showing one: the Program/Roster tabs' pull-to-refresh `RefreshIndicator`
-/// (see program_view.dart / roster_view.dart) covers the drag-gesture case,
+/// showing one: the Plan/Roster tabs' pull-to-refresh `RefreshIndicator`
+/// (see plan_view.dart / roster_view.dart) covers the drag-gesture case,
 /// and [refreshActivePlanFromCatalogViaIndicator] reuses that same indicator
 /// for the drawer's "Oppdater fra katalog" entry. Only the eventual outcome
 /// is surfaced, via a single plain result snackbar.
 Future<void> refreshPlanFromCatalog(
   BuildContext context,
-  Program program,
+  Plan plan,
 ) async {
   final localizations = AppLocalizations.of(context)!;
   final client = _buildPublishClient();
   try {
-    final outcome = await ProgramService().refreshCatalogItem(
-      program.uuid,
+    final outcome = await PlanService().refreshCatalogItem(
+      plan.uuid,
       client,
       onConflict:
           (
@@ -106,10 +106,10 @@ Future<void> refreshPlanFromCatalog(
           },
     );
     debugPrint(
-      '[refreshPlanFromCatalog] slug=${program.source.whenOrNull(catalog: (slug, latestEtag, installedAt, latestVersion) => slug)} '
+      '[refreshPlanFromCatalog] slug=${plan.source.whenOrNull(catalog: (slug, latestEtag, installedAt, latestVersion) => slug)} '
       'outcome=${outcome.kind}',
     );
-    final message = _catalogRefreshMessage(localizations, outcome, program);
+    final message = _catalogRefreshMessage(localizations, outcome, plan);
     if (message != null && context.mounted) {
       _showSnackBar(context, message);
     }
@@ -131,23 +131,23 @@ Future<void> refreshPlanFromCatalog(
 }
 
 /// Map a [CatalogRefreshOutcome] to a user-facing message. Returns null when
-/// no feedback should be shown (e.g. when the program is no longer available).
+/// no feedback should be shown (e.g. when the plan is no longer available).
 String? _catalogRefreshMessage(
   AppLocalizations localizations,
   CatalogRefreshOutcome outcome,
-  Program program,
+  Plan plan,
 ) {
   switch (outcome.kind) {
     case CatalogRefreshKind.upToDate:
-      return localizations.catalogRefreshUpToDate(program.name);
+      return localizations.catalogRefreshUpToDate(plan.name);
     case CatalogRefreshKind.updatedSilently:
-      return localizations.catalogRefreshUpdated(program.name);
+      return localizations.catalogRefreshUpdated(plan.name);
     case CatalogRefreshKind.updatedAfterPrompt:
       // overwriteLocal: either applied a real catalog update or discarded
       // local-only edits. The service tells us which via remoteUnchanged.
       return outcome.remoteUnchanged
-          ? localizations.catalogRefreshReverted(program.name)
-          : localizations.catalogRefreshUpdated(program.name);
+          ? localizations.catalogRefreshReverted(plan.name)
+          : localizations.catalogRefreshUpdated(plan.name);
     case CatalogRefreshKind.cancelled:
       return localizations.catalogRefreshCancelled;
     case CatalogRefreshKind.forked:
@@ -157,7 +157,7 @@ String? _catalogRefreshMessage(
     case CatalogRefreshKind.failed:
       return null;
     case CatalogRefreshKind.removedFromCatalog:
-      return localizations.catalogRefreshRemoved(program.name);
+      return localizations.catalogRefreshRemoved(plan.name);
   }
 }
 
@@ -165,7 +165,7 @@ String? _catalogRefreshMessage(
 /// catalog; shows a snackbar when there is no active plan, or when the
 /// active plan isn't catalog-sourced.
 ///
-/// Used directly as the Program/Roster tabs' `RefreshIndicator.onRefresh` —
+/// Used directly as the Plan/Roster tabs' `RefreshIndicator.onRefresh` —
 /// the pull gesture itself is already the "in progress" UI, so this does
 /// nothing extra to show one. For entry points with no such gesture (the
 /// drawer's "Oppdater fra katalog"), use
@@ -173,16 +173,16 @@ String? _catalogRefreshMessage(
 /// same indicator programmatically rather than calling this directly.
 Future<void> refreshActivePlanFromCatalog(BuildContext context) async {
   final localizations = AppLocalizations.of(context)!;
-  final program = ProgramService().activeProgram;
-  if (program == null) {
+  final plan = PlanService().activePlan;
+  if (plan == null) {
     _showSnackBar(context, localizations.requiresActivePlan);
     return;
   }
-  if (!isCatalogProgram(program)) {
+  if (!isCatalogPlan(plan)) {
     _showSnackBar(context, localizations.catalogServiceUnavailable);
     return;
   }
-  await refreshPlanFromCatalog(context, program);
+  await refreshPlanFromCatalog(context, plan);
 }
 
 /// Same guard as [refreshActivePlanFromCatalog], but for entry points with
@@ -200,24 +200,24 @@ Future<void> refreshActivePlanFromCatalogViaIndicator(
   BuildContext context,
 ) async {
   final localizations = AppLocalizations.of(context)!;
-  final program = ProgramService().activeProgram;
-  if (program == null) {
+  final plan = PlanService().activePlan;
+  if (plan == null) {
     _showSnackBar(context, localizations.requiresActivePlan);
     return;
   }
-  if (!isCatalogProgram(program)) {
+  if (!isCatalogPlan(plan)) {
     _showSnackBar(context, localizations.catalogServiceUnavailable);
     return;
   }
   final triggered = await CatalogRefreshIndicatorRegistry().trigger();
   if (triggered || !context.mounted) return;
-  await refreshPlanFromCatalog(context, program);
+  await refreshPlanFromCatalog(context, plan);
 }
 
-/// True when [program] was installed from the online catalog (vs. local
+/// True when [plan] was installed from the online catalog (vs. local
 /// or imported). Drives drawer-entry enablement for catalog-only actions.
-bool isCatalogProgram(Program program) =>
-    program.source.toJson()['runtimeType'] == 'catalog';
+bool isCatalogPlan(Plan plan) =>
+    plan.source.toJson()['runtimeType'] == 'catalog';
 
 /// Hits the catalog endpoint to update [CatalogStatusService] with a fresh
 /// reachability outcome (online / unavailable / corsBlocked). Returns the
@@ -270,11 +270,11 @@ Future<void> createNewPlan(BuildContext context) async {
   final name = await _promptPlanName(context, localizations);
   if (name == null || !context.mounted) return;
 
-  final program = await ProgramService().createProgram(name: name);
+  final plan = await PlanService().createPlan(name: name);
   // ADR-0032 *Activation contract*: route to the new plan so the URL and
-  // the in-memory active program move together. The redirect gate runs
+  // the in-memory active plan move together. The redirect gate runs
   // `setActive` as a side effect.
-  if (context.mounted) context.go(programPath(program.uuid));
+  if (context.mounted) context.go(planPath(plan.uuid));
 }
 
 Future<void> addExercises(BuildContext context) =>
@@ -289,15 +289,15 @@ Future<void> addExercises(BuildContext context) =>
 /// migration exporter (ADR-0045).
 Future<void> downloadAllPlans(BuildContext context) async {
   final localizations = AppLocalizations.of(context)!;
-  final programs = ProgramService()
-      .listPrograms()
-      .map((shell) => ProgramService().loadProgram(shell.uuid))
-      .whereType<Program>()
+  final plans = PlanService()
+      .listPlans()
+      .map((shell) => PlanService().loadPlan(shell.uuid))
+      .whereType<Plan>()
       .toList();
 
   final input = await showDownloadAllPlansDialog(
     context,
-    programs: programs,
+    plans: plans,
     localizations: localizations,
     title: localizations.libraryDownloadAll,
     actionLabel: localizations.downloadAction,
@@ -305,7 +305,7 @@ Future<void> downloadAllPlans(BuildContext context) async {
   if (input == null || !context.mounted) return;
 
   final fileName = '${input.fileName}.zip';
-  final bytes = DrillLibrary.fromPrograms(input.programs);
+  final bytes = DrillLibrary.fromPlans(input.plans);
   try {
     await triggerDownload(fileName, bytes);
     if (context.mounted) {
@@ -356,16 +356,16 @@ Future<void> downloadActivePlan(BuildContext context) async {
 
 /// Copies the catalog deep-link URL for the currently active plan to the
 /// clipboard. Requires the active plan to be catalog-published — the drawer
-/// tile is already gated on that via [isCatalogProgram], but we re-check here
+/// tile is already gated on that via [isCatalogPlan], but we re-check here
 /// as a safety-net.
 Future<void> shareActivePlan(BuildContext context) async {
   final localizations = AppLocalizations.of(context)!;
-  final program = ProgramService().activeProgram;
-  if (program == null) {
+  final plan = PlanService().activePlan;
+  if (plan == null) {
     _showSnackBar(context, localizations.requiresActivePlan);
     return;
   }
-  final slug = program.source.whenOrNull(
+  final slug = plan.source.whenOrNull(
     catalog: (slug, latestEtag, installedAt, latestVersion) => slug,
   );
   if (slug == null) {
@@ -399,7 +399,7 @@ Future<void> sendActivePlanTo(BuildContext context) async {
     context,
     title: (localizations) => localizations.sendToAction,
     actionLabel: (localizations) => localizations.sendToActionButton,
-    onSave: ProgramPageController.sendDrillFileTo,
+    onSave: PlanPageController.sendDrillFileTo,
     onSuccess: (localizations, file) => localizations.sendToSuccess(file),
     onFailure: (localizations, file) => localizations.sendToFailure(file),
   );
@@ -410,7 +410,7 @@ Future<void> exportActivePlan(BuildContext context) async {
     context,
     title: (localizations) => localizations.libraryDownloadPlan,
     actionLabel: (localizations) => localizations.downloadAction,
-    onSave: ProgramPageController.saveDrillFile,
+    onSave: PlanPageController.saveDrillFile,
     onSuccess: (localizations, file) => localizations.exportSuccess(file),
     onFailure: (localizations, file) => localizations.exportFailure(file),
   );
@@ -418,20 +418,20 @@ Future<void> exportActivePlan(BuildContext context) async {
 
 Future<void> publishActivePlan(BuildContext context) async {
   final localizations = AppLocalizations.of(context)!;
-  final programService = ProgramService();
-  final program = programService.activeProgram;
-  if (program == null) {
+  final planService = PlanService();
+  final plan = planService.activePlan;
+  if (plan == null) {
     _showSnackBar(context, localizations.requiresActivePlan);
     return;
   }
-  final currentSlug = program.source.whenOrNull(
+  final currentSlug = plan.source.whenOrNull(
     catalog: (slug, latestEtag, installedAt, latestVersion) => slug,
   );
   if (currentSlug != null) {
     // Already published — silent update.
-    await runPublishProgram(
+    await runPublishPlan(
       context,
-      programUuid: program.uuid,
+      planUuid: plan.uuid,
       slug: currentSlug,
       client: _buildPublishClient(),
     );
@@ -440,13 +440,13 @@ Future<void> publishActivePlan(BuildContext context) async {
   // First-time publish — show the dialog so the user can pick a slug.
   final input = await showPublishPlanDialog(
     context,
-    program: program,
+    plan: plan,
     mode: PublishDialogMode.firstTime,
   );
   if (input == null || !context.mounted) return;
-  await runPublishProgram(
+  await runPublishPlan(
     context,
-    programUuid: program.uuid,
+    planUuid: plan.uuid,
     slug: input.slug,
     client: _buildPublishClient(),
   );
@@ -454,21 +454,21 @@ Future<void> publishActivePlan(BuildContext context) async {
 
 Future<void> publishAsActivePlan(BuildContext context) async {
   final localizations = AppLocalizations.of(context)!;
-  final programService = ProgramService();
-  final program = programService.activeProgram;
-  if (program == null) {
+  final planService = PlanService();
+  final plan = planService.activePlan;
+  if (plan == null) {
     _showSnackBar(context, localizations.requiresActivePlan);
     return;
   }
   final input = await showPublishPlanDialog(
     context,
-    program: program,
+    plan: plan,
     mode: PublishDialogMode.publishAs,
   );
   if (input == null || !context.mounted) return;
-  await runPublishProgramAs(
+  await runPublishPlanAs(
     context,
-    programUuid: program.uuid,
+    planUuid: plan.uuid,
     slug: input.slug,
     client: _buildPublishClient(),
   );
@@ -496,7 +496,7 @@ DrillClient buildCatalogClient() {
 DrillClient _buildPublishClient() => buildCatalogClient();
 
 Future<DrillFile?> pickOpenPlanFile(BuildContext context) {
-  return ProgramPageController.pickOpenFile(
+  return PlanPageController.pickOpenFile(
     context,
     _constraintsFor(context),
     AppLocalizations.of(context)!,
@@ -509,7 +509,7 @@ Future<DrillFile?> pickOpenPlanFile(BuildContext context) {
 /// behind the modal backdrop and the user never sees it.
 class InstallPickedOutcome {
   const InstallPickedOutcome._({
-    this.program,
+    this.plan,
     this.bundle,
     this.errorMessage,
     this.isFormatError = false,
@@ -517,7 +517,7 @@ class InstallPickedOutcome {
 
   /// Set on single-`.drill` success. The plan has already been installed
   /// and activated.
-  final Program? program;
+  final Plan? plan;
 
   /// Set on drill-library success. Every contained plan has already been
   /// installed; per ADR-0045 nothing is activated.
@@ -532,10 +532,10 @@ class InstallPickedOutcome {
   /// "cannot switch while running".
   final bool isFormatError;
 
-  bool get isSuccess => program != null;
+  bool get isSuccess => plan != null;
   bool get isBundle => bundle != null;
   bool get isCancelled =>
-      program == null && bundle == null && errorMessage == null;
+      plan == null && bundle == null && errorMessage == null;
 }
 
 Future<InstallPickedOutcome> installPickedPlanFile(BuildContext context) async {
@@ -567,7 +567,7 @@ Future<InstallPickedOutcome> installPickedPlanFile(BuildContext context) async {
 
   if (kind == DrillArchiveKind.library) {
     try {
-      final result = await ProgramService().installBundle(
+      final result = await PlanService().installBundle(
         drillFile.content,
         sourceName: drillFile.fileName,
       );
@@ -595,11 +595,11 @@ Future<InstallPickedOutcome> installPickedPlanFile(BuildContext context) async {
   }
 
   try {
-    final program = await ProgramService().installFromFile(
+    final plan = await PlanService().installFromFile(
       drillFile,
       activate: true,
     );
-    return InstallPickedOutcome._(program: program);
+    return InstallPickedOutcome._(plan: plan);
   } on DrillFormatException catch (e) {
     // Format errors come from the user picking the wrong file, not
     // from an app bug. Surface the reason-specific localized message
@@ -639,21 +639,21 @@ Future<void> _exportSelected(
   onFailure,
 }) async {
   final localizations = AppLocalizations.of(context)!;
-  final programService = ProgramService();
-  final program = programService.activeProgram;
-  if (program == null) {
+  final planService = PlanService();
+  final plan = planService.activePlan;
+  if (plan == null) {
     _showSnackBar(context, localizations.requiresActivePlan);
     return;
   }
-  // A plan with no exercises yet is still a valid .drill (a program shell
-  // with metadata, teams, etc.) — DrillFile.fromProgram and DrillLibrary
+  // A plan with no exercises yet is still a valid .drill (a plan shell
+  // with metadata, teams, etc.) — DrillFile.fromPlan and DrillLibrary
   // both handle an empty exercises list, so there is no reason to block
   // export/send on exercise count.
-  final exercises = programService.loadExercises();
+  final exercises = planService.loadExercises();
 
   final input = await showExportPlanDialog(
     context,
-    program: program,
+    plan: plan,
     exercises: exercises,
     localizations: localizations,
     title: title(localizations),
@@ -661,7 +661,7 @@ Future<void> _exportSelected(
   );
   if (input == null || !context.mounted) return;
 
-  final drillFile = await programService.exportProgram(
+  final drillFile = await planService.exportPlan(
     nanoid(10),
     input.fileName,
     input.selectedUuids,
@@ -693,7 +693,7 @@ Future<String?> _promptPlanName(
     context: context,
     builder: (context) => _PlanNameDialog(
       title: localizations.newPlanNamePrompt,
-      hintText: localizations.program(1),
+      hintText: localizations.plan(1),
       actionLabel: localizations.create,
       cancelLabel: localizations.cancel,
     ),

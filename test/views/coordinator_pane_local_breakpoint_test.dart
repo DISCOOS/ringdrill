@@ -6,7 +6,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -24,7 +24,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // touching `MediaQuery.sizeOf`, reproducing "wide window, narrow pane".
 // ---------------------------------------------------------------------------
 
-const _programUuid = 'prog-coordinator-pane-local-breakpoint';
+const _planUuid = 'prog-coordinator-pane-local-breakpoint';
 const _exerciseUuid = 'ex-coordinator-pane-local-breakpoint';
 
 /// A fixed morning reference, safely clear of midnight for the offset used
@@ -76,11 +76,11 @@ Exercise _exercise({required SimpleTimeOfDay startTime}) => Exercise(
 
 Future<void> _seedAndInit(Exercise exercise) async {
   SharedPreferences.setMockInitialValues({
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Test Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Test Plan',
       'description': '',
       'metadata': {
         'created': '2024-01-01T00:00:00.000Z',
@@ -93,9 +93,9 @@ Future<void> _seedAndInit(Exercise exercise) async {
       'rolePlays': [],
       'actors': [],
     }),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(exercise.toJson()),
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(exercise.toJson()),
   });
-  await ProgramService().init();
+  await PlanService().init();
 }
 
 /// Pumps `CoordinatorScreen` with the test binding reporting a wide

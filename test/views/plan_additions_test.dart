@@ -4,17 +4,17 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 
 import 'support/save_roundtrip_harness.dart';
 
 /// DESIGN-009 follow-up 4 — pure unit tests for the write-back plumbing
 /// (ADR-0047): the `PlanAdditions` record and its apply helpers, exercised
-/// directly against `Program`/`Station` without any editor UI.
+/// directly against `Plan`/`Station` without any editor UI.
 void main() {
   group('variableAdditions', () {
     test('carries only variables, empty station lists', () {
@@ -28,11 +28,11 @@ void main() {
 
   group('applyVariableAdditions', () {
     final now = DateTime(2026);
-    final program = Program(
+    final plan = Plan(
       uuid: 'p1',
       name: 'Plan',
       description: '',
-      metadata: ProgramMetadata(created: now, updated: now, version: '1.2'),
+      metadata: PlanMetadata(created: now, updated: now, version: '1.2'),
       teams: const [],
       sessions: const [],
       exercises: const [],
@@ -43,7 +43,7 @@ void main() {
 
     test('appends new variables', () {
       final updated = applyVariableAdditions(
-        program,
+        plan,
         variableAdditions(const [DrillVariable(name: 'freq', value: '')]),
       );
       expect(updated.variables.map((v) => v.name), ['existing', 'freq']);
@@ -51,15 +51,15 @@ void main() {
 
     test('skips a name already declared, to avoid duplicate declarations', () {
       final updated = applyVariableAdditions(
-        program,
+        plan,
         variableAdditions(const [DrillVariable(name: 'existing', value: 'y')]),
       );
-      expect(updated.variables, program.variables);
+      expect(updated.variables, plan.variables);
     });
 
     test('no-op with empty additions, returns the same instance', () {
-      final updated = applyVariableAdditions(program, noPlanAdditions);
-      expect(identical(updated, program), isTrue);
+      final updated = applyVariableAdditions(plan, noPlanAdditions);
+      expect(identical(updated, plan), isTrue);
     });
   });
 
@@ -109,13 +109,13 @@ void main() {
 
     setUp(() async {
       await initActivePlan('Write-back plan');
-      await ProgramService().saveExercise(
+      await PlanService().saveExercise(
         l10n,
         makeExercise(uuid: 'ex-1', name: 'Exercise'),
       );
     });
 
-    tearDown(() => ProgramService().clearAllForTest());
+    tearDown(() => PlanService().clearAllForTest());
 
     test('saves each roleplay through the repo (DESIGN-009 prompt 4j)', () async {
       const rolePlay = RolePlay(
@@ -127,16 +127,16 @@ void main() {
         personRef: 'anne',
       );
       await applyPendingRolePlayAdditions(
-        ProgramService(),
+        PlanService(),
         l10n,
         variableAdditions(const [], rolePlays: const [rolePlay]),
       );
-      expect(ProgramService().getRolePlay('rp-new')?.name, 'Ukjent');
+      expect(PlanService().getRolePlay('rp-new')?.name, 'Ukjent');
     });
 
     test('no-op with no roleplays', () async {
-      await applyPendingRolePlayAdditions(ProgramService(), l10n, noPlanAdditions);
-      expect(ProgramService().loadRolePlays(), isEmpty);
+      await applyPendingRolePlayAdditions(PlanService(), l10n, noPlanAdditions);
+      expect(PlanService().loadRolePlays(), isEmpty);
     });
   });
 }

@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
-import 'package:ringdrill/models/program.dart';
-import 'package:ringdrill/views/program_form_screen.dart';
+import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/views/plan_form_screen.dart';
 
 /// DESIGN-008 follow-up 09 — the name field is now token-aware
 /// (`RingDrillTextField(tokenAware: true)`): the slash menu inserts a
 /// declared variable, and save-time validation extends to the name field
 /// the same way it already covers the markdown sections.
 
-Program _program({List<DrillVariable> variables = const []}) {
+Plan _plan({List<DrillVariable> variables = const []}) {
   final now = DateTime.utc(2026, 1, 1);
-  return Program(
+  return Plan(
     uuid: 'pgm-name-vars',
     name: 'Vinterøvelse',
     description: '',
-    metadata: ProgramMetadata(
+    metadata: PlanMetadata(
       created: now,
       updated: now,
       version: '1.1',
@@ -30,12 +30,12 @@ Program _program({List<DrillVariable> variables = const []}) {
 }
 
 class _Captured {
-  Program? value;
+  Plan? value;
 }
 
 Future<void> _openForm(
   WidgetTester tester,
-  Program program,
+  Plan plan,
   _Captured captured,
 ) async {
   await tester.pumpWidget(
@@ -45,10 +45,10 @@ Future<void> _openForm(
       home: Builder(
         builder: (ctx) => TextButton(
           onPressed: () async {
-            captured.value = await Navigator.push<Program>(
+            captured.value = await Navigator.push<Plan>(
               ctx,
               MaterialPageRoute(
-                builder: (_) => ProgramFormScreen(program: program),
+                builder: (_) => PlanFormScreen(plan: plan),
               ),
             );
           },
@@ -74,14 +74,14 @@ void main() {
       final captured = _Captured();
       await _openForm(
         tester,
-        _program(
+        _plan(
           variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
         ),
         captured,
       );
 
       await tester.enterText(
-        find.widgetWithText(TextFormField, l.programName),
+        find.widgetWithText(TextFormField, l.planName),
         'Plan /frek',
       );
       await tester.pump();
@@ -107,10 +107,10 @@ void main() {
     'save is blocked on an undeclared token in the name; removing it unblocks save',
     (tester) async {
       final captured = _Captured();
-      await _openForm(tester, _program(), captured);
+      await _openForm(tester, _plan(), captured);
 
       await tester.enterText(
-        find.widgetWithText(TextFormField, l.programName),
+        find.widgetWithText(TextFormField, l.planName),
         'Plan {{var.mangler}}',
       );
       await tester.pump();
@@ -120,12 +120,12 @@ void main() {
 
       expect(captured.value, isNull);
       expect(
-        find.text(l.programSaveBlockedUndeclaredVariable(l.programName)),
+        find.text(l.planSaveBlockedUndeclaredVariable(l.planName)),
         findsOneWidget,
       );
 
       await tester.enterText(
-        find.widgetWithText(TextFormField, l.programName),
+        find.widgetWithText(TextFormField, l.planName),
         'Plan uten variabel',
       );
       await tester.pump();

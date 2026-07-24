@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/program.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/widgets/name_step_sheet.dart';
 
 /// Result returned by [showExportPlanDialog].
@@ -20,11 +20,11 @@ class ExportPlanInput {
 /// Combined export-flow dialog for a single plan ("Last ned plan").
 ///
 /// Step 1 — [showNameStepSheet] with a file-name field pre-filled with
-/// `sanitizeSlug(program.name)`, falling back to
+/// `sanitizeSlug(plan.name)`, falling back to
 /// [AppLocalizations.fileNameHint] if the slug is empty.
 ///
 /// Step 2 (only if the user picked "VELG...") — the existing
-/// [ProgramPageControllerBase.selectExercises] bottom sheet, opened with
+/// [PlanPageControllerBase.selectExercises] bottom sheet, opened with
 /// every exercise pre-selected, a "VELG ALLE"/"VELG INGEN" header row, and
 /// the [actionLabel] on the primary button.
 ///
@@ -33,13 +33,13 @@ class ExportPlanInput {
 /// gathers user intent).
 Future<ExportPlanInput?> showExportPlanDialog(
   BuildContext context, {
-  required Program program,
+  required Plan plan,
   required List<Exercise> exercises,
   required AppLocalizations localizations,
   required String title,
   required String actionLabel,
 }) async {
-  final initialFileName = _initialFileName(program, localizations);
+  final initialFileName = _initialFileName(plan, localizations);
   final result = await showNameStepSheet(
     context,
     initialFileName: initialFileName,
@@ -66,7 +66,7 @@ Future<ExportPlanInput?> showExportPlanDialog(
 
   // chooseItems — show the exercise picker with everything pre-selected.
   if (!context.mounted) return null;
-  final selectedUuids = await ProgramPageControllerBase.selectExercises(
+  final selectedUuids = await PlanPageControllerBase.selectExercises(
     context,
     title,
     exercises,
@@ -74,7 +74,7 @@ Future<ExportPlanInput?> showExportPlanDialog(
     confirmLabel: actionLabel,
     preselectAll: true,
     showSelectAllControls: true,
-    program: program,
+    plan: plan,
   );
   if (selectedUuids.isEmpty) return null;
   return ExportPlanInput(fileName: fileName, selectedUuids: selectedUuids);
@@ -83,7 +83,7 @@ Future<ExportPlanInput?> showExportPlanDialog(
 /// Default file name for the export dialog. Falls back to the localized hint
 /// when the active plan's name slugifies to an empty string (e.g. all-symbol
 /// names like "🚓").
-String _initialFileName(Program program, AppLocalizations localizations) {
-  final slug = sanitizeSlug(program.name);
+String _initialFileName(Plan plan, AppLocalizations localizations) {
+  final slug = sanitizeSlug(plan.name);
   return slug.isEmpty ? localizations.fileNameHint : slug;
 }

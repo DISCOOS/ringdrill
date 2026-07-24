@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/widgets/start_here_pill.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,7 +19,7 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   testWidgets('renders without exceptions in light theme and shows label', (
@@ -44,7 +44,7 @@ void main() {
 
   testWidgets('hides when keyStartHereSeen is already set', (tester) async {
     SharedPreferences.setMockInitialValues({'app:startHereSeen:v1': true});
-    await ProgramService().init();
+    await PlanService().init();
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     await tester.pumpWidget(_harness(ThemeData.light()));
     await tester.pump();

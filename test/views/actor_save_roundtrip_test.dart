@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/roster_view.dart';
 
 import 'support/save_roundtrip_harness.dart';
@@ -21,13 +21,13 @@ void main() {
 
   setUp(() async {
     await initActivePlan('Actor roundtrip plan');
-    await ProgramService().saveActor(
+    await PlanService().saveActor(
       l10n,
       Actor(uuid: 'actor-rt-1', realName: 'Kari Nordmann'),
     );
   });
 
-  tearDown(() => ProgramService().clearAllForTest());
+  tearDown(() => PlanService().clearAllForTest());
 
   Future<void> renameViaRow(
     WidgetTester tester, {
@@ -57,7 +57,7 @@ void main() {
     // Round 1: row tap → ActorFormScreen → rename → save.
     await renameViaRow(tester, from: 'Kari Nordmann', to: 'Kari Hansen');
     expect(
-      ProgramService().getActor('actor-rt-1')?.realName,
+      PlanService().getActor('actor-rt-1')?.realName,
       'Kari Hansen',
       reason: 'first save must persist',
     );
@@ -66,7 +66,7 @@ void main() {
     // Round 2: edit the same actor again straight away.
     await renameViaRow(tester, from: 'Kari Hansen', to: 'Kari Berg');
     expect(
-      ProgramService().getActor('actor-rt-1')?.realName,
+      PlanService().getActor('actor-rt-1')?.realName,
       'Kari Berg',
       reason: 'second consecutive save must persist too',
     );

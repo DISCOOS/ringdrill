@@ -19,7 +19,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,7 +28,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const _programUuid = 'program-mount-invariant';
+const _planUuid = 'plan-mount-invariant';
 const _exerciseAUuid = 'exercise-mount-a';
 const _exerciseBUuid = 'exercise-mount-b';
 
@@ -73,11 +73,11 @@ final _exerciseB = Exercise(
 );
 
 Map<String, Object> _prefs() => {
-  'app:activeProgram:v1': _programUuid,
+  'app:activePlan:v1': _planUuid,
   'app:librarySchema:v1': '1',
-  'p:$_programUuid': jsonEncode({
-    'uuid': _programUuid,
-    'name': 'Mount Invariant Program',
+  'p:$_planUuid': jsonEncode({
+    'uuid': _planUuid,
+    'name': 'Mount Invariant Plan',
     'description': '',
     'metadata': {
       'created': '2026-01-01T00:00:00.000Z',
@@ -90,8 +90,8 @@ Map<String, Object> _prefs() => {
     'rolePlays': [],
     'actors': [],
   }),
-  'pe:$_programUuid:$_exerciseAUuid': jsonEncode(_exerciseA.toJson()),
-  'pe:$_programUuid:$_exerciseBUuid': jsonEncode(_exerciseB.toJson()),
+  'pe:$_planUuid:$_exerciseAUuid': jsonEncode(_exerciseA.toJson()),
+  'pe:$_planUuid:$_exerciseBUuid': jsonEncode(_exerciseB.toJson()),
 };
 
 // ---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ Future<void> _pumpWide(WidgetTester tester) async {
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
-  await ProgramService().setActive(_programUuid);
+  await PlanService().setActive(_planUuid);
   final router = buildRouter(false, true);
   addTearDown(router.dispose);
   await tester.pumpWidget(
@@ -132,7 +132,7 @@ double _detailWidth(WidgetTester tester) {
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(_prefs());
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   testWidgets(
@@ -234,7 +234,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      await ProgramService().setActive(_programUuid);
+      await PlanService().setActive(_planUuid);
       final router = buildRouter(false, true);
       addTearDown(router.dispose);
       await tester.pumpWidget(

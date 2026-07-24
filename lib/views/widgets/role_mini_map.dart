@@ -5,7 +5,7 @@ import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
@@ -80,7 +80,7 @@ roleContextMarkers(
     // convention via stationNumbering), switching to the full number +
     // name once zoomed in close enough to have room for it
     // (MapConfig.labelDetailZoomFor).
-    final exercise = ProgramService().getExercise(rolePlay.exerciseUuid)!;
+    final exercise = PlanService().getExercise(rolePlay.exerciseUuid)!;
     final numbering = stationNumbering(exercise, station);
     final postLabel =
         resolveScopedField(context, numbering.rawLabel, overrides: overrides) ??
@@ -345,7 +345,7 @@ Future<void> openRoleMapSheet(
 
 /// Mirrors `_MapSheetHeader` in `station_mini_map.dart`: the header computes
 /// its own numbering and title from the domain objects it's given
-/// ([exercise], [rolePlay]) via [ProgramService], the same way
+/// ([exercise], [rolePlay]) via [PlanService], the same way
 /// `_MapSheetHeader` derives a station's number from `exercise`+`station`
 /// alone — no pre-formatted label/subtitle string is threaded in from the
 /// caller. Same `MasterDetailLeading` close-X, same
@@ -370,8 +370,8 @@ class _RoleMapSheetHeader extends StatelessWidget implements PreferredSizeWidget
 
   @override
   Widget build(BuildContext context) {
-    final service = ProgramService();
-    final program = service.activeProgram;
+    final service = PlanService();
+    final plan = service.activePlan;
     final exerciseNumber =
         service.loadExercises().indexWhere((e) => e.uuid == exercise.uuid) + 1;
     final stationIndex = rolePlay.stationIndex;
@@ -379,7 +379,7 @@ class _RoleMapSheetHeader extends StatelessWidget implements PreferredSizeWidget
         ? 0
         : service.roleNumberAtStation(rolePlay, stationIndex);
     final roleLabel = rolePlay.numberLabel(
-      program?.stationNumberFormat ?? StationNumberFormat.dotted,
+      plan?.stationNumberFormat ?? StationNumberFormat.dotted,
       exerciseNumber: exerciseNumber < 1 ? 1 : exerciseNumber,
       roleNumber: roleNumber,
     );

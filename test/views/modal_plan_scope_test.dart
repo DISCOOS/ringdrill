@@ -8,7 +8,7 @@ import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/brief_screen.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -24,7 +24,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 /// test, so they fail the way the reported bug actually failed if the fix
 /// regresses.
 
-const _programUuid = 'prog-modal-scope';
+const _planUuid = 'prog-modal-scope';
 const _exerciseUuid = 'ex-modal-scope';
 
 Exercise _exercise() => Exercise(
@@ -56,10 +56,10 @@ Map<String, Object> _buildPrefs() {
     'version': '1.2',
   };
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
       'name': 'Plan {{var.frekvens}}',
       'description': '',
       'metadata': meta,
@@ -72,13 +72,13 @@ Map<String, Object> _buildPrefs() {
         const DrillVariable(name: 'frekvens', value: 'Kanal 8').toJson(),
       ],
     }),
-    'pe:$_programUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
+    'pe:$_planUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
   };
 }
 
 Widget _buildHarness({
   String? exerciseUuid,
-  String? programUuid,
+  String? planUuid,
   int? stationIndex,
 }) {
   return MaterialApp(
@@ -86,17 +86,17 @@ Widget _buildHarness({
     supportedLocales: AppLocalizations.supportedLocales,
     home: _Harness(
       exerciseUuid: exerciseUuid,
-      programUuid: programUuid,
+      planUuid: planUuid,
       stationIndex: stationIndex,
     ),
   );
 }
 
 class _Harness extends StatefulWidget {
-  const _Harness({this.exerciseUuid, this.programUuid, this.stationIndex});
+  const _Harness({this.exerciseUuid, this.planUuid, this.stationIndex});
 
   final String? exerciseUuid;
-  final String? programUuid;
+  final String? planUuid;
   final int? stationIndex;
 
   @override
@@ -117,7 +117,7 @@ class _HarnessState extends State<_Harness> {
             )
           : BriefSheetTarget(
               exerciseUuid: widget.exerciseUuid,
-              programUuid: widget.programUuid,
+              planUuid: widget.planUuid,
             );
       _controller.show(context, target);
     });
@@ -157,7 +157,7 @@ void main() {
   setUpAll(() async {
     VisibilityDetectorController.instance.updateInterval = Duration.zero;
     SharedPreferences.setMockInitialValues(_buildPrefs());
-    await ProgramService().init();
+    await PlanService().init();
     await rootBundle.loadString(
       'assets/templates/ringdrill-standard-v1.nb.md.mustache',
     );

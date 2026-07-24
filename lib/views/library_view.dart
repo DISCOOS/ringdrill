@@ -7,9 +7,9 @@ import 'package:path/path.dart' as path;
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/app_routes.dart';
@@ -71,7 +71,7 @@ class _LibraryBody extends StatefulWidget {
 
 class _LibraryBodyState extends State<_LibraryBody>
     with SingleTickerProviderStateMixin {
-  final _programService = ProgramService();
+  final _planService = PlanService();
   late final TabController _tabController;
 
   /// Last error message produced by the From-File tab's picker flow.
@@ -150,9 +150,9 @@ class _LibraryBodyState extends State<_LibraryBody>
 
   Widget _buildMyPlans(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final programs = _programService.listPrograms();
+    final plans = _planService.listPlans();
     // Match the picker sheets (select_plans_dialog.dart,
-    // ProgramPageControllerBase.selectExercises): ExpandableTile cards use
+    // PlanPageControllerBase.selectExercises): ExpandableTile cards use
     // the default card surface, which only contrasts against a lighter
     // scaffold behind it. Paint the tab body with the scaffold colour so
     // "Mine planer" reads with the same card contrast as the pickers.
@@ -161,19 +161,19 @@ class _LibraryBodyState extends State<_LibraryBody>
       child: Column(
         children: [
           Expanded(
-            child: programs.isEmpty
+            child: plans.isEmpty
                 ? EmptyState(
                     icon: Icons.folder_open_outlined,
                     text: localizations.libraryEmptyMyPlans,
                   )
-                : _buildMyPlansList(context, localizations, programs),
+                : _buildMyPlansList(context, localizations, plans),
           ),
           TabFooter(
             subtitle: localizations.libraryMyPlansSubtitle,
             trailing: IconButton(
               icon: const Icon(Icons.download_outlined),
               tooltip: localizations.libraryExportAll,
-              onPressed: programs.isEmpty
+              onPressed: plans.isEmpty
                   ? null
                   : () => active_actions.downloadAllPlans(context),
             ),
@@ -186,7 +186,7 @@ class _LibraryBodyState extends State<_LibraryBody>
   Widget _buildMyPlansList(
     BuildContext context,
     AppLocalizations localizations,
-    List<Program> programs,
+    List<Plan> plans,
   ) {
     return ListView.builder(
       // ExpandableTile's own margin (vertical: 5) already gives every
@@ -195,21 +195,21 @@ class _LibraryBodyState extends State<_LibraryBody>
       // single 5px side of their own margin. Add the matching 5px here so
       // every edge — top, bottom, left, right, and between cards — is 10px.
       padding: const EdgeInsets.symmetric(vertical: 5),
-      itemCount: programs.length,
+      itemCount: plans.length,
       itemBuilder: (context, index) {
-        final program = programs[index];
-        final loaded = _programService.activeProgramUuid == program.uuid
-            ? _programService.activeProgram
-            : program;
-        final isActive = _programService.activeProgramUuid == program.uuid;
+        final plan = plans[index];
+        final loaded = _planService.activePlanUuid == plan.uuid
+            ? _planService.activePlan
+            : plan;
+        final isActive = _planService.activePlanUuid == plan.uuid;
         // No catalog badge here: the source is already spelled out as text
-        // in the subtitle ("Fra katalog · slug" via programSubtitle), so a
+        // in the subtitle ("Fra katalog · slug" via planSubtitle), so a
         // second cloud icon next to "Aktiv" was redundant.
         final trailingChildren = <Widget>[
           if (isActive) Chip(label: Text(localizations.libraryActive)),
         ];
         return Dismissible(
-          key: ValueKey(program.uuid),
+          key: ValueKey(plan.uuid),
           direction: DismissDirection.endToStart,
           background: Container(
             color: Colors.red,
@@ -217,8 +217,8 @@ class _LibraryBodyState extends State<_LibraryBody>
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: const Icon(Icons.delete, color: Colors.white),
           ),
-          confirmDismiss: (_) => _confirmDelete(context, program),
-          onDismissed: (_) => _deleteProgram(program),
+          confirmDismiss: (_) => _confirmDelete(context, plan),
+          onDismissed: (_) => _deletePlan(plan),
           child: ExpandableTile(
             // Radio icon, not the picker's Switch: this list is
             // single-select (which plan is active), not multi-select.
@@ -232,8 +232,8 @@ class _LibraryBodyState extends State<_LibraryBody>
               // by the text block, not an oversized icon.
               size: 24,
             ),
-            title: Text(program.name),
-            subtitle: Text(programSubtitle(localizations, loaded ?? program)),
+            title: Text(plan.name),
+            subtitle: Text(planSubtitle(localizations, loaded ?? plan)),
             // ExpandableTile only wraps trailing in 4px of padding, unlike
             // the 16px its own `padding` param gives the leading side. Add
             // the missing 12px here so the right edge matches the left.
@@ -247,8 +247,8 @@ class _LibraryBodyState extends State<_LibraryBody>
                     ),
                   ),
             onOpen: () =>
-                _activate(context, program.uuid, closeOnSuccess: true),
-            onLongPress: () => _showPlanActions(context, program),
+                _activate(context, plan.uuid, closeOnSuccess: true),
+            onLongPress: () => _showPlanActions(context, plan),
           ),
         );
       },
@@ -264,7 +264,7 @@ class _LibraryBodyState extends State<_LibraryBody>
       // item is the currently active plan. The cloud icon is dropped here
       // since installed status is already shown via trailingBuilder's chip.
       showActiveRadio: true,
-      activeSlug: _programService.activeProgram?.source.whenOrNull(
+      activeSlug: _planService.activePlan?.source.whenOrNull(
         catalog: (slug, latestEtag, installedAt, latestVersion) => slug,
       ),
       trailingBuilder: (context, item, installed, busy, onTap) {
@@ -295,9 +295,9 @@ class _LibraryBodyState extends State<_LibraryBody>
         // planer" would, instead of silently doing nothing. Re-downloading
         // an already-installed plan just to activate it would also be
         // wrong — the local copy may have edits the catalog doesn't have.
-        final installedProgram = _installedProgramForSlug(item.slug);
-        if (installedProgram != null) {
-          await _activate(context, installedProgram.uuid, closeOnSuccess: true);
+        final installedPlan = _installedPlanForSlug(item.slug);
+        if (installedPlan != null) {
+          await _activate(context, installedPlan.uuid, closeOnSuccess: true);
           return;
         }
         await _installCatalog(item);
@@ -370,10 +370,10 @@ class _LibraryBodyState extends State<_LibraryBody>
   DrillClient _buildCatalogClient() => active_actions.buildCatalogClient();
 
   Set<String> _installedCatalogSlugs() {
-    return _programService
-        .listPrograms()
-        .map((program) {
-          final source = program.source.toJson();
+    return _planService
+        .listPlans()
+        .map((plan) {
+          final source = plan.source.toJson();
           return source['runtimeType'] == 'catalog'
               ? source['slug'] as String
               : null;
@@ -382,13 +382,13 @@ class _LibraryBodyState extends State<_LibraryBody>
         .toSet();
   }
 
-  /// The locally-installed [Program] whose catalog source matches [slug],
+  /// The locally-installed [Plan] whose catalog source matches [slug],
   /// or null if that plan hasn't been installed yet.
-  Program? _installedProgramForSlug(String slug) {
-    for (final program in _programService.listPrograms()) {
-      final source = program.source.toJson();
+  Plan? _installedPlanForSlug(String slug) {
+    for (final plan in _planService.listPlans()) {
+      final source = plan.source.toJson();
       if (source['runtimeType'] == 'catalog' && source['slug'] == slug) {
-        return program;
+        return plan;
       }
     }
     return null;
@@ -405,21 +405,21 @@ class _LibraryBodyState extends State<_LibraryBody>
     // a no-op; reading the [GoRouter] now gives us a long-lived handle
     // that survives the pop.
     final router = GoRouter.of(context);
-    // ExerciseService guard is enforced inside ProgramService.setActive,
+    // ExerciseService guard is enforced inside PlanService.setActive,
     // but we re-check here so we can surface the user-friendly snackbar
     // without going through the router. The router would still refuse
     // activation, but the URL would have already moved, which is worse UX.
     if (ExerciseService().isStarted &&
-        _programService.activeProgramUuid != uuid) {
+        _planService.activePlanUuid != uuid) {
       _showSnackBar(context, localizations.libraryCannotSwitchRunning);
       return;
     }
     if (closeOnSuccess && context.mounted) Navigator.pop(context);
     // ADR-0032 *Activation contract*: UI-initiated plan activation goes
-    // through the router; `_activateCanonicalProgramPath` runs `setActive`
+    // through the router; `_activateCanonicalPlanPath` runs `setActive`
     // as the redirect-gate side effect so the URL and the in-memory active
-    // program never disagree.
-    router.go(programPath(uuid));
+    // plan never disagree.
+    router.go(planPath(uuid));
   }
 
   Future<void> _installFromFile(BuildContext context) async {
@@ -437,9 +437,9 @@ class _LibraryBodyState extends State<_LibraryBody>
     if (outcome.isSuccess) {
       // ADR-0032 *Activation contract*: navigate to the newly active
       // plan, then close the library dialog. installFromFile already
-      // wrote `activeProgramUuid`, so the redirect gate short-circuits
+      // wrote `activePlanUuid`, so the redirect gate short-circuits
       // and only the URL catches up.
-      router.go(programPath(outcome.program!.uuid));
+      router.go(planPath(outcome.plan!.uuid));
       Navigator.pop(context);
       return;
     }
@@ -457,14 +457,14 @@ class _LibraryBodyState extends State<_LibraryBody>
     }
   }
 
-  Future<bool> _confirmDelete(BuildContext context, Program program) async {
+  Future<bool> _confirmDelete(BuildContext context, Plan plan) async {
     final localizations = context.l10n;
     // Deleting the active plan would leave nothing active for the app to
     // fall back on — require the user to explicitly activate a different
     // plan first (which itself refuses while an exercise is running, via
     // _activate's own ExerciseService guard) rather than the app silently
-    // picking one, or worse, leaving activeProgramUuid pointing at nothing.
-    if (_programService.activeProgramUuid == program.uuid) {
+    // picking one, or worse, leaving activePlanUuid pointing at nothing.
+    if (_planService.activePlanUuid == plan.uuid) {
       _showSnackBar(context, localizations.cannotDeleteActivePlan);
       return false;
     }
@@ -472,7 +472,7 @@ class _LibraryBodyState extends State<_LibraryBody>
     // around. Refuse early so the destructive-confirm dialog never
     // appears for the last plan — the user gets a snackbar
     // explaining what to do instead.
-    if (_programService.listPrograms().length <= 1) {
+    if (_planService.listPlans().length <= 1) {
       _showSnackBar(context, localizations.cannotDeleteLastPlan);
       return false;
     }
@@ -484,14 +484,14 @@ class _LibraryBodyState extends State<_LibraryBody>
     );
   }
 
-  Future<void> _deleteProgram(Program program) async {
-    await _programService.deleteProgram(program.uuid);
+  Future<void> _deletePlan(Plan plan) async {
+    await _planService.deletePlan(plan.uuid);
     if (mounted) setState(() {});
   }
 
-  Future<void> _showPlanActions(BuildContext context, Program program) async {
+  Future<void> _showPlanActions(BuildContext context, Plan plan) async {
     final localizations = AppLocalizations.of(context)!;
-    final source = program.source.toJson();
+    final source = plan.source.toJson();
     final action = await showRingdrillActionSheet<String>(
       context: context,
       builder: (context) => Column(
@@ -534,33 +534,33 @@ class _LibraryBodyState extends State<_LibraryBody>
     if (!context.mounted || action == null) return;
     switch (action) {
       case 'rename':
-        await _renameProgram(context, program);
+        await _renamePlan(context, plan);
       case 'refresh':
-        await _refreshProgram(context, program);
+        await _refreshPlan(context, plan);
       case 'export':
-        await _exportProgram(context, program);
+        await _exportPlan(context, plan);
       case 'publish':
-        await _publishProgram(context, program);
+        await _publishPlan(context, plan);
       case 'publishAs':
-        await _publishProgramAs(context, program);
+        await _publishPlanAs(context, plan);
       case 'delete':
-        if (await _confirmDelete(context, program)) {
-          await _deleteProgram(program);
+        if (await _confirmDelete(context, plan)) {
+          await _deletePlan(plan);
         }
     }
   }
 
-  Future<void> _renameProgram(BuildContext context, Program program) async {
-    await active_actions.renamePlan(context, program);
+  Future<void> _renamePlan(BuildContext context, Plan plan) async {
+    await active_actions.renamePlan(context, plan);
     if (mounted) setState(() {});
   }
 
-  Future<void> _refreshProgram(BuildContext context, Program program) async {
+  Future<void> _refreshPlan(BuildContext context, Plan plan) async {
     final localizations = AppLocalizations.of(context)!;
     final client = _buildCatalogClient();
     try {
-      final outcome = await _programService.refreshCatalogItem(
-        program.uuid,
+      final outcome = await _planService.refreshCatalogItem(
+        plan.uuid,
         client,
         onConflict:
             (
@@ -582,7 +582,7 @@ class _LibraryBodyState extends State<_LibraryBody>
       );
       if (mounted) setState(() {});
       if (!context.mounted) return;
-      final message = _refreshOutcomeMessage(localizations, outcome, program);
+      final message = _refreshOutcomeMessage(localizations, outcome, plan);
       if (message != null) _showSnackBar(context, message);
     } catch (e, stackTrace) {
       if (context.mounted) {
@@ -599,17 +599,17 @@ class _LibraryBodyState extends State<_LibraryBody>
   String? _refreshOutcomeMessage(
     AppLocalizations localizations,
     CatalogRefreshOutcome outcome,
-    Program program,
+    Plan plan,
   ) {
     switch (outcome.kind) {
       case CatalogRefreshKind.upToDate:
-        return localizations.catalogRefreshUpToDate(program.name);
+        return localizations.catalogRefreshUpToDate(plan.name);
       case CatalogRefreshKind.updatedSilently:
-        return localizations.catalogRefreshUpdated(program.name);
+        return localizations.catalogRefreshUpdated(plan.name);
       case CatalogRefreshKind.updatedAfterPrompt:
         return outcome.remoteUnchanged
-            ? localizations.catalogRefreshReverted(program.name)
-            : localizations.catalogRefreshUpdated(program.name);
+            ? localizations.catalogRefreshReverted(plan.name)
+            : localizations.catalogRefreshUpdated(plan.name);
       case CatalogRefreshKind.cancelled:
         return localizations.catalogRefreshCancelled;
       case CatalogRefreshKind.forked:
@@ -619,14 +619,14 @@ class _LibraryBodyState extends State<_LibraryBody>
       case CatalogRefreshKind.failed:
         return null;
       case CatalogRefreshKind.removedFromCatalog:
-        return localizations.catalogRefreshRemoved(program.name);
+        return localizations.catalogRefreshRemoved(plan.name);
     }
   }
 
-  Future<void> _exportProgram(BuildContext context, Program program) async {
-    final loaded = _programService.loadProgram(program.uuid);
+  Future<void> _exportPlan(BuildContext context, Plan plan) async {
+    final loaded = _planService.loadPlan(plan.uuid);
     if (loaded == null) return;
-    final file = DrillFile.fromProgram(loaded, path.basename(loaded.name));
+    final file = DrillFile.fromPlan(loaded, path.basename(loaded.name));
     final params = ShareParams(
       text: loaded.name,
       files: [
@@ -640,17 +640,17 @@ class _LibraryBodyState extends State<_LibraryBody>
     await SharePlus.instance.share(params);
   }
 
-  Future<void> _publishProgram(BuildContext context, Program program) async {
-    final loaded = _programService.loadProgram(program.uuid);
+  Future<void> _publishPlan(BuildContext context, Plan plan) async {
+    final loaded = _planService.loadPlan(plan.uuid);
     if (loaded == null) return;
     final currentSlug = loaded.source.whenOrNull(
       catalog: (slug, latestEtag, installedAt, latestVersion) => slug,
     );
     if (currentSlug != null) {
       // Already published — push a new version silently without a dialog.
-      await runPublishProgram(
+      await runPublishPlan(
         context,
-        programUuid: loaded.uuid,
+        planUuid: loaded.uuid,
         slug: currentSlug,
         client: _buildCatalogClient(),
       );
@@ -660,31 +660,31 @@ class _LibraryBodyState extends State<_LibraryBody>
     // First-time publish — show the dialog so the user can pick a slug.
     final input = await showPublishPlanDialog(
       context,
-      program: loaded,
+      plan: loaded,
       mode: PublishDialogMode.firstTime,
     );
     if (input == null || !context.mounted) return;
-    await runPublishProgram(
+    await runPublishPlan(
       context,
-      programUuid: loaded.uuid,
+      planUuid: loaded.uuid,
       slug: input.slug,
       client: _buildCatalogClient(),
     );
     if (mounted) setState(() {});
   }
 
-  Future<void> _publishProgramAs(BuildContext context, Program program) async {
-    final loaded = _programService.loadProgram(program.uuid);
+  Future<void> _publishPlanAs(BuildContext context, Plan plan) async {
+    final loaded = _planService.loadPlan(plan.uuid);
     if (loaded == null) return;
     final input = await showPublishPlanDialog(
       context,
-      program: loaded,
+      plan: loaded,
       mode: PublishDialogMode.publishAs,
     );
     if (input == null || !context.mounted) return;
-    await runPublishProgramAs(
+    await runPublishPlanAs(
       context,
-      programUuid: loaded.uuid,
+      planUuid: loaded.uuid,
       slug: input.slug,
       client: _buildCatalogClient(),
     );
@@ -694,7 +694,7 @@ class _LibraryBodyState extends State<_LibraryBody>
   Future<void> _installCatalog(MarketFeedItem item) async {
     final localizations = AppLocalizations.of(context)!;
     try {
-      await _programService.installFromCatalog(
+      await _planService.installFromCatalog(
         item,
         _buildCatalogClient(),
         activate: true,
@@ -722,8 +722,8 @@ class _LibraryBodyState extends State<_LibraryBody>
 /// Source label · exercise count · last-updated line shown under a plan's
 /// name. Shared between the "Mine planer" tab and [showSelectPlansDialog]
 /// so a plan reads the same way wherever it's listed.
-String programSubtitle(AppLocalizations localizations, Program program) {
-  final source = program.source.toJson();
+String planSubtitle(AppLocalizations localizations, Plan plan) {
+  final source = plan.source.toJson();
   final sourceLabel = switch (source['runtimeType']) {
     'imported' => localizations.librarySourceImported(
       source['fileName'] as String,
@@ -733,8 +733,8 @@ String programSubtitle(AppLocalizations localizations, Program program) {
   };
   return [
     sourceLabel,
-    '${program.exercises.length} ${localizations.exercise(program.exercises.length).toLowerCase()}',
-    program.metadata.updated.toLocal().toString().split('.').first,
+    '${plan.exercises.length} ${localizations.exercise(plan.exercises.length).toLowerCase()}',
+    plan.metadata.updated.toLocal().toString().split('.').first,
   ].join(' · ');
 }
 

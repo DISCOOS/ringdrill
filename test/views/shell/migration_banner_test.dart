@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/shell/migration_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,12 +19,12 @@ Widget _harness(MigrationBanner banner) => MaterialApp(
 void main() {
   setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   tearDown(() async {
     SharedPreferences.setMockInitialValues({});
-    await ProgramService().clearAllForTest();
+    await PlanService().clearAllForTest();
   });
 
   group('MigrationBanner visibility', () {

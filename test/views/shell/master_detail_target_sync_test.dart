@@ -6,8 +6,8 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/services/plan_service.dart';
+import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
@@ -21,7 +21,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// viewer's post-context card opening its Post) must drag the wide master
 /// pane's segment and selection along with it, instead of leaving the master
 /// on the segment/row it was on before the redirect fired.
-const _programUuid = 'program-master-detail-sync';
+const _planUuid = 'plan-master-detail-sync';
 const _exerciseAUuid = 'exercise-sync-a';
 const _exerciseBUuid = 'exercise-sync-b';
 const _roleUuid = 'role-sync';
@@ -76,11 +76,11 @@ const _rolePlay = RolePlay(
 
 Map<String, Object> _prefs() {
   return {
-    'app:activeProgram:v1': _programUuid,
+    'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_programUuid': jsonEncode({
-      'uuid': _programUuid,
-      'name': 'Master/Detail Sync Program',
+    'p:$_planUuid': jsonEncode({
+      'uuid': _planUuid,
+      'name': 'Master/Detail Sync Plan',
       'description': '',
       'metadata': {
         'created': '2026-01-01T00:00:00.000Z',
@@ -93,9 +93,9 @@ Map<String, Object> _prefs() {
       'rolePlays': [],
       'actors': [],
     }),
-    'pe:$_programUuid:$_exerciseAUuid': jsonEncode(_exerciseA.toJson()),
-    'pe:$_programUuid:$_exerciseBUuid': jsonEncode(_exerciseB.toJson()),
-    'pr:$_programUuid:$_roleUuid': jsonEncode(_rolePlay.toJson()),
+    'pe:$_planUuid:$_exerciseAUuid': jsonEncode(_exerciseA.toJson()),
+    'pe:$_planUuid:$_exerciseBUuid': jsonEncode(_exerciseB.toJson()),
+    'pr:$_planUuid:$_roleUuid': jsonEncode(_rolePlay.toJson()),
   };
 }
 
@@ -107,7 +107,7 @@ Future<void> _pumpApp(WidgetTester tester, {required bool wide}) async {
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
-  await ProgramService().setActive(_programUuid);
+  await PlanService().setActive(_planUuid);
   final router = buildRouter(false, true);
   addTearDown(router.dispose);
   await tester.pumpWidget(
@@ -124,7 +124,7 @@ Future<void> _tapSegment(WidgetTester tester, String label) async {
   await tester.tap(
     find
         .descendant(
-          of: find.byType(SegmentedButton<ProgramSegment>),
+          of: find.byType(SegmentedButton<PlanSegment>),
           matching: find.text(label),
         )
         .hitTestable(),
@@ -132,10 +132,10 @@ Future<void> _tapSegment(WidgetTester tester, String label) async {
   await tester.pumpAndSettle();
 }
 
-Set<ProgramSegment> _selectedSegment(WidgetTester tester) {
+Set<PlanSegment> _selectedSegment(WidgetTester tester) {
   return tester
-      .widget<SegmentedButton<ProgramSegment>>(
-        find.byType(SegmentedButton<ProgramSegment>),
+      .widget<SegmentedButton<PlanSegment>>(
+        find.byType(SegmentedButton<PlanSegment>),
       )
       .selected;
 }
@@ -143,40 +143,40 @@ Set<ProgramSegment> _selectedSegment(WidgetTester tester) {
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(_prefs());
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   group('segmentForTarget', () {
     test('maps every target kind to its owning segment', () {
       expect(
         segmentForTarget(const ExerciseSheetTarget(exerciseUuid: 'e')),
-        ProgramSegment.exercises,
+        PlanSegment.exercises,
       );
       expect(
         segmentForTarget(
           const StationSheetTarget(exerciseUuid: 'e', stationIndex: 0),
         ),
-        ProgramSegment.stations,
+        PlanSegment.stations,
       );
       expect(
         segmentForTarget(const RoleSheetTarget(rolePlayUuid: 'r')),
-        ProgramSegment.script,
+        PlanSegment.script,
       );
       expect(
         segmentForTarget(
           const TeamSheetTarget(exerciseUuid: 'e', teamIndex: 0),
         ),
-        ProgramSegment.teams,
+        PlanSegment.teams,
       );
       expect(
         segmentForTarget(const TeamOverviewSheetTarget(teamIndex: 0)),
-        ProgramSegment.teams,
+        PlanSegment.teams,
       );
     });
 
     test('BriefSheetTarget has no owning segment', () {
       expect(
-        segmentForTarget(const BriefSheetTarget(programUuid: 'p')),
+        segmentForTarget(const BriefSheetTarget(planUuid: 'p')),
         isNull,
       );
     });
@@ -205,14 +205,14 @@ void main() {
         tester.widget<RolePlayScreen>(find.byType(RolePlayScreen)).rolePlayUuid,
         _roleUuid,
       );
-      expect(_selectedSegment(tester), {ProgramSegment.script});
+      expect(_selectedSegment(tester), {PlanSegment.script});
 
       // Tapping the post-context card must not throw the "requires an open
       // sheet" assert, and must still redirect correctly.
       await tester.tap(find.text('1.1 Station A1'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(_selectedSegment(tester), {ProgramSegment.stations});
+      expect(_selectedSegment(tester), {PlanSegment.stations});
       expect(
         tester
             .widget<StationScreen>(find.byType(StationScreen))
@@ -245,7 +245,7 @@ void main() {
         tester.widget<RolePlayScreen>(find.byType(RolePlayScreen)).rolePlayUuid,
         _roleUuid,
       );
-      expect(_selectedSegment(tester), {ProgramSegment.script});
+      expect(_selectedSegment(tester), {PlanSegment.script});
 
       // The post-context card is the only "Station A1" text on screen at
       // this point (the master list is still showing roleplays).
@@ -254,7 +254,7 @@ void main() {
 
       // The redirect (ContextSheet.replace(StationSheetTarget(...))) must
       // drag the master along: segment switches to Poster...
-      expect(_selectedSegment(tester), {ProgramSegment.stations});
+      expect(_selectedSegment(tester), {PlanSegment.stations});
       // ...and the detail pane shows the Post viewer for that station.
       final detail = tester.widget<StationScreen>(
         find.byType(StationScreen),
@@ -301,7 +301,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('1.1 Station A1'));
     await tester.pumpAndSettle();
-    expect(_selectedSegment(tester), {ProgramSegment.stations});
+    expect(_selectedSegment(tester), {PlanSegment.stations});
 
     // Explicit in-segment pick: Station B1 (no redirect involved, plain
     // master-list tap) — the existing per-segment memory must still work.
@@ -364,7 +364,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       // The deferred go lands on Poster with that station shown.
-      expect(_selectedSegment(tester), {ProgramSegment.stations});
+      expect(_selectedSegment(tester), {PlanSegment.stations});
       expect(find.byType(StationScreen), findsOneWidget);
     },
   );
@@ -395,7 +395,7 @@ void main() {
       // not have switched `activeSegment`.
       await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
-      expect(_selectedSegment(tester), {ProgramSegment.script});
+      expect(_selectedSegment(tester), {PlanSegment.script});
       expect(find.text('Turgåer'), findsOneWidget);
     },
   );

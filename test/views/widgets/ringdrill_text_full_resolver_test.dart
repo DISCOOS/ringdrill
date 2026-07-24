@@ -10,7 +10,7 @@ import 'package:ringdrill/views/widgets/station_scope.dart';
 
 /// DESIGN-010 stage 3 — RingDrillText now delegates to resolveScopedField
 /// (ADR-0048), so it resolves the full `{{station.*}}`/`{{exercise.*}}`/
-/// `{{program.*}}` cascade wherever those scopes are present, not just
+/// `{{plan.*}}` cascade wherever those scopes are present, not just
 /// `{{var.*}}`. Uses a real MaterialApp with localizationsDelegates (unlike
 /// ringdrill_text_test.dart's bare harness) so the resolveScopedField branch
 /// — not the l10n-absent plain fallback — is what's under test.
@@ -60,18 +60,18 @@ void main() {
   });
 
   testWidgets(
-    'with only a PlanScope ancestor, resolves {{var.*}} and {{program.name}}',
+    'with only a PlanScope ancestor, resolves {{var.*}} and {{plan.name}}',
     (tester) async {
       await _pump(
         tester,
         PlanScope(
           variables: const [DrillVariable(name: 'freq', value: 'Kanal 6')],
-          programName: 'Program One',
-          child: const RingDrillText.plain('{{var.freq}} @ {{program.name}}'),
+          planName: 'Plan One',
+          child: const RingDrillText.plain('{{var.freq}} @ {{plan.name}}'),
         ),
       );
 
-      expect(find.text('Kanal 6 @ Program One'), findsOneWidget);
+      expect(find.text('Kanal 6 @ Plan One'), findsOneWidget);
     },
   );
 

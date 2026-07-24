@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
-import 'package:ringdrill/views/program_form_screen.dart';
+import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/views/plan_form_screen.dart';
 
-/// DESIGN-008 Stage 3 — the section-navigated `ProgramFormScreen`.
+/// DESIGN-008 Stage 3 — the section-navigated `PlanFormScreen`.
 
-Program _baseProgram({
+Plan _basePlan({
   String? briefIntroMd = 'gammel intro',
   String? commsMd,
   String? beforeRoundMd,
 }) {
   final now = DateTime.utc(2026, 1, 1);
-  return Program(
+  return Plan(
     uuid: 'pgm-1',
     name: 'Vinterøvelse',
     description: '',
-    metadata: ProgramMetadata(
+    metadata: PlanMetadata(
       created: now,
       updated: now,
       version: '1.0',
@@ -31,9 +31,9 @@ Program _baseProgram({
   );
 }
 
-Future<Program?> _openForm(
+Future<Plan?> _openForm(
   WidgetTester tester,
-  Program program, {
+  Plan plan, {
   Size? size,
 }) async {
   if (size != null) {
@@ -42,7 +42,7 @@ Future<Program?> _openForm(
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
   }
-  Program? result;
+  Plan? result;
   await tester.pumpWidget(
     MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -50,10 +50,10 @@ Future<Program?> _openForm(
       home: Builder(
         builder: (ctx) => TextButton(
           onPressed: () async {
-            result = await Navigator.push<Program>(
+            result = await Navigator.push<Plan>(
               ctx,
               MaterialPageRoute(
-                builder: (_) => ProgramFormScreen(program: program),
+                builder: (_) => PlanFormScreen(plan: plan),
               ),
             );
           },
@@ -80,34 +80,34 @@ Future<void> _tapSwitcher(WidgetTester tester, String label) async {
 }
 
 void main() {
-  group('ProgramFormScreen — section-navigated', () {
+  group('PlanFormScreen — section-navigated', () {
     testWidgets(
       'compact: switcher lists active sections and switches between them',
       (tester) async {
         await _openForm(
           tester,
-          _baseProgram(commsMd: 'gamle talegrupper'),
+          _basePlan(commsMd: 'gamle talegrupper'),
           size: const Size(400, 800),
         );
         final l = await AppLocalizations.delegate.load(const Locale('en'));
 
         // Plan is selected initially; its fields render.
         expect(find.text('Vinterøvelse'), findsOneWidget);
-        expect(find.text(l.briefSectionProgramIntro), findsNothing);
+        expect(find.text(l.briefSectionPlanIntro), findsNothing);
 
         // Open the switcher via the AppBar title and select "Intro".
-        await _tapSwitcher(tester, l.programSectionPlan);
-        expect(find.text(l.briefSectionProgramIntro), findsWidgets);
-        expect(find.text(l.briefSectionProgramComms), findsOneWidget);
-        await tester.tap(find.text(l.briefSectionProgramIntro).first);
+        await _tapSwitcher(tester, l.planSectionPlan);
+        expect(find.text(l.briefSectionPlanIntro), findsWidgets);
+        expect(find.text(l.briefSectionPlanComms), findsOneWidget);
+        await tester.tap(find.text(l.briefSectionPlanIntro).first);
         await tester.pumpAndSettle();
 
         expect(find.text('gammel intro'), findsOneWidget);
         expect(find.text('Vinterøvelse'), findsNothing);
 
         // Switch again, to "Comms".
-        await _tapSwitcher(tester, l.briefSectionProgramIntro);
-        await tester.tap(find.text(l.briefSectionProgramComms));
+        await _tapSwitcher(tester, l.briefSectionPlanIntro);
+        await tester.tap(find.text(l.briefSectionPlanComms));
         await tester.pumpAndSettle();
         expect(find.text('gamle talegrupper'), findsOneWidget);
       },
@@ -118,23 +118,23 @@ void main() {
       (tester) async {
         await _openForm(
           tester,
-          _baseProgram(commsMd: null, beforeRoundMd: null),
+          _basePlan(commsMd: null, beforeRoundMd: null),
           size: const Size(400, 800),
         );
         final l = await AppLocalizations.delegate.load(const Locale('en'));
 
-        await tester.tap(find.text(l.programSectionPlan));
+        await tester.tap(find.text(l.planSectionPlan));
         await tester.pumpAndSettle();
 
         // "Comms" is not active yet, so it is not listed directly...
-        expect(find.text(l.briefSectionProgramComms), findsNothing);
+        expect(find.text(l.briefSectionPlanComms), findsNothing);
 
         // ...until "Add section" is tapped to reveal it.
         await tester.tap(find.text(l.formSectionAddAction));
         await tester.pumpAndSettle();
-        expect(find.text(l.briefSectionProgramComms), findsOneWidget);
+        expect(find.text(l.briefSectionPlanComms), findsOneWidget);
 
-        await tester.tap(find.text(l.briefSectionProgramComms));
+        await tester.tap(find.text(l.briefSectionPlanComms));
         await tester.pumpAndSettle();
 
         // The newly-activated section is selected and its (empty) field is
@@ -155,7 +155,7 @@ void main() {
       (tester) async {
         await _openForm(
           tester,
-          _baseProgram(commsMd: 'gamle talegrupper'),
+          _basePlan(commsMd: 'gamle talegrupper'),
           size: const Size(400, 800),
         );
         final l = await AppLocalizations.delegate.load(const Locale('en'));
@@ -169,9 +169,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text(l.formSectionRemoveAction), findsNothing);
 
-        await tester.tap(find.text(l.programSectionPlan));
+        await tester.tap(find.text(l.planSectionPlan));
         await tester.pumpAndSettle();
-        await tester.tap(find.text(l.briefSectionProgramComms));
+        await tester.tap(find.text(l.briefSectionPlanComms));
         await tester.pumpAndSettle();
 
         // "Comms" is removable: its overflow menu offers "Remove section".
@@ -182,7 +182,7 @@ void main() {
 
         // Falls back to the default section, where the overflow is
         // disabled again.
-        expect(find.text(l.programSectionPlan), findsOneWidget);
+        expect(find.text(l.planSectionPlan), findsOneWidget);
         expect(find.byIcon(Icons.more_vert), findsOneWidget);
         await tester.tap(find.byIcon(Icons.more_vert));
         await tester.pumpAndSettle();
@@ -199,21 +199,21 @@ void main() {
       (tester) async {
         await _openForm(
           tester,
-          _baseProgram(commsMd: 'gamle talegrupper'),
+          _basePlan(commsMd: 'gamle talegrupper'),
           size: const Size(1200, 900),
         );
         final l = await AppLocalizations.delegate.load(const Locale('en'));
 
         expect(find.byType(AppBar), findsOneWidget);
         expect(find.byIcon(Icons.close), findsOneWidget);
-        expect(find.text(l.programSectionPlan), findsWidgets);
-        expect(find.text(l.briefSectionProgramIntro), findsOneWidget);
-        expect(find.text(l.briefSectionProgramComms), findsOneWidget);
+        expect(find.text(l.planSectionPlan), findsWidgets);
+        expect(find.text(l.briefSectionPlanIntro), findsOneWidget);
+        expect(find.text(l.briefSectionPlanComms), findsOneWidget);
 
         // Plan's fields render in the detail pane by default.
         expect(find.text('Vinterøvelse'), findsOneWidget);
 
-        await tester.tap(find.text(l.briefSectionProgramComms));
+        await tester.tap(find.text(l.briefSectionPlanComms));
         await tester.pumpAndSettle();
         expect(find.text('gamle talegrupper'), findsOneWidget);
         expect(find.text('Vinterøvelse'), findsNothing);
@@ -228,7 +228,7 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
 
-        Program? captured;
+        Plan? captured;
         await tester.pumpWidget(
           MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -236,11 +236,11 @@ void main() {
             home: Builder(
               builder: (ctx) => TextButton(
                 onPressed: () async {
-                  captured = await Navigator.push<Program>(
+                  captured = await Navigator.push<Plan>(
                     ctx,
                     MaterialPageRoute(
-                      builder: (_) => ProgramFormScreen(
-                        program: _baseProgram(),
+                      builder: (_) => PlanFormScreen(
+                        plan: _basePlan(),
                       ),
                     ),
                   );
@@ -259,8 +259,8 @@ void main() {
           'Vårøvelse',
         );
 
-        await _tapSwitcher(tester, l.programSectionPlan);
-        await tester.tap(find.text(l.briefSectionProgramIntro));
+        await _tapSwitcher(tester, l.planSectionPlan);
+        await tester.tap(find.text(l.briefSectionPlanIntro));
         await tester.pumpAndSettle();
 
         // The section field has no floating label (8d7acf9 dropped it as a

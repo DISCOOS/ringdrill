@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/views/active_plan_actions.dart';
 
-Program _program() {
+Plan _plan() {
   final now = DateTime.utc(2026, 1, 1);
-  return Program(
+  return Plan(
     uuid: 'pgm-1',
     name: 'Vinterøvelse',
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -89,7 +89,7 @@ void main() {
       // Tap Create with an empty field: that pops the dialog (exercising the
       // Create button's pop + the same controller-dispose path) but trims to
       // an empty name, so createNewPlan early-returns before touching
-      // ProgramService — keeping the test free of storage side effects.
+      // PlanService — keeping the test free of storage side effects.
       await tester.tap(find.text(l10n.create));
       await tester.pumpAndSettle();
 
@@ -101,7 +101,7 @@ void main() {
   testWidgets(
     'rename-plan dialog cancels without using a disposed controller',
     (tester) async {
-      final program = _program();
+      final plan = _plan();
       await tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -110,7 +110,7 @@ void main() {
             builder: (ctx) => Scaffold(
               body: Center(
                 child: TextButton(
-                  onPressed: () => renamePlan(ctx, program),
+                  onPressed: () => renamePlan(ctx, plan),
                   child: const Text('Rename'),
                 ),
               ),

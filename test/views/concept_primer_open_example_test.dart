@@ -7,19 +7,19 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _seedUuid = 'open-example-seed-program';
+const _seedUuid = 'open-example-seed-plan';
 
 Map<String, Object> _basePrefs() => {
-  'app:activeProgram:v1': _seedUuid,
+  'app:activePlan:v1': _seedUuid,
   'app:librarySchema:v1': '1',
   'p:$_seedUuid': jsonEncode({
     'uuid': _seedUuid,
-    'name': 'Seed Program',
+    'name': 'Seed Plan',
     'description': '',
     'metadata': {
       'created': '2026-01-01T00:00:00.000Z',
@@ -45,7 +45,7 @@ String _location(GoRouter router) =>
 
 Future<GoRouter> _pumpPrimer(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues(_basePrefs());
-  await ProgramService().init();
+  await PlanService().init();
   tester.view.physicalSize = const Size(400, 800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
@@ -85,13 +85,13 @@ void main() {
       // Left /welcome
       expect(_location(router), isNot('/welcome'));
 
-      // Active program is the installed example (not the seed)
-      final activeUuid = ProgramService().activeProgramUuid;
+      // Active plan is the installed example (not the seed)
+      final activeUuid = PlanService().activePlanUuid;
       expect(activeUuid, isNot(_seedUuid));
       expect(activeUuid, isNotNull);
 
       // Example plan has exercises
-      final exercises = ProgramService().loadExercises();
+      final exercises = PlanService().loadExercises();
       expect(exercises, isNotEmpty);
     },
   );
@@ -106,7 +106,7 @@ void main() {
     addTearDown(() => Intl.defaultLocale = null);
 
     SharedPreferences.setMockInitialValues(_basePrefs());
-    // ProgramService singleton is already ready; reset its active state by
+    // PlanService singleton is already ready; reset its active state by
     // replacing the prefs store (setMockInitialValues replaces in-memory store).
     tester.view.physicalSize = const Size(400, 800);
     tester.view.devicePixelRatio = 1;
@@ -124,7 +124,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_location(router), isNot('/welcome'));
-    expect(ProgramService().activeProgramUuid, 'onboarding-nb-v1');
+    expect(PlanService().activePlanUuid, 'onboarding-nb-v1');
   });
 
   // --- locale selection: non-nb falls back to en ----------------------------
@@ -153,19 +153,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_location(router), isNot('/welcome'));
-    expect(ProgramService().activeProgramUuid, 'onboarding-en-v1');
+    expect(PlanService().activePlanUuid, 'onboarding-en-v1');
   });
 
   // --- error fallback (unit-level) ------------------------------------------
 
   // Verifies that the catch block in _openExample is necessary: a corrupt
-  // DrillFile causes DrillFile.program() to throw, and installFromFile
+  // DrillFile causes DrillFile.plan() to throw, and installFromFile
   // propagates it. The UI wraps this in try/catch and falls back gracefully —
   // that path is covered by the router tests above (route leaves /welcome and
   // flag is set on any tap). This test confirms the exception source.
-  test('DrillFile.fromBytes with corrupt zip throws FormatException on program()', () {
+  test('DrillFile.fromBytes with corrupt zip throws FormatException on plan()', () {
     final corrupt = DrillFile.fromBytes('bad.drill', [0, 1, 2, 3]);
-    expect(() => corrupt.program(), throwsA(isA<Exception>()));
+    expect(() => corrupt.plan(), throwsA(isA<Exception>()));
   });
 
   // Verifies that asset loading roundtrip works for both bundled assets.
@@ -177,7 +177,7 @@ void main() {
       'onboarding-example.en.drill',
       data.buffer.asUint8List(),
     );
-    expect(() => drill.program(), returnsNormally);
-    expect(drill.program().exercises, hasLength(2));
+    expect(() => drill.plan(), returnsNormally);
+    expect(drill.plan().exercises, hasLength(2));
   });
 }
