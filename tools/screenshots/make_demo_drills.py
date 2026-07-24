@@ -30,7 +30,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CREATED = "2026-01-15T09:00:00+00:00"
 META = {"created": CREATED, "updated": CREATED, "version": "1.0"}
 
-# RingDrill ids are nanoid(10) over the URL-safe alphabet (see program_repository.dart).
+# RingDrill ids are nanoid(10) over the URL-safe alphabet (see plan_repository.dart).
 # Use a fixed seed so regenerating the demo files is deterministic (no git churn)
 # while the ids still look like real RingDrill ids.
 _NANOID_ALPHABET = string.ascii_letters + string.digits + "_-"

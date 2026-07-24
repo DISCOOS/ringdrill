@@ -12,7 +12,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
@@ -53,7 +53,7 @@ List<List<SimpleTimeOfDay>> _schedule(
   ];
 }
 
-Program _buildPlan({
+Plan _buildPlan({
   required String uuid,
   required String name,
   required String description,
@@ -150,18 +150,18 @@ Program _buildPlan({
     ),
   ];
 
-  return Program(
+  return Plan(
     uuid: uuid,
     name: name,
     description: description,
     stationNumberFormat: StationNumberFormat.alpha,
-    metadata: ProgramMetadata(
+    metadata: PlanMetadata(
       created: created,
       updated: created,
       version: '1.1',
       schema: DrillFile.drillSchemaCurrent,
     ),
-    source: const ProgramSource.local(),
+    source: const PlanSource.local(),
     teams: teams,
     sessions: const [],
     exercises: [ex1, ex2],
@@ -242,11 +242,11 @@ void main() {
   final outDir = Directory('assets/example');
   outDir.createSync(recursive: true);
 
-  final nbDrill = DrillFile.fromProgram(nb, 'onboarding-example.nb');
+  final nbDrill = DrillFile.fromPlan(nb, 'onboarding-example.nb');
   File('assets/example/onboarding-example.nb.drill')
       .writeAsBytesSync(nbDrill.content);
 
-  final enDrill = DrillFile.fromProgram(en, 'onboarding-example.en');
+  final enDrill = DrillFile.fromPlan(en, 'onboarding-example.en');
   File('assets/example/onboarding-example.en.drill')
       .writeAsBytesSync(enDrill.content);
 
