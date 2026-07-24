@@ -139,6 +139,17 @@ class _BriefSheetHarnessState extends State<_BriefSheetHarness> {
   }
 }
 
+/// `tester.binding.setSurfaceSize` does not update `MediaQuery`, which would
+/// keep reporting flutter_test's default ~800x600 (medium/hasMasterDetail)
+/// regardless — so a sub-600 "compact" size here would still make
+/// `WindowSizeClass` read as medium (see `ringdrill_picker_test.dart`).
+/// `tester.view.physicalSize` keeps layout and MediaQuery consistent.
+void _setWidth(WidgetTester tester, double width) {
+  tester.view.physicalSize = Size(width, 900);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+}
+
 /// Wait for the sheet to fully open: the post-frame callback schedules the
 /// showModalBottomSheet, which runs after the first pump; then we need a
 /// runAsync + two pumps to let the async render future complete.
@@ -170,14 +181,31 @@ void main() {
   });
 
   group('BriefSheetLauncher', () {
-    testWidgets('opens a DraggableScrollableSheet', (tester) async {
+    testWidgets('compact width opens a DraggableScrollableSheet', (
+      tester,
+    ) async {
+      _setWidth(tester, 400);
       await tester.pumpWidget(_buildLauncher(exerciseUuid: _exerciseUuid));
       await _awaitSheetOpen(tester);
 
       expect(find.byType(DraggableScrollableSheet), findsOneWidget);
+      expect(find.byType(Dialog), findsNothing);
+    });
+
+    testWidgets('wide width opens a Dialog instead of a bottom sheet', (
+      tester,
+    ) async {
+      _setWidth(tester, 1000);
+      await tester.pumpWidget(_buildLauncher(exerciseUuid: _exerciseUuid));
+      await _awaitSheetOpen(tester);
+
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(find.byType(DraggableScrollableSheet), findsNothing);
+      expect(find.byType(BriefScreen), findsOneWidget);
     });
 
     testWidgets('sheet contains BriefScreen with close button', (tester) async {
+      _setWidth(tester, 400);
       await tester.pumpWidget(_buildLauncher(exerciseUuid: _exerciseUuid));
       await _awaitSheetOpen(tester);
 

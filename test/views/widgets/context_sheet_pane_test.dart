@@ -22,26 +22,31 @@ void main() {
     controller.dispose();
   });
 
-  testWidgets('Brief target opens a sheet even with a scope present', (
-    tester,
-  ) async {
-    final controller = ContextSheetController();
-    final observer = _RouteObserver();
-    await tester.pumpWidget(
-      _Harness(controller: controller, observer: observer),
-    );
+  testWidgets(
+    'Brief target opens a dialog on wide layout even with a scope present',
+    (tester) async {
+      // flutter_test's default ~800x600 MediaQuery already reads as
+      // WindowSizeClass.medium (hasMasterDetail), matching the
+      // MasterDetailScope this harness wraps its content in.
+      final controller = ContextSheetController();
+      final observer = _RouteObserver();
+      await tester.pumpWidget(
+        _Harness(controller: controller, observer: observer),
+      );
 
-    await tester.tap(find.text('show brief'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('show brief'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('body: brief'), findsOneWidget);
-    expect(
-      find.byKey(const Key('ringdrill-sheet-drag-handle')),
-      findsOneWidget,
-    );
-    expect(observer.pushedRoutes.length, 2);
-    controller.dispose();
-  });
+      expect(find.text('body: brief'), findsOneWidget);
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(
+        find.byKey(const Key('ringdrill-sheet-drag-handle')),
+        findsNothing,
+      );
+      expect(observer.pushedRoutes.length, 2);
+      controller.dispose();
+    },
+  );
 
   testWidgets('replace swaps pane body without opening or closing a route', (
     tester,

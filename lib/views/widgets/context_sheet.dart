@@ -6,6 +6,7 @@ import 'package:ringdrill/views/brief_screen.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/team_exercise_screen.dart';
 import 'package:ringdrill/views/team_screen.dart';
@@ -161,9 +162,10 @@ class ContextSheetController {
       }
     }
     if (target is BriefSheetTarget) {
-      // BriefSheetTarget always opens its own modal sheet, even when _isOpen is
-      // true (e.g. brief tapped from inside a detail pane in wide layout).
-      // Save prior state so the detail pane is fully restored after brief closes.
+      // BriefSheetTarget always opens its own modal surface, even when
+      // _isOpen is true (e.g. brief tapped from inside a detail pane in wide
+      // layout). Save prior state so the detail pane is fully restored after
+      // brief closes.
       final savedTarget = _target.value;
       final savedIsOpen = _isOpen;
       final savedNavigator = _navigator;
@@ -177,22 +179,46 @@ class ContextSheetController {
       // The brief modal builds its body directly from [target] instead.
       _navigator = Navigator.of(context);
       _bodyBuilder = ContextSheet._bodyBuilderOf(context) ?? _bodyBuilder;
-      // Brief uses its own internal wide-layout split (TOC sidebar + body) and
-      // benefits from the full sheet width on large screens.
-      await showRingdrillViewerSheet<void>(
-        context: context,
-        maxBodyWidth: double.infinity,
-        builder: (context, scrollController) => ContextSheet(
+
+      Widget briefBody(BuildContext context, ScrollController? scrollController) {
+        final child =
+            _bodyBuilder?.call(context, target) ??
+            _DefaultContextSheetBody(target: target);
+        return ContextSheet(
           controller: this,
           bodyBuilder: _bodyBuilder,
-          child: PrimaryScrollController(
-            key: ValueKey(target),
-            controller: scrollController,
-            child: _bodyBuilder?.call(context, target) ??
-                _DefaultContextSheetBody(target: target),
-          ),
-        ),
-      );
+          child: scrollController == null
+              ? KeyedSubtree(key: ValueKey(target), child: child)
+              : PrimaryScrollController(
+                  key: ValueKey(target),
+                  controller: scrollController,
+                  child: child,
+                ),
+        );
+      }
+
+      if (WindowSizeClass.of(context).hasMasterDetail) {
+        // Wide layout: a dialog, not a bottom sheet — mirrors every other
+        // master/detail surface (showRingdrillPicker, openFormSurface).
+        // Sized near-full-bleed rather than the standard 720px form-dialog
+        // width, because the brief's own internal TOC sidebar only appears
+        // once its body has at least ~900px of width to lay out in (see
+        // _ViewerBody's maxBodyWidth: double.infinity case).
+        await showRingdrillDialogShell<void>(
+          context: context,
+          maxWidth: MediaQuery.sizeOf(context).width,
+          maxHeightFraction: 0.92,
+          builder: (context) => briefBody(context, null),
+        );
+      } else {
+        // Brief uses its own internal wide-layout split (TOC sidebar + body)
+        // and benefits from the full sheet width on large screens.
+        await showRingdrillViewerSheet<void>(
+          context: context,
+          maxBodyWidth: double.infinity,
+          builder: briefBody,
+        );
+      }
       // Restore prior state so the detail pane re-appears.
       _target.value = savedTarget;
       _isOpen = savedIsOpen;
