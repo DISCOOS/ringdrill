@@ -261,7 +261,21 @@ class WideShell extends StatelessWidget {
                   ],
                 ),
               ),
-              const Expanded(child: MasterDetailPane()),
+              // Strip the left safe-area inset from the detail pane: the
+              // rail (leftmost) already owns the screen's left edge, but the
+              // detail's own Scaffold `SafeArea` would otherwise re-apply the
+              // full-window left inset here — on an iOS landscape phone that
+              // notch-side inset is tens of px, showing as an empty band
+              // between the master and the detail content (web/no-notch shows
+              // none). The detail keeps top/right/bottom insets (it does sit
+              // at the screen's right + top/bottom edges).
+              Expanded(
+                child: MediaQuery.removePadding(
+                  context: context,
+                  removeLeft: true,
+                  child: const MasterDetailPane(),
+                ),
+              ),
             ],
           ),
         ),

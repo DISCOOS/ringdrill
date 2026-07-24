@@ -603,51 +603,49 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   }
 
   /// The `Kart` segment's body (compact/medium): the same top section +
-  /// selector as [_buildStackedBody], but pinned, with the map filling all
-  /// remaining height to the bottom via [Expanded] instead of a guessed
-  /// fixed height inside a scroll view — so there is no dead gap below the
-  /// map and its bottom-right command stack anchors to the true bottom.
+  /// selector as [_buildStackedBody], with the map sized to fill the space
+  /// below the selector — reaching the bottom with no dead gap — but never
+  /// below [MapConfig.minInteractiveHeight] (a shorter map can't fit its own
+  /// FAB command stack). The whole body scrolls, so a tall top section (e.g.
+  /// an expanded schedule card on a short landscape phone) pushes content
+  /// into the scroll rather than overflowing — an earlier `Expanded`-based
+  /// version overflowed there, because the non-flex top section alone
+  /// exceeded the viewport before `Expanded` got any room.
   Widget _buildMapBody(
     ExerciseEvent event, {
     required bool showHero,
     required AppLocalizations localizations,
     required bool sideBySideTop,
   }) {
-    final map = _buildExercisePositionMap(event); // height null → fills
-    return Padding(
-      padding: const EdgeInsets.all(_kCoordinatorBodyPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          sideBySideTop
-              ? _buildSideBySideTopSection(event, showHero: showHero)
-              : _buildTopSection(event, showHero: showHero),
-          const SizedBox(height: 16),
-          _buildViewSelector(localizations, includeMap: true),
-          const SizedBox(height: 8),
-          // The map fills the remaining height to the bottom, but never
-          // below MapConfig.minInteractiveHeight — a shorter map can't fit
-          // its own FAB command stack (a short landscape-phone viewport, or
-          // a tall running-exercise top section, would otherwise overflow);
-          // below that floor the area scrolls instead.
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final height = constraints.maxHeight.clamp(
-                  MapConfig.minInteractiveHeight,
-                  double.infinity,
-                );
-                return SingleChildScrollView(
-                  child: SizedBox(
-                    height: height,
-                    child: map ?? _buildMapPlaceholder(localizations),
-                  ),
-                );
-              },
-            ),
+    final map = _buildExercisePositionMap(event);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Reserve only the selector + gaps (~96), not the variable top
+        // section — so the map fills when the top is short and the body
+        // scrolls (no overflow) when it is tall.
+        final mapHeight = (constraints.maxHeight - 96).clamp(
+          MapConfig.minInteractiveHeight,
+          double.infinity,
+        );
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(_kCoordinatorBodyPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              sideBySideTop
+                  ? _buildSideBySideTopSection(event, showHero: showHero)
+                  : _buildTopSection(event, showHero: showHero),
+              const SizedBox(height: 16),
+              _buildViewSelector(localizations, includeMap: true),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: mapHeight,
+                child: map ?? _buildMapPlaceholder(localizations),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

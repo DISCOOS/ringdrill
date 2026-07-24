@@ -56,10 +56,15 @@ class DockedDrillMiniPlayer extends StatelessWidget {
         // lets the bar paint its own background through the bottom
         // safe-area inset (content stays above it), instead of an external
         // SafeArea that left the inset dark below the bar.
+        // Taller than the narrow floating bar (48) so the docked wide bar
+        // has more breathing room — but drop back to 48 on a short viewport
+        // (a landscape phone, which still reads as the wide shell at >=840px
+        // wide) where 64px + the safe-area inset ate too much of the little
+        // vertical room there was, making the bar and its play button look
+        // oversized.
+        final shortViewport = MediaQuery.sizeOf(context).height < 500;
         return DrillMiniPlayer(
-          // Taller than the narrow floating bar (48) so the docked wide
-          // bar has more breathing room.
-          height: 64,
+          height: shortViewport ? 48 : 64,
           applyBottomInset: true,
           exercise: idleExercise,
           onPlay: idleExercise == null
