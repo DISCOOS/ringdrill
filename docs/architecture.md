@@ -139,3 +139,4 @@ The brief is a projection of the entities, rendered on demand through a versione
 * The Makefile is intentionally tiny. Most workflows are plain `flutter`/`dart` commands; the Makefile only wraps the few non-obvious ones (codegen, Shorebird).
 * `sentry.properties` is in `.gitignore`. The Sentry plugin block in `pubspec.yaml` references it for source upload during release builds. Local builds work without it.
 * `untranslated-messages.json` regenerates on every build. If it shows up in `git status`, ignore it.
+* `flutter_test`'s default `MediaQuery` size (~800×600) reads as `WindowSizeClass.medium` (`hasMasterDetail: true`), not compact. A widget test asserting compact-only chrome (a bottom sheet's drag handle, `find.byType(BottomSheet)`) must pin `tester.view.physicalSize` explicitly or it silently exercises the medium/expanded dialog path instead — see `ringdrill_picker_test.dart` and ADR-0049/ADR-0052.

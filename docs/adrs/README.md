@@ -58,6 +58,10 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0048 | [Extract a Flutter-free field resolver from BriefRenderer](./0048-flutter-free-field-resolver.md) | Accepted |
 | ADR-0049 | [Selectors adapt to window size behind one picker primitive — bottom sheet on compact, dialog on medium/expanded](./0049-adaptive-selector-surface.md) | Proposed |
 | ADR-0050 | [Per-output-format chip formatting via a ChipFormatter strategy](./0050-per-output-format-chip-formatting.md) | Accepted |
+| ADR-0051 | [Single `MapConfig.fitFor` camera-fit helper for every map surface](./0051-single-map-camera-fit-helper.md) | Accepted |
+| ADR-0052 | [Map and brief viewer overlays adapt to window size like ADR-0049's selectors](./0052-map-and-brief-viewer-surface-adapts-to-window-size.md) | Accepted |
+| ADR-0053 | [`MapView` owns its default camera fit, centring and marker construction](./0053-mapview-self-computed-default-fit.md) | Accepted |
+| ADR-0054 | [Consistent map interactivity on medium/expanded windows, via a built-in `MapView.withFullscreen` command](./0054-map-interactivity-and-fullscreen-command.md) | Proposed |
 
 ## When to write an ADR
 
