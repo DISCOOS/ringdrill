@@ -115,4 +115,78 @@ void main() {
       expect(item.accessPolicy, isNull);
     });
   });
+
+  group('planId/programId wire fallback (ADR-0055)', () {
+    test('MarketFeedItem.fromJson reads planId when present', () {
+      final item = MarketFeedItem.fromJson({
+        'planId': 'plan-1',
+        'slug': 'sprint-1',
+        'name': 'Sprint',
+        'tags': <String>[],
+        'latestUrl': 'https://example.test/d/sprint-1',
+        'updatedAt': null,
+      });
+
+      expect(item.planId, 'plan-1');
+    });
+
+    test(
+      'MarketFeedItem.fromJson falls back to the legacy programId field',
+      () {
+        final item = MarketFeedItem.fromJson({
+          'programId': 'prog-1',
+          'slug': 'sprint-1',
+          'name': 'Sprint',
+          'tags': <String>[],
+          'latestUrl': 'https://example.test/d/sprint-1',
+          'updatedAt': null,
+        });
+
+        expect(item.planId, 'prog-1');
+      },
+    );
+
+    test('MarketFeedItem.fromJson prefers planId when both are present', () {
+      final item = MarketFeedItem.fromJson({
+        'planId': 'plan-1',
+        'programId': 'prog-1',
+        'slug': 'sprint-1',
+        'name': 'Sprint',
+        'tags': <String>[],
+        'latestUrl': 'https://example.test/d/sprint-1',
+        'updatedAt': null,
+      });
+
+      expect(item.planId, 'plan-1');
+    });
+
+    test(
+      'DrillUploadResponse.fromJson falls back to the legacy programId field',
+      () {
+        final response = DrillUploadResponse.fromJson({
+          'slug': 'sprint-1',
+          'programId': 'prog-1',
+          'version': '1',
+          'etag': '"etag-v1"',
+          'latest': 'https://example.test/d/sprint-1',
+          'versioned': 'https://example.test/d/sprint-1@1',
+        });
+
+        expect(response.planId, 'prog-1');
+      },
+    );
+
+    test('DrillUploadResponse.fromJson reads planId when present', () {
+      final response = DrillUploadResponse.fromJson({
+        'slug': 'sprint-1',
+        'planId': 'plan-1',
+        'version': '1',
+        'etag': '"etag-v1"',
+        'latest': 'https://example.test/d/sprint-1',
+        'versioned': 'https://example.test/d/sprint-1@1',
+      });
+
+      expect(response.planId, 'plan-1');
+    });
+  });
 }

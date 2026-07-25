@@ -33,10 +33,11 @@ class DrillApiException implements Exception {
 
 /// Upload response from drills-upload.
 ///
-/// [planId] is the Dart-side name (Program -> Plan rename); the wire key,
-/// query param and `x-program-id` header stay `programId` — that's the
-/// Netlify functions' API contract (`netlify/functions/*.js`, AGENTS.md rule
-/// 8), a separate system this refactor's Dart-only rename does not reach.
+/// [planId] is read from the wire field `planId`, falling back to the
+/// legacy `programId` for a server that hasn't deployed the alias yet
+/// (ADR-0055 — the Program -> Plan rename's wire-contract follow-up). The
+/// client always *sends* `planId` on upload; the server accepts either but
+/// still emits both fields/headers during the deprecation window.
 @immutable
 class DrillUploadResponse {
   final String slug;
@@ -66,7 +67,7 @@ class DrillUploadResponse {
   factory DrillUploadResponse.fromJson(Map<String, dynamic> j) =>
       DrillUploadResponse(
         slug: j['slug'] as String,
-        planId: j['programId'] as String,
+        planId: (j['planId'] ?? j['programId']) as String,
         version: j['version'] as String,
         etag: j['etag'] as String,
         latestUrl: Uri.parse(j['latest'] as String),
@@ -177,7 +178,7 @@ class MarketFeedItem {
   });
 
   factory MarketFeedItem.fromJson(Map<String, dynamic> j) => MarketFeedItem(
-    planId: j['programId'] as String,
+    planId: (j['planId'] ?? j['programId']) as String,
     slug: j['slug'] as String,
     name: j['name'] as String,
     description: j['description'] as String? ?? '',
@@ -236,7 +237,7 @@ class AdminListItem {
   factory AdminListItem.fromJson(Map<String, dynamic> j) => AdminListItem(
     slug: j['slug'] as String,
     ownerId: j['ownerId'] as String?,
-    planId: j['programId'] as String?,
+    planId: (j['planId'] ?? j['programId']) as String?,
     published: j['published'] as bool?,
     versionCount: (j['versionCount'] as num?)?.toInt(),
     latest: j['latest'] == null
@@ -366,7 +367,9 @@ class DrillClient {
     final plan = file.plan();
     final qs = <String, String>{
       'ownerId': ownerId,
-      'programId': plan.uuid,
+      // planId is the current name (ADR-0055); the server also accepts the
+      // legacy programId, but this client always sends the new one.
+      'planId': plan.uuid,
       // Send an explicit version only when the caller has actually set one on
       // the DrillFile (file.version > 0 means "I uploaded version N before, so
       // tag this one N+1"). When unset, let the backend auto-bump to the next
@@ -398,7 +401,8 @@ class DrillClient {
       final version = res.headers['x-version'] ?? '';
       final latestUrl = res.headers['x-latest'];
       final versionedUrl = res.headers['x-versioned'];
-      final planId = res.headers['x-program-id'] ?? '';
+      final planId =
+          res.headers['x-plan-id'] ?? res.headers['x-program-id'] ?? '';
       return DrillUploadResponse(
         slug: file.slug,
         planId: planId,
