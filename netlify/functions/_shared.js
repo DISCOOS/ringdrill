@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { getStore } from "@netlify/blobs";
+import * as Sentry from "@sentry/node";
 
 export const NS = { DRILLS: "drills", SLUG_INDEX: "slug-index" };
 export const MIME_DRILL = "application/vnd.ringdrill+zip";
@@ -96,6 +97,40 @@ export async function deleteSlugRecord(slug) {
     await s.delete(slug);
 }
 
+/* ---------- Deprecation telemetry (ADR-0055) ---------- */
+// Tracks callers still sending the legacy `programId` param/field instead of
+// `planId` (Program -> Plan rename), so we know when it's safe to drop
+// `programId` support entirely. No-op without SENTRY_DSN configured — this
+// must never make the API depend on Sentry being reachable.
+
+let sentryInitialized = false;
+function ensureSentryInit() {
+    if (sentryInitialized) return;
+    sentryInitialized = true;
+    const dsn = process.env.SENTRY_DSN;
+    if (!dsn) return;
+    Sentry.init({ dsn, tracesSampleRate: 0 });
+}
+
+// Call once per request that used the deprecated `programId` name instead of
+// `planId`. Awaited so the event is actually flushed before the serverless
+// function returns (this only runs for legacy callers, so the extra latency
+// never touches an already-migrated client). Never throws.
+export async function reportLegacyProgramIdUsage(context) {
+    if (!process.env.SENTRY_DSN) return;
+    try {
+        ensureSentryInit();
+        Sentry.captureMessage("legacy programId param used", {
+            level: "info",
+            tags: { legacy_program_id: "true" },
+            extra: context,
+        });
+        await Sentry.flush(2000);
+    } catch {
+        // Telemetry must never break the request it's reporting on.
+    }
+}
+
 /* ---------- Keys & misc ---------- */
 
 export function keysFor({ ownerId, programId, version }) {
@@ -131,6 +166,10 @@ export function latestVersionEntry(versions) {
 export function metaToFeedItem(meta, { origin }) {
     const latest = latestVersionEntry(meta.versions);
     return {
+        // planId is the Plan-rename name; programId stays too until every
+        // real client has moved off it (ADR-0055 — track via
+        // reportLegacyProgramIdUsage's Sentry telemetry, then drop).
+        planId: meta.programId,
         programId: meta.programId,
         slug: meta.slug,
         name: meta.name,
@@ -198,7 +237,7 @@ function corsHeadersFor(request) {
         "access-control-allow-origin": origin,
         "access-control-allow-methods": "GET, POST, HEAD, OPTIONS",
         "access-control-allow-headers": "authorization, content-type, if-match, if-none-match, accept",
-        "access-control-expose-headers": "etag, content-type, content-disposition, last-modified, cache-control, x-conflict-kind, x-version, x-latest, x-versioned, x-program-id",
+        "access-control-expose-headers": "etag, content-type, content-disposition, last-modified, cache-control, x-conflict-kind, x-version, x-latest, x-versioned, x-program-id, x-plan-id",
         "access-control-max-age": "600",
         "vary": "Origin",
     };

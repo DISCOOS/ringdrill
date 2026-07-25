@@ -5,6 +5,7 @@
   },
   "dependencies": {
     "@netlify/blobs": "^10.0.8",
+    "@sentry/node": "10.68.0",
     "fflate": "0.8.3"
   },
   "name": "functions",
