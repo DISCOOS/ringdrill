@@ -4,7 +4,7 @@ import {
     getSlugRecord, claimSlug, sha256Hex,
     toStrongEtag, nowIso, originFromRequest, readDrillBytes,
     writeBinaryConditional, writeJsonConditional,
-    corsPreflight, withCors
+    corsPreflight, withCors, reportLegacyProgramIdUsage
 } from "./_shared.js";
 
 // The highest schema version this function accepts. Bumping this requires
@@ -191,6 +191,25 @@ export function resolveCatalogFields({ program, slug }) {
 }
 
 /**
+ * Resolve the incoming plan-id query param, preferring the current `planId`
+ * name over the legacy `programId` one (ADR-0055 — the Program -> Plan
+ * rename's wire-contract follow-up). Returns `{ programId, usedLegacyName }`
+ * where `programId` is `null` when neither param was supplied (the caller
+ * then falls back to an existing mapping, or mints a fresh id) and
+ * `usedLegacyName` is true only when `programId` was given without a
+ * `planId` alongside it — the caller reports that to Sentry so real-world
+ * `programId` usage stays observable until it's safe to remove.
+ */
+export function resolvePlanIdParam(qs) {
+    const planId = qs.get("planId");
+    const legacyProgramId = qs.get("programId");
+    return {
+        programId: planId ?? legacyProgramId ?? null,
+        usedLegacyName: !planId && !!legacyProgramId,
+    };
+}
+
+/**
  * Strip the actors/ folder from a .drill archive and validate the schema.
  * Returns { strippedBytes, program, error } where error is a Response when
  * invalid and program is the { name, description } read from program.json.
@@ -280,9 +299,15 @@ export default async function (request) {
         // Look up existing mapping (if any) BEFORE deciding ownerId/programId
         const existing = await getSlugRecord(slug);
 
-        // Use provided IDs if present; otherwise reuse existing; otherwise defaults
-        const ownerIdParam   = qs.get("ownerId");
-        const programIdParam = qs.get("programId");
+        // Use provided IDs if present; otherwise reuse existing; otherwise defaults.
+        // planId is the Plan-rename name (ADR-0055); programId is accepted as a
+        // fallback for callers that haven't upgraded yet, and its use is
+        // reported to Sentry so we know when it's safe to remove.
+        const ownerIdParam = qs.get("ownerId");
+        const { programId: programIdParam, usedLegacyName } = resolvePlanIdParam(qs);
+        if (usedLegacyName) {
+            await reportLegacyProgramIdUsage({ function: "drills-upload", slug });
+        }
 
         const ownerId = ownerIdParam ?? existing?.ownerId ?? "anon";
         const programId = programIdParam ?? existing?.programId
@@ -375,6 +400,7 @@ export default async function (request) {
                     "x-latest": `${origin}/d/${slug}`,
                     "x-versioned": `${origin}/d/${slug}@${currentLatest.v}`,
                     "x-program-id": String(programId),
+                    "x-plan-id": String(programId),
                 },
             }));
         }
@@ -458,7 +484,7 @@ export default async function (request) {
 
         const origin = originFromRequest(request);
         return withCors(request, new Response(JSON.stringify({
-            slug, programId, version, etag,
+            slug, programId, planId: programId, version, etag,
             latest:    `${origin}/d/${slug}`,
             versioned: `${origin}/d/${slug}@${version}`,
         }), { status: 200, headers: { "content-type": "application/json" } }));

@@ -30,6 +30,7 @@ test("metaToFeedItem: a full modern blob projects every field", () => {
         ],
     };
     assert.deepEqual(metaToFeedItem(meta, { origin: ORIGIN }), {
+        planId: "prog-1",
         programId: "prog-1",
         slug: "sprint-1",
         name: "Sprint",
@@ -169,6 +170,15 @@ test("metaToFeedItem: non-string languageCode → null, never thrown", () => {
     const meta = { programId: "prog-11", slug: "bad-lang", name: "Bad Lang", ownerId: "anon", languageCode: 42, versions: [] };
     const item = metaToFeedItem(meta, { origin: ORIGIN });
     assert.equal(item.languageCode, null);
+});
+
+// ---------- planId/programId dual field (ADR-0055) ----------
+
+test("metaToFeedItem: planId mirrors the stored programId", () => {
+    const meta = { programId: "prog-17", slug: "dual-id", name: "Dual Id", ownerId: "anon", versions: [] };
+    const item = metaToFeedItem(meta, { origin: ORIGIN });
+    assert.equal(item.planId, "prog-17");
+    assert.equal(item.programId, "prog-17");
 });
 
 // ---------- latestVersionEntry ----------

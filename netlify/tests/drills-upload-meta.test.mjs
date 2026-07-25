@@ -12,9 +12,11 @@ import {
     programInfoFromArchive,
     resolveCatalogFields,
     resolvePlaceName,
+    resolvePlanIdParam,
     resolvePublishPolicy,
     stripActorsAndValidate,
 } from "../functions/drills-upload.js";
+import { reportLegacyProgramIdUsage } from "../functions/_shared.js";
 
 const enc = (obj) => new TextEncoder().encode(JSON.stringify(obj));
 
@@ -455,4 +457,38 @@ test("stripActorsAndValidate: program read happens before actors are stripped, d
     assert.deepEqual(program.tags, []);
     const result = unzipSync(new Uint8Array(strippedBytes));
     assert.ok(!result["actors/a1.json"], "actors still stripped");
+});
+
+// ---------- resolvePlanIdParam (ADR-0055 — Program -> Plan wire rename) ----------
+
+test("resolvePlanIdParam: planId alone resolves to that value, not legacy", () => {
+    const qs = new URLSearchParams({ planId: "plan-1" });
+    assert.deepEqual(resolvePlanIdParam(qs), { programId: "plan-1", usedLegacyName: false });
+});
+
+test("resolvePlanIdParam: legacy programId alone resolves to that value, flagged legacy", () => {
+    const qs = new URLSearchParams({ programId: "prog-1" });
+    assert.deepEqual(resolvePlanIdParam(qs), { programId: "prog-1", usedLegacyName: true });
+});
+
+test("resolvePlanIdParam: both present prefers planId, not flagged legacy", () => {
+    const qs = new URLSearchParams({ planId: "plan-1", programId: "prog-1" });
+    assert.deepEqual(resolvePlanIdParam(qs), { programId: "plan-1", usedLegacyName: false });
+});
+
+test("resolvePlanIdParam: neither present → null, not flagged legacy", () => {
+    const qs = new URLSearchParams();
+    assert.deepEqual(resolvePlanIdParam(qs), { programId: null, usedLegacyName: false });
+});
+
+// ---------- reportLegacyProgramIdUsage (ADR-0055 — Sentry deprecation telemetry) ----------
+
+test("reportLegacyProgramIdUsage: no-op and never throws without SENTRY_DSN configured", async () => {
+    const original = process.env.SENTRY_DSN;
+    delete process.env.SENTRY_DSN;
+    try {
+        await assert.doesNotReject(() => reportLegacyProgramIdUsage({ function: "test", slug: "x" }));
+    } finally {
+        if (original !== undefined) process.env.SENTRY_DSN = original;
+    }
 });

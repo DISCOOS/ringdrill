@@ -27,7 +27,8 @@ const SPEC = {
             FeedItem: {
                 type: "object",
                 properties: {
-                    programId: { type: "string" },
+                    programId: { type: "string", deprecated: true, description: "Use planId. Kept for callers that haven't migrated yet (ADR-0055)." },
+                    planId: { type: "string" },
                     slug: { type: "string" },
                     name: { type: "string" },
                     tags: { type: "array", items: { type: "string" } },

@@ -71,6 +71,7 @@ export default async function (request) {
                             slug: s,
                             ownerId: rec.ownerId,
                             programId: rec.programId,
+                            planId: rec.programId,
                             name, tags,
                             published,
                             versionCount,
@@ -95,7 +96,7 @@ export default async function (request) {
                 const { ownerId, programId } = rec;
                 const { meta } = keysFor({ ownerId, programId, version: "latest" });
                 const m = await readJson(meta, null);
-                if (!m) return json({ slug, ownerId, programId, versions: [], published: false });
+                if (!m) return json({ slug, ownerId, programId, planId: programId, versions: [], published: false });
 
                 const versions = Array.isArray(m.versions)
                     ? m.versions.slice().sort((a,b)=>a.v.localeCompare(b.v, undefined, {numeric:true}))
@@ -103,7 +104,7 @@ export default async function (request) {
                 const latest = versions[versions.length - 1] || null;
 
                 return json({
-                    slug, ownerId, programId,
+                    slug, ownerId, programId, planId: programId,
                     name: m.name, tags: m.tags || [],
                     published: !!m.published,
                     versionCount: versions.length,

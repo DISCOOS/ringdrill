@@ -53,6 +53,7 @@ test("published items carry the widened shape", async () => {
     const { items } = await res.json();
     assert.equal(items.length, 1);
     assert.deepEqual(items[0], {
+        planId: "prog-1",
         programId: "prog-1",
         slug: "modern-plan",
         name: "Modern Plan",
