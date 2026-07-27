@@ -61,6 +61,57 @@ class RosterDetailEmpty extends StatelessWidget {
   }
 }
 
+/// The detail body for something that was opened but no longer exists —
+/// deleted from another pane, or reached through a stale link.
+///
+/// Distinct from the `*DetailEmpty` panes above: those mean "nothing selected
+/// yet", an ordinary resting state. This one means "what you asked for is
+/// gone", so it explains itself and offers [onClose] rather than dismissing
+/// the surface out from under the reader, who would otherwise see a view
+/// vanish with no idea why.
+class DetailGonePane extends StatelessWidget {
+  const DetailGonePane({
+    super.key,
+    required this.icon,
+    required this.message,
+    required this.onClose,
+  });
+
+  final IconData icon;
+  final String message;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 48, color: colorScheme.outline),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 20),
+            FilledButton.tonal(
+              onPressed: onClose,
+              child: Text(AppLocalizations.of(context)!.briefClose),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _DetailEmptyPane extends StatelessWidget {
   const _DetailEmptyPane({required this.icon, required this.label});
 
