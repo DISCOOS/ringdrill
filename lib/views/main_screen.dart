@@ -141,6 +141,19 @@ class _MainScreenState extends State<MainScreen>
   // Purely a wide-layout concern — the narrow layout never reads this.
   bool _masterCollapsed = false;
 
+  /// Whether the layout renders a master/detail pane — `useRail` in `build`,
+  /// recorded so the selection-memory *listeners* can see it too. They run off
+  /// `ValueNotifier`s, outside any `LayoutBuilder`, and have nothing else to
+  /// ask.
+  ///
+  /// Read only by [_restoreDetailSelection], where `false` fails safe: it means
+  /// "do not adopt a selection", and `build`'s auto-select then fills the pane
+  /// from the live `useRail` on the next frame. Anything that must *positively*
+  /// happen in the wide layout has to key off that live value instead — a field
+  /// written by an earlier build is stale on the frame after a hot reload, since
+  /// the `State` survives while the field reads its initializer.
+  bool _hasDetailPane = false;
+
   @override
   void initState() {
     super.initState();
@@ -316,18 +329,36 @@ class _MainScreenState extends State<MainScreen>
   }
 
   /// Restores the newly-active segment's remembered selection — or null when
-  /// it has none/no-longer-valid one — unless a modal (narrow) sheet is
-  /// currently up, which this has nothing to do with. Leaving the shared
-  /// target null (rather than clearing it unconditionally) lets `build`'s
-  /// auto-select check pick the segment's first item only when there is
-  /// nothing to restore, instead of always discarding the previous pick.
+  /// it has none/no-longer-valid one. Leaving the shared target null (rather
+  /// than clearing it unconditionally) lets `build`'s auto-select check pick
+  /// the segment's first item only when there is nothing to restore, instead
+  /// of always discarding the previous pick.
   void _onActiveSegmentChangedForSelectionMemory() {
-    if (_contextSheetController.isModal) return;
-    _contextSheetController.adoptWideSelection(
+    _restoreDetailSelection(
       _planPageController.rememberedTarget(
         _planPageController.activeSegment.value,
       ),
     );
+  }
+
+  /// Restores a remembered detail-pane selection: only when a detail pane
+  /// exists to show it, and never over a modal sheet, which owns its own target
+  /// lifecycle.
+  ///
+  /// Without the [_hasDetailPane] half, the compact layout adopted selections
+  /// into nothing — leaving the controller "open" on a target no surface was
+  /// rendering. `ContextSheetController.showOrReplace` tolerates that state now,
+  /// but it should not arise: it also fed
+  /// [_onDetailTargetChangedForSelectionMemory]'s wide sync branch, which can
+  /// `router.go` to another segment, so a compact-layout segment switch could
+  /// jump somewhere the user did not ask to go.
+  ///
+  /// Restore only. `build`'s auto-select-first stays on the live `useRail` — see
+  /// [_hasDetailPane].
+  void _restoreDetailSelection(ContextSheetTarget? target) {
+    if (!_hasDetailPane) return;
+    if (_contextSheetController.isModal) return;
+    _contextSheetController.adoptWideSelection(target);
   }
 
   /// Remembers whatever the wide detail pane ends up showing while the
@@ -353,7 +384,13 @@ class _MainScreenState extends State<MainScreen>
     if (_currentTab != 0) return;
     final target = _contextSheetController.targetNotifier.value;
     if (target == null) return;
-    if (_contextSheetController.isModal) {
+    // A modal sheet, or a layout with no detail pane at all: there is no master
+    // list to keep in sync, so just remember the pick under the active segment.
+    // `isModal` alone was the test here, which reads as "am I narrow?" but is
+    // not that question — the compact layout answers "no" whenever no modal is
+    // up, and fell into the wide sync branch below, whose `router.go` could then
+    // move the user to another segment.
+    if (_contextSheetController.isModal || !_hasDetailPane) {
       _planPageController.rememberSelection(target);
       return;
     }
@@ -445,6 +482,12 @@ class _MainScreenState extends State<MainScreen>
           final useRail =
               windowSizeClass.hasRail &&
               (constraints.maxWidth - railWidth - masterWidth) >= 360;
+          // Recorded, not derived twice: this is the single place that decides
+          // whether a detail pane exists, and the selection-memory listeners
+          // have no LayoutBuilder of their own to ask. A plain field write
+          // during build is safe — no setState, and every reader runs after a
+          // frame has been laid out.
+          _hasDetailPane = useRail;
           // The Map tab (index 1) is rendered without an AppBar so the map
           // gets the full height. The wide/master-detail layout already does
           // this via [WideShell]'s `currentTab == 1` branch; mirror it here
@@ -471,6 +514,13 @@ class _MainScreenState extends State<MainScreen>
               }
               final target = page.controller.firstDetailTarget(context);
               if (target != null) {
+                // Deliberately NOT via _restoreDetailSelection: this path is
+                // already inside `useRail`, the live value from this layout
+                // pass. Gating it on the recorded [_hasDetailPane] instead made
+                // auto-select depend on a field having been written by an
+                // earlier build — which a hot reload breaks, since the State
+                // survives while the field reads its initializer. The symptom
+                // was an empty detail pane until the user picked a row by hand.
                 _contextSheetController.adoptWideSelection(target);
               }
             });
