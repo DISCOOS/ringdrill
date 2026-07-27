@@ -2076,6 +2076,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get rollupEmptyPreview => 'Ingenting å forhåndsvise ennå';
 
   @override
+  String get exerciseDescriptionCardTitle => 'Øvingsbeskrivelse';
+
+  @override
   String get postDescriptionCardTitle => 'Postbeskrivelse';
 
   @override

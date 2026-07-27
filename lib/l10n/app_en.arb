@@ -2124,6 +2124,10 @@
     "description": "Placeholder in the base section's preview (DESIGN-010, revised 2026-07-10) when none of the entity's sections have content to show yet."
   },
 
+  "exerciseDescriptionCardTitle": "Exercise Description",
+  "@exerciseDescriptionCardTitle": {
+    "description": "Title of the exercise-description rollup card in the coordinator's Info segment — the exercise's own markdown sections (method, order format, comms, learning goals, training focus, execution tips). Mirrors postDescriptionCardTitle for a station."
+  },
   "postDescriptionCardTitle": "Post Description",
   "@postDescriptionCardTitle": {
     "description": "DESIGN-010 stage 3b: the Post viewer's first card — the resolved lead description plus its labeled sections."

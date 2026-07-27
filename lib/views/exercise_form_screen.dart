@@ -67,10 +67,23 @@ class ExerciseFormScreen extends StatefulWidget {
     this.exercise,
     this.numberOfTeams,
     this.variables = const <DrillVariable>[],
+    this.initialSectionId,
   });
 
   final Exercise? exercise;
   final int? numberOfTeams;
+
+  /// Section to open on. Null opens the base section, and so does any id that
+  /// is not one of the [FormSection]s below — [SectionNavigatedForm] falls back
+  /// to the first rather than failing.
+  ///
+  /// That fallback is what the coordinator's exercise-description card relies
+  /// on: it passes the tapped block's own id (`method`, `comms`, …), which are
+  /// optional field sections *inside* the base section rather than sections of
+  /// their own, so the editor lands on the section that holds them. The station
+  /// viewer's description card works the same way against
+  /// `StationFormScreen`.
+  final String? initialSectionId;
 
   /// The plan's declared variables (ADR-0046), read-only here — this editor
   /// edits an `Exercise`, not the `Plan`, so it cannot create, rename,
@@ -336,7 +349,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       key: _formKey,
       child: SectionNavigatedForm(
         title: widget.exercise == null ? l.createExercise : l.editExercise,
-        initialSectionId: 'exercise',
+        initialSectionId: widget.initialSectionId ?? 'exercise',
         sections: [
           FormSection(
             id: 'exercise',

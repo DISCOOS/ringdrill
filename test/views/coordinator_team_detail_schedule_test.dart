@@ -116,23 +116,21 @@ void main() {
       await tester.tap(find.byIcon(Icons.group).first);
       await tester.pumpAndSettle();
 
-      // Expand the (only) team row. Not the sole `expand_more` icon any
-      // more (DESIGN-010 follow-up: collapsible-section-cards) — the
-      // always-visible round table above the segmented selector is itself
-      // a collapsible ScheduleCard now and shows its own chevron first;
-      // `.last` is the team tile's own, rendered after it.
+      // Expand the (only) team row. The rotation timetable is no longer
+      // pinned above the selector — it moved into the Info segment — so on
+      // the Teams segment the team tile's own chevron is the only one.
       await tester.tap(find.byIcon(Icons.expand_more).last);
       await tester.pumpAndSettle();
 
       // Renders through the shared ScheduleCard (CardSectionHeader + bordered
       // ScheduleTable) — same as the Post/Spill viewers and the other team
-      // surfaces — not the old bare per-round Card-wrapped rows. The
-      // always-visible round table above the segmented selector is now
-      // *also* a ScheduleCard (B1), so there are two: index 0 is that round
-      // table, index 1 is this test's team-detail card.
+      // surfaces — not the old bare per-round Card-wrapped rows. The rotation
+      // timetable used to be a second ScheduleCard pinned above the selector;
+      // it now lives in the Info segment, so the team-detail card is the only
+      // one on this segment.
       final scheduleCardFinders = find.byType(ScheduleCard);
-      expect(scheduleCardFinders, findsNWidgets(2));
-      final scheduleCardFinder = scheduleCardFinders.at(1);
+      expect(scheduleCardFinders, findsOneWidget);
+      final scheduleCardFinder = scheduleCardFinders.first;
       expect(
         find.descendant(
           of: scheduleCardFinder,
@@ -142,8 +140,7 @@ void main() {
       );
       expect(
         find.text(l10n.stationTimingCardTitle.toUpperCase()),
-        // Both ScheduleCards share the same section title.
-        findsNWidgets(2),
+        findsOneWidget,
         reason: 'the ScheduleCard section header carries the shared title',
       );
 
@@ -159,16 +156,11 @@ void main() {
       );
 
       // Both stations' rounds are listed, in order (now prefixed with the
-      // formatted post number, e.g. "1.1 Post 1") — only the team's own
-      // ScheduleCard names stations, so this is unambiguous even though the
-      // always-visible round table above the segmented selector shows round
-      // labels ("Round 1"/"Round 2"), not station names.
+      // formatted post number, e.g. "1.1 Post 1").
       expect(find.textContaining('Post 1'), findsOneWidget);
       expect(find.textContaining('Post 2'), findsOneWidget);
 
-      // The team-detail table's own header row, scoped to the card so it
-      // isn't confused with the round table's identical DRILL/EVAL/ROLL
-      // header above the selector.
+      // The team-detail table's own header row, still scoped to the card.
       expect(
         find.descendant(
           of: tableWithinCard,

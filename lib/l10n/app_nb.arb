@@ -1094,6 +1094,7 @@
     "description": "Plassholder i base-seksjonens forhåndsvisning (DESIGN-010, revidert 2026-07-10) når ingen av enhetens seksjoner har innhold å vise ennå."
   },
 
+  "exerciseDescriptionCardTitle": "Øvingsbeskrivelse",
   "postDescriptionCardTitle": "Postbeskrivelse",
   "@postDescriptionCardTitle": {
     "description": "DESIGN-010 stage 3b: Post-viewerens første kort — den oppløste ingressen pluss dens merkede seksjoner."

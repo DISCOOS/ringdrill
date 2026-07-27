@@ -2079,6 +2079,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rollupEmptyPreview => 'Nothing to preview yet';
 
   @override
+  String get exerciseDescriptionCardTitle => 'Exercise Description';
+
+  @override
   String get postDescriptionCardTitle => 'Post Description';
 
   @override

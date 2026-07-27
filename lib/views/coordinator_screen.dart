@@ -33,6 +33,7 @@ import 'package:ringdrill/views/team_form_screen.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/exercise_description_card.dart';
 import 'package:ringdrill/views/widgets/exercise_mini_map.dart'
     show exerciseStationMarkers, ExerciseMapSheetHeader;
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
@@ -77,7 +78,7 @@ class CoordinatorScreen extends StatefulWidget {
 /// at the top of the body. [map] is only offered in the compact/medium
 /// bodies — the expanded body always shows the map beside the lists, so it
 /// has no map segment.
-enum _CoordinatorView { stations, teams, map }
+enum _CoordinatorView { info, stations, teams, map }
 
 /// Entries in the appbar overflow menu. Edit and delete used to live as
 /// standalone icon buttons next to brief and the notification bell, but
@@ -271,7 +272,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   }
 
   /// Function to handle editing the exercise
-  void _editExercise(BuildContext context, Exercise exercise) async {
+  void _editExercise(
+    BuildContext context,
+    Exercise exercise, {
+    String? initialSectionId,
+  }) async {
     // Captured before the await: in compact layout openFormSurface dismisses
     // the hosting context sheet around the form push, which disposes this
     // State — the context is gone by the time the form pops. The save must
@@ -286,6 +291,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         exercise: exercise,
         numberOfTeams: numberOfTeams == 0 ? null : numberOfTeams,
         variables: _planService.activePlan?.variables ?? const [],
+        initialSectionId: initialSectionId,
       ),
     );
     switch (result) {
@@ -533,7 +539,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                 localizations: localizations,
               );
             }
-            final sideBySideTop = windowSize == WindowSizeClass.medium;
             // The Map segment pins the top section + selector and lets the
             // map fill the rest to the bottom (no scroll, no fixed-height
             // gap, and the bottom-right FABs anchor to the true bottom). The
@@ -544,7 +549,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                 event,
                 showHero: showHero,
                 localizations: localizations,
-                sideBySideTop: sideBySideTop,
               );
             }
             return SingleChildScrollView(
@@ -554,7 +558,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                 event,
                 showHero: showHero,
                 localizations: localizations,
-                sideBySideTop: sideBySideTop,
               ),
             );
           },
@@ -579,26 +582,24 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   }
 
   /// Compact and medium body (B2): one scrolling column — top section,
-  /// segment (with the `Kart` option), then the selected list. [sideBySideTop]
-  /// is medium's only difference from compact: with the extra width, the
-  /// status and schedule cards share a row instead of stacking.
+  /// segment (with the `Kart` option), then the selected segment.
   Widget _buildStackedBody(
     Exercise exercise,
     ExerciseEvent event, {
     required bool showHero,
     required AppLocalizations localizations,
-    required bool sideBySideTop,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        sideBySideTop
-            ? _buildSideBySideTopSection(exercise, event, showHero: showHero)
-            : _buildTopSection(exercise, event, showHero: showHero),
-        const SizedBox(height: 16),
+        if (showHero) ...[
+          _buildTopSection(exercise, event, showHero: showHero),
+          const SizedBox(height: 16),
+        ],
         _buildViewSelector(localizations, exercise, includeMap: true),
         const SizedBox(height: 8),
         switch (_view) {
+          _CoordinatorView.info => _buildInfoSegment(exercise, event),
           _CoordinatorView.stations => _buildStationList(exercise, event),
           _CoordinatorView.teams => _buildTeamList(exercise, event),
           // The map segment never reaches here — `_buildBody` routes it to
@@ -606,6 +607,27 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           // this scrolling stacked body.
           _CoordinatorView.map => const SizedBox.shrink(),
         },
+      ],
+    );
+  }
+
+  /// The Info segment: the exercise's own description sections, then the
+  /// rotation timetable.
+  ///
+  /// Both used to be out of reach here — the timetable was pinned to the top of
+  /// every segment, and the description was only in the brief or the editor.
+  /// Mirrors StationScreen's Info segment (description card, then timing).
+  Widget _buildInfoSegment(Exercise exercise, ExerciseEvent event) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ExerciseDescriptionCard(
+          exercise: exercise,
+          onTapSection: (id) =>
+              _editExercise(context, exercise, initialSectionId: id),
+        ),
+        const SizedBox(height: 12),
+        _buildScheduleCard(exercise, event),
       ],
     );
   }
@@ -624,7 +646,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     ExerciseEvent event, {
     required bool showHero,
     required AppLocalizations localizations,
-    required bool sideBySideTop,
   }) {
     final map = _buildExercisePositionMap(exercise, event);
     return LayoutBuilder(
@@ -641,14 +662,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              sideBySideTop
-                  ? _buildSideBySideTopSection(
-                      exercise,
-                      event,
-                      showHero: showHero,
-                    )
-                  : _buildTopSection(exercise, event, showHero: showHero),
-              const SizedBox(height: 16),
+              if (showHero) ...[
+                _buildTopSection(exercise, event, showHero: showHero),
+                const SizedBox(height: 16),
+              ],
               _buildViewSelector(localizations, exercise, includeMap: true),
               const SizedBox(height: 8),
               SizedBox(
@@ -659,27 +676,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           ),
         );
       },
-    );
-  }
-
-  /// Medium's top section (B2): the status card and schedule card side by
-  /// side, both full "standard" cards (no shrink-wrap) — medium already has
-  /// the room `WindowSizeClass.medium` implies, so no extra width threshold
-  /// is needed here. Falls back to just the schedule card before start,
-  /// same as the stacked variant.
-  Widget _buildSideBySideTopSection(
-    Exercise exercise,
-    ExerciseEvent event, {
-    required bool showHero,
-  }) {
-    if (!showHero) return _buildScheduleCard(exercise, event);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: _buildScheduleCard(exercise, event)),
-        const SizedBox(width: 16),
-        Expanded(child: _buildCombinedHeroCard(exercise, event)),
-      ],
     );
   }
 
@@ -705,17 +701,22 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildTopSection(exercise, event, showHero: showHero),
-                  const SizedBox(height: 16),
+                  if (showHero) ...[
+                    _buildTopSection(exercise, event, showHero: showHero),
+                    const SizedBox(height: 16),
+                  ],
                   _buildViewSelector(
                     localizations,
                     exercise,
                     includeMap: false,
                   ),
                   const SizedBox(height: 8),
-                  _viewWithoutMap == _CoordinatorView.stations
-                      ? _buildStationList(exercise, event)
-                      : _buildTeamList(exercise, event),
+                  switch (_viewWithoutMap) {
+                    _CoordinatorView.info => _buildInfoSegment(exercise, event),
+                    _CoordinatorView.teams => _buildTeamList(exercise, event),
+                    // `_viewWithoutMap` never yields `map` here.
+                    _ => _buildStationList(exercise, event),
+                  },
                 ],
               ),
             ),
@@ -745,19 +746,20 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     final button = SegmentedButton<_CoordinatorView>(
       segments: [
         ButtonSegment<_CoordinatorView>(
+          value: _CoordinatorView.info,
+          label: Text(localizations.infoTab),
+          icon: const Icon(Icons.info_outline),
+        ),
+        ButtonSegment<_CoordinatorView>(
           value: _CoordinatorView.stations,
-          label: Text(
-            '${localizations.stationsTab}'
-            ' (${exercise.stations.length})',
-          ),
+          label: Text(localizations.stationsTab),
           icon: const Icon(Icons.location_on),
         ),
         ButtonSegment<_CoordinatorView>(
+          // Plural-aware label, but no parenthetical count: with four segments
+          // the row has to stay narrow enough for a compact phone.
           value: _CoordinatorView.teams,
-          label: Text(
-            '${localizations.team(exercise.numberOfTeams)}'
-            ' (${exercise.numberOfTeams})',
-          ),
+          label: Text(localizations.team(exercise.numberOfTeams)),
           icon: const Icon(Icons.group),
         ),
         if (includeMap)
@@ -911,20 +913,24 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
-  /// Top of the body: the same shared status-card + schedule-card stack
-  /// the Post/Lag/Spill players use (DESIGN-010 follow-up), full width of
-  /// their container. `showHero` is only true once the coordinator has
-  /// started the exercise — before start there's nothing to show "now /
-  /// next" for, so only the schedule card is shown.
+  /// Top of the body: the live status card, pinned above the segment selector
+  /// the way StationScreen pins its own — so "now / next" stays visible
+  /// whichever segment the coordinator is looking at.
+  ///
+  /// `showHero` is only true once the exercise has started; before that there
+  /// is nothing to report and this collapses away entirely, leaving the
+  /// selector at the top. The rotation timetable used to live here too, always
+  /// occupying the top of the screen — it is now a card in the Info segment
+  /// instead, which is what freed this space for the lists.
   Widget _buildTopSection(
     Exercise exercise,
     ExerciseEvent event, {
     required bool showHero,
   }) {
-    // Play and stop now live in the docked mini-player (or, in
-    // master-detail, in the master column), so the top section is purely
-    // informational in every layout.
-    return _buildTopSectionContent(exercise, event, showHero: showHero);
+    // Play and stop live in the docked mini-player (or, in master-detail, in
+    // the master column), so the top section is purely informational.
+    if (!showHero) return const SizedBox.shrink();
+    return _buildCombinedHeroCard(exercise, event);
   }
 
   /// Override for [DrillMiniPlayer]'s central area (replacing the default
@@ -1139,22 +1145,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     final m = (s ~/ 60).toString().padLeft(2, '0');
     final ss = (s % 60).toString().padLeft(2, '0');
     return '$m:$ss';
-  }
-
-  Widget _buildTopSectionContent(
-    Exercise exercise,
-    ExerciseEvent event, {
-    required bool showHero,
-  }) {
-    if (!showHero) return _buildScheduleCard(exercise, event);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildCombinedHeroCard(exercise, event),
-        const SizedBox(height: 12),
-        _buildScheduleCard(exercise, event),
-      ],
-    );
   }
 
   /// The coordinator's [PlayerStatusCard] — no "Nå" cell (the current

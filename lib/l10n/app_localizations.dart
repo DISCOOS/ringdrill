@@ -3548,6 +3548,12 @@ abstract class AppLocalizations {
   /// **'Nothing to preview yet'**
   String get rollupEmptyPreview;
 
+  /// Title of the exercise-description rollup card in the coordinator's Info segment — the exercise's own markdown sections (method, order format, comms, learning goals, training focus, execution tips). Mirrors postDescriptionCardTitle for a station.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise Description'**
+  String get exerciseDescriptionCardTitle;
+
   /// DESIGN-010 stage 3b: the Post viewer's first card — the resolved lead description plus its labeled sections.
   ///
   /// In en, this message translates to:
