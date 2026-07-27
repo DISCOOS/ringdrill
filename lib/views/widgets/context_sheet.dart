@@ -262,6 +262,31 @@ class ContextSheetController {
     _activeScope?.setTarget(target);
   }
 
+  /// Navigates to [target] whether or not a sheet is currently open.
+  ///
+  /// [replace] alone asserts on a closed sheet, and it has no [BuildContext] to
+  /// recover with — which is why it cannot. But its callers can reach a closed
+  /// controller legitimately: [ContextSheet.of] falls back to the static
+  /// [currentController] when there is no `ContextSheet` ancestor, so a screen
+  /// pushed as a plain route (a cold deep link to `/plan/:uuid/exercise/:id`,
+  /// say) hands `replace` a controller that was never opened. That is how
+  /// picking an exercise in the docked mini player could crash.
+  ///
+  /// Keeps [replace]'s exact behaviour while open — deliberately *not* just
+  /// delegating to [show], which in the wide layout would also re-latch
+  /// `_activeScope` and null `_navigator`, losing a modal sitting above a
+  /// detail pane.
+  Future<void> showOrReplace(
+    BuildContext context,
+    ContextSheetTarget target,
+  ) async {
+    if (_isOpen) {
+      replace(target);
+      return;
+    }
+    await show(context, target);
+  }
+
   void close() {
     // In master-detail the controller's _isOpen can desync with the UI
     // (e.g. exercise lifecycle events manipulate state without calling

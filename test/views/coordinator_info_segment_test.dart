@@ -8,7 +8,10 @@ import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
+import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_description_card.dart';
+import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,6 +21,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// live together in an Info segment, mirroring StationScreen's.
 const _planUuid = 'prog-coordinator-info';
 const _exerciseUuid = 'ex-coordinator-info';
+const _otherExerciseUuid = 'ex-coordinator-info-2';
 
 Exercise _exercise() => Exercise(
   uuid: _exerciseUuid,
@@ -42,6 +46,11 @@ Exercise _exercise() => Exercise(
   methodMd: 'Metode: gå i linje.',
   commsMd: 'Samband: kanal 5.',
 );
+
+/// A second exercise, so the mini player's picker has something to switch *to*
+/// — picking the current one returns null and never calls onPickExercise.
+Exercise _otherExercise() =>
+    _exercise().copyWith(uuid: _otherExerciseUuid, name: 'Other Exercise');
 
 /// An exercise whose markdown exercises the full resolve cascade an
 /// exercise-scope field is allowed to reach (docs/variables.md): the exercise's
@@ -78,6 +87,7 @@ Future<void> _seedAndInit([Exercise? exercise]) async {
   await repo.savePlanShell(_shell());
   await repo.setActivePlanUuid(_planUuid);
   await repo.saveExercise(exercise ?? _exercise());
+  await repo.saveExercise(_otherExercise());
   await PlanService().init();
 }
 
@@ -171,5 +181,52 @@ void main() {
     expect(find.textContaining('Frekvens: Kanal 6.'), findsOneWidget);
     // And nothing is left as a literal token.
     expect(find.textContaining('{{'), findsNothing);
+  });
+
+  // Regression: picking a different exercise in the docked mini player called
+  // ContextSheetController.replace, which asserts on a closed sheet. On a plain
+  // pushed route (a cold deep link, or this bare harness) there is no
+  // ContextSheet ancestor, so ContextSheet.of falls back to the never-opened
+  // static controller and the assert fired.
+  testWidgets('picking an exercise in the mini player does not require an open '
+      'sheet', (tester) async {
+    // A ContextSheet is present (as the app shell always provides one) but was
+    // never opened — the state a plain pushed route leaves it in. That is the
+    // reported crash: ContextSheet.of finds this controller, and replace
+    // asserts because it is not open.
+    final controller = ContextSheetController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      _harness(
+        ContextSheet(
+          controller: controller,
+          child: const CoordinatorScreen(uuid: _exerciseUuid),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The idle badge in the docked mini player opens the exercise picker.
+    final miniPlayer = find.byType(DrillMiniPlayer);
+    expect(miniPlayer, findsOneWidget, reason: 'mini player must be docked');
+    final badge = find.descendant(
+      of: miniPlayer,
+      matching: find.byType(ExerciseNumberBadge),
+    );
+    expect(badge, findsOneWidget, reason: 'idle badge must be tappable');
+    await tester.tap(badge);
+    await tester.pumpAndSettle();
+    expect(
+      find.text(l10n.pickerSelectExerciseTitle),
+      findsOneWidget,
+      reason: 'the exercise picker must open',
+    );
+
+    // Pick a *different* exercise — picking the current one returns null and
+    // never reaches onPickExercise.
+    await tester.tap(find.text('Other Exercise').last);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
   });
 }

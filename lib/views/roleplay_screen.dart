@@ -417,9 +417,16 @@ class _RolePlayScreenState extends State<RolePlayScreen>
                     unawaited(HapticFeedback.mediumImpact());
                     ExerciseService().start(exercise);
                   },
-                  onPickExercise: (picked) => ContextSheet.of(
-                    context,
-                  ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
+                  // showOrReplace, not replace: this screen can be a plain
+                  // pushed route (a cold deep link) where the shell's
+                  // controller exists but was never opened, and replace
+                  // asserts on that.
+                  onPickExercise: (picked) => unawaited(
+                    ContextSheet.of(context).showOrReplace(
+                      context,
+                      ExerciseSheetTarget(exerciseUuid: picked.uuid),
+                    ),
+                  ),
                 )
               : null,
         );

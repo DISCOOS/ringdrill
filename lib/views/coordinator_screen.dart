@@ -519,9 +519,15 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                 unawaited(HapticFeedback.mediumImpact());
                 _exerciseService.start(exercise);
               },
-              onPickExercise: (picked) => ContextSheet.of(
-                context,
-              ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
+              // showOrReplace, not replace: this screen can be a plain pushed
+              // route (a cold deep link) where the shell's controller exists but
+              // was never opened, and replace asserts on that.
+              onPickExercise: (picked) => unawaited(
+                ContextSheet.of(context).showOrReplace(
+                  context,
+                  ExerciseSheetTarget(exerciseUuid: picked.uuid),
+                ),
+              ),
               bodyBuilder: _buildMiniPlayerBody,
             )
           : _buildExerciseStatus(event),
