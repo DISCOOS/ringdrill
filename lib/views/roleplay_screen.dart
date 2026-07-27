@@ -18,9 +18,12 @@ import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
+import 'package:ringdrill/views/loader_state.dart';
 import 'package:ringdrill/views/map_view.dart' show MapConfig;
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
+import 'package:ringdrill/views/shell/closable_surface.dart';
+import 'package:ringdrill/views/shell/detail_empty_pane.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
@@ -40,8 +43,8 @@ import 'package:ringdrill/views/widgets/map_legend.dart';
 import 'package:ringdrill/views/widgets/map_placeholder.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
-import 'package:ringdrill/views/widgets/role_mini_map.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
+import 'package:ringdrill/views/widgets/role_mini_map.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
 import 'package:ringdrill/views/widgets/roleplay_scope.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
@@ -62,9 +65,9 @@ import 'package:ringdrill/views/widgets/station_scope.dart';
 /// TODO: When the observer-player shell (DESIGN-001) lands, a Role tab will
 /// surface these same fields in the player context via a separate route.
 class RolePlayScreen extends StatefulWidget {
-  const RolePlayScreen({super.key, required this.rolePlayUuid});
+  const RolePlayScreen({super.key, required this.uuid});
 
-  final String rolePlayUuid;
+  final String uuid;
 
   @override
   State<RolePlayScreen> createState() => _RolePlayScreenState();
@@ -76,29 +79,83 @@ class RolePlayScreen extends StatefulWidget {
 /// selector always carries both segments and only the medium body renders it).
 enum _RolePlayDetailView { info, map }
 
+/// What this screen shows: the roleplay plus the parent exercise it is scoped
+/// to. Both are needed together — a roleplay whose exercise no longer exists
+/// has nothing to render — so they are looked up as one unit.
+class _RolePlaySubject {
+  const _RolePlaySubject(this.rolePlay, this.exercise);
+
+  final RolePlay rolePlay;
+  final Exercise exercise;
+}
+
 class _RolePlayScreenState extends State<RolePlayScreen>
-    with SubscriptionBag<RolePlayScreen> {
+    with
+        SubscriptionBag<RolePlayScreen>,
+        ClosableSurface<RolePlayScreen>,
+        Loader<RolePlayScreen, _RolePlaySubject, PlanEvent> {
   final _planService = PlanService();
+  final _exerciseService = ExerciseService();
 
   _RolePlayDetailView _view = _RolePlayDetailView.info;
 
-  RolePlay? _rolePlay;
+  bool _isStarted = false;
 
   @override
   void initState() {
     super.initState();
-    _load();
+
+    load();
+
+    // Listen to ExerciseService state changes. Re-read isStartedOn
+    // unconditionally so an event from *another* exercise starting correctly
+    // flips this viewer's own _isStarted back to false — same reasoning as
+    // CoordinatorScreen's listener.
+    listen(_exerciseService.events, (_) {
+      if (!mounted) return;
+      setState(onLoaded);
+    });
+
     // Refresh on any plan mutation (cast/edit from the roster or another
     // pane, not just this viewer's own actions) — mirrors CoordinatorScreen.
-    listen(_planService.events, (_) {
-      if (mounted) _load();
+    listen(_planService.events, (event) {
+      if (!mounted) return;
+      // An event's `exercise` is this roleplay's *parent*; widget.uuid is the
+      // roleplay's own uuid and would never match one. Roleplay-carrying
+      // events (cast/edit) are matched on their rolePlay instead.
+      final exerciseUuid = _exerciseUuid;
+      final directMatch =
+          (exerciseUuid != null && event.exercise?.uuid == exerciseUuid) ||
+          event.rolePlay?.uuid == widget.uuid;
+      final isRefresh = event.type == PlanEventType.planRefreshed;
+      if (directMatch || isRefresh) {
+        reload(event);
+      }
     });
   }
 
-  void _load() {
-    setState(() {
-      _rolePlay = _planService.getRolePlay(widget.rolePlayUuid);
-    });
+  /// The parent exercise's uuid while the roleplay loads, else null. Incoming
+  /// events are keyed by *exercise*, so this — never `widget.uuid`, which is
+  /// this roleplay's own uuid — is what they must be matched against.
+  String? get _exerciseUuid => switch (loadState) {
+    Loaded<_RolePlaySubject>(:final value) => value.exercise.uuid,
+    NotFound<_RolePlaySubject>() => null,
+  };
+
+  @override
+  void onLoaded() {
+    final uuid = _exerciseUuid;
+    _isStarted = uuid != null && _exerciseService.isStartedOn(uuid);
+  }
+
+  @override
+  _RolePlaySubject? onLoad(PlanEvent? event) {
+    final rolePlay = _planService.getRolePlay(widget.uuid);
+    if (rolePlay == null) return null;
+    final exercise =
+        event?.exercise ?? _planService.getExercise(rolePlay.exerciseUuid);
+    if (exercise == null) return null;
+    return _RolePlaySubject(rolePlay, exercise);
   }
 
   /// Opens the marker (cast) picker for [rolePlay] and applies the resulting
@@ -107,23 +164,22 @@ class _RolePlayScreenState extends State<RolePlayScreen>
   Future<void> _openCastPicker(RolePlay rolePlay) async {
     final localizations = AppLocalizations.of(context)!;
     await openCastPickerAndApply(context, localizations, rolePlay);
-    if (mounted) _load();
+    reload();
   }
 
   /// Opens [RolePlayFormScreen] for editing, optionally jumping straight to
   /// [initialSectionId] — used by the AppBar pencil (no section) and by
-  /// tapping a Play-card section (its matching form section). Reloads on
-  /// save. No-op when the roleplay is not resolvable.
-  Future<void> _openRolePlayForm({String? initialSectionId}) async {
+  /// tapping a Play-card section (its matching form section). Reloads on save.
+  Future<void> _openRolePlayForm(
+    _RolePlaySubject subject, {
+    String? initialSectionId,
+  }) async {
     final localizations = AppLocalizations.of(context)!;
-    final rolePlay = _rolePlay;
-    if (rolePlay == null) return;
-    final exercise = _planService.getExercise(rolePlay.exerciseUuid);
     final result = await openFormSurface<RolePlayFormResult>(
       context,
       builder: (_) => RolePlayFormScreen(
-        rolePlay: rolePlay,
-        exercise: exercise,
+        rolePlay: subject.rolePlay,
+        exercise: subject.exercise,
         variables: _planService.activePlan?.variables ?? const [],
         initialSectionId: initialSectionId,
         isExisting: true,
@@ -140,48 +196,31 @@ class _RolePlayScreenState extends State<RolePlayScreen>
           additions,
         );
         await _planService.saveRolePlay(localizations, rolePlay);
-        if (mounted) _load();
+        reload();
       case RolePlayFormDelete(:final rolePlay):
         await _planService.deleteRolePlay(rolePlay.uuid);
-        if (!mounted) return;
-        // The roleplay this viewer showed is gone — close the viewer.
-        if (MasterDetailScope.maybeOf(context) != null) {
-          ContextSheet.of(context).close();
-        } else {
-          Navigator.pop(context);
-        }
+        close();
     }
   }
 
   /// Deletes the shown roleplay after confirmation (the viewer's delete icon),
   /// then closes the viewer — the same shared confirm the roleplay form uses.
-  Future<void> _confirmDeleteFromViewer() async {
-    final rolePlay = _rolePlay;
-    if (rolePlay == null) return;
+  Future<void> _confirmDeleteFromViewer(RolePlay rolePlay) async {
     if (!await confirmDeleteRolePlay(context, rolePlay) || !mounted) return;
     await _planService.deleteRolePlay(rolePlay.uuid);
-    if (!mounted) return;
-    if (MasterDetailScope.maybeOf(context) != null) {
-      ContextSheet.of(context).close();
-    } else {
-      Navigator.pop(context);
-    }
+    close();
   }
 
   /// The effective plan-variable map (ADR-0046) at [exercise]'s scope,
   /// optionally narrowed to [station]'s. Empty when there is no active
   /// plan.
   Map<String, String> _effectiveVariables(
-    Exercise? exercise, {
+    Exercise exercise, {
     Station? station,
   }) {
     final plan = _planService.activePlan;
     if (plan == null) return const {};
-    return effectivePlanVariables(
-      plan,
-      exercise: exercise,
-      station: station,
-    );
+    return effectivePlanVariables(plan, exercise: exercise, station: station);
   }
 
   /// The scenario [Person] this roleplay portrays, via `personRef`, or
@@ -204,175 +243,191 @@ class _RolePlayScreenState extends State<RolePlayScreen>
     return station.locations.where((l) => l.slug == locSlug).firstOrNull;
   }
 
+  /// The event to render for [exercise]: the service's live one when it
+  /// belongs to *this* roleplay's parent exercise, else a pending placeholder.
+  ///
+  /// Matching is against [exercise]'s uuid, never `widget.uuid` — that is the
+  /// roleplay's own uuid and can never equal an exercise's, so comparing it
+  /// here would silently pin the view to "not started" forever.
+  ExerciseEvent _ensureEvent(Exercise exercise, [ExerciseEvent? event]) {
+    final last = event ?? _exerciseService.last;
+
+    // Events from a different running exercise must not bleed into this
+    // viewer's progress colours and phase display.
+    if (last != null && last.exercise.uuid == exercise.uuid) return last;
+
+    // Not started yet
+    return ExerciseEvent.pending(exercise);
+  }
+
+  /// The roleplay is gone (deleted elsewhere, or a stale deep link).
+  ///
+  /// Deliberately does *not* dismiss itself: a view that disappears on its own
+  /// leaves the reader wondering what happened, and in master/detail it would
+  /// silently retract the pane they were just looking at. Explain instead, and
+  /// let them close it — via the pane's own action or the AppBar leading.
   @override
-  Widget build(BuildContext context) {
+  Widget buildNotFound(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(leading: MasterDetailLeading(onClose: close)),
+      body: DetailGonePane(
+        icon: Icons.theater_comedy,
+        message: AppLocalizations.of(context)!.detailGoneRolePlay,
+        onClose: close,
+      ),
+    );
+  }
+
+  @override
+  Widget buildLoaded(BuildContext context, _RolePlaySubject subject) {
     final l10n = AppLocalizations.of(context)!;
-    final rolePlay = _rolePlay;
+    final rolePlay = subject.rolePlay;
+    final exercise = subject.exercise;
+    return StreamBuilder(
+      initialData: _ensureEvent(exercise),
+      stream: _exerciseService.events,
+      builder: (context, asyncSnapshot) {
+        final event = _ensureEvent(exercise, asyncSnapshot.data);
+        // RolePlay resolves at its station scope (ADR-0046, DESIGN-008
+        // follow-up 07): the station it's assigned to, or just the exercise
+        // when unassigned/out of range. Both are legitimate — an imported or
+        // legacy roleplay can carry no stationIndex at all — so `station`
+        // stays nullable all the way down rather than being forced here.
+        final stations = exercise.stations;
+        final stationIndex = rolePlay.stationIndex;
+        final station =
+            (stationIndex != null &&
+                stationIndex >= 0 &&
+                stationIndex < stations.length)
+            ? stations[stationIndex]
+            : null;
+        final roleOverrides = _effectiveVariables(exercise, station: station);
+        // The role's own number (e.g. "1.1-1"), matching the badge every
+        // roleplay list row already shows — so the AppBar title and the map
+        // sheet's header (built in _buildPositionPanel) both name "which role
+        // this is", not just its (possibly reused) display name.
+        final stationNumberFormat =
+            _planService.activePlan?.stationNumberFormat ??
+            StationNumberFormat.dotted;
+        final exerciseNumber = _planService.getExerciseNumber(exercise.uuid);
+        final roleNumber = stationIndex == null
+            ? 0
+            : _planService.roleNumberAtStation(rolePlay, stationIndex);
+        final roleLabel = rolePlay.numberLabel(
+          stationNumberFormat,
+          exerciseNumber: exerciseNumber,
+          roleNumber: roleNumber,
+        );
 
-    if (rolePlay == null) {
-      return Scaffold(
-        appBar: AppBar(
-          leading: MasterDetailLeading(onClose: () => Navigator.pop(context)),
-        ),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    final exercise = _planService.getExercise(rolePlay.exerciseUuid);
-    // RolePlay resolves at its station scope (ADR-0046, DESIGN-008
-    // follow-up 07): the station it's assigned to, or just the exercise
-    // when unassigned/out of range.
-    final stations = exercise?.stations;
-    final stationIndex = rolePlay.stationIndex;
-    final station =
-        (stations != null &&
-            stationIndex != null &&
-            stationIndex >= 0 &&
-            stationIndex < stations.length)
-        ? stations[stationIndex]
-        : null;
-    final roleOverrides = _effectiveVariables(exercise, station: station);
-    // The role's own number (e.g. "1.1-1"), matching the badge every
-    // roleplay list row already shows — so the AppBar title and the map
-    // sheet's header (built in _buildPositionPanel) both name "which role
-    // this is", not just its (possibly reused) display name.
-    final stationNumberFormat =
-        _planService.activePlan?.stationNumberFormat ??
-        StationNumberFormat.dotted;
-    final exerciseNumber = exercise == null
-        ? 1
-        : _planService.loadExercises().indexWhere(
-                (e) => e.uuid == exercise.uuid,
-              ) +
-              1;
-    final roleNumber = stationIndex == null
-        ? 0
-        : _planService.roleNumberAtStation(rolePlay, stationIndex);
-    final roleLabel = rolePlay.numberLabel(
-      stationNumberFormat,
-      exerciseNumber: exerciseNumber < 1 ? 1 : exerciseNumber,
-      roleNumber: roleNumber,
-    );
-
-    final scaffold = Scaffold(
-      appBar: AppBar(
-        leading: MasterDetailLeading(
-          onClose: () {
-            if (MasterDetailScope.maybeOf(context) != null) {
-              ContextSheet.of(context).close();
-            } else {
-              Navigator.pop(context);
-            }
-          },
-        ),
-        toolbarHeight: 72,
-        title: SheetTitle(
-          primary: '$roleLabel ${rolePlay.name}',
-          secondary: exercise?.name,
-          secondaryOverrides: _effectiveVariables(exercise),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            tooltip: l10n.roleSection,
-            onPressed: () => _openRolePlayForm(),
+        final scaffold = Scaffold(
+          appBar: AppBar(
+            leading: MasterDetailLeading(onClose: close),
+            toolbarHeight: 72,
+            title: SheetTitle(
+              primary: '$roleLabel ${rolePlay.name}',
+              secondary: exercise.name,
+              secondaryOverrides: _effectiveVariables(exercise),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.edit),
+                tooltip: l10n.roleSection,
+                onPressed: () => _openRolePlayForm(subject),
+              ),
+              // The Spill title is short, so — unlike the exercise viewer's
+              // cramped compact bar — there is room for a standalone delete icon
+              // next to edit instead of an overflow menu.
+              IconButton(
+                icon: const Icon(Icons.delete),
+                tooltip: l10n.deleteRolePlay,
+                onPressed: () => _confirmDeleteFromViewer(rolePlay),
+              ),
+            ],
+            actionsPadding: const EdgeInsets.only(right: 16),
           ),
-          // The Spill title is short, so — unlike the exercise viewer's
-          // cramped compact bar — there is room for a standalone delete icon
-          // next to edit instead of an overflow menu.
-          IconButton(
-            icon: const Icon(Icons.delete),
-            tooltip: l10n.deleteRolePlay,
-            onPressed: _confirmDeleteFromViewer,
-          ),
-        ],
-        actionsPadding: const EdgeInsets.only(right: 16),
-      ),
-      body: SafeArea(
-        // DESIGN-010 follow-up (expanded-map-right split): drives off the
-        // body's own pane width (`WindowSizeClass.fromWidth`, not
-        // `.of(context)` — this sheet can sit in a detail pane narrower
-        // than the window, ADR-0030), moving the position panel to a fixed
-        // full-height right pane beside a capped, independently-scrolling
-        // left column once the pane is wide enough — mirroring the
-        // coordinator's and Post viewer's own expanded bodies. Compact and
-        // medium keep today's single scrolling column.
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final windowSize = WindowSizeClass.fromWidth(constraints.maxWidth);
-            if (windowSize == WindowSizeClass.expanded) {
-              return _buildExpandedBody(
-                context,
-                l10n: l10n,
-                station: station,
-                exercise: exercise,
-                rolePlay: rolePlay,
-                stationIndex: stationIndex,
-                roleOverrides: roleOverrides,
-              );
-            }
-            // Compact and medium share the segmented Info/Map body; only
-            // expanded gets the two-pane WideDetailMapSplit.
-            return _buildSegmentedBody(
-              l10n: l10n,
-              station: station,
-              exercise: exercise,
-              rolePlay: rolePlay,
-              stationIndex: stationIndex,
-              roleOverrides: roleOverrides,
-            );
-          },
-        ),
-      ),
-      // Mirror the CoordinatorScreen pattern: dock a DrillMiniPlayer for
-      // the parent exercise so the user can start it from the role view
-      // (modal context sheet in narrow). In master-detail (wide) the
-      // docked bar lives in the master column instead. We require a
-      // resolvable parent exercise — orphaned roleplays just get the
-      // body, no bar.
-      bottomNavigationBar:
-          (MasterDetailScope.maybeOf(context) == null && exercise != null)
-          ? DrillMiniPlayer(
-              exercise: exercise,
-              height: 64,
-              applyBottomInset: true,
-              onOpen: () {},
-              onPlay: () {
-                unawaited(HapticFeedback.mediumImpact());
-                ExerciseService().start(exercise);
+          body: SafeArea(
+            // DESIGN-010 follow-up (expanded-map-right split): drives off the
+            // body's own pane width (`WindowSizeClass.fromWidth`, not
+            // `.of(context)` — this sheet can sit in a detail pane narrower
+            // than the window, ADR-0030), moving the position panel to a fixed
+            // full-height right pane beside a capped, independently-scrolling
+            // left column once the pane is wide enough — mirroring the
+            // coordinator's and Post viewer's own expanded bodies. Compact and
+            // medium keep today's single scrolling column.
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final windowSize = WindowSizeClass.fromWidth(
+                  constraints.maxWidth,
+                );
+                if (windowSize == WindowSizeClass.expanded) {
+                  return _buildExpandedBody(
+                    context,
+                    l10n: l10n,
+                    subject: subject,
+                    event: event,
+                    station: station,
+                    roleOverrides: roleOverrides,
+                  );
+                }
+                // Compact and medium share the segmented Info/Map body; only
+                // expanded gets the two-pane WideDetailMapSplit.
+                return _buildSegmentedBody(
+                  l10n: l10n,
+                  subject: subject,
+                  event: event,
+                  station: station,
+                  roleOverrides: roleOverrides,
+                );
               },
-              onPickExercise: (picked) => ContextSheet.of(
-                context,
-              ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
-            )
-          : null,
-    );
+            ),
+          ),
+          // Mirror the CoordinatorScreen pattern: dock a DrillMiniPlayer for
+          // the parent exercise so the user can start it from the role view
+          // (modal context sheet in narrow). In master-detail (wide) the
+          // docked bar lives in the master column instead. We require a
+          // resolvable parent exercise — orphaned roleplays just get the
+          // body, no bar.
+          bottomNavigationBar: (MasterDetailScope.maybeOf(context) == null)
+              ? DrillMiniPlayer(
+                  height: 64,
+                  exercise: exercise,
+                  applyBottomInset: true,
+                  onOpen: () {},
+                  onPlay: () {
+                    unawaited(HapticFeedback.mediumImpact());
+                    ExerciseService().start(exercise);
+                  },
+                  onPickExercise: (picked) => ContextSheet.of(
+                    context,
+                  ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
+                )
+              : null,
+        );
 
-    // DESIGN-010 stage 3 (ADR-0048): wrap in this roleplay's own facets plus
-    // the linked station's/parent exercise's resolve-context scopes. The
-    // roleplay scope is always present (this is its viewer); station/exercise
-    // are optional (an orphaned/unassigned roleplay has neither), so each of
-    // those is skipped rather than passed empty/fake data.
-    Widget scoped = RoleplayScope.forRoleplay(rolePlay, child: scaffold);
-    if (station != null) {
-      scoped = StationScope(
-        locations: station.locations,
-        persons: station.persons,
-        name: station.name,
-        description: station.description,
-        variantSuffix: station.variantSuffix,
-        position: station.position,
-        child: scoped,
-      );
-    }
-    if (exercise != null) {
-      scoped = ExerciseScope(
-        exercise: exercise,
-        variableOverrides: exercise.variableOverrides,
-        child: scoped,
-      );
-    }
-    return scoped;
+        // DESIGN-010 stage 3 (ADR-0048): wrap in this roleplay's own facets plus
+        // the linked station's/parent exercise's resolve-context scopes. The
+        // roleplay scope is always present (this is its viewer); station/exercise
+        // are optional (an orphaned/unassigned roleplay has neither), so each of
+        // those is skipped rather than passed empty/fake data.
+        Widget scoped = RoleplayScope.forRoleplay(rolePlay, child: scaffold);
+        if (station != null) {
+          scoped = StationScope(
+            locations: station.locations,
+            persons: station.persons,
+            name: station.name,
+            description: station.description,
+            variantSuffix: station.variantSuffix,
+            position: station.position,
+            child: scoped,
+          );
+        }
+        return ExerciseScope(
+          exercise: exercise,
+          variableOverrides: exercise.variableOverrides,
+          child: scoped,
+        );
+      },
+    );
   }
 
   /// The cards shared by both bodies, in their common order, everything
@@ -380,28 +435,25 @@ class _RolePlayScreenState extends State<RolePlayScreen>
   /// inlines the position panel between this list and Når aktiv; the
   /// expanded body moves it to the right pane instead, so it is built
   /// separately by both).
-  List<Widget> _buildTopSections({
-    required RolePlay rolePlay,
+  List<Widget> _buildInfoSections({
+    required _RolePlaySubject subject,
     required Station? station,
-    required Exercise? exercise,
-    required int? stationIndex,
+    required ExerciseEvent event,
     required Map<String, String> roleOverrides,
     required AppLocalizations localizations,
   }) {
+    final rolePlay = subject.rolePlay;
+    final exercise = subject.exercise;
     return [
-      // Shared status card (DESIGN-010 follow-up: player-status-card):
-      // "Nå"/"Neste" is the team this marker's post meets, from the same
-      // rotation math the "Når aktiv" card reads. Omitted for an
-      // unassigned/orphaned roleplay, and while the exercise is not running
-      // (mirrors station_screen.dart's own `if (_isStarted)` gating) —
-      // `_PlayStatusCard` itself also collapses to `SizedBox.shrink()` then,
-      // but leaving it in the list would still cost one `Column.spacing` gap
-      // above the next card, with nothing visible to justify it.
-      if (station != null &&
-          exercise != null &&
-          stationIndex != null &&
-          ExerciseService().isStartedOn(exercise.uuid))
-        _PlayStatusCard(exercise: exercise, stationIndex: stationIndex),
+      // Omitted for an unassigned/orphaned roleplay (no station to report a
+      // rotation for) and while the exercise is not running — mirrors
+      // station_screen.dart's own `if (_isStarted)` gating.
+      if (station != null && _isStarted)
+        _RoleplayStatusCard(
+          event: event,
+          exercise: exercise,
+          stationIndex: station.index,
+        ),
 
       // Station context card — parent post, chevron through.
       _StationContextCard(
@@ -415,7 +467,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
       // ADR-0047), the script sections (behavior/background/props) and the
       // cast footer. Replaces the former separate identity + Markørordre
       // cards.
-      _PlayCard(
+      _RolePlayCard(
         rolePlay: rolePlay,
         person: _personFor(station, rolePlay),
         location: _personLocation(station, rolePlay),
@@ -424,8 +476,9 @@ class _RolePlayScreenState extends State<RolePlayScreen>
             : _planService.getActor(rolePlay.actorUuid!),
         overrides: roleOverrides,
         onEditCast: () => _openCastPicker(rolePlay),
-        onEditSection: (id) => _openRolePlayForm(initialSectionId: id),
+        onEditSection: (id) => _openRolePlayForm(subject, initialSectionId: id),
       ),
+      _ActiveScheduleCard(exercise: exercise, rolePlay: rolePlay),
     ];
   }
 
@@ -523,32 +576,27 @@ class _RolePlayScreenState extends State<RolePlayScreen>
   /// bodies.
   Widget _buildExpandedBody(
     BuildContext context, {
-    required RolePlay rolePlay,
+    required _RolePlaySubject subject,
     required Station? station,
-    required Exercise? exercise,
-    required int? stationIndex,
+    required ExerciseEvent event,
     required Map<String, String> roleOverrides,
     required AppLocalizations l10n,
   }) {
     return Padding(
       padding: const EdgeInsets.all(kPlayerSurfaceHorizontalPadding),
       child: WideDetailMapSplit(
-        left: [
-          ..._buildTopSections(
-            station: station,
-            exercise: exercise,
-            rolePlay: rolePlay,
-            stationIndex: stationIndex,
-            roleOverrides: roleOverrides,
-            localizations: l10n,
-          ),
-          _ActiveScheduleCard(exercise: exercise, rolePlay: rolePlay),
-        ],
+        left: _buildInfoSections(
+          subject: subject,
+          event: event,
+          station: station,
+          roleOverrides: roleOverrides,
+          localizations: l10n,
+        ),
         mapPane:
             _buildPositionPanel(
               l10n: l10n,
-              rolePlay: rolePlay,
               station: station,
+              rolePlay: subject.rolePlay,
               roleOverrides: roleOverrides,
               fillHeight: true,
               interactive: true,
@@ -566,56 +614,33 @@ class _RolePlayScreenState extends State<RolePlayScreen>
   /// omitted it entirely). Only the `expanded` window size uses the two-pane
   /// `WideDetailMapSplit` instead.
   Widget _buildSegmentedBody({
-    required RolePlay rolePlay,
+    required _RolePlaySubject subject,
     required Station? station,
-    required Exercise? exercise,
-    required int? stationIndex,
+    required ExerciseEvent event,
     required Map<String, String> roleOverrides,
     required AppLocalizations l10n,
   }) {
     return Column(
+      spacing: 8.0,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            kPlayerSurfaceHorizontalPadding,
-            kPlayerSurfaceHorizontalPadding,
-            kPlayerSurfaceHorizontalPadding,
-            0,
-          ),
-          child: _buildViewSelector(l10n),
-        ),
-        const SizedBox(height: 8),
+        _buildViewSelector(l10n),
         Expanded(
           child: switch (_view) {
-            _RolePlayDetailView.info => SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                kPlayerSurfaceHorizontalPadding,
-                0,
-                kPlayerSurfaceHorizontalPadding,
-                kPlayerSurfaceHorizontalPadding,
-              ),
-              child: Column(
-                spacing: 8.0,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ..._buildTopSections(
-                    rolePlay: rolePlay,
-                    station: station,
-                    exercise: exercise,
-                    stationIndex: stationIndex,
-                    roleOverrides: roleOverrides,
-                    localizations: l10n,
-                  ),
-                  _ActiveScheduleCard(exercise: exercise, rolePlay: rolePlay),
-                ],
+            _RolePlayDetailView.info => _segmentScroll(
+              _buildInfoSections(
+                subject: subject,
+                event: event,
+                station: station,
+                roleOverrides: roleOverrides,
+                localizations: l10n,
               ),
             ),
             _RolePlayDetailView.map => _fillOrScrollMap(
               _buildPositionPanel(
                     l10n: l10n,
-                    rolePlay: rolePlay,
                     station: station,
+                    rolePlay: subject.rolePlay,
                     roleOverrides: roleOverrides,
                     fillHeight: true,
                     interactive: true,
@@ -625,6 +650,25 @@ class _RolePlayScreenState extends State<RolePlayScreen>
           },
         ),
       ],
+    );
+  }
+
+  /// A segment's cards in their own scroll view, filling the [Expanded] the
+  /// segmented body gives them (so the pinned selector above stays put while
+  /// this content scrolls).
+  Widget _segmentScroll(List<Widget> cards) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        kPlayerSurfaceHorizontalPadding,
+        0,
+        kPlayerSurfaceHorizontalPadding,
+        kPlayerSurfaceHorizontalPadding,
+      ),
+      child: Column(
+        spacing: 8.0,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: cards,
+      ),
     );
   }
 
@@ -733,11 +777,7 @@ class _StationContextCard extends StatelessWidget {
         ? station.numberAndName(
             PlanService().activePlan?.stationNumberFormat ??
                 StationNumberFormat.dotted,
-            exerciseNumber:
-                PlanService().loadExercises().indexWhere(
-                  (e) => e.uuid == exercise.uuid,
-                ) +
-                1,
+            exerciseNumber: PlanService().getExerciseNumber(exercise.uuid),
           )
         : station?.name;
     return CollapsibleSectionCard(
@@ -821,8 +861,8 @@ class _StationContextCard extends StatelessWidget {
 /// while collapsed becomes "SPILLES AV {markør}" when a cast marker exists
 /// (else stays "SPILL"); the cast quick action rides the wrapper's `trailing`
 /// slot and the body aligns at the shared 12px padding.
-class _PlayCard extends StatelessWidget {
-  const _PlayCard({
+class _RolePlayCard extends StatelessWidget {
+  const _RolePlayCard({
     required this.rolePlay,
     required this.person,
     required this.actor,
@@ -1172,42 +1212,33 @@ class _PlayCard extends StatelessWidget {
 /// the post has no team assigned this round. Wrapped in its own
 /// `StreamBuilder`, like [_ActiveScheduleCard], since [RolePlayScreen] has
 /// no single event stream of its own.
-class _PlayStatusCard extends StatelessWidget {
-  const _PlayStatusCard({required this.exercise, required this.stationIndex});
+class _RoleplayStatusCard extends StatelessWidget {
+  const _RoleplayStatusCard({
+    required this.event,
+    required this.exercise,
+    required this.stationIndex,
+  });
 
-  final Exercise exercise;
   final int stationIndex;
+  final Exercise exercise;
+  final ExerciseEvent event;
 
   @override
   Widget build(BuildContext context) {
-    final exerciseService = ExerciseService();
-    if (!exerciseService.isStartedOn(exercise.uuid)) {
-      return const SizedBox.shrink();
-    }
-    final lastEvent = exerciseService.last;
-    return StreamBuilder<ExerciseEvent>(
-      stream: exerciseService.events,
-      initialData: lastEvent?.exercise.uuid == exercise.uuid
-          ? lastEvent
-          : ExerciseEvent.pending(exercise),
-      builder: (context, snapshot) {
-        final event = snapshot.data!;
-        final l10n = AppLocalizations.of(context)!;
-        return PlayerStatusCard(
-          event: event,
-          preStartSubline: l10n.statusPreStartSublineMarker(
-            _activeFrom().toString(),
-            Numbering.station(
-              PlanService().activePlan?.stationNumberFormat ??
-                  StationNumberFormat.dotted,
-              exerciseNumber: _exerciseNumber(),
-              stationIndex: stationIndex,
-            ),
-          ),
-          leadingCell: _teamAtPostCell(l10n, event.currentRound, isNow: true),
-          trailingCell: _nextTeamAtPostCell(l10n, event),
-        );
-      },
+    final l10n = AppLocalizations.of(context)!;
+    return PlayerStatusCard(
+      event: event,
+      preStartSubline: l10n.statusPreStartSublineMarker(
+        _activeFrom().toString(),
+        Numbering.station(
+          PlanService().activePlan?.stationNumberFormat ??
+              StationNumberFormat.dotted,
+          exerciseNumber: _exerciseNumber(),
+          stationIndex: stationIndex,
+        ),
+      ),
+      leadingCell: _teamAtPostCell(l10n, event.currentRound, isNow: true),
+      trailingCell: _nextTeamAtPostCell(l10n, event),
     );
   }
 
@@ -1228,11 +1259,7 @@ class _PlayStatusCard extends StatelessWidget {
     return exercise.startTime;
   }
 
-  int _exerciseNumber() =>
-      PlanService().loadExercises().indexWhere(
-        (e) => e.uuid == exercise.uuid,
-      ) +
-      1;
+  int _exerciseNumber() => PlanService().getExerciseNumber(exercise.uuid);
 
   PlayerStatusCell _teamAtPostCell(
     AppLocalizations l10n,
@@ -1275,7 +1302,7 @@ class _PlayStatusCard extends StatelessWidget {
   }
 }
 
-/// Når aktiv card (DESIGN-010's Spill viewer): the round(s) this roleplay's
+/// When active card (DESIGN-010's Play viewer): the round(s) this roleplay's
 /// station is staffed by a team, from `Exercise.schedule` +
 /// `teamIndex`/`stationIndex` — filtered to only the active round(s)
 /// (unlike the Post viewer's Tidsplan card, which shows every round). Reads

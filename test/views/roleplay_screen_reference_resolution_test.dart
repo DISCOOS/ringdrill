@@ -92,7 +92,7 @@ Widget _buildScreen() {
     supportedLocales: AppLocalizations.supportedLocales,
     home: PlanScope(
       variables: [],
-      child: RolePlayScreen(rolePlayUuid: _roleUuid),
+      child: RolePlayScreen(uuid: _roleUuid),
     ),
   );
 }

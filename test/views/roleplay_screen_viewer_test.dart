@@ -14,6 +14,7 @@ import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
+import 'package:ringdrill/views/shell/detail_empty_pane.dart';
 import 'package:ringdrill/views/widgets/collapse_chevron.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -132,7 +133,7 @@ Widget _buildScreen() {
   return const MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: RolePlayScreen(rolePlayUuid: _roleUuid),
+    home: RolePlayScreen(uuid: _roleUuid),
   );
 }
 
@@ -228,9 +229,7 @@ void main() {
       // chip and roleplays_view's cast row — its `.cast` variant always
       // paints a colored (primaryContainer) background.
       final footerContainer = tester.widget<Container>(
-        find
-            .ancestor(of: footerText, matching: find.byType(Container))
-            .first,
+        find.ancestor(of: footerText, matching: find.byType(Container)).first,
       );
       final decoration = footerContainer.decoration as BoxDecoration?;
       expect(decoration?.color, isNotNull);
@@ -329,6 +328,45 @@ void main() {
   // pane), not only on its own actions. It subscribes to
   // PlanService.events via SubscriptionBag; without that it would keep
   // showing the stale cast.
+  // A roleplay that cannot be resolved — a stale deep link, or one deleted
+  // from another master/detail pane while this viewer was open — must not
+  // silently dismiss itself: the reader would see the view vanish with no
+  // explanation. It explains instead, and leaves closing to them.
+  group('an unresolvable roleplay', () {
+    testWidgets(
+      'explains itself instead of closing, and offers a close action',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: RolePlayScreen(uuid: 'role-does-not-exist'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+        expect(tester.takeException(), isNull);
+        expect(find.byType(DetailGonePane), findsOneWidget);
+        expect(find.text(l10n.detailGoneRolePlay), findsOneWidget);
+        // Still on screen after settling — it did not close itself.
+        expect(find.byType(RolePlayScreen), findsOneWidget);
+        // And the close action is the reader's, to take when they choose.
+        expect(
+          find.widgetWithText(FilledButton, l10n.briefClose),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('a resolvable roleplay shows no gone pane', (tester) async {
+      await tester.pumpWidget(_buildScreen());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DetailGonePane), findsNothing);
+    });
+  });
+
   testWidgets('the viewer refreshes when the roleplay is re-cast externally', (
     tester,
   ) async {

@@ -117,7 +117,7 @@ Future<void> _seedAndInit(Exercise exercise) async {
 Widget _buildScreen() => const MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
-  home: RolePlayScreen(rolePlayUuid: _roleUuid),
+  home: RolePlayScreen(uuid: _roleUuid),
 );
 
 void main() {
@@ -192,7 +192,8 @@ void main() {
           matching: find.text('${l10n.nextLabel} · ${exercise.endTime}'),
         ),
         findsOneWidget,
-        reason: 'the next-cell label still reads "Next", with the '
+        reason:
+            'the next-cell label still reads "Next", with the '
             "exercise's finish time appended inline",
       );
       expect(

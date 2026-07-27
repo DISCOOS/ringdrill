@@ -140,7 +140,7 @@ Future<void> _pumpAtPaneWidth(WidgetTester tester, double paneWidth) async {
         child: SizedBox(
           width: paneWidth,
           height: 800,
-          child: const RolePlayScreen(rolePlayUuid: _roleUuid),
+          child: const RolePlayScreen(uuid: _roleUuid),
         ),
       ),
     ),
@@ -179,9 +179,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(
-        _harness(const RolePlayScreen(rolePlayUuid: orphanUuid)),
-      );
+      await tester.pumpWidget(_harness(const RolePlayScreen(uuid: orphanUuid)));
       // Bounded pumps, not pumpAndSettle: RolePlayScreen docks a
       // DrillMiniPlayer whose live status animates indefinitely, so
       // pumpAndSettle never settles. A frame plus a fixed advance is enough
@@ -207,7 +205,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(_harness(const RolePlayScreen(rolePlayUuid: _roleUuid)));
+      await tester.pumpWidget(_harness(const RolePlayScreen(uuid: _roleUuid)));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
@@ -228,9 +226,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(
-        _harness(const RolePlayScreen(rolePlayUuid: _roleUuid)),
-      );
+      await tester.pumpWidget(_harness(const RolePlayScreen(uuid: _roleUuid)));
       await tester.pumpAndSettle();
 
       // _PlayStatusCard collapses to zero height while the exercise is not
@@ -241,30 +237,25 @@ void main() {
       final scrollTop = tester
           .getTopLeft(find.byType(SingleChildScrollView).first)
           .dy;
-      final firstCardTop = tester
-          .getTopLeft(find.byType(Card).first)
-          .dy;
+      final firstCardTop = tester.getTopLeft(find.byType(Card).first).dy;
       expect(firstCardTop - scrollTop, 0.0);
     },
   );
 
-  testWidgets(
-    'an expanded (900px) pane splits — map pane beside a capped left '
-    'column, no overflow',
-    (tester) async {
-      await _seedAndInit();
-      tester.view.physicalSize = const Size(900, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+  testWidgets('an expanded (900px) pane splits — map pane beside a capped left '
+      'column, no overflow', (tester) async {
+    await _seedAndInit();
+    tester.view.physicalSize = const Size(900, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(_harness(const RolePlayScreen(rolePlayUuid: _roleUuid)));
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(_harness(const RolePlayScreen(uuid: _roleUuid)));
+    await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      expect(find.byType(WideDetailMapSplit), findsOneWidget);
-      expect(find.textContaining('Bosted'), findsOneWidget);
-    },
-  );
+    expect(tester.takeException(), isNull);
+    expect(find.byType(WideDetailMapSplit), findsOneWidget);
+    expect(find.textContaining('Bosted'), findsOneWidget);
+  });
 
   testWidgets(
     'a ~430px pane inside a 1200px window stacks — pane width drives the '
@@ -297,12 +288,14 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(_harness(const RolePlayScreen(rolePlayUuid: _roleUuid)));
+      await tester.pumpWidget(_harness(const RolePlayScreen(uuid: _roleUuid)));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
 
-      final splitHeight = tester.getSize(find.byType(WideDetailMapSplit)).height;
+      final splitHeight = tester
+          .getSize(find.byType(WideDetailMapSplit))
+          .height;
       final panelRect = tester.getRect(find.byType(RolePositionPanel));
 
       // The panel used to sit at a small fixed height (~200) regardless of
@@ -318,23 +311,22 @@ void main() {
     },
   );
 
-  testWidgets(
-    'a short expanded pane still fills the map with no overflow',
-    (tester) async {
-      await _seedAndInit();
-      tester.view.physicalSize = const Size(900, 500);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+  testWidgets('a short expanded pane still fills the map with no overflow', (
+    tester,
+  ) async {
+    await _seedAndInit();
+    tester.view.physicalSize = const Size(900, 500);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(_harness(const RolePlayScreen(rolePlayUuid: _roleUuid)));
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(_harness(const RolePlayScreen(uuid: _roleUuid)));
+    await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      final splitHeight = tester.getSize(find.byType(WideDetailMapSplit)).height;
-      final panelRect = tester.getRect(find.byType(RolePositionPanel));
-      expect(panelRect.height, closeTo(splitHeight, 1));
-    },
-  );
+    expect(tester.takeException(), isNull);
+    final splitHeight = tester.getSize(find.byType(WideDetailMapSplit)).height;
+    final panelRect = tester.getRect(find.byType(RolePositionPanel));
+    expect(panelRect.height, closeTo(splitHeight, 1));
+  });
 
   testWidgets(
     'the medium (700px) layout shows the Info/Map selector; the Map segment '
@@ -346,7 +338,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(_harness(const RolePlayScreen(rolePlayUuid: _roleUuid)));
+      await tester.pumpWidget(_harness(const RolePlayScreen(uuid: _roleUuid)));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
@@ -370,7 +362,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(_harness(const RolePlayScreen(rolePlayUuid: _roleUuid)));
+      await tester.pumpWidget(_harness(const RolePlayScreen(uuid: _roleUuid)));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.map));
       await tester.pumpAndSettle();
@@ -381,29 +373,28 @@ void main() {
     },
   );
 
-  testWidgets(
-    'the expanded map pane is directly interactive with its own FAB '
-    'commands, even at a pane width just past the 840px split threshold',
-    (tester) async {
-      await _seedAndInit();
-      // Deliberately close to (not far past) the 840px expanded threshold:
-      // WideDetailMapSplit's own fixed-width left column (440px) plus its
-      // 16px gutter leaves the map pane itself only ~410px wide here — a
-      // real regression left the map static in exactly this range, because
-      // an earlier version of the mini-maps' interactive gate re-checked
-      // WindowSizeClass off that narrower *local* map-pane width instead
-      // of trusting fillHeight (already only ever true once the screen
-      // itself committed to its expanded layout) plus a height check.
-      tester.view.physicalSize = const Size(900, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+  testWidgets('the expanded map pane is directly interactive with its own FAB '
+      'commands, even at a pane width just past the 840px split threshold', (
+    tester,
+  ) async {
+    await _seedAndInit();
+    // Deliberately close to (not far past) the 840px expanded threshold:
+    // WideDetailMapSplit's own fixed-width left column (440px) plus its
+    // 16px gutter leaves the map pane itself only ~410px wide here — a
+    // real regression left the map static in exactly this range, because
+    // an earlier version of the mini-maps' interactive gate re-checked
+    // WindowSizeClass off that narrower *local* map-pane width instead
+    // of trusting fillHeight (already only ever true once the screen
+    // itself committed to its expanded layout) plus a height check.
+    tester.view.physicalSize = const Size(900, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(_harness(const RolePlayScreen(rolePlayUuid: _roleUuid)));
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(_harness(const RolePlayScreen(uuid: _roleUuid)));
+    await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      expect(find.byIcon(Icons.center_focus_strong_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.open_in_full), findsOneWidget);
-    },
-  );
+    expect(tester.takeException(), isNull);
+    expect(find.byIcon(Icons.center_focus_strong_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.open_in_full), findsOneWidget);
+  });
 }

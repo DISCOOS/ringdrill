@@ -175,10 +175,7 @@ void main() {
     });
 
     test('BriefSheetTarget has no owning segment', () {
-      expect(
-        segmentForTarget(const BriefSheetTarget(planUuid: 'p')),
-        isNull,
-      );
+      expect(segmentForTarget(const BriefSheetTarget(planUuid: 'p')), isNull);
     });
   });
 
@@ -202,7 +199,7 @@ void main() {
       // station-context card for its linked post (Station A1).
       await _tapSegment(tester, l10n.scriptSegment);
       expect(
-        tester.widget<RolePlayScreen>(find.byType(RolePlayScreen)).rolePlayUuid,
+        tester.widget<RolePlayScreen>(find.byType(RolePlayScreen)).uuid,
         _roleUuid,
       );
       expect(_selectedSegment(tester), {PlanSegment.script});
@@ -214,9 +211,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(_selectedSegment(tester), {PlanSegment.stations});
       expect(
-        tester
-            .widget<StationScreen>(find.byType(StationScreen))
-            .uuid,
+        tester.widget<StationScreen>(find.byType(StationScreen)).uuid,
         _exerciseAUuid,
       );
     },
@@ -242,7 +237,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(
-        tester.widget<RolePlayScreen>(find.byType(RolePlayScreen)).rolePlayUuid,
+        tester.widget<RolePlayScreen>(find.byType(RolePlayScreen)).uuid,
         _roleUuid,
       );
       expect(_selectedSegment(tester), {PlanSegment.script});
@@ -256,9 +251,7 @@ void main() {
       // drag the master along: segment switches to Poster...
       expect(_selectedSegment(tester), {PlanSegment.stations});
       // ...and the detail pane shows the Post viewer for that station.
-      final detail = tester.widget<StationScreen>(
-        find.byType(StationScreen),
-      );
+      final detail = tester.widget<StationScreen>(find.byType(StationScreen));
       expect(detail.uuid, _exerciseAUuid);
       expect(detail.stationIndex, 0);
       // ...and the master list highlights the same row (Poster now also
@@ -307,9 +300,7 @@ void main() {
     // master-list tap) — the existing per-segment memory must still work.
     await tester.tap(find.text('Station B1').first);
     await tester.pumpAndSettle();
-    var detail = tester.widget<StationScreen>(
-      find.byType(StationScreen),
-    );
+    var detail = tester.widget<StationScreen>(find.byType(StationScreen));
     expect(detail.uuid, _exerciseBUuid);
 
     // Switching away and back to Poster restores the explicit pick
@@ -317,9 +308,7 @@ void main() {
     // the segment's first item.
     await _tapSegment(tester, l10n.scriptSegment);
     await _tapSegment(tester, l10n.stationsTab);
-    detail = tester.widget<StationScreen>(
-      find.byType(StationScreen),
-    );
+    detail = tester.widget<StationScreen>(find.byType(StationScreen));
     expect(detail.uuid, _exerciseBUuid);
   });
 

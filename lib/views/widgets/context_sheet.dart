@@ -180,7 +180,10 @@ class ContextSheetController {
       _navigator = Navigator.of(context);
       _bodyBuilder = ContextSheet._bodyBuilderOf(context) ?? _bodyBuilder;
 
-      Widget briefBody(BuildContext context, ScrollController? scrollController) {
+      Widget briefBody(
+        BuildContext context,
+        ScrollController? scrollController,
+      ) {
         final child =
             _bodyBuilder?.call(context, target) ??
             _DefaultContextSheetBody(target: target);
@@ -387,13 +390,9 @@ class _DefaultContextSheetBody extends StatelessWidget {
         teamIndex: teamIndex,
       ),
       RoleSheetTarget(:final rolePlayUuid) => RolePlayScreen(
-        rolePlayUuid: rolePlayUuid,
+        uuid: rolePlayUuid,
       ),
-      BriefSheetTarget(
-        :final exerciseUuid,
-        :final planUuid,
-        :final audience,
-      ) =>
+      BriefSheetTarget(:final exerciseUuid, :final planUuid, :final audience) =>
         BriefSheetBody(
           exerciseUuid: exerciseUuid,
           planUuid: planUuid,
@@ -418,4 +417,3 @@ Widget defaultContextSheetBody(
 ) {
   return _DefaultContextSheetBody(target: target);
 }
-

@@ -86,7 +86,9 @@ Future<void> _seedAndInit() async {
 /// and position cards' — anchored on the flag icon, unique to this card's
 /// header.
 Finder postCollapseChevron() => find.descendant(
-  of: find.ancestor(of: find.byIcon(Icons.flag), matching: find.byType(Card)).first,
+  of: find
+      .ancestor(of: find.byIcon(Icons.flag), matching: find.byType(Card))
+      .first,
   matching: find.byType(CollapseChevron),
 );
 
@@ -117,7 +119,7 @@ void main() {
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const RolePlayScreen(rolePlayUuid: _roleUuid),
+          home: const RolePlayScreen(uuid: _roleUuid),
         ),
       );
       await tester.pumpAndSettle();
@@ -137,7 +139,7 @@ void main() {
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const RolePlayScreen(rolePlayUuid: _roleUuid),
+          home: const RolePlayScreen(uuid: _roleUuid),
         ),
       );
       await tester.pumpAndSettle();
@@ -178,7 +180,7 @@ void main() {
             child: MasterDetailScope(
               target: controller.targetNotifier,
               emptyPaneBuilder: (_) => const SizedBox.shrink(),
-              child: const RolePlayScreen(rolePlayUuid: _roleUuid),
+              child: const RolePlayScreen(uuid: _roleUuid),
             ),
           ),
         ),
