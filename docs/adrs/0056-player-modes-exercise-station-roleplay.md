@@ -6,7 +6,7 @@ consulted: []
 informed: []
 ---
 
-# ADR-0056: One drill player with three peer modes — exercise, station, roleplay
+# ADR-0056: One drill player with peer modes — exercise, station, roleplay, team
 
 ## Context and problem statement
 
@@ -23,15 +23,15 @@ The maintainer's framing: *"I think we should think of exercise, stations and ro
 
 * One player at a time. *"I do not like stacked drill players. There is only one drill player at any one time."*
 * The badge selector should follow what the surface is showing — a station selector in station mode, a roleplay selector in roleplay mode.
-* Opening a station/roleplay while the player is up must switch the player's target, not open a sheet over it.
+* Opening one of the running exercise's own items while the player is up must switch the player's target, not open a sheet over it.
 * Must hold in narrow *and* master/detail.
 * The existing safety guard — the running exercise cannot be switched from the mini bar — must survive.
 
 ## Considered options
 
-* **Option A — Peer modes of one player.** The player is a host for any target; exercise/station/roleplay are peers. X always closes the player. The badge is a within-mode selector; content taps move down a level; a pinned parent row moves back up.
+* **Option A — Peer modes of one player.** The player is a host for any target; exercise/station/roleplay/team are peers. X always closes the player. The badge is a within-mode selector; content taps move down a level; a pinned parent row moves back up.
 * **Option B — Drill-down with target history.** The player keeps a stack of targets; X pops one level and closes only at the root.
-* **Option C — Leave it.** Stations and roleplays keep opening beside the player.
+* **Option C — Leave it.** The running exercise's items keep opening beside the player.
 
 ## Decision outcome
 
@@ -51,14 +51,14 @@ Also added: `clearSelection()`. `close()` deliberately returns without touching 
 
 ### The navigation grammar
 
-* **Within a mode**: the mini bar's badge. Its picker (`showPlayerTargetPicker`) lists siblings of the current mode's type — exercises in exercise mode, that exercise's stations in station mode, its roleplays in roleplay mode. The badge itself follows the mode: `#1` / `1.2` / `1.2-1`, in the three matching swatches.
+* **Within a mode**: the mini bar's badge. Its picker (`showPlayerTargetPicker`) lists siblings of the current mode's type — exercises in exercise mode, and that exercise's stations, roleplays or teams in the other three. The badge itself follows the mode: `#1` / `1.2` / `1.2-1` / `1`, in the four matching swatches.
 * **Down a level**: tapping content. A station row inside the exercise view enters station mode; a markør row inside a station enters roleplay mode. These already called `show()`, so the inline branch above is the whole mechanism.
-* **Up a level**: a pinned parent row at the top of the station/roleplay picker — the parent exercise, with its own exercise badge, above a divider. Since X closes the player rather than unwinding, this is the only way up, and pinning it keeps it reachable without scrolling while the list below stays purely siblings.
+* **Up a level**: a pinned parent row at the top of every non-exercise picker — the parent exercise, with its own exercise badge, above a divider. Since X closes the player rather than unwinding, this is the only way up, and pinning it keeps it reachable without scrolling while the list below stays purely siblings.
 * **Out**: X, from every mode. Identical to Android back, so no `PopScope` divergence.
 
 ### The live-exercise guard, restated
 
-The original rule was "the running state's badge is non-interactive so users can't switch while an exercise is live". Restated per mode: the badge is inert **in exercise mode while running**, and tappable in station and roleplay mode, where it only moves between siblings *inside* that same live exercise. One expression, in one place:
+The original rule was "the running state's badge is non-interactive so users can't switch while an exercise is live". Restated per mode: the badge is inert **in exercise mode while running**, and tappable in the station, roleplay and team modes, where it only moves between siblings *inside* that same live exercise. One expression, in one place:
 
 ```dart
 interactive = onPickTarget != null && (mode is! ExercisePlayerMode || !isStarted);
@@ -66,23 +66,32 @@ interactive = onPickTarget != null && (mode is! ExercisePlayerMode || !isStarted
 
 ### Entry policy
 
-`DrillPlayerScope` (an `InheritedWidget` over the shell's `DrillPlayerCoordinator`, mounted by `MainScreen`) plus `openContextTarget(context, target)`: routes to the player when `shouldHostInPlayer(target)`, else falls back to `ContextSheet.of(context).showOrReplace(...)`. The predicate admits only the three declared modes, only for the exercise actually running, only while it still exists in the active plan (uuid equality alone does not exclude a stale cross-plan target), and never from inside the player — where the inline controller already swaps the body in place.
+`DrillPlayerScope` (an `InheritedWidget` over the shell's `DrillPlayerCoordinator`, mounted by `MainScreen`) plus `openContextTarget(context, target)`: routes to the player when `shouldHostInPlayer(target)`, else falls back to `ContextSheet.of(context).showOrReplace(...)`. The predicate admits only the declared modes, only for the exercise actually running, only while it still exists in the active plan (uuid equality alone does not exclude a stale cross-plan target), and never from inside the player — where the inline controller already swaps the body in place.
 
-Migrated: the "user tapped an item in a planning list" call sites (`plan_view`, `station_list_view`, `roleplay_list_view`, `exercise_mini_map`, `station_role_summary`). Left alone: briefs, teams, `deep_link_launchers` (no scope on a cold link, so it falls back automatically), and `adoptWideSelection` — so the wide auto-select-first can never open a player.
+Migrated: the "user tapped an item in a planning list" call sites (`plan_view`, `station_list_view`, `roleplay_list_view`, `teams_view`'s per-exercise row, `exercise_mini_map`, `station_role_summary`). Left alone: briefs, the plan-wide team overview, `deep_link_launchers` (no scope on a cold link, so it falls back automatically), and `adoptWideSelection` — so the wide auto-select-first can never open a player.
 
 **Not** an intercept inside `show()`. `showOrReplace`/`replace` bypass an intercept, so behaviour would depend on which widget was tapped, and `replace` has no `BuildContext` with which to push a route even if it wanted one; `StationsView` keys its map-detail toggle off its own target and would regress; and a global hook inverts the dependency direction and leaks between tests.
 
-### Teams are not a mode
+### Teams are a mode; the plan-wide team overview is not
 
-A team — per-exercise (`TeamSheetTarget`) or plan-wide (`TeamOverviewSheetTarget`) — is excluded from the predicate, so team taps behave exactly as before. Teams could plausibly become a fourth mode later; `PlayerMode` is sealed, so adding one is a compile error at every place that has to handle it rather than a silently-wrong default.
+An *exercise-scoped* team (`TeamSheetTarget`) is the fourth mode: it is an item of the running exercise, with a rotation to follow while it runs, so it belongs in the player on exactly the same footing as a station.
+
+The *plan-wide* overview (`TeamOverviewSheetTarget`, `TeamScreen`) is not. It spans every exercise, so it is not an item of the running one, and a player scoped to that exercise is the wrong host for it. It keeps opening the ordinary surface.
+
+Teams differ from the other three modes in two details:
+
+* **Badge.** They get their own `TeamNumberBadge`, and unlike its three siblings it uses the secondary swatch as its *base* rather than only when highlighted. The other three share a neutral base and are told apart by label format (`#1` / `1.2` / `1.2-1`); a team's label is a bare number, too close to `#1` to carry that distinction alone — and the mini bar depends on the badge to say which mode it is in. DESIGN-001 already assigns teams a distinct identity colour in the player model, so this follows it rather than inventing a convention.
+* **Picker rows** are named, not numbered: teams are the one mode whose entities carry a user-given name, so the number sits on the badge and the name in the row — mirroring `TeamExerciseScreen`'s own title. The list is bounded by `Exercise.numberOfTeams`, not the plan roster, which can hold teams a given exercise does not run.
+
+The team mode was added after the first three, and the sealed `PlayerMode` made that a two-file compile error (the badge switch and the picker switch) rather than a hunt — which is the property it exists for.
 
 ### Consequences
 
-* Good: one player, one dismissal rule, and stations/roleplays of a live exercise finally render *in* it — narrow and wide alike, since the player is a fullscreen overlay above the shell either way.
+* Good: one player, one dismissal rule, and the stations, roleplays and teams of a live exercise finally render *in* it — narrow and wide alike, since the player is a fullscreen overlay above the shell either way.
 * Good: the inline-mode branch fixes the latent modal-over-the-player bug on its own, before anything depends on it.
 * Good: two bare-`CoordinatorScreen` pseudo-players are gone; there is one way to open the player.
 * Good: the badge label is computed once instead of once per player state — with three badge kinds, the old duplication would have drifted.
-* Bad: no way *up* from station/roleplay mode except the pinned picker row. Accepted deliberately over a history stack; the pinned row is one tap and always visible.
+* Bad: no way *up* from a non-exercise mode except the pinned picker row. Accepted deliberately over a history stack; the pinned row is one tap and always visible.
 * Bad: `openContextTarget` is a convention call sites must adopt — a new list-tap site that calls `show()` directly still works, it just won't enter the player. Preferred over a global intercept for the reasons above.
 
 ## Pros and cons of the options
@@ -98,7 +107,12 @@ A team — per-exercise (`TeamSheetTarget`) or plan-wide (`TeamOverviewSheetTarg
 * Good: zero cost.
 * Bad: leaves the inconsistency the maintainer raised, and leaves the latent `show()`-over-inline bug in place — which would have surfaced the moment anything else made the player render targets faithfully.
 
+## Changelog
+
+* 2026-07-27 — Accepted as three modes (exercise, station, roleplay), with teams explicitly excluded.
+* 2026-07-28 — Team added as a fourth mode at the maintainer's request, reversing that exclusion. The plan-wide team overview stays outside the player. See *Teams are a mode* above.
+
 ## Links
 
 * Related: ADR-0026 (sheet-based context navigation and replace-semantics — this extends the same target vocabulary to an inline host), ADR-0049 (the adaptive picker primitive `showPlayerTargetPicker` builds on), ADR-0048 / DESIGN-010 (the resolve-context cascade each mode's screen seeds), DESIGN-001 (the player itself; its V1 scope parked the "observer player" variants this delivers).
-* Related code: `lib/views/widgets/context_sheet.dart`, `lib/views/drill_player/drill_player_coordinator.dart`, `lib/views/drill_player/drill_mini_player.dart`, `lib/views/drill_player/player_mode.dart`, `lib/views/drill_player/player_target_picker.dart`, `lib/views/drill_player/drill_player_scope.dart`.
+* Related code: `lib/views/widgets/context_sheet.dart`, `lib/views/widgets/team_number_badge.dart`, `lib/views/drill_player/drill_player_coordinator.dart`, `lib/views/drill_player/drill_mini_player.dart`, `lib/views/drill_player/player_mode.dart`, `lib/views/drill_player/player_target_picker.dart`, `lib/views/drill_player/drill_player_scope.dart`.

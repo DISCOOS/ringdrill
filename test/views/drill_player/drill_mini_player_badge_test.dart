@@ -13,10 +13,11 @@ import 'package:ringdrill/views/drill_player/player_mode.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
+import 'package:ringdrill/views/widgets/team_number_badge.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// The mini bar's leading badge follows the player's [PlayerMode] (ADR-0056):
-/// exercise `#n`, station `n.m`, markør `n.m-k`.
+/// exercise `#n`, station `n.m`, markør `n.m-k`, team `n`.
 ///
 /// Two invariants worth pinning:
 /// - The label is computed in ONE place. It used to be derived separately in
@@ -157,6 +158,17 @@ void main() {
       expect(find.text('1.2-1'), findsOneWidget);
     });
 
+    testWidgets('team mode renders the team badge', (tester) async {
+      await tester.pumpWidget(_harness(const TeamPlayerMode(1)));
+      await tester.pump();
+
+      expect(find.byType(TeamNumberBadge), findsOneWidget);
+      expect(find.byType(ExerciseNumberBadge), findsNothing);
+      // A bare 1-based number — teams have no sub-division to encode, and the
+      // team's *name* lives in the surface's title, not in a 36px badge.
+      expect(find.text('2'), findsOneWidget);
+    });
+
     // A roleplay deleted while the bar is up must not throw: the host screen's
     // own gone-state pane is what tells the user.
     testWidgets('an unknown roleplay degrades to a "?" label', (tester) async {
@@ -217,6 +229,16 @@ void main() {
 
       await _stop(tester);
     });
+
+    testWidgets('running: the team badge stays tappable', (tester) async {
+      await tester.pumpWidget(_harness(const TeamPlayerMode(0)));
+      await _start(tester);
+
+      expect(find.byType(TeamNumberBadge), findsOneWidget);
+      expect(_badgeIsTappable(tester), isTrue);
+
+      await _stop(tester);
+    });
   });
 
   // Anti-drift: the running and idle strips used to compute the label
@@ -226,6 +248,7 @@ void main() {
       ('exercise', ExercisePlayerMode()),
       ('station', StationPlayerMode(1)),
       ('roleplay', RolePlayerMode(_roleUuid)),
+      ('team', TeamPlayerMode(1)),
     ]) {
       testWidgets('$name mode reads the same idle and running', (tester) async {
         await tester.pumpWidget(_harness(mode));
@@ -249,7 +272,8 @@ String _badgeLabel(WidgetTester tester) {
     (w) =>
         w is ExerciseNumberBadge ||
         w is StationNumberBadge ||
-        w is RoleNumberBadge,
+        w is RoleNumberBadge ||
+        w is TeamNumberBadge,
   );
   expect(badge, findsOneWidget);
   return tester

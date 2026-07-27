@@ -4700,6 +4700,12 @@ abstract class AppLocalizations {
   /// **'Select marker'**
   String get pickerSelectRoleTitle;
 
+  /// Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) used by the drill player's team-mode target picker (ADR-0056).
+  ///
+  /// In en, this message translates to:
+  /// **'Select team'**
+  String get pickerSelectTeamTitle;
+
   /// Hint text of the search field the adaptive selector picker (ADR-0049, showRingdrillPicker) shows once a list passes its search threshold.
   ///
   /// In en, this message translates to:

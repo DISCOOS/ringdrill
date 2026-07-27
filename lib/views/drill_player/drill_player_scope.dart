@@ -58,18 +58,19 @@ Future<void> openContextTarget(
 /// Whether [target] belongs in the player rather than in a sheet or detail
 /// pane.
 ///
-/// Only the player's three declared modes qualify. A brief is a modal surface
-/// by definition; a team — per-exercise or plan-wide — is not a mode of the
-/// player, so team taps keep behaving exactly as before.
+/// Only the player's declared modes qualify. A brief is a modal surface by
+/// definition. A *plan-wide* team ([TeamOverviewSheetTarget]) spans every
+/// exercise, so it is not an item of the running one and has no place in a
+/// player scoped to it — the exercise-scoped [TeamSheetTarget] is the team mode.
 bool shouldHostInPlayer(BuildContext context, ContextSheetTarget target) {
   switch (target) {
     case BriefSheetTarget():
-    case TeamSheetTarget():
     case TeamOverviewSheetTarget():
       return false;
     case ExerciseSheetTarget():
     case StationSheetTarget():
     case RoleSheetTarget():
+    case TeamSheetTarget():
       break;
   }
   final exerciseService = ExerciseService();

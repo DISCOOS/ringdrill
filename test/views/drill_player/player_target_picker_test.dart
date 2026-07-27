@@ -6,6 +6,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/drill_player/player_mode.dart';
 import 'package:ringdrill/views/drill_player/player_target_picker.dart';
@@ -13,14 +14,15 @@ import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
+import 'package:ringdrill/views/widgets/team_number_badge.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// The mini bar's badge is a *within-mode* selector: its picker lists siblings
 /// of the kind the player is currently showing (ADR-0056), never a mixed list.
 ///
-/// Because X always closes the player rather than unwinding a history, the
-/// station and roleplay pickers pin the parent exercise as their first row —
-/// that pinned row is the only way back *up* a mode.
+/// Because X always closes the player rather than unwinding a history, every
+/// non-exercise picker pins the parent exercise as its first row — that pinned
+/// row is the only way back *up* a mode.
 const _planUuid = 'prog-target-picker';
 const _exerciseUuid = 'ex-target-picker';
 const _otherExerciseUuid = 'ex-target-picker-2';
@@ -33,7 +35,7 @@ Exercise _exercise() => Exercise(
   index: 0,
   name: 'Picker Exercise',
   startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
-  numberOfTeams: 1,
+  numberOfTeams: 2,
   numberOfRounds: 1,
   executionTime: 10,
   evaluationTime: 5,
@@ -66,7 +68,12 @@ Plan _shell() {
     name: 'Test Plan',
     description: '',
     metadata: PlanMetadata(created: now, updated: now, version: '1.1'),
-    teams: const [],
+    teams: const [
+      Team(uuid: 'team-a', index: 0, name: 'Alfa'),
+      Team(uuid: 'team-b', index: 1, name: 'Bravo'),
+      // In the roster but beyond this exercise's numberOfTeams.
+      Team(uuid: 'team-c', index: 2, name: 'Charlie'),
+    ],
     sessions: const [],
     exercises: const [],
     rolePlays: const [],
@@ -83,6 +90,11 @@ Future<void> _seedAndInit() async {
   await repo.setActivePlanUuid(_planUuid);
   await repo.saveExercise(_exercise());
   await repo.saveExercise(_otherExercise());
+  // Teams live under their own keys, not inside the plan shell — savePlanShell
+  // drops the `teams:` list on the way in.
+  for (final team in _shell().teams) {
+    await repo.saveTeam(team);
+  }
   await repo.saveRolePlay(
     const RolePlay(
       uuid: _roleUuid,
@@ -277,6 +289,50 @@ void main() {
 
       expect(state.picked, isA<RoleSheetTarget>());
       expect((state.picked! as RoleSheetTarget).rolePlayUuid, _otherRoleUuid);
+    });
+  });
+
+  group('team mode', () {
+    testWidgets('lists this exercise\'s teams under a pinned parent row', (
+      tester,
+    ) async {
+      await _openPicker(tester, const TeamPlayerMode(0));
+
+      expect(find.text(l10n.pickerSelectTeamTitle), findsOneWidget);
+      // Named, not numbered: a team's number is on its badge, its name in the
+      // row — mirroring TeamExerciseScreen's own title.
+      expect(find.text('Alfa'), findsOneWidget);
+      expect(find.text('Bravo'), findsOneWidget);
+      expect(find.text('Picker Exercise'), findsOneWidget);
+      expect(find.byType(TeamNumberBadge), findsNWidgets(2));
+      expect(find.byType(ExerciseNumberBadge), findsOneWidget);
+      expect(find.byType(StationNumberBadge), findsNothing);
+    });
+
+    testWidgets('picking a sibling returns that team', (tester) async {
+      final state = await _openPicker(tester, const TeamPlayerMode(0));
+
+      await tester.tap(find.text('Bravo'));
+      await tester.pumpAndSettle();
+
+      expect(state.picked, isA<TeamSheetTarget>());
+      expect((state.picked! as TeamSheetTarget).teamIndex, 1);
+      expect(
+        (state.picked! as TeamSheetTarget).exerciseUuid,
+        _exerciseUuid,
+        reason: 'the team stays scoped to the exercise the player is showing',
+      );
+    });
+
+    // The roster can hold more teams than a given exercise runs; a team with no
+    // rotation in this exercise has nothing to show here.
+    testWidgets('lists only as many teams as the exercise runs', (
+      tester,
+    ) async {
+      await _openPicker(tester, const TeamPlayerMode(0));
+
+      expect(find.byType(TeamNumberBadge), findsNWidgets(2));
+      expect(find.text('Charlie'), findsNothing);
     });
   });
 

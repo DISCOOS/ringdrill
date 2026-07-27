@@ -2745,6 +2745,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pickerSelectRoleTitle => 'Select marker';
 
   @override
+  String get pickerSelectTeamTitle => 'Select team';
+
+  @override
   String get pickerSearchHint => 'Search';
 
   @override

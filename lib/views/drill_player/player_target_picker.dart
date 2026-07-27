@@ -14,17 +14,18 @@ import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
+import 'package:ringdrill/views/widgets/team_number_badge.dart';
 
 /// The mini bar's badge picker, scoped to the player's current [PlayerMode]
-/// (ADR-0056): exercises in exercise mode, the current exercise's stations in
-/// station mode, its roleplays in roleplay mode.
+/// (ADR-0056): exercises in exercise mode, and the current exercise's stations,
+/// roleplays or teams in the other three.
 ///
 /// The badge is a *within-mode* selector — switching modes happens by tapping
 /// content (a station row inside the exercise view enters station mode). The
 /// one exception is going back *up*: since X always closes the player rather
-/// than unwinding a history, the station and roleplay pickers open with the
-/// parent exercise pinned as their first row, carrying its own exercise badge
-/// above a divider. The rest of the list stays purely siblings.
+/// than unwinding a history, every non-exercise picker opens with the parent
+/// exercise pinned as its first row, carrying its own exercise badge above a
+/// divider. The rest of the list stays purely siblings.
 ///
 /// Returns the picked target, or null when the user dismissed the picker or
 /// re-picked what was already showing.
@@ -65,6 +66,18 @@ Future<ContextSheetTarget?> showPlayerTargetPicker(
           currentUuid: rolePlayUuid,
         ),
       );
+    case TeamPlayerMode(:final teamIndex):
+      return _showScopedPicker(
+        context,
+        exercise: exercise,
+        title: AppLocalizations.of(context)!.pickerSelectTeamTitle,
+        siblings: (plan, exerciseNumber) => _teamEntries(
+          context,
+          plan: plan,
+          exercise: exercise,
+          currentIndex: teamIndex,
+        ),
+      );
   }
 }
 
@@ -88,8 +101,8 @@ class _Entry {
   final String? subtitle;
   final bool isCurrent;
 
-  /// The pinned parent-exercise row: the way *up* out of a station/roleplay
-  /// mode. Rendered above a divider so the list below reads as siblings.
+  /// The pinned parent-exercise row: the way *up* out of a station, roleplay or
+  /// team mode. Rendered above a divider so the list below reads as siblings.
   final bool isParent;
 }
 
@@ -226,6 +239,40 @@ List<_Entry> _roleEntries({
         title: _resolve(plan, exercise, role.name),
         subtitle: _stationNameFor(plan, exercise, role),
         isCurrent: role.uuid == currentUuid,
+      ),
+  ];
+}
+
+/// The teams that rotate through this exercise.
+///
+/// Bounded by `Exercise.numberOfTeams`, not by the plan's roster: the roster can
+/// hold more teams than a given exercise runs (a team not in this exercise has no
+/// rotation to show), and `PlanService.ensureTeams` guarantees a Team exists for
+/// every index below that bound.
+List<_Entry> _teamEntries(
+  BuildContext context, {
+  required Plan? plan,
+  required Exercise exercise,
+  required int currentIndex,
+}) {
+  final service = PlanService();
+  final fallback = AppLocalizations.of(context)!.team(1);
+  return [
+    for (var index = 0; index < exercise.numberOfTeams; index++)
+      _Entry(
+        target: TeamSheetTarget(exerciseUuid: exercise.uuid, teamIndex: index),
+        badge: TeamNumberBadge(
+          label: Numbering.team(index + 1),
+          highlight: index == currentIndex,
+        ),
+        // Teams carry a name, so unlike the other modes the badge's number is
+        // not the whole label — mirrors TeamExerciseScreen's own AppBar title.
+        title: _resolve(
+          plan,
+          exercise,
+          service.getTeam(index)?.name ?? '$fallback ${index + 1}',
+        ),
+        isCurrent: index == currentIndex,
       ),
   ];
 }

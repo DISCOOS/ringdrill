@@ -12,11 +12,12 @@ import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/drill_player/drill_player_coordinator.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/station_screen.dart';
+import 'package:ringdrill/views/team_exercise_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// The player is one surface with three peer *modes* — exercise, station and
-/// roleplay (ADR-0056) — not three separate players. Opening a station while
+/// The player is one surface with four peer *modes* — exercise, station,
+/// roleplay and team (ADR-0056) — not four separate players. Opening a station while
 /// the player is up must switch the player's target, never stack a sheet or a
 /// second player on top of it.
 const _planUuid = 'prog-player-modes';
@@ -174,6 +175,22 @@ void main() {
     expect(find.byType(RolePlayScreen), findsOneWidget);
     expect(find.byType(CoordinatorScreen), findsNothing);
     expect(find.text('Savnet person'), findsWidgets);
+  });
+
+  testWidgets('opens directly in team mode', (tester) async {
+    await tester.pumpWidget(
+      _harness(
+        target: const TeamSheetTarget(
+          exerciseUuid: _exerciseUuid,
+          teamIndex: 0,
+        ),
+      ),
+    );
+    await tester.tap(find.text('open player'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TeamExerciseScreen), findsOneWidget);
+    expect(find.byType(CoordinatorScreen), findsNothing);
   });
 
   // X always closes the player, from every mode — there is no target history

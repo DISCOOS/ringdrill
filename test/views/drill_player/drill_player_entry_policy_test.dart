@@ -13,6 +13,7 @@ import 'package:ringdrill/views/drill_player/drill_player_coordinator.dart';
 import 'package:ringdrill/views/drill_player/drill_player_scope.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/station_screen.dart';
+import 'package:ringdrill/views/team_exercise_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -219,9 +220,7 @@ void main() {
       await _stopLive(tester);
     });
 
-    // A team is not one of the player's three modes, so team taps behave
-    // exactly as they did before the consolidation.
-    testWidgets('a team keeps opening the ordinary sheet', (tester) async {
+    testWidgets('an exercise-scoped team enters the player', (tester) async {
       await tester.pumpWidget(
         _harness(
           const TeamSheetTarget(exerciseUuid: _exerciseUuid, teamIndex: 0),
@@ -229,6 +228,23 @@ void main() {
       );
       await _tapRowWhileLive(tester);
 
+      expect(find.byType(TeamExerciseScreen), findsOneWidget);
+      expect(_dragHandle, findsNothing);
+
+      await _stopLive(tester);
+    });
+
+    // The cross-exercise overview spans every exercise, so it is not an item of
+    // the running one — a player scoped to that exercise is the wrong host.
+    testWidgets('the plan-wide team overview opens the ordinary sheet', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _harness(const TeamOverviewSheetTarget(teamIndex: 0)),
+      );
+      await _tapRowWhileLive(tester);
+
+      expect(find.byType(TeamExerciseScreen), findsNothing);
       expect(_dragHandle, findsOneWidget);
 
       await _stopLive(tester);

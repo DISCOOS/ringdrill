@@ -7,6 +7,7 @@ import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart' show kDrillAccentFontSize;
+import 'package:ringdrill/views/drill_player/drill_player_scope.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
@@ -204,9 +205,15 @@ class _TeamsViewState extends State<TeamsView> {
               // Tapping a specific exercise is unambiguous, so open the team in
               // that exercise (the per-exercise player view) — unlike the row
               // tap, which opens the cross-exercise overview.
-              onTap: () => ContextSheet.of(context).show(
-                context,
-                TeamSheetTarget(exerciseUuid: e.uuid, teamIndex: team.index),
+              // A team of the *running* exercise opens as a mode of the player
+              // rather than in a sheet beside it (ADR-0056); the cross-exercise
+              // overview above stays outside the player, since it spans every
+              // exercise rather than belonging to the live one.
+              onTap: () => unawaited(
+                openContextTarget(
+                  context,
+                  TeamSheetTarget(exerciseUuid: e.uuid, teamIndex: team.index),
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(

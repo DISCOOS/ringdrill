@@ -11,6 +11,7 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
+import 'package:ringdrill/views/drill_player/player_mode.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
@@ -137,10 +138,7 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
                 unawaited(HapticFeedback.mediumImpact());
                 _exerciseService.start(widget.exercise);
               },
-              // A team is not a player mode of its own (ADR-0056): the badge
-              // stays the exercise badge, so this surface keeps the original
-              // "cannot switch while live" behaviour unchanged.
-              //
+              mode: TeamPlayerMode(widget.teamIndex),
               // showOrReplace, not replace: this screen can be a plain pushed
               // route (a cold deep link) where the shell's controller exists but
               // was never opened, and replace asserts on that.

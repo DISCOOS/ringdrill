@@ -45,6 +45,15 @@ class Numbering {
       '${station(f, exerciseNumber: exerciseNumber, stationIndex: stationIndex)}'
       '-$roleNumber';
 
+  /// Compact label for a team, scoped to an exercise: the bare 1-based number.
+  ///
+  /// Teams have no multi-format convention of their own — unlike stations, they
+  /// are not sub-divided — and no format enum to switch on. The number alone
+  /// stays distinguishable from an exercise's `#n` while keeping the badge
+  /// family's shape; the team's *name* is carried by the surface's title, not by
+  /// the badge (a name does not fit one).
+  static String team(int number) => '$number';
+
   /// Bijective base-26: 0 -> a, 25 -> z, 26 -> aa, 27 -> ab, ...
   /// Fixes the overflow past 'z' that the old per-brief letter helper had.
   static String alpha(int index) {

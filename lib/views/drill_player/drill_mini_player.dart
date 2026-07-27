@@ -16,6 +16,7 @@ import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
+import 'package:ringdrill/views/widgets/team_number_badge.dart';
 
 /// Badge edge, matching the 36×36 play/stop square opposite it in the strip
 /// (the badge family's own default is the 40 used in list rows).
@@ -99,9 +100,9 @@ class DrillMiniPlayer extends StatefulWidget {
   /// back to calling [ExerciseService().start] directly.
   final VoidCallback? onPlay;
 
-  /// Which of the player's three peer modes the host surface is showing
-  /// (ADR-0056). Picks the badge kind — exercise `#n`, station `n.m`, role
-  /// `n.m-k` — and scopes the badge's picker to siblings of that kind.
+  /// Which of the player's peer modes the host surface is showing (ADR-0056).
+  /// Picks the badge kind — exercise `#n`, station `n.m`, role `n.m-k`, team
+  /// `n` — and scopes the badge's picker to siblings of that kind.
   final PlayerMode mode;
 
   /// Called with the picked target when the user taps the badge and chooses a
@@ -109,8 +110,8 @@ class DrillMiniPlayer extends StatefulWidget {
   ///
   /// The badge is inert while an exercise is live *in exercise mode* — the
   /// running exercise must not be switched out from under the operator — but
-  /// stays tappable in station and roleplay mode, where it only moves between
-  /// siblings inside that same live exercise.
+  /// stays tappable in the station, roleplay and team modes, where it only moves
+  /// between siblings inside that same live exercise.
   final ValueChanged<ContextSheetTarget>? onPickTarget;
 
   final VoidCallback onOpen;
@@ -569,9 +570,9 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
   ///
   /// [isStarted] gates interactivity, not appearance: switching the *exercise*
   /// out from under a live session is the thing the original guard prevented,
-  /// so exercise mode's badge goes inert while running. Station and roleplay
-  /// mode stay tappable — they move between siblings within that same live
-  /// exercise, which is the whole point of the consolidated player.
+  /// so exercise mode's badge goes inert while running. The station, roleplay
+  /// and team modes stay tappable — they move between siblings within that same
+  /// live exercise, which is the whole point of the consolidated player.
   Widget _buildBadge(
     BuildContext context,
     Exercise exercise, {
@@ -608,6 +609,10 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
       ),
       RolePlayerMode(:final rolePlayUuid) => RoleNumberBadge(
         label: _roleBadgeLabel(rolePlayUuid, stationFormat, exerciseNumber),
+        size: _kBadgeSize,
+      ),
+      TeamPlayerMode(:final teamIndex) => TeamNumberBadge(
+        label: Numbering.team(teamIndex + 1),
         size: _kBadgeSize,
       ),
     };
