@@ -21,6 +21,9 @@ import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/map_view.dart';
+import 'package:ringdrill/views/loader_state.dart';
+import 'package:ringdrill/views/shell/closable_surface.dart';
+import 'package:ringdrill/views/shell/detail_empty_pane.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
@@ -85,12 +88,14 @@ enum _CoordinatorView { stations, teams, map }
 enum _AppBarMenuAction { edit, delete }
 
 class _CoordinatorScreenState extends State<CoordinatorScreen>
-    with SubscriptionBag<CoordinatorScreen> {
-  late bool _isStarted;
-
+    with
+        SubscriptionBag<CoordinatorScreen>,
+        ClosableSurface<CoordinatorScreen>,
+        Loader<CoordinatorScreen, Exercise, PlanEvent> {
   final _planService = PlanService();
   final _exerciseService = ExerciseService();
-  Exercise? _exercise;
+
+  bool _isStarted = false;
   bool _promptShowNotification = false;
   _CoordinatorView _view = _CoordinatorView.stations;
 
@@ -100,11 +105,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   Map<String, String> _overridesFor(Exercise exercise, {Station? station}) {
     final plan = _planService.activePlan;
     if (plan == null) return const {};
-    return effectivePlanVariables(
-      plan,
-      exercise: exercise,
-      station: station,
-    );
+    return effectivePlanVariables(plan, exercise: exercise, station: station);
   }
 
   /// The map view only exists in the compact/medium bodies. When the
@@ -141,27 +142,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
 
   @override
   void initState() {
-    _isStarted = _exerciseService.isStartedOn(widget.uuid);
+    super.initState();
 
-    // Listen to PlanService state changes. React to direct exercise events
-    // (exerciseAdded, etc.) and to planRefreshed events (emitted by
-    // reorderStations and reorderExercises which carry no exercise reference).
-    listen(_planService.events, (event) {
-      final directMatch = event.exercise?.uuid == widget.uuid;
-      final isRefresh = event.type == PlanEventType.planRefreshed;
-      if (directMatch || isRefresh) {
-        if (mounted) {
-          setState(() {
-            // Prefer the event's exercise object when available (avoids an
-            // extra service lookup for the common case). Fall back to a fresh
-            // load when the event carries no exercise (e.g. planRefreshed).
-            _exercise =
-                event.exercise ?? _planService.getExercise(widget.uuid);
-            _stagedStations = null;
-          });
-        }
-      }
-    });
+    load();
 
     // Listen to ExerciseService state changes. The phase transition snackbar
     // that used to live here has been removed because the persistent
@@ -172,19 +155,28 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // different exercise starting) correctly flip _isStarted to false for
     // this coordinator without having to filter by UUID here.
     listen(_exerciseService.events, (_) {
-      if (mounted) {
-        setState(() {
-          _isStarted = _exerciseService.isStartedOn(widget.uuid);
-        });
+      if (!mounted) return;
+      setState(onLoaded);
+    });
+
+    // Listen to PlanService state changes. React to direct exercise events
+    // (exerciseAdded, etc.) and to planRefreshed events (emitted by
+    // reorderStations and reorderExercises which carry no exercise reference).
+    listen(_planService.events, (event) {
+      if (!mounted) return;
+      final directMatch = event.exercise?.uuid == widget.uuid;
+      final isRefresh = event.type == PlanEventType.planRefreshed;
+      if (directMatch || isRefresh) {
+        reload(event);
       }
     });
 
     // Listen to Notification Events
     listen(
       NotificationService().events
-          .where((_) => _exercise != null)
+          .where((_) => loadState is Loaded<Exercise>)
           .where((e) => e.action == NotificationAction.promptReshow)
-          .where((e) => e.exercise?.uuid == _exercise?.uuid),
+          .where((e) => e.exercise?.uuid == widget.uuid),
       (event) {
         if (mounted) {
           setState(() {
@@ -193,16 +185,21 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         }
       },
     );
-
-    super.initState();
   }
 
   @override
-  void didChangeDependencies() {
-    _exercise = _planService.getExercise(widget.uuid);
-    assert(_exercise != null, 'Exercise with uuid [${widget.uuid}] not found');
+  void onLoaded() {
     _isStarted = _exerciseService.isStartedOn(widget.uuid);
-    super.didChangeDependencies();
+    // A fresh load supersedes any staged (drag-in-progress) station order.
+    _stagedStations = null;
+  }
+
+  @override
+  Exercise? onLoad(PlanEvent? event) {
+    // Prefer the event's exercise object when available (avoids an
+    // extra service lookup for the common case). Fall back to a fresh
+    // load when the event carries no exercise (e.g. planRefreshed).
+    return event?.exercise ?? _planService.getExercise(widget.uuid);
   }
 
   /// Handles the notification bell in the running-exercise app bar.
@@ -250,7 +247,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   }
 
   /// Function to handle editing the exercise
-  void _deleteExercise(BuildContext context) async {
+  void _deleteExercise(BuildContext context, Exercise exercise) async {
     final localizations = context.l10n;
     final confirmed = await confirmDestructive(
       context,
@@ -260,22 +257,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
 
     if (context.mounted && confirmed) {
-      await _planService.deleteExercise(_exercise!.uuid);
-      if (context.mounted) {
-        // The exercise this coordinator showed is gone — close the viewer the
-        // same master/detail-aware way the AppBar close does (back to the
-        // exercise list), not pop the wrong navigator in the wide layout.
-        if (MasterDetailScope.maybeOf(context) != null) {
-          ContextSheet.of(context).close();
-        } else {
-          Navigator.pop(context);
-        }
-      }
+      await _planService.deleteExercise(exercise.uuid);
+      close();
     }
   }
 
   /// Function to handle editing the exercise
-  void _editExercise(BuildContext context) async {
+  void _editExercise(BuildContext context, Exercise exercise) async {
     // Captured before the await: in compact layout openFormSurface dismisses
     // the hosting context sheet around the form push, which disposes this
     // State — the context is gone by the time the form pops. The save must
@@ -287,7 +275,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     final result = await openFormSurface<ExerciseFormResult>(
       context,
       builder: (context) => ExerciseFormScreen(
-        exercise: _exercise,
+        exercise: exercise,
         numberOfTeams: numberOfTeams == 0 ? null : numberOfTeams,
         variables: _planService.activePlan?.variables ?? const [],
       ),
@@ -302,39 +290,50 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         await applyVariableAdditionsToActivePlan(_planService, additions);
         await _planService.saveExercise(localizations, exercise);
         if (!mounted) return;
-        setState(() {
-          _exercise = exercise;
-        });
+        // Optimistic local update: we already hold the saved object.
+        updateLoaded(exercise);
       case ExerciseFormDelete(:final exercise):
         await _planService.deleteExercise(exercise.uuid);
-        if (!mounted) return;
-        // The exercise this coordinator showed is gone — close the viewer the
-        // same master/detail-aware way the AppBar close does. Use the State's
-        // own context (this.context), not the method parameter: the `mounted`
-        // check guards this State, and in compact layout the passed-in context
-        // belonged to the now-disposed sheet.
-        if (MasterDetailScope.maybeOf(this.context) != null) {
-          ContextSheet.of(this.context).close();
-        } else {
-          Navigator.pop(this.context);
-        }
+        close();
     }
   }
 
+  ExerciseEvent _ensureEvent(Exercise exercise, [ExerciseEvent? event]) {
+    final last = event ?? _exerciseService.last;
+
+    // Only use the service event if it belongs to this exercise.
+    // Events from a different running exercise must not bleed into
+    // this coordinator's progress colours and phase display.
+    if (last?.exercise.uuid == widget.uuid) return last!;
+
+    // Not started yet
+    return ExerciseEvent.pending(exercise);
+  }
+
+  /// The exercise is gone (deleted elsewhere, or a stale deep link).
+  ///
+  /// Explains itself and leaves closing to the reader rather than dismissing
+  /// the surface out from under them — see [DetailGonePane].
   @override
-  Widget build(BuildContext context) {
+  Widget buildNotFound(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(leading: MasterDetailLeading(onClose: close)),
+      body: DetailGonePane(
+        icon: Icons.update,
+        message: AppLocalizations.of(context)!.detailGoneExercise,
+        onClose: close,
+      ),
+    );
+  }
+
+  @override
+  Widget buildLoaded(BuildContext context, Exercise exercise) {
     final localizations = AppLocalizations.of(context)!;
     return StreamBuilder(
+      initialData: _ensureEvent(exercise),
       stream: _exerciseService.events,
-      initialData: _exerciseService.last,
       builder: (context, asyncSnapshot) {
-        // Only use the service event if it belongs to this exercise.
-        // Events from a different running exercise must not bleed into
-        // this coordinator's progress colours and phase display.
-        final raw = asyncSnapshot.data;
-        final event = (raw != null && raw.exercise.uuid == widget.uuid)
-            ? raw
-            : ExerciseEvent.pending(_planService.getExercise(widget.uuid)!);
+        final event = _ensureEvent(exercise, asyncSnapshot.data);
         return Scaffold(
           appBar: AppBar(
             // Matches the other detail screens (`StationScreen`,
@@ -342,18 +341,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             // AppBar so the first content row aligns across master and
             // detail in the wide layout.
             toolbarHeight: kRingdrillHeaderHeight,
-            leading: MasterDetailLeading(
-              onClose: () {
-                if (MasterDetailScope.maybeOf(context) != null) {
-                  ContextSheet.of(context).close();
-                } else {
-                  Navigator.pop(context);
-                }
-              },
-            ),
+            leading: MasterDetailLeading(onClose: close),
             title: SheetTitle(
-              primary: _exercise!.name,
-              primaryOverrides: _overridesFor(_exercise!),
+              primary: exercise.name,
+              primaryOverrides: _overridesFor(exercise),
             ),
             actions: rdAppBarActions(context, [
               // Open Brief — scoped to this exercise. Always visible
@@ -378,7 +369,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               // reappears as a third icon once the coordinator presses
               // start, and toggles between enabled/disabled based on
               // whether there's an actual notification to reshow.
-              if (_isStarted)
+              if (_promptShowNotification && _isStarted)
                 IconButton(
                   icon: const Icon(Icons.notifications_on),
                   padding: const EdgeInsets.all(8.0),
@@ -397,13 +388,17 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                   icon: const Icon(Icons.edit),
                   padding: const EdgeInsets.all(8.0),
                   tooltip: localizations.editExercise,
-                  onPressed: _isStarted ? null : () => _editExercise(context),
+                  onPressed: _isStarted
+                      ? null
+                      : () => _editExercise(context, exercise),
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete),
                   padding: const EdgeInsets.all(8.0),
                   tooltip: localizations.deleteExercise,
-                  onPressed: _isStarted ? null : () => _deleteExercise(context),
+                  onPressed: _isStarted
+                      ? null
+                      : () => _deleteExercise(context, exercise),
                 ),
               ] else
                 PopupMenuButton<_AppBarMenuAction>(
@@ -413,10 +408,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                   onSelected: (action) {
                     switch (action) {
                       case _AppBarMenuAction.edit:
-                        _editExercise(context);
+                        _editExercise(context, exercise);
                         break;
                       case _AppBarMenuAction.delete:
-                        _deleteExercise(context);
+                        _deleteExercise(context, exercise);
                         break;
                     }
                   },
@@ -445,9 +440,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             actionsPadding: EdgeInsets.only(right: 16.0),
           ),
           body: SafeArea(
-            child: _exercise!.schedule.isEmpty
+            child: exercise.schedule.isEmpty
                 ? Center(child: Text(localizations.noRoundsScheduled))
-                : _buildBody(event),
+                : _buildBody(exercise, event),
           ),
           // Standalone / modal player surface: the docked mini-player owns
           // play, stop and progress, so the floating control button is
@@ -457,7 +452,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           bottomNavigationBar: MasterDetailScope.maybeOf(context) == null
               ? DrillMiniPlayer(
                   key: const ValueKey('coordinator-mini-player'),
-                  exercise: _exercise,
+                  exercise: exercise,
                   height: 64,
                   // Paint the accent background through the bottom safe-area
                   // inset so the home-indicator strip matches the bar instead
@@ -471,7 +466,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                   onOpen: () {},
                   onPlay: () {
                     unawaited(HapticFeedback.mediumImpact());
-                    _exerciseService.start(_exercise!);
+                    _exerciseService.start(exercise);
                   },
                   onPickExercise: (picked) => ContextSheet.of(
                     context,
@@ -484,7 +479,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
-  Widget _buildBody(ExerciseEvent event) {
+  Widget _buildBody(Exercise exercise, ExerciseEvent event) {
     final localizations = AppLocalizations.of(context)!;
     // Hero row only makes sense once the coordinator has started (or is
     // about to start) the exercise. The StreamBuilder above falls back to
@@ -524,6 +519,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             // one unit.
             if (windowSize == WindowSizeClass.expanded) {
               return _buildExpandedBody(
+                exercise,
                 event,
                 showHero: showHero,
                 localizations: localizations,
@@ -536,6 +532,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             // stations/teams segments keep scrolling the whole column.
             if (_view == _CoordinatorView.map) {
               return _buildMapBody(
+                exercise,
                 event,
                 showHero: showHero,
                 localizations: localizations,
@@ -545,6 +542,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             return SingleChildScrollView(
               padding: const EdgeInsets.all(_kCoordinatorBodyPadding),
               child: _buildStackedBody(
+                exercise,
                 event,
                 showHero: showHero,
                 localizations: localizations,
@@ -563,7 +561,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               padding: const EdgeInsets.all(16),
               constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               visualDensity: VisualDensity.compact,
-              onPressed: () => _copyExerciseToClipboard(localizations),
+              onPressed: () =>
+                  _copyExerciseToClipboard(localizations, exercise),
             ),
           ),
         ),
@@ -576,6 +575,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// is medium's only difference from compact: with the extra width, the
   /// status and schedule cards share a row instead of stacking.
   Widget _buildStackedBody(
+    Exercise exercise,
     ExerciseEvent event, {
     required bool showHero,
     required AppLocalizations localizations,
@@ -585,14 +585,14 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         sideBySideTop
-            ? _buildSideBySideTopSection(event, showHero: showHero)
-            : _buildTopSection(event, showHero: showHero),
+            ? _buildSideBySideTopSection(exercise, event, showHero: showHero)
+            : _buildTopSection(exercise, event, showHero: showHero),
         const SizedBox(height: 16),
-        _buildViewSelector(localizations, includeMap: true),
+        _buildViewSelector(localizations, exercise, includeMap: true),
         const SizedBox(height: 8),
         switch (_view) {
-          _CoordinatorView.stations => _buildStationList(event),
-          _CoordinatorView.teams => _buildTeamList(event),
+          _CoordinatorView.stations => _buildStationList(exercise, event),
+          _CoordinatorView.teams => _buildTeamList(exercise, event),
           // The map segment never reaches here — `_buildBody` routes it to
           // `_buildMapBody` (a filling, non-scrolling layout) before calling
           // this scrolling stacked body.
@@ -612,12 +612,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// version overflowed there, because the non-flex top section alone
   /// exceeded the viewport before `Expanded` got any room.
   Widget _buildMapBody(
+    Exercise exercise,
     ExerciseEvent event, {
     required bool showHero,
     required AppLocalizations localizations,
     required bool sideBySideTop,
   }) {
-    final map = _buildExercisePositionMap(event);
+    final map = _buildExercisePositionMap(exercise, event);
     return LayoutBuilder(
       builder: (context, constraints) {
         // Reserve only the selector + gaps (~96), not the variable top
@@ -633,14 +634,18 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               sideBySideTop
-                  ? _buildSideBySideTopSection(event, showHero: showHero)
-                  : _buildTopSection(event, showHero: showHero),
+                  ? _buildSideBySideTopSection(
+                      exercise,
+                      event,
+                      showHero: showHero,
+                    )
+                  : _buildTopSection(exercise, event, showHero: showHero),
               const SizedBox(height: 16),
-              _buildViewSelector(localizations, includeMap: true),
+              _buildViewSelector(localizations, exercise, includeMap: true),
               const SizedBox(height: 8),
               SizedBox(
                 height: mapHeight,
-                child: map ?? _buildMapPlaceholder(localizations),
+                child: map ?? _buildMapPlaceholder(localizations, exercise),
               ),
             ],
           ),
@@ -655,16 +660,17 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// is needed here. Falls back to just the schedule card before start,
   /// same as the stacked variant.
   Widget _buildSideBySideTopSection(
+    Exercise exercise,
     ExerciseEvent event, {
     required bool showHero,
   }) {
-    if (!showHero) return _buildScheduleCard(event);
+    if (!showHero) return _buildScheduleCard(exercise, event);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: _buildScheduleCard(event)),
+        Expanded(child: _buildScheduleCard(exercise, event)),
         const SizedBox(width: 16),
-        Expanded(child: _buildCombinedHeroCard(event)),
+        Expanded(child: _buildCombinedHeroCard(exercise, event)),
       ],
     );
   }
@@ -674,11 +680,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// the remaining width and the full height. The segment drops `Kart`
   /// (`includeMap: false`) since the map is always visible here.
   Widget _buildExpandedBody(
+    Exercise exercise,
     ExerciseEvent event, {
     required bool showHero,
     required AppLocalizations localizations,
   }) {
-    final map = _buildExercisePositionMap(event);
+    final map = _buildExercisePositionMap(exercise, event);
     return Padding(
       padding: const EdgeInsets.all(_kCoordinatorBodyPadding),
       child: Row(
@@ -690,19 +697,23 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildTopSection(event, showHero: showHero),
+                  _buildTopSection(exercise, event, showHero: showHero),
                   const SizedBox(height: 16),
-                  _buildViewSelector(localizations, includeMap: false),
+                  _buildViewSelector(
+                    localizations,
+                    exercise,
+                    includeMap: false,
+                  ),
                   const SizedBox(height: 8),
                   _viewWithoutMap == _CoordinatorView.stations
-                      ? _buildStationList(event)
-                      : _buildTeamList(event),
+                      ? _buildStationList(exercise, event)
+                      : _buildTeamList(exercise, event),
                 ],
               ),
             ),
           ),
           const SizedBox(width: 16),
-          Expanded(child: map ?? _buildMapPlaceholder(localizations)),
+          Expanded(child: map ?? _buildMapPlaceholder(localizations, exercise)),
         ],
       ),
     );
@@ -713,7 +724,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// rotations — without it the expanded body could only ever show
   /// stations.
   Widget _buildViewSelector(
-    AppLocalizations localizations, {
+    AppLocalizations localizations,
+    Exercise exercise, {
     required bool includeMap,
   }) {
     // The map segment is only offered in the compact/medium bodies; the
@@ -728,15 +740,15 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           value: _CoordinatorView.stations,
           label: Text(
             '${localizations.stationsTab}'
-            ' (${_exercise!.stations.length})',
+            ' (${exercise.stations.length})',
           ),
           icon: const Icon(Icons.location_on),
         ),
         ButtonSegment<_CoordinatorView>(
           value: _CoordinatorView.teams,
           label: Text(
-            '${localizations.team(_exercise!.numberOfTeams)}'
-            ' (${_exercise!.numberOfTeams})',
+            '${localizations.team(exercise.numberOfTeams)}'
+            ' (${exercise.numberOfTeams})',
           ),
           icon: const Icon(Icons.group),
         ),
@@ -779,15 +791,16 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// in the single-column body (a fixed slot in a scrolling column) and
   /// null in the expanded pane (it fills the pane).
   Widget _buildMapPlaceholder(
-    AppLocalizations localizations, {
+    AppLocalizations localizations,
+    Exercise exercise, {
     double? height,
   }) {
     return MapPlaceholder(
       height: height,
-      icon: _exercise!.stations.isEmpty
+      icon: exercise.stations.isEmpty
           ? Icons.wrong_location
           : Icons.location_off,
-      message: _exercise!.stations.isEmpty
+      message: exercise.stations.isEmpty
           ? localizations.notStationsCreated
           : localizations.noLocation,
     );
@@ -799,8 +812,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// box's height inside the scrolling compact/medium body; left `null` for
   /// the expanded body's pane, which fills whatever height its `Expanded`
   /// ancestor gives it instead.
-  Widget? _buildExercisePositionMap(ExerciseEvent event, {double? height}) {
-    final markers = exerciseStationMarkers(context, _exercise!, liveEvent: event);
+  Widget? _buildExercisePositionMap(
+    Exercise exercise,
+    ExerciseEvent event, {
+    double? height,
+  }) {
+    final markers = exerciseStationMarkers(context, exercise, liveEvent: event);
     if (markers.isEmpty) return null;
 
     final points = markers.map((marker) => marker.point).toList();
@@ -826,7 +843,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           // resolved its size from the full window and could visibly
           // mismatch the rest of the stack in a narrower embedding).
           withFullscreen: true,
-          fullscreenHeader: ExerciseMapSheetHeader(exercise: _exercise!),
+          fullscreenHeader: ExerciseMapSheetHeader(exercise: exercise),
         ),
       ),
     );
@@ -891,11 +908,15 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// their container. `showHero` is only true once the coordinator has
   /// started the exercise — before start there's nothing to show "now /
   /// next" for, so only the schedule card is shown.
-  Widget _buildTopSection(ExerciseEvent event, {required bool showHero}) {
+  Widget _buildTopSection(
+    Exercise exercise,
+    ExerciseEvent event, {
+    required bool showHero,
+  }) {
     // Play and stop now live in the docked mini-player (or, in
     // master-detail, in the master column), so the top section is purely
     // informational in every layout.
-    return _buildTopSectionContent(event, showHero: showHero);
+    return _buildTopSectionContent(exercise, event, showHero: showHero);
   }
 
   /// Override for [DrillMiniPlayer]'s central area (replacing the default
@@ -950,24 +971,22 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           scrollDirection: Axis.horizontal,
           reverse: true,
           child: Row(
+            spacing: 24.0,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (remainingSeconds > 0) ...[
+              if (remainingSeconds > 0)
                 _buildMiniTile(
                   context,
                   value: _formatCountdown(phaseRemaining),
                   subtitle: event.getState(localizations),
                   fg: fg,
                 ),
-                const SizedBox(width: 32),
-              ],
               _buildMiniTile(
                 context,
                 value: exercise.startTime.toString(),
                 subtitle: localizations.startTime,
                 fg: fg,
               ),
-              const SizedBox(width: 32),
               _buildMiniTile(
                 context,
                 value: _formatClock(now),
@@ -998,6 +1017,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         scrollDirection: Axis.horizontal,
         reverse: true,
         child: Row(
+          spacing: 24.0,
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildMiniTile(
@@ -1006,14 +1026,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               subtitle: localizations.elapsedLabel,
               fg: fg,
             ),
-            const SizedBox(width: 32),
             _buildMiniTile(
               context,
               value: _formatDuration(localizations, totalSeconds),
               subtitle: localizations.totalLabel,
               fg: fg,
             ),
-            const SizedBox(width: 32),
             _buildMiniTile(
               context,
               value: localizations.roundOfTotal(
@@ -1023,18 +1041,16 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               subtitle: localizations.round(1),
               fg: fg,
             ),
-            const SizedBox(width: 32),
-            _buildMiniTile(
-              context,
-              value: _formatClock(now),
-              subtitle: localizations.clockLabel,
-              fg: fg,
-            ),
-            const SizedBox(width: 32),
             _buildMiniTile(
               context,
               value: _formatCountdown(phaseRemaining),
               subtitle: event.getState(localizations),
+              fg: fg,
+            ),
+            _buildMiniTile(
+              context,
+              value: _formatClock(now),
+              subtitle: localizations.clockLabel,
               fg: fg,
             ),
           ],
@@ -1118,16 +1134,17 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   }
 
   Widget _buildTopSectionContent(
+    Exercise exercise,
     ExerciseEvent event, {
     required bool showHero,
   }) {
-    if (!showHero) return _buildScheduleCard(event);
+    if (!showHero) return _buildScheduleCard(exercise, event);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildCombinedHeroCard(event),
+        _buildCombinedHeroCard(exercise, event),
         const SizedBox(height: 12),
-        _buildScheduleCard(event),
+        _buildScheduleCard(exercise, event),
       ],
     );
   }
@@ -1138,10 +1155,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// and "Neste runde" (the next round and its start time). Both are
   /// omitted once there is no further phase/round to report (the last
   /// phase of the last round).
-  Widget _buildCombinedHeroCard(ExerciseEvent event) {
+  Widget _buildCombinedHeroCard(Exercise exercise, ExerciseEvent event) {
     final localizations = AppLocalizations.of(context)!;
-    final exercise = _exercise!;
-    final (nextPhase, nextRound) = _coordinatorNowNext(event, localizations);
+    final (nextPhase, nextRound) = _coordinatorNowNext(
+      exercise,
+      event,
+      localizations,
+    );
     return PlayerStatusCard(
       event: event,
       preStartSubline: localizations.statusPreStartSubline(
@@ -1167,11 +1187,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// the inline "· HH:MM" time, not the label, so the two half-card cells
   /// don't overflow the way "Neste fase"/"Neste runde" plus an icon did.
   (PlayerStatusCell?, PlayerStatusCell?) _coordinatorNowNext(
+    Exercise exercise,
     ExerciseEvent event,
     AppLocalizations localizations,
   ) {
     if (!event.isRunning) return (null, null);
-    final exercise = _exercise!;
     final phaseIdx = event.phase.index - 1;
     final roundIdx = event.currentRound;
     final isLastRound = roundIdx >= exercise.numberOfRounds - 1;
@@ -1210,7 +1230,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// The coordinator's schedule card — the same [ScheduleCard] the
   /// Post/Lag/Spill players build, full width, replacing the old
   /// shrink-wrapped round table (DESIGN-010 follow-up).
-  Widget _buildScheduleCard(ExerciseEvent event) {
+  Widget _buildScheduleCard(Exercise exercise, ExerciseEvent event) {
     final localizations = AppLocalizations.of(context)!;
     // Long-press on the schedule card is kept as a forgiving shortcut
     // that triggers the same copy-exercise action as the floating
@@ -1223,7 +1243,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // just on tile pixels.
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onLongPress: () => _copyExerciseToClipboard(localizations),
+      onLongPress: () => _copyExerciseToClipboard(localizations, exercise),
       child: ScheduleCard(
         sectionId: 'coordinatorSchedule',
         title: localizations.stationTimingCardTitle,
@@ -1234,11 +1254,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         headerLabel: localizations.round(1),
         labelWidth: 90,
         event: event,
-        exercise: _exercise!,
+        exercise: exercise,
         rows: [
           for (
             var roundIndex = 0;
-            roundIndex < _exercise!.schedule.length;
+            roundIndex < exercise.schedule.length;
             roundIndex++
           )
             ScheduleTableRow(
@@ -1250,9 +1270,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
-  Future<void> _copyExerciseToClipboard(AppLocalizations localizations) async {
-    final exercise = _exercise;
-    if (exercise == null) return;
+  Future<void> _copyExerciseToClipboard(
+    AppLocalizations localizations,
+    Exercise exercise,
+  ) async {
     final text = formatExerciseForShare(
       exercise,
       localizations,
@@ -1274,9 +1295,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
-  Widget _buildStationList(ExerciseEvent event) {
+  Widget _buildStationList(Exercise exercise, ExerciseEvent event) {
     final localizations = context.l10n;
-    final exercise = _exercise!;
     // Use staged stations (synchronous post-commit display) when available so
     // the new order is shown immediately after Done without snap-back.
     // _stagedStations is cleared when the planRefreshed event arrives.
@@ -1286,11 +1306,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // does — by position in the unfiltered exercise list — so the badge label
     // matches what the Stations segment shows (ADR-0036 §"Coordinator station
     // badge").
-    final exerciseNumber =
-        (_planService.loadExercises().indexWhere(
-          (e) => e.uuid == exercise.uuid,
-        ) +
-        1);
+    final exerciseNumber = _planService.getExerciseNumber(exercise.uuid);
 
     Widget buildStationRow(
       BuildContext context,
@@ -1404,11 +1420,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           ),
         ),
         confirmDismiss: (_) async {
-          await _editStation(stationIndex);
+          await _editStation(exercise, stationIndex);
           return false;
         },
         child: ExpandableTile(
-          onLongPress: () => _editStation(stationIndex),
+          onLongPress: () => _editStation(exercise, stationIndex),
           // Do NOT use a PageStorageKey here: any SelectableText below
           // (e.g. UtmWidget inside the station detail) reads from the
           // same bucket-path for its scroll offset, casting an
@@ -1442,7 +1458,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             ),
           ),
           onToggle: () => _toggleStation(stationIndex),
-          body: _buildStationDetail(stationIndex),
+          body: _buildStationDetail(exercise, stationIndex),
         ),
       );
     }
@@ -1469,13 +1485,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
-  Future<void> _editStation(int stationIndex) async {
+  Future<void> _editStation(Exercise exercise, int stationIndex) async {
     final localizations = context.l10n;
     if (_isStarted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localizations.stopExerciseFirst(_exercise!.name)),
-        ),
+        SnackBar(content: Text(localizations.stopExerciseFirst(exercise.name))),
       );
       return;
     }
@@ -1486,27 +1500,23 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         .loadRolePlays()
         .where(
           (r) =>
-              r.exerciseUuid == _exercise!.uuid &&
-              r.stationIndex == stationIndex,
+              r.exerciseUuid == exercise.uuid && r.stationIndex == stationIndex,
         )
         .toList();
     final result = await openFormSurface<StationFormResult>(
       context,
       builder: (_) => StationFormScreen(
-        station: _exercise!.stations[stationIndex],
+        station: exercise.stations[stationIndex],
         markers: _planService.getLocations().toMarkerSpecs(),
         variables: _planService.activePlan?.variables ?? const [],
-        parentExercise: _exercise,
+        parentExercise: exercise,
         roleplays: roleplays,
       ),
     );
     // No mounted gate on the save: openFormSurface disposes this State when
     // it dismisses the hosting context sheet around the form push.
     if (result == null) return;
-    await applyVariableAdditionsToActivePlan(
-      _planService,
-      result.additions,
-    );
+    await applyVariableAdditionsToActivePlan(_planService, result.additions);
     // A marker authored/edited inline from the Persons section's "Legg til
     // markør" / "Spilles av {navn}" row (DESIGN-009 prompt 4j) — held in
     // the post editor's own working copy, written back here alongside the
@@ -1516,11 +1526,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       localizations,
       result.additions,
     );
-    final stations = [..._exercise!.stations];
+    final stations = [...exercise.stations];
     stations[stationIndex] = result.station;
     await _planService.saveExercise(
       localizations,
-      _exercise!.copyWith(stations: stations),
+      exercise.copyWith(stations: stations),
     );
   }
 
@@ -1530,14 +1540,14 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// opens the interactive bottom sheet). The round-by-round time table
   /// is intentionally NOT repeated here — that information already lives
   /// in the round table above the SegmentedButton.
-  Widget _buildStationDetail(int stationIndex) {
-    final station = _exercise!.stations[stationIndex];
+  Widget _buildStationDetail(Exercise exercise, int stationIndex) {
+    final station = exercise.stations[stationIndex];
     final description = station.description;
     // Seed this station's own scope so `{{station.*}}` resolves in the
     // expanded card instead of showing literally (StationScope.forStation is
     // the single source of the field list + UTM formatting).
     return StationScope.forStation(
-      exercise: _exercise!,
+      exercise: exercise,
       station: station,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
@@ -1557,7 +1567,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                   padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
                   child: RingDrillText.rich(
                     description,
-                    overrides: _overridesFor(_exercise!, station: station),
+                    overrides: _overridesFor(exercise, station: station),
                   ),
                 ),
               ),
@@ -1571,7 +1581,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
               child: StationPositionPanel(
-                exercise: _exercise!,
+                exercise: exercise,
                 station: station,
                 miniMapKey: ValueKey<String>(
                   'coordinator-station-map-$stationIndex',
@@ -1581,7 +1591,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
               child: StationRoleSummary(
-                exercise: _exercise!,
+                exercise: exercise,
                 stationIndex: stationIndex,
               ),
             ),
@@ -1591,16 +1601,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
-  Widget _buildTeamList(ExerciseEvent event) {
+  Widget _buildTeamList(Exercise exercise, ExerciseEvent event) {
     final localizations = context.l10n;
     final format =
         PlanService().activePlan?.stationNumberFormat ??
         StationNumberFormat.dotted;
-    final exNum =
-        PlanService().loadExercises().indexWhere(
-          (e) => e.uuid == _exercise!.uuid,
-        ) +
-        1;
+    final exNum = PlanService().getExerciseNumber(exercise.uuid);
     final exerciseNumber = exNum < 1 ? 1 : exNum;
     // See `_buildStationList`: rendered as a Column so the parent
     // SingleChildScrollView owns the scrolling. Team counts are bounded
@@ -1619,12 +1625,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           // already highlights the current round, but the subtitle is
           // faster to read for exercises with many rounds.
           final currentStationIndex = event.isRunning
-              ? _exercise!.stationIndex(teamIndex, event.currentRound)
+              ? exercise.stationIndex(teamIndex, event.currentRound)
               : -1;
           final currentStationName =
               (currentStationIndex >= 0 &&
-                  currentStationIndex < _exercise!.stations.length)
-              ? _exercise!.stations[currentStationIndex].numberAndName(
+                  currentStationIndex < exercise.stations.length)
+              ? exercise.stations[currentStationIndex].numberAndName(
                   format,
                   exerciseNumber: exerciseNumber,
                 )
@@ -1637,7 +1643,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               _planService.getTeam(teamIndex)?.name ??
               '${localizations.team(1)} ${teamIndex + 1}';
           return ExpandableTile(
-            onLongPress: () => _editTeam(teamIndex),
+            onLongPress: () => _editTeam(exercise, teamIndex),
             // Use ValueKey (not PageStorageKey) — see the comment
             // on the station ExpandableTile above for the reason.
             key: ValueKey<String>('coordinator-team-$teamIndex'),
@@ -1681,14 +1687,14 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                     ),
                   ),
                 ),
-                ...List<Widget>.generate(_exercise!.schedule.length, (
+                ...List<Widget>.generate(exercise.schedule.length, (
                   roundIndex,
                 ) {
                   final isCurrent =
                       event.isRunning && roundIndex == event.currentRound;
                   return TeamStationWidget(
                     isCurrent: isCurrent,
-                    exercise: _exercise!,
+                    exercise: exercise,
                     teamIndex: teamIndex,
                     roundIndex: roundIndex,
                   );
@@ -1705,20 +1711,18 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               TeamSheetTarget(exerciseUuid: widget.uuid, teamIndex: teamIndex),
             ),
             onToggle: () => _toggleTeam(teamIndex),
-            body: _buildTeamDetail(teamIndex, event),
+            body: _buildTeamDetail(exercise, teamIndex, event),
           );
         }),
       ),
     );
   }
 
-  Future<void> _editTeam(int teamIndex) async {
+  Future<void> _editTeam(Exercise exercise, int teamIndex) async {
     final localizations = context.l10n;
     if (_isStarted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localizations.stopExerciseFirst(_exercise!.name)),
-        ),
+        SnackBar(content: Text(localizations.stopExerciseFirst(exercise.name))),
       );
       return;
     }
@@ -1739,16 +1743,16 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// the user expands the [ExpandableTile] for that team. Lists the station
   /// rotation per round so the coordinator can track where the team is going
   /// without leaving the overview.
-  Widget _buildTeamDetail(int teamIndex, ExerciseEvent event) {
+  Widget _buildTeamDetail(
+    Exercise exercise,
+    int teamIndex,
+    ExerciseEvent event,
+  ) {
     final localizations = AppLocalizations.of(context)!;
     final format =
         PlanService().activePlan?.stationNumberFormat ??
         StationNumberFormat.dotted;
-    final exNum =
-        PlanService().loadExercises().indexWhere(
-          (e) => e.uuid == _exercise!.uuid,
-        ) +
-        1;
+    final exNum = PlanService().getExerciseNumber(exercise.uuid);
     final exerciseNumber = exNum < 1 ? 1 : exNum;
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
@@ -1760,17 +1764,17 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         headerLabel: localizations.round(1),
         labelWidth: 78,
         event: event,
-        exercise: _exercise!,
-        rows: List<ScheduleTableRow>.generate(_exercise!.schedule.length, (
+        exercise: exercise,
+        rows: List<ScheduleTableRow>.generate(exercise.schedule.length, (
           roundIndex,
         ) {
-          final stationIndex = _exercise!.stationIndex(teamIndex, roundIndex);
+          final stationIndex = exercise.stationIndex(teamIndex, roundIndex);
           final none = stationIndex < 0;
           return ScheduleTableRow(
             roundIndex: roundIndex,
             label: none
                 ? '${localizations.station(1)} ×'
-                : _exercise!.stations[stationIndex].numberAndName(
+                : exercise.stations[stationIndex].numberAndName(
                     format,
                     exerciseNumber: exerciseNumber,
                   ),

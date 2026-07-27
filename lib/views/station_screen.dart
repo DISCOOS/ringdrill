@@ -16,12 +16,16 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
+import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
-import 'package:ringdrill/views/map_view.dart' show MapConfig;
 import 'package:ringdrill/views/location_form_screen.dart';
+import 'package:ringdrill/views/map_view.dart' show MapConfig;
 import 'package:ringdrill/views/person_form_screen.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
+import 'package:ringdrill/views/loader_state.dart';
+import 'package:ringdrill/views/shell/closable_surface.dart';
+import 'package:ringdrill/views/shell/detail_empty_pane.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
@@ -67,13 +71,27 @@ class StationScreen extends StatefulWidget {
 /// selection regardless of a resize (the expanded body never reads it).
 enum _StationDetailView { info, script, map }
 
-class _StationScreenState extends State<StationScreen> {
-  late bool _isStarted;
-  late Exercise _exercise;
+/// What this screen shows: the parent exercise plus the station at
+/// [StationScreen.stationIndex]. Both are needed together — and the index can
+/// fall out of range when the station is deleted elsewhere — so they are
+/// loaded as one unit.
+class _StationSubject {
+  const _StationSubject(this.exercise, this.station);
+
+  final Exercise exercise;
+  final Station station;
+}
+
+class _StationScreenState extends State<StationScreen>
+    with
+        SubscriptionBag<StationScreen>,
+        ClosableSurface<StationScreen>,
+        Loader<StationScreen, _StationSubject, PlanEvent> {
   _StationDetailView _view = _StationDetailView.info;
   final _planService = PlanService();
   final _exerciseService = ExerciseService();
-  final _subscribers = <StreamSubscription>[];
+
+  bool _isStarted = false;
 
   // DESIGN-010 stage 3b: the Station description card renders per the settings
   // role (director sees the gated directorNotesMd section too), not an
@@ -95,266 +113,196 @@ class _StationScreenState extends State<StationScreen> {
   Map<String, String> _overridesFor(Exercise exercise, {Station? station}) {
     final plan = _planService.activePlan;
     if (plan == null) return const {};
-    return effectivePlanVariables(
-      plan,
-      exercise: exercise,
-      station: station,
-    );
+    return effectivePlanVariables(plan, exercise: exercise, station: station);
   }
 
   @override
   void initState() {
-    _exercise = _planService.getExercise(widget.uuid)!;
-    _isStarted = _exerciseService.isStartedOn(_exercise.uuid);
+    super.initState();
+
+    load();
     _loadStoredRole();
 
     // Listen to ExerciseService state changes
-    _subscribers.add(
-      _exerciseService.events.listen((event) {
-        if (event.exercise.uuid == widget.uuid) {
-          // Update the state based on the current event phase
-          if (mounted) {
-            final changed = _isStarted != (event.isRunning || event.isPending);
-            setState(() {
-              _isStarted = event.isRunning || event.isPending;
-            });
-            if (changed || event.isDone) {
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  showCloseIcon: true,
-                  dismissDirection: DismissDirection.endToStart,
-                  content: Text(
-                    '${substitutePlanVariables(_exercise.name, _overridesFor(_exercise))} ${event.isRunning
-                        ? AppLocalizations.of(context)!.isRunning
-                        : event.isPending
-                        ? AppLocalizations.of(context)!.isPending
-                        : AppLocalizations.of(context)!.isDone}',
-                  ),
-                ),
-              );
-            }
-          }
-        }
-      }),
-    );
+    listen(_exerciseService.events, (event) {
+      if (!mounted) return;
+      if (event.exercise.uuid == widget.uuid) {
+        setState(onLoaded);
+      }
+    });
 
     // Rebuild on any plan mutation (roleplay/actor/person/station edits
     // elsewhere), not just this screen's own actions — mirrors
     // CoordinatorScreen. Re-read the cached exercise; ignore a delete of the
     // exercise itself (the hosting sheet closes that case).
-    _subscribers.add(
-      _planService.events.listen((_) {
-        if (!mounted) return;
-        final fresh = _planService.getExercise(widget.uuid);
-        if (fresh != null) setState(() => _exercise = fresh);
-      }),
-    );
-    super.initState();
+    listen(_planService.events, (event) {
+      if (!mounted) return;
+      final directMatch = event.exercise?.uuid == widget.uuid;
+      final isRefresh = event.type == PlanEventType.planRefreshed;
+      if (directMatch || isRefresh) {
+        reload(event);
+      }
+    });
   }
 
   @override
-  void dispose() {
-    for (final it in _subscribers) {
-      it.cancel();
+  void onLoaded() {
+    _isStarted = _exerciseService.isStartedOn(widget.uuid);
+  }
+
+  @override
+  _StationSubject? onLoad(PlanEvent? event) {
+    // Prefer the event's exercise object when available (avoids an extra
+    // service lookup for the common case). Fall back to a fresh load when the
+    // event carries no exercise (e.g. planRefreshed).
+    final exercise = event?.exercise ?? _planService.getExercise(widget.uuid);
+    if (exercise == null) return null;
+    // The index can outlive the station it pointed at — a delete elsewhere
+    // shortens the list — so range-check rather than indexing blind.
+    if (widget.stationIndex < 0 ||
+        widget.stationIndex >= exercise.stations.length) {
+      return null;
     }
-    super.dispose();
+    return _StationSubject(exercise, exercise.stations[widget.stationIndex]);
+  }
+
+  /// The event to render for [exercise]: the service's live one when it belongs
+  /// to this exercise, else a pending placeholder.
+  ExerciseEvent _ensureEvent(Exercise exercise, [ExerciseEvent? event]) {
+    final last = event ?? _exerciseService.last;
+
+    // Events from a different running exercise must not bleed into this
+    // viewer's progress colours and phase display.
+    if (last != null && last.exercise.uuid == exercise.uuid) return last;
+
+    // Not started yet
+    return ExerciseEvent.pending(exercise);
+  }
+
+  /// The station, or its exercise, is gone (deleted elsewhere, a stale deep
+  /// link, or a station index that no longer exists).
+  ///
+  /// Explains itself and leaves closing to the reader rather than dismissing
+  /// the surface out from under them — see [DetailGonePane].
+  @override
+  Widget buildNotFound(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(leading: MasterDetailLeading(onClose: close)),
+      body: DetailGonePane(
+        icon: Icons.place,
+        message: AppLocalizations.of(context)!.detailGoneStation,
+        onClose: close,
+      ),
+    );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildLoaded(BuildContext context, _StationSubject subject) {
     final localizations = AppLocalizations.of(context)!;
-    // Station identity in the AppBar so the sheet's header names the thing
-    // the sheet is about, with the parent exercise on the secondary line.
-    // Prefixed with the formatted post number (Station.numberAndName), like
-    // everywhere else a post is named as text. A manual code the author
-    // typed into the name (e.g. "1a) Turgåer") is their own to clean up
-    // (doubling is not handled here).
-    final station = _exercise.stations[widget.stationIndex];
-    final stationNumberFormat =
-        _planService.activePlan?.stationNumberFormat ??
-        StationNumberFormat.dotted;
-    final exerciseNumber =
-        _planService.loadExercises().indexWhere(
-          (e) => e.uuid == _exercise.uuid,
-        ) +
-        1;
-    // DESIGN-010 stage 3: this station/exercise are already loaded here, so
-    // wrap the sheet in the same resolve-context scopes an editor provides
-    // (ADR-0048). Every widget built *below* this point (`SheetTitle`,
-    // `RingDrillText`, the `Builder` in `_buildDescription`) then resolves
-    // the full `{{station.*}}`/`{{exercise.*}}` cascade, not just
-    // `{{var.*}}` — `context` captured here in `build` stays above the
-    // scope (it is `State.context`, an ancestor of whatever `build`
-    // returns), so it cannot see these two itself.
-    return StationScope.forStation(
-      exercise: _exercise,
-      station: station,
-      child: Scaffold(
-        appBar: AppBar(
-          leading: MasterDetailLeading(
-            onClose: () {
-              if (MasterDetailScope.maybeOf(context) != null) {
-                ContextSheet.of(context).close();
-              } else {
-                Navigator.pop(context);
-              }
-            },
-          ),
-          toolbarHeight: 72,
-          title: SheetTitle(
-            primary: station.numberAndName(
-              stationNumberFormat,
-              exerciseNumber: exerciseNumber < 1 ? 1 : exerciseNumber,
+    final exercise = subject.exercise;
+    return StreamBuilder(
+      initialData: _ensureEvent(exercise),
+      stream: _exerciseService.events,
+      builder: (context, asyncSnapshot) {
+        final event = _ensureEvent(exercise, asyncSnapshot.data);
+        // Station identity in the AppBar so the sheet's header names the thing
+        // the sheet is about, with the parent exercise on the secondary line.
+        // Prefixed with the formatted post number (Station.numberAndName), like
+        // everywhere else a post is named as text. A manual code the author
+        // typed into the name (e.g. "1a) Turgåer") is their own to clean up
+        // (doubling is not handled here).
+        final station = subject.station;
+        final stationNumberFormat =
+            _planService.activePlan?.stationNumberFormat ??
+            StationNumberFormat.dotted;
+        final exerciseNumber = _planService.getExerciseNumber(exercise.uuid);
+
+        // DESIGN-010 stage 3: this station/exercise are already loaded here, so
+        // wrap the sheet in the same resolve-context scopes an editor provides
+        // (ADR-0048). Every widget built *below* this point (`SheetTitle`,
+        // `RingDrillText`, the `Builder` in `_buildDescription`) then resolves
+        // the full `{{station.*}}`/`{{exercise.*}}` cascade, not just
+        // `{{var.*}}` — `context` captured here in `build` stays above the
+        // scope (it is `State.context`, an ancestor of whatever `build`
+        // returns), so it cannot see these two itself.
+        return StationScope.forStation(
+          exercise: exercise,
+          station: station,
+          child: Scaffold(
+            appBar: AppBar(
+              leading: MasterDetailLeading(onClose: close),
+              toolbarHeight: 72,
+              title: SheetTitle(
+                primary: station.numberAndName(
+                  stationNumberFormat,
+                  exerciseNumber: exerciseNumber < 1 ? 1 : exerciseNumber,
+                ),
+                secondary: exercise.name,
+                primaryOverrides: _overridesFor(exercise, station: station),
+                secondaryOverrides: _overridesFor(exercise),
+              ),
+              actions: [
+                // Edit Exercise Button
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  padding: const EdgeInsets.all(8.0),
+                  onPressed: _isStarted
+                      ? null
+                      : () => _editStation(context, exercise),
+                  tooltip: _isStarted
+                      ? localizations.stopExerciseFirst(
+                          substitutePlanVariables(
+                            exercise.name,
+                            _overridesFor(exercise),
+                          ),
+                        )
+                      : localizations.editExercise,
+                ),
+              ],
+              actionsPadding: EdgeInsets.only(right: 16.0),
             ),
-            secondary: _exercise.name,
-            primaryOverrides: _overridesFor(_exercise, station: station),
-            secondaryOverrides: _overridesFor(_exercise),
-          ),
-          actions: [
-            // Edit Exercise Button
-            IconButton(
-              icon: const Icon(Icons.edit),
-              padding: const EdgeInsets.all(8.0),
-              onPressed: _isStarted ? null : () => _editStation(context),
-              tooltip: _isStarted
-                  ? localizations.stopExerciseFirst(
-                      substitutePlanVariables(
-                        _exercise.name,
-                        _overridesFor(_exercise),
-                      ),
-                    )
-                  : localizations.editExercise,
-            ),
-          ],
-          actionsPadding: EdgeInsets.only(right: 16.0),
-        ),
-        body: SafeArea(
-          child: StreamBuilder(
-            stream: _exerciseService.events,
-            initialData: _initialData(),
-            builder: (context, asyncSnapshot) {
-              final event = asyncSnapshot.data!;
-              final station = _exercise.stations[widget.stationIndex];
-              // DESIGN-010 stage 3b: the rebuilt Post viewer is a single
-              // linear stack of cards, matching the mockup. The follow-up
-              // expanded-map-right split below drives off the body's own
-              // pane width (`WindowSizeClass.fromWidth`, not
-              // `.of(context)` — this sheet can sit in a detail pane
-              // narrower than the window, ADR-0030) and, at that width,
-              // moves the map to a fixed full-height right pane beside a
-              // capped, independently-scrolling left column — mirroring
-              // the coordinator's own expanded body.
-              return LayoutBuilder(
+            body: SafeArea(
+              child: LayoutBuilder(
                 builder: (context, constraints) {
                   final windowSize = WindowSizeClass.fromWidth(
                     constraints.maxWidth,
                   );
                   if (windowSize == WindowSizeClass.expanded) {
-                    return _buildExpandedBody(station, event);
+                    return _buildExpandedBody(exercise, station, event);
                   }
                   // Compact and medium share the segmented Info/Script/Map
                   // body; only expanded gets the two-pane WideDetailMapSplit.
-                  return _buildSegmentedBody(station, event);
+                  return _buildSegmentedBody(exercise, station, event);
                 },
-              );
-            },
+              ),
+            ),
+            // Mirror the CoordinatorScreen pattern: dock a DrillMiniPlayer for
+            // the parent exercise so the user can start it directly from the
+            // station view (modal context sheet in narrow). In master-detail
+            // (wide) the docked bar lives in the master column instead, so we
+            // skip it here. The bar self-hides when an unrelated exercise is
+            // already running.
+            bottomNavigationBar: MasterDetailScope.maybeOf(context) == null
+                ? DrillMiniPlayer(
+                    exercise: exercise,
+                    height: 64,
+                    applyBottomInset: true,
+                    // We are already inside the station sheet; tapping the bar
+                    // body should not try to re-open something.
+                    onOpen: () {},
+                    onPlay: () {
+                      unawaited(HapticFeedback.mediumImpact());
+                      _exerciseService.start(exercise);
+                    },
+                    onPickExercise: (picked) => ContextSheet.of(
+                      context,
+                    ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
+                  )
+                : null,
           ),
-        ),
-        // Mirror the CoordinatorScreen pattern: dock a DrillMiniPlayer for
-        // the parent exercise so the user can start it directly from the
-        // station view (modal context sheet in narrow). In master-detail
-        // (wide) the docked bar lives in the master column instead, so we
-        // skip it here. The bar self-hides when an unrelated exercise is
-        // already running.
-        bottomNavigationBar: MasterDetailScope.maybeOf(context) == null
-            ? DrillMiniPlayer(
-                exercise: _exercise,
-                height: 64,
-                applyBottomInset: true,
-                // We are already inside the station sheet; tapping the bar
-                // body should not try to re-open something.
-                onOpen: () {},
-                onPlay: () {
-                  unawaited(HapticFeedback.mediumImpact());
-                  _exerciseService.start(_exercise);
-                },
-                onPickExercise: (picked) => ContextSheet.of(
-                  context,
-                ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
-              )
-            : null,
-      ),
+        );
+      },
     );
-  }
-
-  /// The shared [PlayerStatusCard] (DESIGN-010 follow-up: player-status-
-  /// card). The station name lives in the sheet's AppBar
-  /// (`SheetTitle.primary`), so this card only carries running-state info.
-  /// Gated on [_isStarted] (scoped to this exercise, not the global
-  /// `ExerciseService().isStarted`) so a different exercise running
-  /// elsewhere never renders this station's card with foreign data.
-  Widget _buildStationStatus(Station station, ExerciseEvent event) {
-    if (!_isStarted) return const SizedBox.shrink();
-    final l10n = AppLocalizations.of(context)!;
-    return PlayerStatusCard(
-      event: event,
-      preStartSubline: l10n.statusPreStartSubline(
-        _exercise.startTime.toString(),
-        _exercise.numberOfRounds,
-      ),
-      leadingCell: _teamAtPostCell(
-        l10n,
-        roundIndex: event.currentRound,
-        isNow: true,
-      ),
-      trailingCell: _nextTeamAtPostCell(l10n, event),
-    );
-  }
-
-  /// "Nå"/"Neste" team-at-post cell for [roundIndex], from
-  /// `Exercise.teamIndex` — the same rotation math `_buildTimingCard`'s
-  /// schedule rows read. `null` team ("Ikke aktiv nå") for [isNow]; a
-  /// missing round for "Neste" is handled by [_nextTeamAtPostCell]
-  /// returning `null` instead.
-  PlayerStatusCell _teamAtPostCell(
-    AppLocalizations l10n, {
-    required int roundIndex,
-    required bool isNow,
-  }) {
-    final teamIndex = _exercise.teamIndex(widget.stationIndex, roundIndex);
-    return PlayerStatusCell(
-      icon: Icons.groups,
-      label: isNow ? l10n.statusNow : l10n.nextLabel,
-      value: teamIndex == -1
-          ? l10n.statusNotActiveNow
-          : '${l10n.team(1)} ${teamIndex + 1}',
-      isNow: isNow,
-    );
-  }
-
-  /// The next round (after [event.currentRound]) that assigns a team to
-  /// this station, falling back to [finishFallbackCell] once no later
-  /// round does (last active round already running).
-  PlayerStatusCell? _nextTeamAtPostCell(
-    AppLocalizations l10n,
-    ExerciseEvent event,
-  ) {
-    for (
-      var roundIndex = event.currentRound + 1;
-      roundIndex < _exercise.schedule.length;
-      roundIndex++
-    ) {
-      final teamIndex = _exercise.teamIndex(widget.stationIndex, roundIndex);
-      if (teamIndex == -1) continue;
-      return PlayerStatusCell(
-        icon: Icons.arrow_forward,
-        label: l10n.nextLabel,
-        time: _exercise.schedule[roundIndex][0].toString(),
-        value: '${l10n.team(1)} ${teamIndex + 1}',
-      );
-    }
-    return finishFallbackCell(l10n, _exercise, icon: Icons.arrow_forward);
   }
 
   /// The rollup made concrete (DESIGN-010): the lead description then every
@@ -365,12 +313,13 @@ class _StationScreenState extends State<StationScreen> {
   /// `BriefAudience.includesDirectorNotes`, which also includes instructor:
   /// this is the author's own live planning note, not the printed brief).
   /// Tapping a section opens the station editor scrolled straight to it.
-  Widget _buildStationDescriptionCard(Station station) {
+  Widget _buildStationDescriptionCard(Exercise exercise, Station station) {
     return StationDescriptionCard(
-      exercise: _exercise,
+      exercise: exercise,
       station: station,
       role: _role,
-      onTapSection: (id) => _editStation(context, initialSectionId: id),
+      onTapSection: (id) =>
+          _editStation(context, exercise, initialSectionId: id),
     );
   }
 
@@ -382,12 +331,13 @@ class _StationScreenState extends State<StationScreen> {
   /// true` so the map flexes to fill its bounded parent and is directly
   /// interactive.
   Widget _buildMapCard(
+    Exercise exercise,
     Station station, {
     bool fillHeight = false,
     bool interactive = false,
   }) {
     return StationPositionPanel(
-      exercise: _exercise,
+      exercise: exercise,
       station: station,
       label: AppLocalizations.of(context)!.placement,
       asCard: true,
@@ -396,11 +346,11 @@ class _StationScreenState extends State<StationScreen> {
       interactive: interactive,
       sectionId: 'position',
       miniMapKey: ValueKey<String>(
-        'station-screen-map-${_exercise.uuid}-${station.index}',
+        'station-screen-map-${exercise.uuid}-${station.index}',
       ),
-      markers: stationScenarioMarkers(context, _exercise, station),
-      legend: StationScenarioLegend(exercise: _exercise, station: station),
-      onTap: () => _editStation(context, initialSectionId: 'id'),
+      markers: stationScenarioMarkers(context, exercise, station),
+      legend: StationScenarioLegend(exercise: exercise, station: station),
+      onTap: () => _editStation(context, exercise, initialSectionId: 'id'),
     );
   }
 
@@ -409,25 +359,31 @@ class _StationScreenState extends State<StationScreen> {
   /// Lokasjoner/Tidsplan in a capped, self-scrolling left column, the map
   /// panel (with its coordinate row) filling the right pane's full height
   /// (`fillHeight: true`), mirroring the coordinator's own expanded body.
-  Widget _buildExpandedBody(Station station, ExerciseEvent event) {
+  Widget _buildExpandedBody(
+    Exercise exercise,
+    Station station,
+    ExerciseEvent event,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(kPlayerSurfaceHorizontalPadding),
       child: WideDetailMapSplit(
         left: [
-          // Only inserted when there's a status card to show — otherwise
-          // this unconditional gap would sit above Postbeskrivelse with
-          // nothing above it, misaligning the left column's first visible
-          // card against the map pane's flush top.
-          if (_isStarted) ...[
-            _buildStationStatus(station, event),
-            const SizedBox(height: 8),
-          ],
-          _buildStationDescriptionCard(station),
-          _buildPersonsCard(station),
-          _buildLocationsCard(station),
-          _buildTimingCard(station, event),
+          _StationStatusCard(
+            exercise: exercise,
+            stationIndex: station.index,
+            event: event,
+          ),
+          _buildStationDescriptionCard(exercise, station),
+          _buildPersonsCard(exercise, station),
+          _buildLocationsCard(exercise, station),
+          _buildTimingCard(exercise, station, event),
         ],
-        mapPane: _buildMapCard(station, fillHeight: true, interactive: true),
+        mapPane: _buildMapCard(
+          exercise,
+          station,
+          fillHeight: true,
+          interactive: true,
+        ),
       ),
     );
   }
@@ -440,9 +396,14 @@ class _StationScreenState extends State<StationScreen> {
   /// and a fullscreen command for going bigger. Mirrors CoordinatorScreen's
   /// own segmented body. Only the `expanded` window size uses the two-pane
   /// `WideDetailMapSplit` instead.
-  Widget _buildSegmentedBody(Station station, ExerciseEvent event) {
+  Widget _buildSegmentedBody(
+    Exercise exercise,
+    Station station,
+    ExerciseEvent event,
+  ) {
     final l10n = AppLocalizations.of(context)!;
     return Column(
+      spacing: 8.0,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
@@ -455,29 +416,34 @@ class _StationScreenState extends State<StationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (_isStarted) ...[
-                _buildStationStatus(station, event),
-                const SizedBox(height: 8),
-              ],
+              _StationStatusCard(
+                event: event,
+                exercise: exercise,
+                stationIndex: widget.stationIndex,
+              ),
               _buildViewSelector(l10n),
             ],
           ),
         ),
-        const SizedBox(height: 8),
         Expanded(
           child: switch (_view) {
             _StationDetailView.info => _segmentScroll([
-              _buildStationDescriptionCard(station),
-              _buildTimingCard(station, event),
+              _buildStationDescriptionCard(exercise, station),
+              _buildTimingCard(exercise, station, event),
             ]),
             _StationDetailView.script => _segmentScroll([
-              _buildPersonsCard(station),
-              _buildLocationsCard(station),
+              _buildPersonsCard(exercise, station),
+              _buildLocationsCard(exercise, station),
             ]),
             _StationDetailView.map => _fillOrScrollMap(
               station.position == null
                   ? MapPlaceholder(message: l10n.noLocation)
-                  : _buildMapCard(station, fillHeight: true, interactive: true),
+                  : _buildMapCard(
+                      exercise,
+                      station,
+                      fillHeight: true,
+                      interactive: true,
+                    ),
             ),
           },
         ),
@@ -582,10 +548,14 @@ class _StationScreenState extends State<StationScreen> {
   /// the shared `ScheduleTable`, so the current round (while `event` is
   /// running) gets the same house progress-fill highlight the coordinator
   /// and team tables show, not a bespoke static rendering.
-  Widget _buildTimingCard(Station station, ExerciseEvent event) {
+  Widget _buildTimingCard(
+    Exercise exercise,
+    Station station,
+    ExerciseEvent event,
+  ) {
     final l10n = AppLocalizations.of(context)!;
-    final rows = List.generate(_exercise.schedule.length, (roundIndex) {
-      final teamIndex = _exercise.teamIndex(widget.stationIndex, roundIndex);
+    final rows = List.generate(exercise.schedule.length, (roundIndex) {
+      final teamIndex = exercise.teamIndex(widget.stationIndex, roundIndex);
       return ScheduleTableRow(
         roundIndex: roundIndex,
         label: teamIndex == -1
@@ -596,7 +566,7 @@ class _StationScreenState extends State<StationScreen> {
             ? null
             : () => ContextSheet.of(context).replace(
                 TeamSheetTarget(
-                  exerciseUuid: _exercise.uuid,
+                  exerciseUuid: exercise.uuid,
                   teamIndex: teamIndex,
                 ),
               ),
@@ -608,21 +578,15 @@ class _StationScreenState extends State<StationScreen> {
       headerLabel: l10n.team(1),
       rows: rows,
       event: event,
-      exercise: _exercise,
+      exercise: exercise,
       // Collapsed-header summary: the whole exercise window and its duration,
       // via the same helper the Spill viewer's Når aktiv card uses.
       collapsedSummary: scheduleWindowSummary(
         l10n,
-        _exercise.startTime,
-        _exercise.endTime,
+        exercise.startTime,
+        exercise.endTime,
       ),
     );
-  }
-
-  ExerciseEvent _initialData() {
-    final last = _exerciseService.last;
-    if (last?.exercise.uuid == widget.uuid) return last!;
-    return ExerciseEvent.pending(_exercise);
   }
 
   /// Personer card (DESIGN-009/010): one row per station-owned [Person] —
@@ -630,7 +594,7 @@ class _StationScreenState extends State<StationScreen> {
   /// shown inline via `personsSectionEnactedByAction` (the same label
   /// `PersonsSection`'s own editor row uses) rather than a separate marker
   /// list. Omitted entirely when the station has none.
-  Widget _buildPersonsCard(Station station) {
+  Widget _buildPersonsCard(Exercise exercise, Station station) {
     if (station.persons.isEmpty) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context)!;
     return CollapsibleSectionCard(
@@ -640,7 +604,7 @@ class _StationScreenState extends State<StationScreen> {
       collapsedTitleSuffix: '${station.persons.length}',
       trailing: _HeaderAddAction(
         label: l10n.personsSectionAddAction,
-        onTap: () => _addPerson(station),
+        onTap: () => _addPerson(exercise, station),
       ),
       // Each row already draws its own leading (top) divider.
       dividedBody: true,
@@ -648,20 +612,20 @@ class _StationScreenState extends State<StationScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (final person in station.persons)
-            _buildPersonRow(station, person),
+            _buildPersonRow(exercise, station, person),
         ],
       ),
     );
   }
 
-  Widget _buildPersonRow(Station station, Person person) {
+  Widget _buildPersonRow(Exercise exercise, Station station, Person person) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final rolePlay = _planService
         .loadRolePlays()
         .where(
           (r) =>
-              r.exerciseUuid == _exercise.uuid &&
+              r.exerciseUuid == exercise.uuid &&
               r.stationIndex == widget.stationIndex &&
               r.personRef == person.slug,
         )
@@ -704,7 +668,7 @@ class _StationScreenState extends State<StationScreen> {
       pill = CastPill(
         variant: CastPillVariant.add,
         label: l10n.personsSectionAddMarkerAction,
-        onTap: () => _addRolePlayForPerson(station, person),
+        onTap: () => _addRolePlayForPerson(exercise, station, person),
       );
     } else if (castActor == null) {
       pill = CastPill(
@@ -727,8 +691,8 @@ class _StationScreenState extends State<StationScreen> {
     // editor. The trailing cast pill is its own inner tap target.
     return InkWell(
       onTap: rolePlay == null
-          ? () => _editPerson(station, person)
-          : () => _editRolePlay(rolePlay),
+          ? () => _editPerson(exercise, station, person)
+          : () => _editRolePlay(exercise, rolePlay),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
@@ -831,13 +795,13 @@ class _StationScreenState extends State<StationScreen> {
   /// Opens the spill (roleplay) editor for an existing [rolePlay] — the person
   /// row's tap target once the person has a spill (DESIGN-012 follow-up), so
   /// the spill is reachable and editable from the person list.
-  Future<void> _editRolePlay(RolePlay rolePlay) async {
+  Future<void> _editRolePlay(Exercise exercise, RolePlay rolePlay) async {
     final localizations = AppLocalizations.of(context)!;
     final result = await openFormSurface<RolePlayFormResult>(
       context,
       builder: (_) => RolePlayFormScreen(
         rolePlay: rolePlay,
-        exercise: _exercise,
+        exercise: exercise,
         variables: _planService.activePlan?.variables ?? const [],
         isExisting: true,
       ),
@@ -863,7 +827,7 @@ class _StationScreenState extends State<StationScreen> {
   /// styled by [LocationKind] (ADR-0020) — the same kind icon/color the map
   /// card's markers and legend use. Omitted entirely when the station has
   /// none.
-  Widget _buildLocationsCard(Station station) {
+  Widget _buildLocationsCard(Exercise exercise, Station station) {
     if (station.locations.isEmpty) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context)!;
     return CollapsibleSectionCard(
@@ -873,7 +837,7 @@ class _StationScreenState extends State<StationScreen> {
       collapsedTitleSuffix: '${station.locations.length}',
       trailing: _HeaderAddAction(
         label: l10n.locationsSectionAddAction,
-        onTap: () => _addLocation(station),
+        onTap: () => _addLocation(exercise, station),
       ),
       // Each row already draws its own leading (top) divider.
       dividedBody: true,
@@ -881,20 +845,24 @@ class _StationScreenState extends State<StationScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (final location in station.locations)
-            _buildLocationRow(station, location),
+            _buildLocationRow(exercise, station, location),
         ],
       ),
     );
   }
 
-  Widget _buildLocationRow(Station station, Location location) {
+  Widget _buildLocationRow(
+    Exercise exercise,
+    Station station,
+    Location location,
+  ) {
     final theme = Theme.of(context);
     final displayName = location.label.isEmpty ? location.slug : location.label;
     final subtitle = location.place.isNotEmpty
         ? location.place
         : (location.position == null ? '' : formatUtm(location.position));
     return InkWell(
-      onTap: () => _editLocation(station, location),
+      onTap: () => _editLocation(exercise, station, location),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
@@ -940,7 +908,7 @@ class _StationScreenState extends State<StationScreen> {
     );
   }
 
-  Future<void> _addPerson(Station station) async {
+  Future<void> _addPerson(Exercise exercise, Station station) async {
     final localizations = AppLocalizations.of(context)!;
     final result = await openFormSurface<PersonFormResult>(
       context,
@@ -954,18 +922,15 @@ class _StationScreenState extends State<StationScreen> {
     // a var.* created inline from this person's own fields reaches the
     // active Plan; a sibling station.loc/person.* joins this same
     // station, alongside the person itself.
-    await applyVariableAdditionsToActivePlan(
-      _planService,
-      result.additions,
-    );
+    await applyVariableAdditionsToActivePlan(_planService, result.additions);
     final withAdditions = applyStationAdditions(station, result.additions);
     final updated = withAdditions.copyWith(
       persons: [...withAdditions.persons, result.person],
     );
-    await _saveStation(localizations, updated);
+    await _saveStation(localizations, exercise, updated);
   }
 
-  Future<void> _addLocation(Station station) async {
+  Future<void> _addLocation(Exercise exercise, Station station) async {
     final localizations = AppLocalizations.of(context)!;
     final result = await openFormSurface<LocationFormResult>(
       context,
@@ -975,21 +940,22 @@ class _StationScreenState extends State<StationScreen> {
     );
     if (result == null) return;
     // Write-back, mirroring _addPerson above.
-    await applyVariableAdditionsToActivePlan(
-      _planService,
-      result.additions,
-    );
+    await applyVariableAdditionsToActivePlan(_planService, result.additions);
     final withAdditions = applyStationAdditions(station, result.additions);
     final updated = withAdditions.copyWith(
       locations: [...withAdditions.locations, result.location],
     );
-    await _saveStation(localizations, updated);
+    await _saveStation(localizations, exercise, updated);
   }
 
   /// Opens the person editor for an existing [person] (row tap), writing the
   /// edited person back in place by its (stable) slug. Mirrors [_addPerson]'s
   /// write-back of any sibling entities created inline.
-  Future<void> _editPerson(Station station, Person person) async {
+  Future<void> _editPerson(
+    Exercise exercise,
+    Station station,
+    Person person,
+  ) async {
     final localizations = AppLocalizations.of(context)!;
     final result = await openFormSurface<PersonFormResult>(
       context,
@@ -1003,10 +969,7 @@ class _StationScreenState extends State<StationScreen> {
       ),
     );
     if (result == null) return;
-    await applyVariableAdditionsToActivePlan(
-      _planService,
-      result.additions,
-    );
+    await applyVariableAdditionsToActivePlan(_planService, result.additions);
     final withAdditions = applyStationAdditions(station, result.additions);
     final updated = withAdditions.copyWith(
       persons: [
@@ -1014,11 +977,15 @@ class _StationScreenState extends State<StationScreen> {
           if (p.slug == person.slug) result.person else p,
       ],
     );
-    await _saveStation(localizations, updated);
+    await _saveStation(localizations, exercise, updated);
   }
 
   /// [_editPerson]'s [Location] counterpart (row tap on the Lokasjoner card).
-  Future<void> _editLocation(Station station, Location location) async {
+  Future<void> _editLocation(
+    Exercise exercise,
+    Station station,
+    Location location,
+  ) async {
     final localizations = AppLocalizations.of(context)!;
     final result = await openFormSurface<LocationFormResult>(
       context,
@@ -1031,10 +998,7 @@ class _StationScreenState extends State<StationScreen> {
       ),
     );
     if (result == null) return;
-    await applyVariableAdditionsToActivePlan(
-      _planService,
-      result.additions,
-    );
+    await applyVariableAdditionsToActivePlan(_planService, result.additions);
     final withAdditions = applyStationAdditions(station, result.additions);
     final updated = withAdditions.copyWith(
       locations: [
@@ -1042,22 +1006,26 @@ class _StationScreenState extends State<StationScreen> {
           if (l.slug == location.slug) result.location else l,
       ],
     );
-    await _saveStation(localizations, updated);
+    await _saveStation(localizations, exercise, updated);
   }
 
   /// Opens the RolePlay editor pre-set with [person]'s own identity and
   /// `personRef` (mirroring `PersonsSection.onAddRolePlay`'s editor
   /// counterpart) — a new marker for a person nobody plays yet.
-  Future<void> _addRolePlayForPerson(Station station, Person person) async {
+  Future<void> _addRolePlayForPerson(
+    Exercise exercise,
+    Station station,
+    Person person,
+  ) async {
     final localizations = AppLocalizations.of(context)!;
     final existing = _planService
         .loadRolePlays()
-        .where((r) => r.exerciseUuid == _exercise.uuid)
+        .where((r) => r.exerciseUuid == exercise.uuid)
         .length;
     final draft = RolePlay(
       uuid: nanoid(10),
       index: existing,
-      exerciseUuid: _exercise.uuid,
+      exerciseUuid: exercise.uuid,
       stationIndex: station.index,
       name: person.name,
       age: person.age,
@@ -1069,7 +1037,7 @@ class _StationScreenState extends State<StationScreen> {
       context,
       builder: (_) => RolePlayFormScreen(
         rolePlay: draft,
-        exercise: _exercise,
+        exercise: exercise,
         variables: _planService.activePlan?.variables ?? const [],
       ),
     );
@@ -1089,27 +1057,34 @@ class _StationScreenState extends State<StationScreen> {
 
   Future<void> _saveStation(
     AppLocalizations localizations,
+    Exercise exercise,
     Station updated,
   ) async {
-    final stations = _exercise.stations.toList()
+    final stations = exercise.stations.toList()
       ..[widget.stationIndex] = updated;
-    final newExercise = _exercise.copyWith(stations: stations);
+    final newExercise = exercise.copyWith(stations: stations);
     await _planService.saveExercise(localizations, newExercise);
     if (!mounted) return;
-    setState(() => _exercise = newExercise);
+    // Optimistic local update: we already hold the saved object, so swap it in
+    // rather than re-reading it back out of the repository.
+    updateLoaded(_StationSubject(newExercise, stations[widget.stationIndex]));
   }
 
   /// Function to handle editing the exercise. [initialSectionId] jumps the
   /// editor straight to that section (DESIGN-010's rollup card tap-to-edit)
   /// instead of always opening on the base section.
-  void _editStation(BuildContext context, {String? initialSectionId}) async {
+  void _editStation(
+    BuildContext context,
+    Exercise exercise, {
+    String? initialSectionId,
+  }) async {
     // Captured before the await: in compact layout openFormSurface dismisses
     // the hosting context sheet around the form push, which disposes this
     // State — the context is gone by the time the form pops. The save must
     // still run (PlanService needs no context); only UI work below is
     // gated on mounted.
     final localizations = AppLocalizations.of(context)!;
-    final stations = _exercise.stations.toList();
+    final stations = exercise.stations.toList();
 
     // DESIGN-009 prompt 5: the delete-guard and save-block need to know
     // whether a roleplay linked to this station references a Location/
@@ -1118,7 +1093,7 @@ class _StationScreenState extends State<StationScreen> {
         .loadRolePlays()
         .where(
           (r) =>
-              r.exerciseUuid == _exercise.uuid &&
+              r.exerciseUuid == exercise.uuid &&
               r.stationIndex == widget.stationIndex,
         )
         .toList();
@@ -1130,26 +1105,23 @@ class _StationScreenState extends State<StationScreen> {
         station: stations[widget.stationIndex],
         markers: _planService.getLocations().toMarkerSpecs(),
         variables: _planService.activePlan?.variables ?? const [],
-        parentExercise: _exercise,
+        parentExercise: exercise,
         roleplays: roleplays,
         initialSectionId: initialSectionId,
       ),
     );
-    // The previous guard was `newStation != _exercise`, but those are
+    // The previous guard was `newStation != exercise`, but those are
     // two unrelated types (Station vs Exercise) so the comparison was
     // always true. Backing out of the form (result == null) then
     // ran `stations[i] = null` on a non-nullable list and crashed.
     if (result == null) return;
-    await applyVariableAdditionsToActivePlan(
-      _planService,
-      result.additions,
-    );
+    await applyVariableAdditionsToActivePlan(_planService, result.additions);
     stations[widget.stationIndex] = result.station;
-    final newExercise = _exercise.copyWith(stations: stations);
+    final newExercise = exercise.copyWith(stations: stations);
     await _planService.saveExercise(localizations, newExercise);
     if (!mounted) return;
     setState(() {
-      _exercise = newExercise;
+      exercise = newExercise;
     });
   }
 }
@@ -1189,6 +1161,91 @@ class _HeaderAddAction extends StatelessWidget {
   }
 }
 
-// The person row's cast affordance is now the shared `CastPill`
-// (DESIGN-012); the former private `_EnactedByPill` /
-// `_AddMarkerPill` have been removed.
+class _StationStatusCard extends StatelessWidget {
+  _StationStatusCard({
+    required this.event,
+    required this.exercise,
+    required this.stationIndex,
+  });
+
+  final int stationIndex;
+  final Exercise exercise;
+  final ExerciseEvent event;
+  final exerciseService = ExerciseService();
+
+  @override
+  Widget build(BuildContext context) {
+    if (!exerciseService.isStartedOn(exercise.uuid)) {
+      return const SizedBox.shrink();
+    }
+    final lastEvent = exerciseService.last;
+    return StreamBuilder<ExerciseEvent>(
+      stream: exerciseService.events,
+      initialData: lastEvent?.exercise.uuid == exercise.uuid
+          ? lastEvent
+          : ExerciseEvent.pending(exercise),
+      builder: (context, snapshot) {
+        final event = snapshot.data!;
+        final l10n = AppLocalizations.of(context)!;
+        return PlayerStatusCard(
+          event: event,
+          preStartSubline: l10n.statusPreStartSubline(
+            exercise.startTime.toString(),
+            exercise.numberOfRounds,
+          ),
+          leadingCell: _teamAtPostCell(
+            l10n,
+            roundIndex: event.currentRound,
+            isNow: true,
+          ),
+          trailingCell: _nextTeamAtPostCell(l10n, event),
+        );
+      },
+    );
+  }
+
+  /// "Nå"/"Neste" team-at-post cell for [roundIndex], from
+  /// `Exercise.teamIndex` — the same rotation math `_buildTimingCard`'s
+  /// schedule rows read. `null` team ("Ikke aktiv nå") for [isNow]; a
+  /// missing round for "Neste" is handled by [_nextTeamAtPostCell]
+  /// returning `null` instead.
+  PlayerStatusCell _teamAtPostCell(
+    AppLocalizations l10n, {
+    required int roundIndex,
+    required bool isNow,
+  }) {
+    final teamIndex = exercise.teamIndex(stationIndex, roundIndex);
+    return PlayerStatusCell(
+      icon: Icons.groups,
+      label: isNow ? l10n.statusNow : l10n.nextLabel,
+      value: teamIndex == -1
+          ? l10n.statusNotActiveNow
+          : '${l10n.team(1)} ${teamIndex + 1}',
+      isNow: isNow,
+    );
+  }
+
+  /// The next round (after [event.currentRound]) that assigns a team to
+  /// this station, falling back to [finishFallbackCell] once no later
+  /// round does (last active round already running).
+  PlayerStatusCell? _nextTeamAtPostCell(
+    AppLocalizations l10n,
+    ExerciseEvent event,
+  ) {
+    for (
+      var roundIndex = event.currentRound + 1;
+      roundIndex < exercise.schedule.length;
+      roundIndex++
+    ) {
+      final teamIndex = exercise.teamIndex(stationIndex, roundIndex);
+      if (teamIndex == -1) continue;
+      return PlayerStatusCell(
+        icon: Icons.arrow_forward,
+        label: l10n.nextLabel,
+        time: exercise.schedule[roundIndex][0].toString(),
+        value: '${l10n.team(1)} ${teamIndex + 1}',
+      );
+    }
+    return finishFallbackCell(l10n, exercise, icon: Icons.arrow_forward);
+  }
+}
