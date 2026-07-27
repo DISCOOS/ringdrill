@@ -29,10 +29,26 @@ class DrillPlayerCoordinator {
   Future<void> openDrillPlayer(BuildContext context) {
     final last = ExerciseService().last;
     if (last == null) return Future<void>.value();
+    // The player hosts its own ContextSheet, opened on the exercise it is
+    // showing. There is only ever one drill player, so switching exercise from
+    // the docked mini player has to swap this body in place: with a local
+    // controller in scope, `ContextSheet.of(...).showOrReplace(...)` inside the
+    // player finds an *open* controller and replaces the target instead of
+    // stacking a second player over the first.
+    //
+    // Registering also makes this the `currentController` while the player
+    // lives, and disposing unregisters it, restoring the shell's.
+    final controller = ContextSheetController()
+      ..adoptInlineTarget(
+        ExerciseSheetTarget(exerciseUuid: last.exercise.uuid),
+      );
     return showDrillPlayerSheet<void>(
       context: context,
-      builder: (_) => CoordinatorScreen(uuid: last.exercise.uuid),
-    );
+      builder: (_) => ContextSheet(
+        controller: controller,
+        child: _DrillPlayerHost(controller: controller),
+      ),
+    ).whenComplete(controller.dispose);
   }
 
   /// Hook called from the host shell's ExerciseService listener.
@@ -60,5 +76,30 @@ class DrillPlayerCoordinator {
     openDrillPlayer(context).whenComplete(() {
       _upgrading = false;
     });
+  }
+}
+
+/// Renders whichever exercise the player's own [ContextSheetController] points
+/// at, rebuilding when it is replaced.
+///
+/// Keyed on the uuid: [CoordinatorScreen] resolves its exercise once, in
+/// `initState`, so reusing the element across a uuid change would keep showing
+/// the previous exercise. Mirrors how the shell's own sheet host keys its body
+/// on the target.
+class _DrillPlayerHost extends StatelessWidget {
+  const _DrillPlayerHost({required this.controller});
+
+  final ContextSheetController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<ContextSheetTarget?>(
+      valueListenable: controller.target,
+      builder: (context, target, _) {
+        final uuid = target == null ? null : exerciseUuidOf(target);
+        if (uuid == null) return const SizedBox.shrink();
+        return CoordinatorScreen(key: ValueKey(uuid), uuid: uuid);
+      },
+    );
   }
 }

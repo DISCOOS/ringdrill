@@ -131,6 +131,21 @@ class ContextSheetController {
     _activeScope = null;
   }
 
+  /// Opens the controller on [target] for a host that renders the target
+  /// *itself*, with neither a modal route nor a master/detail scope behind it —
+  /// today the fullscreen drill player, which owns its own [ContextSheet] so
+  /// switching exercise swaps its body in place instead of stacking a second
+  /// player on top.
+  ///
+  /// [close] is therefore a no-op on such a controller (there is no navigator
+  /// to pop): the host owns its own dismissal.
+  void adoptInlineTarget(ContextSheetTarget target) {
+    _target.value = target;
+    _isOpen = true;
+    _navigator = null;
+    _activeScope = null;
+  }
+
   Future<void> show(BuildContext context, ContextSheetTarget target) async {
     if (target is! BriefSheetTarget) {
       final scope = MasterDetailScope.maybeOf(context);

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/data/plan_repository.dart';
@@ -6,9 +8,11 @@ import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
+import 'package:ringdrill/views/drill_player/drill_player_coordinator.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_description_card.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
@@ -228,5 +232,62 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
+  });
+
+  // There is only ever one drill player. Switching exercise from inside it must
+  // replace its body, not stack a second player: the player hosts its own
+  // ContextSheet so `showOrReplace` finds an open controller and replaces the
+  // target in place.
+  testWidgets('switching exercise inside the drill player swaps its body in '
+      'place, without stacking a second player', (tester) async {
+    await tester.pumpWidget(
+      _harness(
+        Builder(
+          builder: (context) => Scaffold(
+            body: ElevatedButton(
+              onPressed: () =>
+                  unawaited(DrillPlayerCoordinator().openDrillPlayer(context)),
+              child: const Text('open player'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Mirrors the reported repro: start, stop, then switch exercise. The player
+    // opens on whatever ExerciseService last reported, and the idle badge (the
+    // picker's entry point) only exists while not running. Bounded pumps
+    // throughout — a docked mini player animates its live status indefinitely,
+    // so pumpAndSettle never settles.
+    ExerciseService().start(_exercise());
+    ExerciseService().stop();
+    await tester.pump();
+
+    await tester.tap(find.text('open player'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byType(CoordinatorScreen), findsOneWidget);
+    expect(find.text('Info Segment Test Exercise'), findsWidgets);
+
+    // Switch exercise through the docked mini player's badge.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(DrillMiniPlayer),
+        matching: find.byType(ExerciseNumberBadge),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Other Exercise').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(tester.takeException(), isNull);
+    // Still exactly one player, now showing the picked exercise.
+    expect(find.byType(CoordinatorScreen), findsOneWidget);
+    expect(find.text('Other Exercise'), findsWidgets);
+    expect(find.text('Info Segment Test Exercise'), findsNothing);
   });
 }
