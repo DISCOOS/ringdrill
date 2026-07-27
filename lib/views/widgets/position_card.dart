@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/views/map_view.dart';
@@ -288,7 +286,7 @@ class _PositionCardShellState extends State<PositionCardShell>
   @override
   void initState() {
     super.initState();
-    unawaited(initCollapse(widget.sectionId));
+    initCollapse(widget.sectionId);
   }
 
   void _toggle() {

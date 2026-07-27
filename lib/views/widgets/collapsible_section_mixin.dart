@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ringdrill/utils/ui_prefs.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_store.dart';
 
 /// Shared expand/collapse mechanism for the section cards — the persisted
@@ -52,12 +53,37 @@ mixin CollapsibleSectionStateMixin<T extends StatefulWidget>
   /// Reads the persisted collapsed state for [sectionId] and jumps (no
   /// animation) to it. No-op when [sectionId] is null (the section is not
   /// collapsible), leaving it expanded.
-  Future<void> initCollapse(String? sectionId) async {
+  ///
+  /// Synchronous whenever [UiPrefs] has a bound instance, which is the normal
+  /// case: the app binds it in `main` before `runApp`. That matters because this
+  /// runs from `initState` — an awaited read lands one frame late, so a section
+  /// stored collapsed paints expanded and then snaps shut. Reading it here means
+  /// the very first paint is already correct, and no `setState` is needed.
+  ///
+  /// Falls back to the async read when nothing is bound (a widget test, or an
+  /// entry point that skips `main`), which is the old behaviour — flicker
+  /// included, but never a lost preference.
+  void initCollapse(String? sectionId) {
     if (sectionId == null) return;
+    final stored = CollapsibleSectionStore.isCollapsedNow(sectionId);
+    if (stored != null) {
+      _applyCollapsed(stored);
+      return;
+    }
+    unawaited(_initCollapseLate(sectionId));
+  }
+
+  Future<void> _initCollapseLate(String sectionId) async {
     final stored = await CollapsibleSectionStore.isCollapsed(sectionId);
     if (!mounted || stored == _collapsed) return;
-    setState(() => _collapsed = stored);
-    _collapseController.value = stored ? 0 : 1;
+    setState(() => _applyCollapsed(stored));
+  }
+
+  /// Jumps to [collapsed] with no animation. Safe to call from `initState`
+  /// (before the first build) as well as inside a `setState`.
+  void _applyCollapsed(bool collapsed) {
+    _collapsed = collapsed;
+    _collapseController.value = collapsed ? 0 : 1;
   }
 
   /// Flips the collapsed state, animates the reveal, and persists it.

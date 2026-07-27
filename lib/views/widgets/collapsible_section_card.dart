@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/collapse_chevron.dart';
@@ -86,7 +84,7 @@ class _CollapsibleSectionCardState extends State<CollapsibleSectionCard>
   @override
   void initState() {
     super.initState();
-    unawaited(initCollapse(widget.sectionId));
+    initCollapse(widget.sectionId);
   }
 
   void _toggle() => toggleCollapse(widget.sectionId);

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +12,7 @@ import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
+import 'package:ringdrill/utils/ui_prefs.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/drill_player/drill_player_coordinator.dart';
@@ -328,16 +331,27 @@ class _MainScreenState extends State<MainScreen>
     if (mounted) setState(() {});
   }
 
-  /// Restores the newly-active segment's remembered selection — or null when
-  /// it has none/no-longer-valid one. Leaving the shared target null (rather
-  /// than clearing it unconditionally) lets `build`'s auto-select check pick
-  /// the segment's first item only when there is nothing to restore, instead
-  /// of always discarding the previous pick.
+  /// Restores the newly-active segment's remembered selection, falling back to
+  /// its first item when it has none (or none that still exists).
+  ///
+  /// The fallback is applied *here*, in the same step. It used to write null and
+  /// leave `build`'s auto-select-first to notice on a later frame — a two-step
+  /// transition with an empty window in the middle, which rapid segment
+  /// switching lands in: the clear ends up being the last write, no further
+  /// frame is scheduled to refill it, and the pane just stays empty. (Reported
+  /// as intermittent: reloading on a segment auto-selected fine, switching
+  /// quickly did not.) Adopting remembered-or-first atomically removes the
+  /// window rather than narrowing it.
+  ///
+  /// It also keeps the adopted target's owning segment equal to the newly active
+  /// one, so [_onDetailTargetChangedForSelectionMemory]'s sync branch cannot see
+  /// a mismatch here and `router.go` somewhere the user did not ask for.
   void _onActiveSegmentChangedForSelectionMemory() {
+    if (_currentTab != 0) return;
+    final segment = _planPageController.activeSegment.value;
     _restoreDetailSelection(
-      _planPageController.rememberedTarget(
-        _planPageController.activeSegment.value,
-      ),
+      _planPageController.rememberedTarget(segment) ??
+          _planPageController.firstDetailTarget(context),
     );
   }
 
@@ -783,7 +797,24 @@ class _MainScreenState extends State<MainScreen>
   /// Reads the stored master-pane-collapsed preference. The `false`
   /// (expanded) default stays in effect until this resolves, mirroring
   /// `BriefScreen._loadStoredRole`.
-  Future<void> _loadMasterCollapsed() async {
+  /// Reads the persisted collapse preference synchronously when [UiPrefs] has a
+  /// bound instance — the normal case, since `main` binds it before `runApp`.
+  ///
+  /// Called from `initState`, so an awaited read lands a frame late and the pane
+  /// visibly snaps: it paints expanded, then collapses. Reading it here means the
+  /// first paint is already right, and it also removes an early rebuild from the
+  /// startup sequence that the detail-pane auto-select shares a frame with.
+  void _loadMasterCollapsed() {
+    final prefs = UiPrefs.instanceOrNull;
+    if (prefs != null) {
+      _masterCollapsed =
+          prefs.getBool(AppConfig.keyMasterPaneCollapsed) ?? _masterCollapsed;
+      return;
+    }
+    unawaited(_loadMasterCollapsedLate());
+  }
+
+  Future<void> _loadMasterCollapsedLate() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     final stored = prefs.getBool(AppConfig.keyMasterPaneCollapsed);

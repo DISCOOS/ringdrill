@@ -188,6 +188,37 @@ void main() {
     expect(find.text('Station B1'), findsOneWidget);
   });
 
+  // Reported as intermittent: reloading the browser on a segment auto-selected
+  // fine, but switching segments *rapidly* left the list unselected. The
+  // restore used to write null and leave `build`'s auto-select-first to refill
+  // on a later frame — a two-step transition whose empty middle a fast switch
+  // lands in, with no further frame scheduled to finish the job. Switching
+  // twice without pumping in between is that race, made deterministic.
+  testWidgets('wide: rapid segment switching never leaves the pane empty', (
+    tester,
+  ) async {
+    await _pumpApp(tester, size: const Size(1200, 800));
+    expect(_controller(tester).isOpen, isTrue);
+
+    final segments = find.byType(SegmentedButton<PlanSegment>);
+    // No pumpAndSettle between the taps: the second switch arrives before the
+    // frame that would have refilled the pane after the first.
+    await tester.tap(
+      find.descendant(of: segments, matching: find.text(l10n.stationsTab)),
+    );
+    await tester.tap(
+      find.descendant(of: segments, matching: find.text(l10n.exercise(2))),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      _controller(tester).target.value,
+      isNotNull,
+      reason: 'the detail pane must never be left with nothing selected',
+    );
+    expect(_controller(tester).isOpen, isTrue);
+  });
+
   // The other half of the invariant: the wide layout must still adopt, or the
   // detail pane would sit empty and its leading chevron would make no sense.
   testWidgets('wide: a selection is adopted and survives a segment round trip', (
