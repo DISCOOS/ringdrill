@@ -1926,6 +1926,10 @@
   "@pickerSelectRolePlayTitle": {
     "description": "Tittel på den adaptive velger-picker (ADR-0049, showRingdrillPicker) brukt av CastPickerSheet, som erstatter castPickerTitle."
   },
+  "pickerSelectRoleTitle": "Velg markør",
+  "@pickerSelectRoleTitle": {
+    "description": "Tittel på den adaptive velger-picker (ADR-0049, showRingdrillPicker) brukt av spillerens markør-modus-velger (ADR-0056). Skilt fra pickerSelectRolePlayTitle, som CastPickerSheet bruker når man velger hvilken aktør som skal spille en markør."
+  },
   "pickerSearchHint": "Søk",
   "@pickerSearchHint": {
     "description": "Hint-tekst i søkefeltet den adaptive velger-picker (ADR-0049, showRingdrillPicker) viser når en liste passerer søketerskelen."

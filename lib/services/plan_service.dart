@@ -344,6 +344,29 @@ class PlanService {
     return (pos < 0 ? peers.length : pos) + 1;
   }
 
+  /// Composite badge label for a markør — the station code plus the role's
+  /// 1-based number at that station, e.g. `1.1-1` / `1a-2`. An unassigned role
+  /// renders its post/markør parts as `?` (see [RolePlayNumbering.numberLabel]).
+  ///
+  /// Composing [Numbering.role] needs both the plan's format and
+  /// [roleNumberAtStation], so it lived duplicated in every surface that shows
+  /// a markør badge. [format] and [exerciseNumber] stay parameters because
+  /// callers listing several exercises already have them in hand per row.
+  String roleLabel(
+    RolePlay role, {
+    required StationNumberFormat format,
+    required int exerciseNumber,
+  }) {
+    final stationIndex = role.stationIndex;
+    return role.numberLabel(
+      format,
+      exerciseNumber: exerciseNumber,
+      roleNumber: stationIndex == null
+          ? 0
+          : roleNumberAtStation(role, stationIndex),
+    );
+  }
+
   /// Persists [rolePlay] under the currently active plan, creating a
   /// default plan first if none exists yet. Mirrors [saveExercise]: every
   /// mutation that writes nested data must ensure a parent plan exists,

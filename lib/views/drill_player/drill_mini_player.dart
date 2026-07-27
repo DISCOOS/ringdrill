@@ -7,11 +7,19 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
-import 'package:ringdrill/views/drill_player/exercise_picker_sheet.dart';
 import 'package:ringdrill/views/drill_player/mini_round_row.dart';
 import 'package:ringdrill/views/drill_player/phase_colors.dart';
+import 'package:ringdrill/views/drill_player/player_mode.dart';
+import 'package:ringdrill/views/drill_player/player_target_picker.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
+import 'package:ringdrill/views/widgets/role_number_badge.dart';
+import 'package:ringdrill/views/widgets/station_number_badge.dart';
+
+/// Badge edge, matching the 36×36 play/stop square opposite it in the strip
+/// (the badge family's own default is the 40 used in list rows).
+const double _kBadgeSize = 36;
 
 /// Builds the central content of a [DrillMiniPlayer], replacing the default
 /// [MiniRoundRow]. [remainingSeconds] is the per-second-smoothed countdown of
@@ -31,7 +39,8 @@ class DrillMiniPlayer extends StatefulWidget {
     super.key,
     this.exercise,
     this.onPlay,
-    this.onPickExercise,
+    this.onPickTarget,
+    this.mode = const ExercisePlayerMode(),
     required this.onOpen,
     this.height = 48,
     this.bodyBuilder,
@@ -90,13 +99,19 @@ class DrillMiniPlayer extends StatefulWidget {
   /// back to calling [ExerciseService().start] directly.
   final VoidCallback? onPlay;
 
-  /// Called with the picked [Exercise] when the user taps the exercise
-  /// badge (the `# n` chip) in idle state and selects a different
-  /// exercise from the picker sheet. When null, the badge is plain and
-  /// the picker is not shown. Only wired in idle state — the running
-  /// state's badge stays non-interactive so users can't try to switch
-  /// while an exercise is live.
-  final ValueChanged<Exercise>? onPickExercise;
+  /// Which of the player's three peer modes the host surface is showing
+  /// (ADR-0056). Picks the badge kind — exercise `#n`, station `n.m`, role
+  /// `n.m-k` — and scopes the badge's picker to siblings of that kind.
+  final PlayerMode mode;
+
+  /// Called with the picked target when the user taps the badge and chooses a
+  /// different one. When null the badge is plain and no picker opens.
+  ///
+  /// The badge is inert while an exercise is live *in exercise mode* — the
+  /// running exercise must not be switched out from under the operator — but
+  /// stays tappable in station and roleplay mode, where it only moves between
+  /// siblings inside that same live exercise.
+  final ValueChanged<ContextSheetTarget>? onPickTarget;
 
   final VoidCallback onOpen;
 
@@ -205,18 +220,6 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
     final accentBg =
         accent.background ?? Theme.of(context).colorScheme.primaryContainer;
 
-    final plan = PlanService().activePlan;
-    final exerciseNumber = plan == null
-        ? 1
-        : plan.exercises
-                  .indexWhere((e) => e.uuid == event.exercise.uuid)
-                  .clamp(0, 1 << 30) +
-              1;
-    final exerciseLabel = Numbering.exercise(
-      plan?.exerciseNumberFormat ?? ExerciseNumberFormat.hash,
-      exerciseNumber,
-    );
-
     // The rounded shape is owned by the parent (MainScreen._buildBottomChrome).
     // This Material just fills the clipped area with the LiveAccent background.
     // The bottom inset padding lives INSIDE the Material so the accent colour
@@ -254,7 +257,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                   Row(
                     children: [
                       const SizedBox(width: 8),
-                      ExerciseNumberBadge(label: exerciseLabel, size: 36),
+                      _buildBadge(context, event.exercise, isStarted: true),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Padding(
@@ -444,18 +447,6 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
     final event = ExerciseEvent.pending(exercise);
     final scheme = Theme.of(context).colorScheme;
 
-    final plan = PlanService().activePlan;
-    final exerciseNumber = plan == null
-        ? 1
-        : plan.exercises
-                  .indexWhere((e) => e.uuid == exercise.uuid)
-                  .clamp(0, 1 << 30) +
-              1;
-    final exerciseLabel = Numbering.exercise(
-      plan?.exerciseNumberFormat ?? ExerciseNumberFormat.hash,
-      exerciseNumber,
-    );
-
     return Material(
       color: scheme.surfaceContainerHigh,
       child: Padding(
@@ -474,12 +465,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                 Row(
                   children: [
                   const SizedBox(width: 8),
-                  _IdleBadge(
-                    label: exerciseLabel,
-                    onPick: widget.onPickExercise == null
-                        ? null
-                        : () => _openExercisePicker(context, exercise),
-                  ),
+                  _buildBadge(context, exercise, isStarted: false),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Padding(
@@ -575,39 +561,101 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
     );
   }
 
-  /// Opens the exercise-picker sheet from the idle badge and forwards
-  /// the picked exercise to [DrillMiniPlayer.onPickExercise]. Wrapped in
-  /// a method so the build code stays terse and the host can rely on
-  /// `onPickExercise` being called with a real choice (the sheet itself
-  /// returns `null` for "no change", which we just drop on the floor).
-  Future<void> _openExercisePicker(
+  /// The leading badge, for both the running and the idle strip.
+  ///
+  /// One builder rather than one per state: the two states used to compute the
+  /// exercise label separately, which is exactly the kind of duplication that
+  /// drifts once the label depends on the player's [PlayerMode] as well.
+  ///
+  /// [isStarted] gates interactivity, not appearance: switching the *exercise*
+  /// out from under a live session is the thing the original guard prevented,
+  /// so exercise mode's badge goes inert while running. Station and roleplay
+  /// mode stay tappable — they move between siblings within that same live
+  /// exercise, which is the whole point of the consolidated player.
+  Widget _buildBadge(
     BuildContext context,
-    Exercise current,
-  ) async {
-    final picked = await showExercisePickerSheet(context, current: current);
-    if (picked == null) return;
-    widget.onPickExercise?.call(picked);
-  }
-}
+    Exercise exercise, {
+    required bool isStarted,
+  }) {
+    final plan = PlanService().activePlan;
+    // Not PlanService.getExerciseNumber: that yields 0 for an exercise outside
+    // the active plan, and the bar would render "#0". Falling back to 1 keeps
+    // the badge plausible for a plain pushed route (a cold deep link).
+    final exerciseNumber = plan == null
+        ? 1
+        : plan.exercises
+                  .indexWhere((e) => e.uuid == exercise.uuid)
+                  .clamp(0, 1 << 30) +
+              1;
+    final stationFormat =
+        plan?.stationNumberFormat ?? StationNumberFormat.dotted;
 
-/// Tappable wrapper around [ExerciseNumberBadge] used by the idle state.
-/// When [onPick] is non-null a feedback ripple appears around the chip;
-/// otherwise the badge renders as a plain visual element.
-class _IdleBadge extends StatelessWidget {
-  const _IdleBadge({required this.label, required this.onPick});
+    final badge = switch (widget.mode) {
+      ExercisePlayerMode() => ExerciseNumberBadge(
+        label: Numbering.exercise(
+          plan?.exerciseNumberFormat ?? ExerciseNumberFormat.hash,
+          exerciseNumber,
+        ),
+        size: _kBadgeSize,
+      ),
+      StationPlayerMode(:final stationIndex) => StationNumberBadge(
+        label: Numbering.station(
+          stationFormat,
+          exerciseNumber: exerciseNumber,
+          stationIndex: stationIndex,
+        ),
+        size: _kBadgeSize,
+      ),
+      RolePlayerMode(:final rolePlayUuid) => RoleNumberBadge(
+        label: _roleBadgeLabel(rolePlayUuid, stationFormat, exerciseNumber),
+        size: _kBadgeSize,
+      ),
+    };
 
-  final String label;
-  final VoidCallback? onPick;
-
-  @override
-  Widget build(BuildContext context) {
-    final badge = ExerciseNumberBadge(label: label, size: 36);
-    if (onPick == null) return badge;
+    final interactive =
+        widget.onPickTarget != null &&
+        (widget.mode is! ExercisePlayerMode || !isStarted);
+    if (!interactive) return badge;
     return InkWell(
-      onTap: onPick,
+      // Keyed because the whole strip is itself an InkWell (onOpen), so "is the
+      // badge tappable" cannot be answered by looking for an InkWell ancestor.
+      key: const Key('drill-mini-player-badge'),
+      onTap: () => unawaited(_openPicker(context, exercise)),
       borderRadius: BorderRadius.circular(18),
       child: badge,
     );
+  }
+
+  /// A roleplay that has been deleted while the bar is up renders as `?`
+  /// rather than throwing; the host screen's own gone-state pane is what
+  /// actually tells the user.
+  String _roleBadgeLabel(
+    String rolePlayUuid,
+    StationNumberFormat format,
+    int exerciseNumber,
+  ) {
+    final service = PlanService();
+    final role = service.getRolePlay(rolePlayUuid);
+    if (role == null) return '$exerciseNumber.?';
+    return service.roleLabel(
+      role,
+      format: format,
+      exerciseNumber: exerciseNumber,
+    );
+  }
+
+  /// Opens the mode-scoped picker and forwards the choice to
+  /// [DrillMiniPlayer.onPickTarget]. The picker returns null for "no change"
+  /// (dismissed, or re-picked what is already showing), which we drop, so the
+  /// host can rely on being called with a real switch.
+  Future<void> _openPicker(BuildContext context, Exercise exercise) async {
+    final picked = await showPlayerTargetPicker(
+      context,
+      mode: widget.mode,
+      exercise: exercise,
+    );
+    if (picked == null) return;
+    widget.onPickTarget?.call(picked);
   }
 }
 

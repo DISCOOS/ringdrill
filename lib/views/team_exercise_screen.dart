@@ -137,14 +137,15 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
                 unawaited(HapticFeedback.mediumImpact());
                 _exerciseService.start(widget.exercise);
               },
+              // A team is not a player mode of its own (ADR-0056): the badge
+              // stays the exercise badge, so this surface keeps the original
+              // "cannot switch while live" behaviour unchanged.
+              //
               // showOrReplace, not replace: this screen can be a plain pushed
               // route (a cold deep link) where the shell's controller exists but
               // was never opened, and replace asserts on that.
-              onPickExercise: (picked) => unawaited(
-                ContextSheet.of(context).showOrReplace(
-                  context,
-                  ExerciseSheetTarget(exerciseUuid: picked.uuid),
-                ),
+              onPickTarget: (target) => unawaited(
+                ContextSheet.of(context).showOrReplace(context, target),
               ),
             )
           : null,

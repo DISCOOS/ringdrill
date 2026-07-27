@@ -228,20 +228,14 @@ class _RolePlayListViewState extends State<RolePlayListView> {
   /// Composite badge label for a markør: the station code plus the role's
   /// 1-based number at that station (e.g. `1.1-1`, `1a-2`). When no post is
   /// assigned yet (legacy data) the post/markør parts show as `?`.
-  String _roleBadgeLabel(RolePlay rolePlay, int exerciseNumber) {
-    final format =
-        _service.activePlan?.stationNumberFormat ??
-        StationNumberFormat.dotted;
-    final stationIndex = rolePlay.stationIndex;
-    final roleNumber = stationIndex == null
-        ? 0
-        : _service.roleNumberAtStation(rolePlay, stationIndex);
-    return rolePlay.numberLabel(
-      format,
-      exerciseNumber: exerciseNumber,
-      roleNumber: roleNumber,
-    );
-  }
+  String _roleBadgeLabel(RolePlay rolePlay, int exerciseNumber) =>
+      _service.roleLabel(
+        rolePlay,
+        format:
+            _service.activePlan?.stationNumberFormat ??
+            StationNumberFormat.dotted,
+        exerciseNumber: exerciseNumber,
+      );
 
   Widget _buildRoleplayRow(
     BuildContext context,

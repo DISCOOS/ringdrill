@@ -79,12 +79,18 @@ class DockedDrillMiniPlayer extends StatelessWidget {
                   // coordinator stays pinned in the detail pane after
                   // the player is closed, until another item is
                   // selected.
-                  controller.close();
+                  //
+                  // clearSelection, not close: close() returns without
+                  // touching an adoptWideSelection target (no navigator, no
+                  // active scope), which is exactly the state MainScreen's
+                  // auto-select leaves behind — so the pane never emptied.
+                  controller.clearSelection();
                   openDrillPlayer(context);
                 },
-          onPickExercise: (picked) => controller.replace(
-            ExerciseSheetTarget(exerciseUuid: picked.uuid),
-          ),
+          // replace, not showOrReplace: the wide docked bar only renders a
+          // badge when the shell already has a selection, so the controller is
+          // always open here.
+          onPickTarget: controller.replace,
           onOpen: () => openDrillPlayer(context),
         );
       },

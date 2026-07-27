@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 
 /// Compact square showing a formatted station label (e.g. "1.3" or "1c").
 ///
@@ -25,11 +26,18 @@ class StationNumberBadge extends StatelessWidget {
     required this.label,
     this.highlight = false,
     this.hasRoles = false,
+    this.size = 40,
   });
 
   final String label;
   final bool highlight;
   final bool hasRoles;
+
+  /// Width and height in logical pixels. Default 40 matches the badge family
+  /// in list contexts; the DrillPlayer mini bar passes 36 so a station-mode
+  /// badge is the same size as the exercise-mode one it replaces (and as the
+  /// 36×36 stop/play square opposite it). See [ExerciseNumberBadge.size].
+  final double size;
 
   @override
   Widget build(BuildContext context) {
@@ -54,8 +62,8 @@ class StationNumberBadge extends StatelessWidget {
     final showDot = hasRoles && highlight;
 
     final pill = Container(
-      width: 40,
-      height: 40,
+      width: size,
+      height: size,
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
@@ -85,8 +93,8 @@ class StationNumberBadge extends StatelessWidget {
     // border keeps it readable against any background colour the pill
     // might take in the future (e.g. dark theme primary).
     return SizedBox(
-      width: 40,
-      height: 40,
+      width: size,
+      height: size,
       child: Stack(
         children: [
           pill,

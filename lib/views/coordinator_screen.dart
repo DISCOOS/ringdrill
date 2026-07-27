@@ -20,8 +20,8 @@ import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
-import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/loader_state.dart';
+import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/shell/closable_surface.dart';
 import 'package:ringdrill/views/shell/detail_empty_pane.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
@@ -34,14 +34,14 @@ import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_description_card.dart';
-import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/exercise_mini_map.dart'
     show exerciseStationMarkers, ExerciseMapSheetHeader;
+import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/map_placeholder.dart';
-import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/notification_permission_help.dart';
+import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
@@ -522,11 +522,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               // showOrReplace, not replace: this screen can be a plain pushed
               // route (a cold deep link) where the shell's controller exists but
               // was never opened, and replace asserts on that.
-              onPickExercise: (picked) => unawaited(
-                ContextSheet.of(context).showOrReplace(
-                  context,
-                  ExerciseSheetTarget(exerciseUuid: picked.uuid),
-                ),
+              onPickTarget: (target) => unawaited(
+                ContextSheet.of(context).showOrReplace(context, target),
               ),
               bodyBuilder: _buildMiniPlayerBody,
             )

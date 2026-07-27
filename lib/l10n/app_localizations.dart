@@ -4694,6 +4694,12 @@ abstract class AppLocalizations {
   /// **'Select marker'**
   String get pickerSelectRolePlayTitle;
 
+  /// Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) used by the drill player's roleplay-mode target picker (ADR-0056). Distinct from pickerSelectRolePlayTitle, which CastPickerSheet uses when picking the actor to cast into a marker.
+  ///
+  /// In en, this message translates to:
+  /// **'Select marker'**
+  String get pickerSelectRoleTitle;
+
   /// Hint text of the search field the adaptive selector picker (ADR-0049, showRingdrillPicker) shows once a list passes its search threshold.
   ///
   /// In en, this message translates to:

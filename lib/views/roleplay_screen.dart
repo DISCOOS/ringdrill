@@ -18,6 +18,7 @@ import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
+import 'package:ringdrill/views/drill_player/player_mode.dart';
 import 'package:ringdrill/views/loader_state.dart';
 import 'package:ringdrill/views/map_view.dart' show MapConfig;
 import 'package:ringdrill/views/plan_additions.dart';
@@ -417,15 +418,13 @@ class _RolePlayScreenState extends State<RolePlayScreen>
                     unawaited(HapticFeedback.mediumImpact());
                     ExerciseService().start(exercise);
                   },
+                  mode: RolePlayerMode(rolePlay.uuid),
                   // showOrReplace, not replace: this screen can be a plain
                   // pushed route (a cold deep link) where the shell's
                   // controller exists but was never opened, and replace
                   // asserts on that.
-                  onPickExercise: (picked) => unawaited(
-                    ContextSheet.of(context).showOrReplace(
-                      context,
-                      ExerciseSheetTarget(exerciseUuid: picked.uuid),
-                    ),
+                  onPickTarget: (target) => unawaited(
+                    ContextSheet.of(context).showOrReplace(context, target),
                   ),
                 )
               : null,
