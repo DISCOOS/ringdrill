@@ -8,10 +8,23 @@ import 'package:ringdrill/views/widgets/plan_scope.dart';
 /// `MainScreen`, so the `PlanScope` wrapping `MainScreen` never reaches
 /// anything opened this way without this. Harmless for a cross-plan
 /// picker: it simply never reads the scope (follow-up 09).
-Widget _withDefaultPlanScope(Widget child) => PlanScope(
-  variables: PlanService().activePlan?.variables ?? const [],
-  child: child,
-);
+///
+/// Seeds the plan *facets* as well as the variable registry. Both halves of the
+/// plan level of the cascade are needed: without `variables` a `{{var.*}}`
+/// renders the unknown-variable placeholder, and without
+/// `planName`/`planDescription` a `{{plan.*}}` renders empty. Anything opened
+/// through here that forwards the ambient scope onward (every form screen does)
+/// inherits whichever half is missing, so seeding only one left `{{plan.*}}`
+/// silently blank several layers down.
+Widget _withDefaultPlanScope(Widget child) {
+  final plan = PlanService().activePlan;
+  return PlanScope(
+    variables: plan?.variables ?? const [],
+    planName: plan?.name,
+    planDescription: plan?.description,
+    child: child,
+  );
+}
 
 /// Opens a draggable viewer sheet with the standard Ringdrill chrome (drag
 /// handle, rounded top corners, surface background).

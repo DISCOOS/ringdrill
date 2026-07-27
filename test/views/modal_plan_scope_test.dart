@@ -12,6 +12,8 @@ import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/brief_screen.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -162,6 +164,64 @@ void main() {
       'assets/templates/ringdrill-standard-v1.nb.md.mustache',
     );
   });
+
+  // The choke point's own contract, with nothing self-seeding above it. Both
+  // halves of the plan level matter: BriefScreen and the form screens each
+  // provide their own PlanScope (or forward the ambient one), so a screen-level
+  // test can pass while the default seed is still missing the plan facets —
+  // which is exactly how `{{plan.*}}` came to render blank in a sheet while
+  // `{{var.*}}` resolved.
+  testWidgets(
+    'the sheet choke point seeds both the variable registry and the plan '
+    'facets, for a body that provides no scope of its own',
+    (tester) async {
+      String? resolvedVar;
+      String? resolvedPlanName;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (outerContext) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () => showRingdrillViewerSheet<void>(
+                  context: outerContext,
+                  builder: (sheetContext, _) => Builder(
+                    builder: (context) {
+                      resolvedVar = resolveScopedField(
+                        context,
+                        '{{var.frekvens}}',
+                      );
+                      resolvedPlanName = resolveScopedField(
+                        context,
+                        '{{plan.name}}',
+                      );
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(resolvedVar, 'Kanal 8', reason: 'variables must be seeded');
+      // The fixture's plan name is itself `Plan {{var.frekvens}}`, so a
+      // resolved plan facet also proves the two halves compose.
+      expect(
+        resolvedPlanName,
+        'Plan Kanal 8',
+        reason: 'plan facets must be seeded too',
+      );
+    },
+  );
 
   testWidgets(
     'the brief modal title resolves the plan name, pushed through the '

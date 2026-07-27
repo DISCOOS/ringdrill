@@ -141,13 +141,16 @@ WidgetBuilder _reprovideScopes(
         child: child,
       );
     }
+    // Fall back to the active plan for the facets too, not just the variable
+    // registry: with no ambient scope (this surface opened straight from a
+    // modal) forwarding a null name/description left `{{plan.*}}` blank while
+    // `{{var.*}}` resolved, which reads as a partial failure rather than an
+    // absent scope.
+    final activePlan = PlanService().activePlan;
     return PlanScope(
-      variables:
-          planScope?.variables ??
-          PlanService().activePlan?.variables ??
-          const [],
-      planName: planScope?.planName,
-      planDescription: planScope?.planDescription,
+      variables: planScope?.variables ?? activePlan?.variables ?? const [],
+      planName: planScope?.planName ?? activePlan?.name,
+      planDescription: planScope?.planDescription ?? activePlan?.description,
       child: child,
     );
   };
