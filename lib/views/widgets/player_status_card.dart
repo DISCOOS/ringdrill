@@ -194,7 +194,7 @@ class PlayerStatusCard extends StatelessWidget {
                 Expanded(
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
-                    alignment: AlignmentDirectional.centerStart,
+                    alignment: AlignmentDirectional.center,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -231,31 +231,34 @@ class PlayerStatusCard extends StatelessWidget {
                   color: theme.colorScheme.outlineVariant,
                 ),
                 const SizedBox(width: 12),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    _buildMetaLine(
-                      theme,
-                      text: l10n.statusRoundOfTotal(
-                        event.currentRound + 1,
-                        event.exercise.numberOfRounds,
-                      ),
-                      numbers: [
-                        '${event.currentRound + 1}',
-                        '${event.exercise.numberOfRounds}',
-                      ],
-                    ),
-                    if (endTime != null) ...[
-                      const SizedBox(height: 2),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
                       _buildMetaLine(
                         theme,
-                        text: l10n.phaseEndsAt(endTime),
-                        numbers: [endTime],
+                        text: l10n.statusRoundOfTotal(
+                          event.currentRound + 1,
+                          event.exercise.numberOfRounds,
+                        ),
+                        numbers: [
+                          '${event.currentRound + 1}',
+                          '${event.exercise.numberOfRounds}',
+                        ],
                       ),
+                      if (endTime != null) ...[
+                        const SizedBox(height: 2),
+                        _buildMetaLine(
+                          theme,
+                          text: l10n.phaseEndsAt(endTime),
+                          numbers: [endTime],
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -274,53 +277,40 @@ class PlayerStatusCard extends StatelessWidget {
           ),
         ),
         if (leadingCell != null || trailingCell != null)
-          DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: theme.colorScheme.outlineVariant),
+          Stack(
+            children: [
+              Row(
+                // `center`, not `start`: when one cell wraps to more
+                // lines than the other (e.g. a long station name vs a
+                // short team label) the two cell bodies must still line
+                // up around a shared vertical center, not pin to the top
+                // of the taller cell.
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(child: _buildCell(context, theme, leadingCell)),
+                  Expanded(child: _buildCell(context, theme, trailingCell)),
+                ],
               ),
-            ),
-            // A `Stack`, not `IntrinsicHeight` + stretch: `_MeasuredFitText`
-            // (inside `_buildCell`) uses a `LayoutBuilder` to measure the
-            // available width, and `LayoutBuilder` cannot sit below an
-            // `IntrinsicHeight` (it doesn't support computing intrinsic
-            // dimensions). The Stack's own height comes from the (non-
-            // positioned) cell row; the divider is a second, `Positioned.fill`
-            // row stretched to that already-resolved height — a `Positioned`
-            // child never contributes to the Stack's own sizing pass, so no
-            // intrinsics are involved.
-            child: Stack(
-              children: [
-                Row(
-                  // `center`, not `start`: when one cell wraps to more
-                  // lines than the other (e.g. a long station name vs a
-                  // short team label) the two cell bodies must still line
-                  // up around a shared vertical center, not pin to the top
-                  // of the taller cell.
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(child: _buildCell(context, theme, leadingCell)),
-                    Expanded(child: _buildCell(context, theme, trailingCell)),
-                  ],
-                ),
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Expanded(child: SizedBox.shrink()),
-                        VerticalDivider(
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Expanded(child: SizedBox.shrink()),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: VerticalDivider(
                           width: 1,
                           thickness: 1,
                           color: theme.colorScheme.outlineVariant,
                         ),
-                        const Expanded(child: SizedBox.shrink()),
-                      ],
-                    ),
+                      ),
+                      const Expanded(child: SizedBox.shrink()),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
       ],
     );
@@ -416,7 +406,9 @@ class PlayerStatusCard extends StatelessWidget {
               ],
               Flexible(
                 child: Text(
-                  cell.time == null ? cell.label : '${cell.label} · ${cell.time}',
+                  cell.time == null
+                      ? cell.label
+                      : '${cell.label} · ${cell.time}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelSmall?.copyWith(
