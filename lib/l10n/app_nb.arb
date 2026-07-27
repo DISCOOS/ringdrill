@@ -1926,13 +1926,9 @@
   "@pickerSelectRolePlayTitle": {
     "description": "Tittel på den adaptive velger-picker (ADR-0049, showRingdrillPicker) brukt av CastPickerSheet, som erstatter castPickerTitle."
   },
-  "pickerSelectRoleTitle": "Velg markør",
-  "@pickerSelectRoleTitle": {
-    "description": "Tittel på den adaptive velger-picker (ADR-0049, showRingdrillPicker) brukt av spillerens markør-modus-velger (ADR-0056). Skilt fra pickerSelectRolePlayTitle, som CastPickerSheet bruker når man velger hvilken aktør som skal spille en markør."
-  },
-  "pickerSelectTeamTitle": "Velg lag",
-  "@pickerSelectTeamTitle": {
-    "description": "Tittel på den adaptive velger-picker (ADR-0049, showRingdrillPicker) brukt av spillerens lag-modus-velger (ADR-0056)."
+  "pickerGoToTitle": "Gå til",
+  "@pickerGoToTitle": {
+    "description": "Tittel på spillerens mål-velger (ADR-0056): alle mål man kan gå til fra spilleren, gruppert etter type. Ikke type-spesifikk, siden listen dekker øvelser, poster, markører og lag."
   },
   "pickerSearchHint": "Søk",
   "@pickerSearchHint": {

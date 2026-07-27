@@ -16,6 +16,14 @@ import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 /// set, the search field only renders once [items] reaches [searchThreshold]
 /// — short lists don't need one.
 ///
+/// [sectionLabel] groups the list: whenever consecutive items yield a different
+/// label, a header for the new group is rendered above the row. Grouping is
+/// applied to the *filtered* items, so a search never leaves a header stranded
+/// above a group whose rows were all filtered out, nor hides the header of a
+/// group that still has matches — which is why this belongs here and not in a
+/// caller's `itemBuilder`. Items must already be ordered by group. Null (the
+/// default) renders a flat list.
+///
 /// [footerActions] are appended below the list (e.g. a "+ New person" row).
 /// They are ordinary widgets built by the caller with the caller's own
 /// `context`, so a footer action that needs to dismiss the picker pops via
@@ -31,6 +39,7 @@ Future<T?> showRingdrillPicker<T>({
   String Function(T item)? searchText,
   String? searchHint,
   int searchThreshold = 8,
+  String? Function(T item)? sectionLabel,
   List<Widget> footerActions = const [],
 }) {
   final wide = WindowSizeClass.of(context).hasMasterDetail;
@@ -41,6 +50,7 @@ Future<T?> showRingdrillPicker<T>({
     searchText: searchText,
     searchHint: searchHint,
     searchThreshold: searchThreshold,
+    sectionLabel: sectionLabel,
     footerActions: footerActions,
     showCloseButton: wide,
   );
@@ -64,6 +74,7 @@ class _RingdrillPickerBody<T> extends StatefulWidget {
     required this.searchText,
     required this.searchHint,
     required this.searchThreshold,
+    required this.sectionLabel,
     required this.footerActions,
     required this.showCloseButton,
   });
@@ -75,6 +86,7 @@ class _RingdrillPickerBody<T> extends StatefulWidget {
   final String Function(T item)? searchText;
   final String? searchHint;
   final int searchThreshold;
+  final String? Function(T item)? sectionLabel;
   final List<Widget> footerActions;
   final bool showCloseButton;
 
@@ -154,10 +166,38 @@ class _RingdrillPickerBodyState<T> extends State<_RingdrillPickerBody<T>> {
             itemCount: filtered.length,
             itemBuilder: (context, index) {
               final item = filtered[index];
-              return widget.itemBuilder(
+              final row = widget.itemBuilder(
                 context,
                 item,
                 () => Navigator.of(context).pop(item),
+              );
+              final label = widget.sectionLabel?.call(item);
+              // Header on the first row of each group — computed against the
+              // filtered list, so search regroups rather than stranding
+              // headers.
+              final isGroupStart =
+                  label != null &&
+                  (index == 0 ||
+                      widget.sectionLabel?.call(filtered[index - 1]) != label);
+              if (!isGroupStart) return row;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (index > 0) const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    child: Text(
+                      label,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ),
+                  row,
+                ],
               );
             },
           ),

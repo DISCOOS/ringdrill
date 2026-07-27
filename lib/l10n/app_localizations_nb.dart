@@ -2740,10 +2740,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get pickerSelectRolePlayTitle => 'Velg markør';
 
   @override
-  String get pickerSelectRoleTitle => 'Velg markør';
-
-  @override
-  String get pickerSelectTeamTitle => 'Velg lag';
+  String get pickerGoToTitle => 'Gå til';
 
   @override
   String get pickerSearchHint => 'Søk';

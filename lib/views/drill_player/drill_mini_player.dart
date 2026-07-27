@@ -42,7 +42,7 @@ class DrillMiniPlayer extends StatefulWidget {
     this.onPlay,
     this.onPickTarget,
     this.mode = const ExercisePlayerMode(),
-    required this.onOpen,
+    this.onOpen,
     this.height = 48,
     this.bodyBuilder,
     this.showInlineStatus = true,
@@ -114,7 +114,14 @@ class DrillMiniPlayer extends StatefulWidget {
   /// between siblings inside that same live exercise.
   final ValueChanged<ContextSheetTarget>? onPickTarget;
 
-  final VoidCallback onOpen;
+  /// What tapping the strip does when there is somewhere to go: the docked and
+  /// floating bars open the fullscreen player.
+  ///
+  /// Null means the bar is *inside* the surface it describes, so there is nothing
+  /// to open — the strip then opens the target picker instead, the same one the
+  /// badge opens. The whole bar is a much larger tap target than a 36px chip, and
+  /// inside the player it was previously inert.
+  final VoidCallback? onOpen;
 
   @override
   State<DrillMiniPlayer> createState() => _DrillMiniPlayerState();
@@ -238,169 +245,171 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
           mainAxisSize: MainAxisSize.min,
           children: [
             InkWell(
-            onTap: widget.onOpen,
-            child: SizedBox(
-              height: widget.height,
-              // Stack layout: the round-row (badge + MiniRoundRow) scrolls
-              // horizontally on the bottom layer; the right cluster (phase
-              // label + countdown + play) floats on top with the accent
-              // background as a mask so scrolled content slides under it.
-              // This stops "n runder" / wide countdowns ("11 timer") from
-              // colliding with the play button — content that doesn't fit
-              // can be revealed by scrolling instead.
-              child: Stack(
-                // Center non-positioned children vertically so MiniRoundRow
-                // (which only needs 32px) lines up with the 36px play button
-                // instead of sticking to the top of the 48px strip.
-                alignment: Alignment.centerLeft,
-                children: [
-                  // Background layer: badge + scrollable MiniRoundRow.
-                  Row(
-                    children: [
-                      const SizedBox(width: 8),
-                      _buildBadge(context, event.exercise, isStarted: true),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Padding(
-                          // When the inline status is hidden, the trailing
-                          // overlay shrinks to just the stop button. Reserve
-                          // its width so a full-width custom body (e.g. the
-                          // coordinator tiles) does not slide under it.
-                          padding: EdgeInsets.only(
-                            right: widget.showInlineStatus ? 0 : 60,
-                          ),
-                          child:
-                              widget.bodyBuilder?.call(
-                                context,
-                                event,
-                                remainingSeconds,
-                                (smoothedProgress * totalDurationSeconds)
-                                    .round(),
-                              ) ??
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: MiniRoundRow(
-                                  exercise: event.exercise,
-                                  event: event,
-                                ),
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Foreground overlay: phase label, countdown, play button.
-                  // Leading gradient fades scrolled content into the accent
-                  // background so the user gets a scroll affordance.
-                  Positioned(
-                    top: 0,
-                    bottom: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      // Stretch children vertically so the gradient mask and
-                      // accent-background fill the full row height — otherwise
-                      // scrolled MiniRoundRow content leaks through the
-                      // top/bottom gap above and below the play button.
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+              onTap: _stripTap(context, event.exercise, true),
+              child: SizedBox(
+                height: widget.height,
+                // Stack layout: the round-row (badge + MiniRoundRow) scrolls
+                // horizontally on the bottom layer; the right cluster (phase
+                // label + countdown + play) floats on top with the accent
+                // background as a mask so scrolled content slides under it.
+                // This stops "n runder" / wide countdowns ("11 timer") from
+                // colliding with the play button — content that doesn't fit
+                // can be revealed by scrolling instead.
+                child: Stack(
+                  // Center non-positioned children vertically so MiniRoundRow
+                  // (which only needs 32px) lines up with the 36px play button
+                  // instead of sticking to the top of the 48px strip.
+                  alignment: Alignment.centerLeft,
+                  children: [
+                    // Background layer: badge + scrollable MiniRoundRow.
+                    Row(
                       children: [
-                        IgnorePointer(
-                          child: Container(
-                            width: 16,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                                colors: [
-                                  accentBg.withValues(alpha: 0.0),
-                                  accentBg,
-                                ],
-                              ),
+                        const SizedBox(width: 8),
+                        _buildBadge(context, event.exercise, isStarted: true),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Padding(
+                            // When the inline status is hidden, the trailing
+                            // overlay shrinks to just the stop button. Reserve
+                            // its width so a full-width custom body (e.g. the
+                            // coordinator tiles) does not slide under it.
+                            padding: EdgeInsets.only(
+                              right: widget.showInlineStatus ? 0 : 60,
                             ),
-                          ),
-                        ),
-                        ColoredBox(
-                          color: accentBg,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (widget.showInlineStatus) ...[
-                                if (!event.isDone)
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: Text(
-                                      event.getState(localizations),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                            color: colorForPhase(event.phase),
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                    ),
+                            child:
+                                widget.bodyBuilder?.call(
+                                  context,
+                                  event,
+                                  remainingSeconds,
+                                  (smoothedProgress * totalDurationSeconds)
+                                      .round(),
+                                ) ??
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: MiniRoundRow(
+                                    exercise: event.exercise,
+                                    event: event,
                                   ),
-                                Text(
-                                  countdown,
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(
-                                        color: accent.foreground,
-                                        fontWeight: FontWeight.w600,
-                                        fontFeatures: const [
-                                          FontFeature.tabularFigures(),
-                                        ],
-                                      ),
                                 ),
-                                const SizedBox(width: 8),
-                              ],
-                              _buildStopSquare(event.phase),
-                              const SizedBox(width: 8),
-                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    // Foreground overlay: phase label, countdown, play button.
+                    // Leading gradient fades scrolled content into the accent
+                    // background so the user gets a scroll affordance.
+                    Positioned(
+                      top: 0,
+                      bottom: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        // Stretch children vertically so the gradient mask and
+                        // accent-background fill the full row height — otherwise
+                        // scrolled MiniRoundRow content leaks through the
+                        // top/bottom gap above and below the play button.
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          IgnorePointer(
+                            child: Container(
+                              width: 16,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                  colors: [
+                                    accentBg.withValues(alpha: 0.0),
+                                    accentBg,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          ColoredBox(
+                            color: accentBg,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (widget.showInlineStatus) ...[
+                                  if (!event.isDone)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: Text(
+                                        event.getState(localizations),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              color: colorForPhase(event.phase),
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                    ),
+                                  Text(
+                                    countdown,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: accent.foreground,
+                                          fontWeight: FontWeight.w600,
+                                          fontFeatures: const [
+                                            FontFeature.tabularFigures(),
+                                          ],
+                                        ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                _buildStopSquare(event.phase),
+                                const SizedBox(width: 8),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          // Custom strip instead of LinearProgressIndicator because the
-          // indicator's backgroundColor washed the phase colour out on the
-          // primaryContainer surface. A dark wash track maximises contrast
-          // with the saturated fill.
-          //
-          // Split the strip into two Expanded flex children rather than a
-          // Stack + FractionallySizedBox: the FSB was non-positioned, so the
-          // Stack shrank to FSB's partial width and the Positioned.fill
-          // wash track followed it, leaving the right side of the strip
-          // empty whenever progress < 1.
-          SizedBox(
-            height: 4,
-            child: Builder(
-              builder: (context) {
-                final fillFlex = (smoothedProgress * 10000).round().clamp(
-                  0,
-                  10000,
-                );
-                final trackFlex = 10000 - fillFlex;
-                return Row(
-                  children: [
-                    if (fillFlex > 0)
-                      Expanded(
-                        flex: fillFlex,
-                        child: Container(color: color),
-                      ),
-                    if (trackFlex > 0)
-                      Expanded(
-                        flex: trackFlex,
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.18),
+            // Custom strip instead of LinearProgressIndicator because the
+            // indicator's backgroundColor washed the phase colour out on the
+            // primaryContainer surface. A dark wash track maximises contrast
+            // with the saturated fill.
+            //
+            // Split the strip into two Expanded flex children rather than a
+            // Stack + FractionallySizedBox: the FSB was non-positioned, so the
+            // Stack shrank to FSB's partial width and the Positioned.fill
+            // wash track followed it, leaving the right side of the strip
+            // empty whenever progress < 1.
+            SizedBox(
+              height: 4,
+              child: Builder(
+                builder: (context) {
+                  final fillFlex = (smoothedProgress * 10000).round().clamp(
+                    0,
+                    10000,
+                  );
+                  final trackFlex = 10000 - fillFlex;
+                  return Row(
+                    children: [
+                      if (fillFlex > 0)
+                        Expanded(
+                          flex: fillFlex,
+                          child: Container(color: color),
                         ),
-                      ),
-                  ],
-                );
-              },
+                      if (trackFlex > 0)
+                        Expanded(
+                          flex: trackFlex,
+                          child: Container(
+                            color: Colors.black.withValues(alpha: 0.18),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
             ),
-          ),
           ],
         ),
       ),
@@ -457,7 +466,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
               : 0,
         ),
         child: InkWell(
-          onTap: widget.onOpen,
+          onTap: _stripTap(context, exercise, false),
           child: SizedBox(
             height: widget.height,
             child: Stack(
@@ -465,99 +474,99 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
               children: [
                 Row(
                   children: [
-                  const SizedBox(width: 8),
-                  _buildBadge(context, exercise, isStarted: false),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Padding(
-                      // Reserve width for the play-button overlay (16px
-                      // gradient + 36px button + 8px trailing gap = 60px)
-                      // so MiniRoundRow content does not slide behind it.
-                      padding: const EdgeInsets.only(right: 60),
-                      child:
-                          widget.bodyBuilder?.call(context, event, 0, 0) ??
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: MiniRoundRow(
-                              exercise: exercise,
-                              event: event,
-                            ),
-                          ),
-                    ),
-                  ),
-                ],
-              ),
-              Positioned(
-                top: 0,
-                bottom: 0,
-                right: 0,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    IgnorePointer(
-                      child: Container(
-                        width: 16,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              scheme.surfaceContainerHigh.withValues(
-                                alpha: 0.0,
-                              ),
-                              scheme.surfaceContainerHigh,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    ColoredBox(
-                      color: scheme.surfaceContainerHigh,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () {
-                              if (widget.onPlay != null) {
-                                widget.onPlay!();
-                              } else {
-                                unawaited(HapticFeedback.mediumImpact());
-                                ExerciseService().start(exercise);
-                              }
-                            },
-                            child: SizedBox(
-                              width: 36,
-                              height: 36,
-                              child: Center(
-                                child: Container(
-                                  width: 30,
-                                  height: 30,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.greenAccent,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.play_arrow,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                ),
+                    const SizedBox(width: 8),
+                    _buildBadge(context, exercise, isStarted: false),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Padding(
+                        // Reserve width for the play-button overlay (16px
+                        // gradient + 36px button + 8px trailing gap = 60px)
+                        // so MiniRoundRow content does not slide behind it.
+                        padding: const EdgeInsets.only(right: 60),
+                        child:
+                            widget.bodyBuilder?.call(context, event, 0, 0) ??
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: MiniRoundRow(
+                                exercise: exercise,
+                                event: event,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+                Positioned(
+                  top: 0,
+                  bottom: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      IgnorePointer(
+                        child: Container(
+                          width: 16,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [
+                                scheme.surfaceContainerHigh.withValues(
+                                  alpha: 0.0,
+                                ),
+                                scheme.surfaceContainerHigh,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      ColoredBox(
+                        color: scheme.surfaceContainerHigh,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                if (widget.onPlay != null) {
+                                  widget.onPlay!();
+                                } else {
+                                  unawaited(HapticFeedback.mediumImpact());
+                                  ExerciseService().start(exercise);
+                                }
+                              },
+                              child: SizedBox(
+                                width: 36,
+                                height: 36,
+                                child: Center(
+                                  child: Container(
+                                    width: 30,
+                                    height: 30,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.greenAccent,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.play_arrow,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -617,10 +626,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
       ),
     };
 
-    final interactive =
-        widget.onPickTarget != null &&
-        (widget.mode is! ExercisePlayerMode || !isStarted);
-    if (!interactive) return badge;
+    if (!_canPick(isStarted)) return badge;
     return InkWell(
       // Keyed because the whole strip is itself an InkWell (onOpen), so "is the
       // badge tappable" cannot be answered by looking for an InkWell ancestor.
@@ -629,6 +635,32 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
       borderRadius: BorderRadius.circular(18),
       child: badge,
     );
+  }
+
+  /// Whether this bar may open the target picker.
+  ///
+  /// Preserves the original guard exactly: exercise mode goes inert while a
+  /// session is live, so the running exercise can never be switched out from
+  /// under the operator. The station, roleplay and team modes stay live — they
+  /// only move within that same running exercise.
+  ///
+  /// Shared by the badge and the strip, so the strip cannot become a way around
+  /// the guard.
+  bool _canPick(bool isStarted) =>
+      widget.onPickTarget != null &&
+      (widget.mode is! ExercisePlayerMode || !isStarted);
+
+  /// The strip's tap action: [DrillMiniPlayer.onOpen] where there is something
+  /// to open, otherwise the picker.
+  VoidCallback? _stripTap(
+    BuildContext context,
+    Exercise exercise,
+    bool isStarted,
+  ) {
+    final onOpen = widget.onOpen;
+    if (onOpen != null) return onOpen;
+    if (!_canPick(isStarted)) return null;
+    return () => unawaited(_openPicker(context, exercise));
   }
 
   /// A roleplay that has been deleted while the bar is up renders as `?`

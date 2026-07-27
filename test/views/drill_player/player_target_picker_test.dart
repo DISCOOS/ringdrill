@@ -17,12 +17,14 @@ import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/team_number_badge.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// The mini bar's badge is a *within-mode* selector: its picker lists siblings
-/// of the kind the player is currently showing (ADR-0056), never a mixed list.
+/// The player's picker lists **every** target reachable from where it is, in one
+/// grouped list (ADR-0056), whatever mode it is in.
 ///
-/// Because X always closes the player rather than unwinding a history, every
-/// non-exercise picker pins the parent exercise as its first row — that pinned
-/// row is the only way back *up* a mode.
+/// It used to list siblings of the current kind only, with the parent exercise
+/// pinned on top as the one way back up — so moving between kinds took two taps
+/// and the pinned row existed only to enable that. These tests pin the grouped
+/// contract instead: all exercises, plus the *current* exercise's posts, markers
+/// and teams, under section headers.
 const _planUuid = 'prog-target-picker';
 const _exerciseUuid = 'ex-target-picker';
 const _otherExerciseUuid = 'ex-target-picker-2';
@@ -171,6 +173,13 @@ class _HarnessState extends State<_Harness> {
 }
 
 Future<_HarnessState> _openPicker(WidgetTester tester, PlayerMode mode) async {
+  // Tall enough for every group to be laid out: the picker's ListView builds
+  // lazily, so rows below the fold do not exist for the finders at all — and
+  // this list is deliberately long now that it spans all four kinds.
+  tester.view.physicalSize = const Size(900, 2000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(_Harness(mode: mode));
   await tester.tap(find.text('open picker'));
   await tester.pumpAndSettle();
@@ -186,64 +195,95 @@ void main() {
 
   setUp(_seedAndInit);
 
-  group('station mode', () {
-    testWidgets('lists this exercise\'s stations under a pinned parent row', (
+  /// Every group header, in list order.
+  List<String> groups() => [
+    l10n.exercise(2),
+    l10n.stationsTab,
+    l10n.scriptSegment,
+    l10n.team(2),
+  ];
+
+  group('every mode lists every group', () {
+    for (final (name, mode) in <(String, PlayerMode)>[
+      ('exercise', ExercisePlayerMode()),
+      ('station', StationPlayerMode(0)),
+      ('roleplay', RolePlayerMode(_roleUuid)),
+      ('team', TeamPlayerMode(0)),
+    ]) {
+      testWidgets('$name mode', (tester) async {
+        await _openPicker(tester, mode);
+
+        expect(find.text(l10n.pickerGoToTitle), findsOneWidget);
+        for (final group in groups()) {
+          expect(
+            find.text(group),
+            findsOneWidget,
+            reason: '$name mode must still offer the "$group" group',
+          );
+        }
+        // One badge kind per group, so each row reads as its own kind.
+        expect(find.byType(ExerciseNumberBadge), findsNWidgets(2));
+        expect(find.byType(StationNumberBadge), findsNWidgets(2));
+        expect(find.byType(RoleNumberBadge), findsNWidgets(2));
+        expect(find.byType(TeamNumberBadge), findsNWidgets(2));
+      });
+    }
+  });
+
+  group('scope', () {
+    testWidgets('lists every exercise, but only this one\'s children', (
       tester,
     ) async {
       await _openPicker(tester, const StationPlayerMode(0));
 
-      expect(find.text(l10n.pickerSelectStationTitle), findsOneWidget);
-      // Siblings, and only this exercise's.
-      expect(find.text('Post 1'), findsOneWidget);
-      expect(find.text('Post 2'), findsOneWidget);
+      // Exercises: the whole plan, so the player can move between them.
+      expect(find.widgetWithText(ListTile, 'Picker Exercise'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, 'Other Exercise'), findsOneWidget);
+      // Children: only the exercise the player is on. A post belongs to one
+      // exercise, so listing every exercise's would bury the ones being run.
+      // Post names appear twice over — as station rows and as the markør rows'
+      // subtitles — so these are asserted by their unique badge labels.
+      expect(find.text('1.1'), findsOneWidget);
+      expect(find.text('1.2'), findsOneWidget);
       expect(find.text('Foreign post'), findsNothing);
-      // The parent, pinned — one exercise badge among the station badges.
-      expect(find.text('Picker Exercise'), findsOneWidget);
-      expect(find.byType(ExerciseNumberBadge), findsOneWidget);
-      expect(find.byType(StationNumberBadge), findsNWidgets(2));
-      expect(find.byType(RoleNumberBadge), findsNothing);
+      expect(find.text('Fremmed markør'), findsNothing);
     });
+  });
 
-    testWidgets('the parent row comes first, and returns the exercise', (
-      tester,
-    ) async {
-      final state = await _openPicker(tester, const StationPlayerMode(0));
+  group('the current target', () {
+    testWidgets('is the only row marked, in station mode', (tester) async {
+      await _openPicker(tester, const StationPlayerMode(1));
 
-      // Pinned means first: above the sibling list, reachable without
-      // scrolling.
-      final rows = tester.getTopLeft(find.text('Picker Exercise'));
-      expect(rows.dy, lessThan(tester.getTopLeft(find.text('Post 1')).dy));
-
-      await tester.tap(find.text('Picker Exercise'));
-      await tester.pumpAndSettle();
-
-      expect(state.picked, isA<ExerciseSheetTarget>());
+      expect(find.byIcon(Icons.check), findsOneWidget);
+      // The parent exercise is somewhere to go, not where you are.
       expect(
-        (state.picked! as ExerciseSheetTarget).exerciseUuid,
-        _exerciseUuid,
+        find.descendant(
+          of: find.widgetWithText(ListTile, 'Picker Exercise'),
+          matching: find.byIcon(Icons.check),
+        ),
+        findsNothing,
       );
     });
 
-    testWidgets('picking a sibling returns that station', (tester) async {
-      final state = await _openPicker(tester, const StationPlayerMode(0));
+    testWidgets('is the exercise row in exercise mode', (tester) async {
+      await _openPicker(tester, const ExercisePlayerMode());
 
-      await tester.tap(find.text('Post 2'));
-      await tester.pumpAndSettle();
-
-      expect(state.picked, isA<StationSheetTarget>());
-      expect((state.picked! as StationSheetTarget).stationIndex, 1);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(ListTile, 'Picker Exercise'),
+          matching: find.byIcon(Icons.check),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.check), findsOneWidget);
     });
 
-    // Re-picking what is already showing is a no-op, so the host is never
-    // asked to navigate to where it already is.
-    testWidgets('the current station is marked and resolves null', (
-      tester,
-    ) async {
+    testWidgets('resolves null when re-picked', (tester) async {
       final state = await _openPicker(tester, const StationPlayerMode(0));
 
-      expect(find.byIcon(Icons.check), findsOneWidget);
-
-      await tester.tap(find.text('Post 1'));
+      // By badge, not name: a post's name also appears as a markør row's
+      // subtitle, so the name alone would be ambiguous here.
+      await tester.tap(find.text('1.1'));
       await tester.pumpAndSettle();
 
       expect(state.resolved, isTrue);
@@ -251,38 +291,10 @@ void main() {
     });
   });
 
-  group('roleplay mode', () {
-    testWidgets('lists this exercise\'s roleplays under a pinned parent row', (
-      tester,
-    ) async {
-      await _openPicker(tester, const RolePlayerMode(_roleUuid));
-
-      expect(find.text(l10n.pickerSelectRoleTitle), findsOneWidget);
-      expect(find.text('Savnet person'), findsOneWidget);
-      expect(find.text('Pårørende'), findsOneWidget);
-      expect(
-        find.text('Fremmed markør'),
-        findsNothing,
-        reason: 'roleplays of another exercise are not siblings',
-      );
-      expect(find.text('Picker Exercise'), findsOneWidget);
-      expect(find.byType(RoleNumberBadge), findsNWidgets(2));
-      expect(find.byType(ExerciseNumberBadge), findsOneWidget);
-      expect(find.byType(StationNumberBadge), findsNothing);
-    });
-
-    testWidgets('each row names the post the markør is placed at', (
-      tester,
-    ) async {
-      await _openPicker(tester, const RolePlayerMode(_roleUuid));
-
-      // Subtitles, so a list of markør names stays navigable.
-      expect(find.text('Post 1'), findsOneWidget);
-      expect(find.text('Post 2'), findsOneWidget);
-    });
-
-    testWidgets('picking a sibling returns that roleplay', (tester) async {
-      final state = await _openPicker(tester, const RolePlayerMode(_roleUuid));
+  // The point of the change: any kind is one tap away, from any mode.
+  group('crossing kinds in one tap', () {
+    testWidgets('station mode to a roleplay', (tester) async {
+      final state = await _openPicker(tester, const StationPlayerMode(0));
 
       await tester.tap(find.text('Pårørende'));
       await tester.pumpAndSettle();
@@ -290,70 +302,29 @@ void main() {
       expect(state.picked, isA<RoleSheetTarget>());
       expect((state.picked! as RoleSheetTarget).rolePlayUuid, _otherRoleUuid);
     });
-  });
 
-  group('team mode', () {
-    testWidgets('lists this exercise\'s teams under a pinned parent row', (
-      tester,
-    ) async {
-      await _openPicker(tester, const TeamPlayerMode(0));
-
-      expect(find.text(l10n.pickerSelectTeamTitle), findsOneWidget);
-      // Named, not numbered: a team's number is on its badge, its name in the
-      // row — mirroring TeamExerciseScreen's own title.
-      expect(find.text('Alfa'), findsOneWidget);
-      expect(find.text('Bravo'), findsOneWidget);
-      expect(find.text('Picker Exercise'), findsOneWidget);
-      expect(find.byType(TeamNumberBadge), findsNWidgets(2));
-      expect(find.byType(ExerciseNumberBadge), findsOneWidget);
-      expect(find.byType(StationNumberBadge), findsNothing);
-    });
-
-    testWidgets('picking a sibling returns that team', (tester) async {
-      final state = await _openPicker(tester, const TeamPlayerMode(0));
+    testWidgets('roleplay mode to a team', (tester) async {
+      final state = await _openPicker(tester, const RolePlayerMode(_roleUuid));
 
       await tester.tap(find.text('Bravo'));
       await tester.pumpAndSettle();
 
       expect(state.picked, isA<TeamSheetTarget>());
       expect((state.picked! as TeamSheetTarget).teamIndex, 1);
-      expect(
-        (state.picked! as TeamSheetTarget).exerciseUuid,
-        _exerciseUuid,
-        reason: 'the team stays scoped to the exercise the player is showing',
-      );
     });
 
-    // The roster can hold more teams than a given exercise runs; a team with no
-    // rotation in this exercise has nothing to show here.
-    testWidgets('lists only as many teams as the exercise runs', (
-      tester,
-    ) async {
-      await _openPicker(tester, const TeamPlayerMode(0));
+    testWidgets('team mode to a station', (tester) async {
+      final state = await _openPicker(tester, const TeamPlayerMode(0));
 
-      expect(find.byType(TeamNumberBadge), findsNWidgets(2));
-      expect(find.text('Charlie'), findsNothing);
-    });
-  });
+      await tester.tap(find.text('1.2'));
+      await tester.pumpAndSettle();
 
-  group('exercise mode', () {
-    // Nothing to pin: the exercise *is* the top of the hierarchy, and a row
-    // for the current exercise already exists in the list itself.
-    testWidgets('lists exercises with no parent row', (tester) async {
-      await _openPicker(tester, const ExercisePlayerMode());
-
-      expect(find.text(l10n.pickerSelectExerciseTitle), findsOneWidget);
-      expect(find.text('Picker Exercise'), findsOneWidget);
-      expect(find.text('Other Exercise'), findsOneWidget);
-      expect(find.byType(ExerciseNumberBadge), findsNWidgets(2));
-      expect(find.byType(StationNumberBadge), findsNothing);
-      expect(find.byType(RoleNumberBadge), findsNothing);
+      expect(state.picked, isA<StationSheetTarget>());
+      expect((state.picked! as StationSheetTarget).stationIndex, 1);
     });
 
-    testWidgets('picking another exercise returns it as a target', (
-      tester,
-    ) async {
-      final state = await _openPicker(tester, const ExercisePlayerMode());
+    testWidgets('station mode to another exercise', (tester) async {
+      final state = await _openPicker(tester, const StationPlayerMode(0));
 
       await tester.tap(find.text('Other Exercise'));
       await tester.pumpAndSettle();
@@ -363,6 +334,43 @@ void main() {
         (state.picked! as ExerciseSheetTarget).exerciseUuid,
         _otherExerciseUuid,
       );
+    });
+  });
+
+  // The grouping is applied to the *filtered* rows, so a search cannot strand a
+  // header above a group whose rows all filtered out, nor hide the header of a
+  // group that still matches. Faking headers inside itemBuilder gets this wrong.
+  group('search', () {
+    testWidgets('keeps only the groups that still match', (tester) async {
+      await _openPicker(tester, const StationPlayerMode(0));
+      // 8 entries here, so the search field is shown (searchThreshold).
+      final field = find.byKey(const Key('ringdrill-picker-search'));
+      expect(field, findsOneWidget);
+
+      await tester.enterText(field, 'Bravo');
+      await tester.pumpAndSettle();
+
+      // Scoped to the row: the search field itself now also contains "Bravo".
+      expect(find.widgetWithText(ListTile, 'Bravo'), findsOneWidget);
+      expect(find.text(l10n.team(2)), findsOneWidget);
+      // Every other group's header goes with its rows.
+      expect(find.text(l10n.stationsTab), findsNothing);
+      expect(find.text(l10n.scriptSegment), findsNothing);
+      expect(find.text(l10n.exercise(2)), findsNothing);
+    });
+
+    testWidgets('a group name narrows to that kind', (tester) async {
+      await _openPicker(tester, const StationPlayerMode(0));
+
+      await tester.enterText(
+        find.byKey(const Key('ringdrill-picker-search')),
+        l10n.stationsTab,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('1.1'), findsOneWidget);
+      expect(find.text('1.2'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, 'Bravo'), findsNothing);
     });
   });
 }

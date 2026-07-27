@@ -512,9 +512,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               // The tile row owns the phase/countdown, so the trailing
               // cluster collapses to just the stop button here.
               showInlineStatus: false,
-              // We are already inside the player; tapping the bar
-              // should not try to re-open it.
-              onOpen: () {},
               onPlay: () {
                 unawaited(HapticFeedback.mediumImpact());
                 _exerciseService.start(exercise);

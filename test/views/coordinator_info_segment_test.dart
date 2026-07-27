@@ -53,7 +53,7 @@ Exercise _exercise() => Exercise(
 );
 
 /// A second exercise, so the mini player's picker has something to switch *to*
-/// — picking the current one returns null and never calls onPickExercise.
+/// — picking the current one returns null and never calls the host back.
 Exercise _otherExercise() =>
     _exercise().copyWith(uuid: _otherExerciseUuid, name: 'Other Exercise');
 
@@ -230,13 +230,13 @@ void main() {
     await tester.tap(badge);
     await tester.pumpAndSettle();
     expect(
-      find.text(l10n.pickerSelectExerciseTitle),
+      find.text(l10n.pickerGoToTitle),
       findsOneWidget,
-      reason: 'the exercise picker must open',
+      reason: "the player's target picker must open",
     );
 
     // Pick a *different* exercise — picking the current one returns null and
-    // never reaches onPickExercise.
+    // never reaches the host.
     await tester.tap(find.text('Other Exercise').last);
     await tester.pumpAndSettle();
 

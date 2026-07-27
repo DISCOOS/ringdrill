@@ -297,9 +297,6 @@ class _StationScreenState extends State<StationScreen>
                     exercise: exercise,
                     height: 64,
                     applyBottomInset: true,
-                    // We are already inside the station sheet; tapping the bar
-                    // body should not try to re-open something.
-                    onOpen: () {},
                     onPlay: () {
                       unawaited(HapticFeedback.mediumImpact());
                       _exerciseService.start(exercise);

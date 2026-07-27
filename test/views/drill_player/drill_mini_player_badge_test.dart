@@ -9,6 +9,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
+import 'package:ringdrill/views/drill_player/mini_round_row.dart';
 import 'package:ringdrill/views/drill_player/player_mode.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
@@ -91,14 +92,20 @@ Future<void> _seedAndInit() async {
   await PlanService().init();
 }
 
-Widget _harness(PlayerMode mode, {bool interactive = true}) => MaterialApp(
+/// [onOpen] null mirrors the in-player hosts: there is nothing to open, so the
+/// strip navigates instead. Pass a callback to mirror a docked bar.
+Widget _harness(
+  PlayerMode mode, {
+  bool interactive = true,
+  VoidCallback? onOpen,
+}) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: Scaffold(
     body: DrillMiniPlayer(
       exercise: _exercise(),
       mode: mode,
-      onOpen: () {},
+      onOpen: onOpen,
       onPickTarget: interactive ? (_) {} : null,
     ),
   ),
@@ -125,7 +132,13 @@ Future<void> _stop(WidgetTester tester) async {
   await tester.pump();
 }
 
+late AppLocalizations _l10n;
+
 void main() {
+  setUpAll(() async {
+    _l10n = await AppLocalizations.delegate.load(const Locale('en'));
+  });
+
   setUp(_seedAndInit);
 
   group('badge kind follows the mode', () {
@@ -236,6 +249,71 @@ void main() {
 
       expect(find.byType(TeamNumberBadge), findsOneWidget);
       expect(_badgeIsTappable(tester), isTrue);
+
+      await _stop(tester);
+    });
+  });
+
+  // Tapping the bar anywhere — not just the 36px badge — opens the picker when
+  // the bar is already inside the surface it describes. A docked bar keeps
+  // opening the player instead.
+  group('the strip as a tap target', () {
+    testWidgets('with no onOpen, tapping the strip opens the picker', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_harness(const StationPlayerMode(1)));
+      await tester.pump();
+
+      await tester.tap(find.byType(MiniRoundRow));
+      await tester.pumpAndSettle();
+
+      expect(find.text(_l10n.pickerGoToTitle), findsOneWidget);
+    });
+
+    testWidgets('with onOpen, tapping the strip opens that instead', (
+      tester,
+    ) async {
+      var opened = 0;
+      await tester.pumpWidget(
+        _harness(const StationPlayerMode(1), onOpen: () => opened++),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(MiniRoundRow));
+      await tester.pumpAndSettle();
+
+      expect(opened, 1);
+      expect(find.text(_l10n.pickerGoToTitle), findsNothing);
+    });
+
+    // The strip must not become a way around the guard the badge honours.
+    testWidgets(
+      'running in exercise mode, the strip does not open the picker',
+      (tester) async {
+        await tester.pumpWidget(_harness(const ExercisePlayerMode()));
+        await _start(tester);
+
+        await tester.tap(find.byType(MiniRoundRow));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text(_l10n.pickerGoToTitle), findsNothing);
+
+        await _stop(tester);
+      },
+    );
+
+    testWidgets('running in station mode, the strip does open it', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_harness(const StationPlayerMode(1)));
+      await _start(tester);
+
+      await tester.tap(find.byType(MiniRoundRow));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text(_l10n.pickerGoToTitle), findsOneWidget);
 
       await _stop(tester);
     });

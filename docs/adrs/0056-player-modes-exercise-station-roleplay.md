@@ -29,7 +29,7 @@ The maintainer's framing: *"I think we should think of exercise, stations and ro
 
 ## Considered options
 
-* **Option A — Peer modes of one player.** The player is a host for any target; exercise/station/roleplay/team are peers. X always closes the player. The badge is a within-mode selector; content taps move down a level; a pinned parent row moves back up.
+* **Option A — Peer modes of one player.** The player is a host for any target; exercise/station/roleplay/team are peers. X always closes the player. The mini bar opens a grouped picker of every reachable target; content taps move down a level.
 * **Option B — Drill-down with target history.** The player keeps a stack of targets; X pops one level and closes only at the root.
 * **Option C — Leave it.** The running exercise's items keep opening beside the player.
 
@@ -51,10 +51,13 @@ Also added: `clearSelection()`. `close()` deliberately returns without touching 
 
 ### The navigation grammar
 
-* **Within a mode**: the mini bar's badge. Its picker (`showPlayerTargetPicker`) lists siblings of the current mode's type — exercises in exercise mode, and that exercise's stations, roleplays or teams in the other three. The badge itself follows the mode: `#1` / `1.2` / `1.2-1` / `1`, in the four matching swatches.
+* **Anywhere**: the mini bar. `showPlayerTargetPicker` lists **every** target reachable from where the player is — all of the plan's exercises, plus the current exercise's stations, roleplays and teams — in one list grouped by kind, under the Plan tab's own segment labels with a divider between groups. The whole strip opens it, not only the badge: inside the player the bar had nothing to open, and a 36px chip is a poor tap target for the app's main navigation affordance. The badge still shows *where you are*, following the mode: `#1` / `1.2` / `1.2-1` / `1`, in four swatches.
 * **Down a level**: tapping content. A station row inside the exercise view enters station mode; a markør row inside a station enters roleplay mode. These already called `show()`, so the inline branch above is the whole mechanism.
-* **Up a level**: a pinned parent row at the top of every non-exercise picker — the parent exercise, with its own exercise badge, above a divider. Since X closes the player rather than unwinding, this is the only way up, and pinning it keeps it reachable without scrolling while the list below stays purely siblings.
 * **Out**: X, from every mode. Identical to Android back, so no `PopScope` divergence.
+
+The picker was first built as a *within-mode* selector — siblings of the current kind only, with the parent exercise pinned on top as the one way back up. Moving between kinds then took two taps, and the pinned row existed solely to enable that. Listing every group retires the special case: the parent exercise is just a member of the exercise group. Grouping lives in `showRingdrillPicker` (ADR-0049) as a `sectionLabel` callback rather than in this caller's `itemBuilder`, because headers have to be computed against the *filtered* rows — otherwise a search strands a header above a group whose rows all filtered out.
+
+Station, roleplay and team groups stay scoped to the current exercise. A station belongs to one exercise, so listing every exercise's posts would bury the ones being run; picking another exercise re-scopes the list on the next open.
 
 ### The live-exercise guard, restated
 
@@ -63,6 +66,8 @@ The original rule was "the running state's badge is non-interactive so users can
 ```dart
 interactive = onPickTarget != null && (mode is! ExercisePlayerMode || !isStarted);
 ```
+
+The strip and the badge share it, so widening the tap target did not open a way around the guard.
 
 ### Who seeds the resolve cascade
 
@@ -119,7 +124,7 @@ The team mode was added after the first three, and the sealed `PlayerMode` made 
 * Good: the inline-mode branch fixes the latent modal-over-the-player bug on its own, before anything depends on it.
 * Good: two bare-`CoordinatorScreen` pseudo-players are gone; there is one way to open the player.
 * Good: the badge label is computed once instead of once per player state — with three badge kinds, the old duplication would have drifted.
-* Bad: no way *up* from a non-exercise mode except the pinned picker row. Accepted deliberately over a history stack; the pinned row is one tap and always visible.
+* Good: no "up" concept to design at all — the picker lists every group, so any target is one tap from any mode.
 * Bad: `openContextTarget` is a convention call sites must adopt — a new list-tap site that calls `show()` directly still works, it just won't enter the player. Preferred over a global intercept for the reasons above.
 
 ## Pros and cons of the options
@@ -140,6 +145,7 @@ The team mode was added after the first three, and the sealed `PlayerMode` made 
 * 2026-07-27 — Accepted as three modes (exercise, station, roleplay), with teams explicitly excluded.
 * 2026-07-28 — Team added as a fourth mode at the maintainer's request, reversing that exclusion. The plan-wide team overview stays outside the player. See *Teams are a mode* above.
 * 2026-07-28 — Recorded who seeds the resolve cascade, after the player shipped rendering raw tokens in three of its four modes. See *Who seeds the resolve cascade* above.
+* 2026-07-28 — The badge picker became a full navigator: every group in every mode, grouped with dividers, opened by the whole strip rather than only the badge. Retires the within-mode scoping and the pinned parent row. See *The navigation grammar* above.
 
 ## Links
 

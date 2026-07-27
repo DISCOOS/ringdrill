@@ -2959,13 +2959,9 @@
   "@pickerSelectRolePlayTitle": {
     "description": "Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) used by CastPickerSheet, superseding castPickerTitle."
   },
-  "pickerSelectRoleTitle": "Select marker",
-  "@pickerSelectRoleTitle": {
-    "description": "Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) used by the drill player's roleplay-mode target picker (ADR-0056). Distinct from pickerSelectRolePlayTitle, which CastPickerSheet uses when picking the actor to cast into a marker."
-  },
-  "pickerSelectTeamTitle": "Select team",
-  "@pickerSelectTeamTitle": {
-    "description": "Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) used by the drill player's team-mode target picker (ADR-0056)."
+  "pickerGoToTitle": "Go to",
+  "@pickerGoToTitle": {
+    "description": "Title of the drill player's target picker (ADR-0056): every target reachable from the player, grouped by kind. Not kind-specific, since the list spans exercises, posts, markers and teams."
   },
   "pickerSearchHint": "Search",
   "@pickerSearchHint": {

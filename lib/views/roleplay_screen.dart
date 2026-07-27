@@ -413,7 +413,6 @@ class _RolePlayScreenState extends State<RolePlayScreen>
                   height: 64,
                   exercise: exercise,
                   applyBottomInset: true,
-                  onOpen: () {},
                   onPlay: () {
                     unawaited(HapticFeedback.mediumImpact());
                     ExerciseService().start(exercise);
