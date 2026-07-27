@@ -2736,9 +2736,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pickerSelectPersonTitle => 'Select person';
 
   @override
-  String get pickerSelectExerciseTitle => 'Select exercise';
-
-  @override
   String get pickerSelectRolePlayTitle => 'Select marker';
 
   @override

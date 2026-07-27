@@ -2734,9 +2734,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get pickerSelectPersonTitle => 'Velg person';
 
   @override
-  String get pickerSelectExerciseTitle => 'Velg øvelse';
-
-  @override
   String get pickerSelectRolePlayTitle => 'Velg markør';
 
   @override

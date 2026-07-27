@@ -4682,12 +4682,6 @@ abstract class AppLocalizations {
   /// **'Select person'**
   String get pickerSelectPersonTitle;
 
-  /// Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) used by showExercisePickerSheet, superseding exercisePickerTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Select exercise'**
-  String get pickerSelectExerciseTitle;
-
   /// Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) used by CastPickerSheet, superseding castPickerTitle.
   ///
   /// In en, this message translates to:

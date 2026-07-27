@@ -1918,10 +1918,6 @@
   "@pickerSelectPersonTitle": {
     "description": "Tittel på den adaptive velger-picker (ADR-0049, showRingdrillPicker) når man velger RolePlayFormScreens person."
   },
-  "pickerSelectExerciseTitle": "Velg øvelse",
-  "@pickerSelectExerciseTitle": {
-    "description": "Tittel på den adaptive velger-picker (ADR-0049, showRingdrillPicker) brukt av showExercisePickerSheet, som erstatter exercisePickerTitle."
-  },
   "pickerSelectRolePlayTitle": "Velg markør",
   "@pickerSelectRolePlayTitle": {
     "description": "Tittel på den adaptive velger-picker (ADR-0049, showRingdrillPicker) brukt av CastPickerSheet, som erstatter castPickerTitle."

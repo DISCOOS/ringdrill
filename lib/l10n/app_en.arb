@@ -2951,10 +2951,6 @@
   "@pickerSelectPersonTitle": {
     "description": "Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) when picking a RolePlayFormScreen person."
   },
-  "pickerSelectExerciseTitle": "Select exercise",
-  "@pickerSelectExerciseTitle": {
-    "description": "Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) used by showExercisePickerSheet, superseding exercisePickerTitle."
-  },
   "pickerSelectRolePlayTitle": "Select marker",
   "@pickerSelectRolePlayTitle": {
     "description": "Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) used by CastPickerSheet, superseding castPickerTitle."
