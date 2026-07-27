@@ -63,6 +63,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0053 | [`MapView` owns its default camera fit, centring and marker construction](./0053-mapview-self-computed-default-fit.md) | Accepted |
 | ADR-0054 | [Consistent map interactivity on medium/expanded windows, via a built-in `MapView.withFullscreen` command](./0054-map-interactivity-and-fullscreen-command.md) | Proposed |
 | ADR-0055 | [Dual-accept `programId`/`planId` at the Netlify API boundary, with Sentry-tracked deprecation](./0055-programid-planid-wire-back-compat.md) | Accepted |
+| ADR-0056 | [One drill player with three peer modes — exercise, station, roleplay](./0056-player-modes-exercise-station-roleplay.md) | Proposed |
 
 ## When to write an ADR
 
