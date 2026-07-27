@@ -16,6 +16,7 @@ import 'package:ringdrill/views/drill_player/drill_player_coordinator.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_description_card.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
+import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -95,10 +96,18 @@ Future<void> _seedAndInit([Exercise? exercise]) async {
   await PlanService().init();
 }
 
+/// Mounts [widget] the way every real host does — behind a seeded
+/// [PlanScope.fromActivePlan].
+///
+/// Not incidental scaffolding: the plan level of the resolve cascade belongs to
+/// the *route* that mounts a screen (`MainScreen`, the Ringdrill sheets, the
+/// drill player sheet), never to the screen itself, because `showModalBottomSheet`
+/// and friends mount outside `MainScreen`'s subtree. Pumping bare would let this
+/// screen pass while the identical content renders raw tokens in the app.
 Widget _harness(Widget widget) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
-  home: widget,
+  home: PlanScope.fromActivePlan(child: widget),
 );
 
 void main() {

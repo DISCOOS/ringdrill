@@ -64,6 +64,34 @@ The original rule was "the running state's badge is non-interactive so users can
 interactive = onPickTarget != null && (mode is! ExercisePlayerMode || !isStarted);
 ```
 
+### Who seeds the resolve cascade
+
+Splitting this wrong is how the player shipped rendering raw `{{station.*}}` /
+`{{exercise.*}}` / `{{var.*}}` in its station, roleplay and team modes:
+
+* **Entity levels — the screen.** `ExerciseScope`, `StationScope`, `RoleplayScope`
+  are seeded by the screen that owns the entity, since only it has loaded one.
+  `StationScreen` uses `StationScope.forStation` (which supplies the exercise level
+  too), `RolePlayScreen` layers roleplay → station → exercise, `TeamExerciseScreen`
+  the exercise level alone — a team rotates through every post, so it has no single
+  station and those tokens legitimately stay literal (`docs/variables.md`).
+* **Plan level — the route.** `PlanScope` is seeded by whatever *mounts* the
+  screen, via `PlanScope.fromActivePlan`: `MainScreen` for the shell and the
+  master/detail pane, the `showRingdrill*` sheets, and `showDrillPlayerSheet`.
+  `showModalBottomSheet`/`showDialog`/`Navigator.push` mount onto the Navigator's
+  `Overlay`, a sibling of `MainScreen` rather than a descendant, so a modal body
+  never inherits the shell's scope (DESIGN-008 follow-up 11). One owner covers
+  every modal body, not only the four the player hosts.
+
+The failure mode is worse than it sounds: `RingDrillText` returns its text
+verbatim when there is **no** `PlanScope` at all, so a single missing plan level
+silences the entire cascade — station and exercise tokens included, even where
+those scopes are correctly present. It stayed hidden because the player's only
+body used to be `CoordinatorScreen`, which had been given a `PlanScope` of its
+own; that made it the one screen of the four that resolved on a bare route, and
+masked the identical gap in the other three. That local seeding is now removed,
+so all four follow the same rule.
+
 ### Entry policy
 
 `DrillPlayerScope` (an `InheritedWidget` over the shell's `DrillPlayerCoordinator`, mounted by `MainScreen`) plus `openContextTarget(context, target)`: routes to the player when `shouldHostInPlayer(target)`, else falls back to `ContextSheet.of(context).showOrReplace(...)`. The predicate admits only the declared modes, only for the exercise actually running, only while it still exists in the active plan (uuid equality alone does not exclude a stale cross-plan target), and never from inside the player — where the inline controller already swaps the body in place.
@@ -111,6 +139,7 @@ The team mode was added after the first three, and the sealed `PlayerMode` made 
 
 * 2026-07-27 — Accepted as three modes (exercise, station, roleplay), with teams explicitly excluded.
 * 2026-07-28 — Team added as a fourth mode at the maintainer's request, reversing that exclusion. The plan-wide team overview stays outside the player. See *Teams are a mode* above.
+* 2026-07-28 — Recorded who seeds the resolve cascade, after the player shipped rendering raw tokens in three of its four modes. See *Who seeds the resolve cascade* above.
 
 ## Links
 

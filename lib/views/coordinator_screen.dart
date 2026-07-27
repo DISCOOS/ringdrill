@@ -41,7 +41,6 @@ import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/map_placeholder.dart';
 import 'package:ringdrill/views/widgets/notification_permission_help.dart';
-import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
@@ -365,16 +364,17 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         // `{{exercise.*}}` needs ExerciseScope; station tokens are deliberately
         // *not* provided — an exercise-scope field has no single station, so
         // per docs/variables.md those legitimately stay literal here.
-        final plan = _planService.activePlan;
-        return PlanScope(
-          variables: plan?.variables ?? const [],
-          planName: plan?.name,
-          planDescription: plan?.description,
-          child: ExerciseScope(
-            exercise: exercise,
-            variableOverrides: exercise.variableOverrides,
-            child: _buildScaffold(exercise, event, localizations),
-          ),
+        //
+        // The *plan* level is not seeded here. It belongs to whichever route
+        // mounts this screen — see PlanScope.fromActivePlan — so that one owner
+        // covers every modal body, not just the four the player hosts. This
+        // screen briefly seeded its own, which made it the only one of the four
+        // that resolved tokens on a bare route and hid the same gap in the other
+        // three until the player started hosting them.
+        return ExerciseScope(
+          exercise: exercise,
+          variableOverrides: exercise.variableOverrides,
+          child: _buildScaffold(exercise, event, localizations),
         );
       },
     );

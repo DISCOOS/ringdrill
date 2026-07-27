@@ -17,6 +17,7 @@ import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/team_form_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
@@ -62,91 +63,100 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
     final team = _planService.getTeam(widget.teamIndex);
     final teamLabel =
         team?.name ?? '${localizations.team(1)} ${widget.teamIndex + 1}';
-    return Scaffold(
-      appBar: AppBar(
-        leading: MasterDetailLeading(
-          onClose: () {
-            if (MasterDetailScope.maybeOf(context) != null) {
-              ContextSheet.of(context).close();
-            } else {
-              Navigator.pop(context);
-            }
-          },
-        ),
-        toolbarHeight: 72,
-        title: SheetTitle(
-          primary: teamLabel,
-          secondary: widget.exercise.name,
-          secondaryOverrides: _exerciseOverrides,
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            padding: const EdgeInsets.all(8),
-            onPressed: _exerciseService.isStarted ? null : _editTeam,
-            tooltip: _exerciseService.isStarted
-                ? localizations.stopExerciseFirst(
-                    substitutePlanVariables(
-                      widget.exercise.name,
-                      _exerciseOverrides,
-                    ),
-                  )
-                : localizations.editTeam,
+    // The exercise level of the resolve cascade (ADR-0048), so `{{exercise.*}}`
+    // resolves in this surface's own fields the way it does in the coordinator,
+    // station and roleplay ones. Station scope is deliberately absent: a team
+    // rotates through every post, so it has no single station — those tokens
+    // legitimately stay literal here (docs/variables.md).
+    return ExerciseScope(
+      exercise: widget.exercise,
+      variableOverrides: widget.exercise.variableOverrides,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: MasterDetailLeading(
+            onClose: () {
+              if (MasterDetailScope.maybeOf(context) != null) {
+                ContextSheet.of(context).close();
+              } else {
+                Navigator.pop(context);
+              }
+            },
           ),
-        ],
-        actionsPadding: const EdgeInsets.only(right: 16),
-      ),
-      body: SafeArea(
-        child: StreamBuilder(
-          stream: ExerciseService().events,
-          initialData: _initialData(),
-          builder: (context, asyncSnapshot) {
-            final event = asyncSnapshot.data!;
-            currentIndex = widget.exercise.stationIndex(
-              widget.teamIndex,
-              event.currentRound,
-            );
-            return Padding(
-              padding: const EdgeInsets.all(kPlayerSurfaceHorizontalPadding),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Team Info
-                  _buildTeamStatus(event),
-                  const SizedBox(height: 8),
-                  // Schedule Details — the shared schedule card, matching
-                  // the Post/Spill viewers' Tidsplan/Når aktiv cards.
-                  Expanded(child: _buildScheduleCard(event)),
-                ],
-              ),
-            );
-          },
+          toolbarHeight: 72,
+          title: SheetTitle(
+            primary: teamLabel,
+            secondary: widget.exercise.name,
+            secondaryOverrides: _exerciseOverrides,
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.edit),
+              padding: const EdgeInsets.all(8),
+              onPressed: _exerciseService.isStarted ? null : _editTeam,
+              tooltip: _exerciseService.isStarted
+                  ? localizations.stopExerciseFirst(
+                      substitutePlanVariables(
+                        widget.exercise.name,
+                        _exerciseOverrides,
+                      ),
+                    )
+                  : localizations.editTeam,
+            ),
+          ],
+          actionsPadding: const EdgeInsets.only(right: 16),
         ),
+        body: SafeArea(
+          child: StreamBuilder(
+            stream: ExerciseService().events,
+            initialData: _initialData(),
+            builder: (context, asyncSnapshot) {
+              final event = asyncSnapshot.data!;
+              currentIndex = widget.exercise.stationIndex(
+                widget.teamIndex,
+                event.currentRound,
+              );
+              return Padding(
+                padding: const EdgeInsets.all(kPlayerSurfaceHorizontalPadding),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Team Info
+                    _buildTeamStatus(event),
+                    const SizedBox(height: 8),
+                    // Schedule Details — the shared schedule card, matching
+                    // the Post/Spill viewers' Tidsplan/Når aktiv cards.
+                    Expanded(child: _buildScheduleCard(event)),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        // Mirror the CoordinatorScreen pattern: dock a DrillMiniPlayer for
+        // the parent exercise so the user can start it from the team view
+        // (modal context sheet in narrow). In master-detail (wide) the
+        // docked bar lives in the master column instead.
+        bottomNavigationBar: MasterDetailScope.maybeOf(context) == null
+            ? DrillMiniPlayer(
+                exercise: widget.exercise,
+                height: 64,
+                applyBottomInset: true,
+                onOpen: () {},
+                onPlay: () {
+                  unawaited(HapticFeedback.mediumImpact());
+                  _exerciseService.start(widget.exercise);
+                },
+                mode: TeamPlayerMode(widget.teamIndex),
+                // showOrReplace, not replace: this screen can be a plain pushed
+                // route (a cold deep link) where the shell's controller exists but
+                // was never opened, and replace asserts on that.
+                onPickTarget: (target) => unawaited(
+                  ContextSheet.of(context).showOrReplace(context, target),
+                ),
+              )
+            : null,
       ),
-      // Mirror the CoordinatorScreen pattern: dock a DrillMiniPlayer for
-      // the parent exercise so the user can start it from the team view
-      // (modal context sheet in narrow). In master-detail (wide) the
-      // docked bar lives in the master column instead.
-      bottomNavigationBar: MasterDetailScope.maybeOf(context) == null
-          ? DrillMiniPlayer(
-              exercise: widget.exercise,
-              height: 64,
-              applyBottomInset: true,
-              onOpen: () {},
-              onPlay: () {
-                unawaited(HapticFeedback.mediumImpact());
-                _exerciseService.start(widget.exercise);
-              },
-              mode: TeamPlayerMode(widget.teamIndex),
-              // showOrReplace, not replace: this screen can be a plain pushed
-              // route (a cold deep link) where the shell's controller exists but
-              // was never opened, and replace asserts on that.
-              onPickTarget: (target) => unawaited(
-                ContextSheet.of(context).showOrReplace(context, target),
-              ),
-            )
-          : null,
     );
   }
 

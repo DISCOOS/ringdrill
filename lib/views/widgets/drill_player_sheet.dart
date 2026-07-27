@@ -20,6 +20,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/views/widgets/plan_scope.dart';
 
 /// Opens a fullscreen, non-dismissible DrillPlayer sheet over [context].
 ///
@@ -124,7 +125,10 @@ class _DrillPlayerSheetBodyState extends State<_DrillPlayerSheetBody> {
       data: mediaQuery.copyWith(
         padding: mediaQuery.padding.copyWith(top: physicalTop),
       ),
-      child: widget.builder(context),
+      // This sheet is a modal route, so MainScreen's PlanScope does not reach
+      // it — and without any scope at all RingDrillText renders every token
+      // verbatim, not just `{{var.*}}`. See PlanScope.fromActivePlan.
+      child: PlanScope.fromActivePlan(child: widget.builder(context)),
     );
   }
 }

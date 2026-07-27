@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 
 /// Seeds a [PlanScope] from the active plan for a sheet/dialog choke point
@@ -16,15 +15,8 @@ import 'package:ringdrill/views/widgets/plan_scope.dart';
 /// through here that forwards the ambient scope onward (every form screen does)
 /// inherits whichever half is missing, so seeding only one left `{{plan.*}}`
 /// silently blank several layers down.
-Widget _withDefaultPlanScope(Widget child) {
-  final plan = PlanService().activePlan;
-  return PlanScope(
-    variables: plan?.variables ?? const [],
-    planName: plan?.name,
-    planDescription: plan?.description,
-    child: child,
-  );
-}
+Widget _withDefaultPlanScope(Widget child) =>
+    PlanScope.fromActivePlan(child: child);
 
 /// Opens a draggable viewer sheet with the standard Ringdrill chrome (drag
 /// handle, rounded top corners, surface background).
