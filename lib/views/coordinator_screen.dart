@@ -34,11 +34,13 @@ import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_description_card.dart';
+import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/exercise_mini_map.dart'
     show exerciseStationMarkers, ExerciseMapSheetHeader;
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/map_placeholder.dart';
+import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/notification_permission_help.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
@@ -348,148 +350,181 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       stream: _exerciseService.events,
       builder: (context, asyncSnapshot) {
         final event = _ensureEvent(exercise, asyncSnapshot.data);
-        return Scaffold(
-          appBar: AppBar(
-            // Matches the other detail screens (`StationScreen`,
-            // `TeamExerciseScreen`, `RolePlayScreen`) and the master
-            // AppBar so the first content row aligns across master and
-            // detail in the wide layout.
-            toolbarHeight: kRingdrillHeaderHeight,
-            leading: MasterDetailLeading(onClose: close),
-            title: SheetTitle(
-              primary: exercise.name,
-              primaryOverrides: _overridesFor(exercise),
-            ),
-            actions: rdAppBarActions(context, [
-              // Open Brief — scoped to this exercise. Always visible
-              // because the brief is the coordinator's reading material
-              // both before and during the exercise.
-              IconButton(
-                icon: const Icon(Icons.menu_book),
-                padding: const EdgeInsets.all(8.0),
-                tooltip: localizations.briefAction,
-                onPressed: () => ContextSheet.of(
-                  context,
-                ).show(context, BriefSheetTarget(exerciseUuid: widget.uuid)),
-              ),
-
-              // Notification re-show. `_promptShowNotification` is only
-              // raised by NotificationService events scoped to this
-              // exercise while it's running, so the bell has nothing to
-              // do outside of an active run. Hiding it (rather than
-              // showing it disabled) keeps the appbar uncluttered during
-              // setup/reading and frees up horizontal space so the
-              // exercise title stops getting ellipsized. The bell
-              // reappears as a third icon once the coordinator presses
-              // start, and toggles between enabled/disabled based on
-              // whether there's an actual notification to reshow.
-              if (_promptShowNotification && _isStarted)
-                IconButton(
-                  icon: const Icon(Icons.notifications_on),
-                  padding: const EdgeInsets.all(8.0),
-                  onPressed: _promptShowNotification
-                      ? () => unawaited(_onShowNotificationPressed())
-                      : null,
-                  tooltip: localizations.showNotification,
-                ),
-
-              // Edit + delete admin actions (both disabled during a run). On a
-              // medium/expanded window there is room to show them as standalone
-              // icons; on a compact window a long exercise title would
-              // ellipsize, so they collapse into an overflow menu instead.
-              if (WindowSizeClass.of(context).hasMasterDetail) ...[
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  padding: const EdgeInsets.all(8.0),
-                  tooltip: localizations.editExercise,
-                  onPressed: _isStarted
-                      ? null
-                      : () => _editExercise(context, exercise),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  padding: const EdgeInsets.all(8.0),
-                  tooltip: localizations.deleteExercise,
-                  onPressed: _isStarted
-                      ? null
-                      : () => _deleteExercise(context, exercise),
-                ),
-              ] else
-                PopupMenuButton<_AppBarMenuAction>(
-                  tooltip: localizations.moreActions,
-                  enabled: !_isStarted,
-                  position: PopupMenuPosition.under,
-                  onSelected: (action) {
-                    switch (action) {
-                      case _AppBarMenuAction.edit:
-                        _editExercise(context, exercise);
-                        break;
-                      case _AppBarMenuAction.delete:
-                        _deleteExercise(context, exercise);
-                        break;
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem<_AppBarMenuAction>(
-                      value: _AppBarMenuAction.edit,
-                      child: ListTile(
-                        leading: const Icon(Icons.edit),
-                        title: Text(localizations.editExercise),
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                      ),
-                    ),
-                    PopupMenuItem<_AppBarMenuAction>(
-                      value: _AppBarMenuAction.delete,
-                      child: ListTile(
-                        leading: const Icon(Icons.delete),
-                        title: Text(localizations.deleteExercise),
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                      ),
-                    ),
-                  ],
-                ),
-            ]),
-            actionsPadding: EdgeInsets.only(right: 16.0),
+        // Provide the resolve-context scopes this screen's own content needs
+        // (ADR-0048, DESIGN-010's cascade), the way StationScreen wraps its
+        // sheet — the Info segment's exercise-description card renders
+        // markdown that may carry `{{exercise.*}}`, `{{plan.*}}` and
+        // `{{var.*}}`, and Rollup resolves those from the scopes above it, not
+        // from the overrides map alone (which can only override an *already
+        // declared* variable's value).
+        //
+        // PlanScope is seeded here rather than assumed from an ancestor: in
+        // compact layout this screen lives in a context sheet, pushed on the
+        // Navigator's Overlay as a sibling of MainScreen, so MainScreen's own
+        // PlanScope never reaches it (DESIGN-008 follow-up 11). Only
+        // `{{exercise.*}}` needs ExerciseScope; station tokens are deliberately
+        // *not* provided — an exercise-scope field has no single station, so
+        // per docs/variables.md those legitimately stay literal here.
+        final plan = _planService.activePlan;
+        return PlanScope(
+          variables: plan?.variables ?? const [],
+          planName: plan?.name,
+          planDescription: plan?.description,
+          child: ExerciseScope(
+            exercise: exercise,
+            variableOverrides: exercise.variableOverrides,
+            child: _buildScaffold(exercise, event, localizations),
           ),
-          body: SafeArea(
-            child: exercise.schedule.isEmpty
-                ? Center(child: Text(localizations.noRoundsScheduled))
-                : _buildBody(exercise, event),
-          ),
-          // Standalone / modal player surface: the docked mini-player owns
-          // play, stop and progress, so the floating control button is
-          // dropped here. In master-detail the play control lives in the
-          // master column and the mini-player is anchored there, so the
-          // detail pane keeps the lightweight status strip instead.
-          bottomNavigationBar: MasterDetailScope.maybeOf(context) == null
-              ? DrillMiniPlayer(
-                  key: const ValueKey('coordinator-mini-player'),
-                  exercise: exercise,
-                  height: 64,
-                  // Paint the accent background through the bottom safe-area
-                  // inset so the home-indicator strip matches the bar instead
-                  // of reading as a dark band below it.
-                  applyBottomInset: true,
-                  // The tile row owns the phase/countdown, so the trailing
-                  // cluster collapses to just the stop button here.
-                  showInlineStatus: false,
-                  // We are already inside the player; tapping the bar
-                  // should not try to re-open it.
-                  onOpen: () {},
-                  onPlay: () {
-                    unawaited(HapticFeedback.mediumImpact());
-                    _exerciseService.start(exercise);
-                  },
-                  onPickExercise: (picked) => ContextSheet.of(
-                    context,
-                  ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
-                  bodyBuilder: _buildMiniPlayerBody,
-                )
-              : _buildExerciseStatus(event),
         );
       },
+    );
+  }
+
+  Widget _buildScaffold(
+    Exercise exercise,
+    ExerciseEvent event,
+    AppLocalizations localizations,
+  ) {
+    return Scaffold(
+      appBar: AppBar(
+        // Matches the other detail screens (`StationScreen`,
+        // `TeamExerciseScreen`, `RolePlayScreen`) and the master
+        // AppBar so the first content row aligns across master and
+        // detail in the wide layout.
+        toolbarHeight: kRingdrillHeaderHeight,
+        leading: MasterDetailLeading(onClose: close),
+        title: SheetTitle(
+          primary: exercise.name,
+          primaryOverrides: _overridesFor(exercise),
+        ),
+        actions: rdAppBarActions(context, [
+          // Open Brief — scoped to this exercise. Always visible
+          // because the brief is the coordinator's reading material
+          // both before and during the exercise.
+          IconButton(
+            icon: const Icon(Icons.menu_book),
+            padding: const EdgeInsets.all(8.0),
+            tooltip: localizations.briefAction,
+            onPressed: () => ContextSheet.of(
+              context,
+            ).show(context, BriefSheetTarget(exerciseUuid: widget.uuid)),
+          ),
+
+          // Notification re-show. `_promptShowNotification` is only
+          // raised by NotificationService events scoped to this
+          // exercise while it's running, so the bell has nothing to
+          // do outside of an active run. Hiding it (rather than
+          // showing it disabled) keeps the appbar uncluttered during
+          // setup/reading and frees up horizontal space so the
+          // exercise title stops getting ellipsized. The bell
+          // reappears as a third icon once the coordinator presses
+          // start, and toggles between enabled/disabled based on
+          // whether there's an actual notification to reshow.
+          if (_promptShowNotification && _isStarted)
+            IconButton(
+              icon: const Icon(Icons.notifications_on),
+              padding: const EdgeInsets.all(8.0),
+              onPressed: _promptShowNotification
+                  ? () => unawaited(_onShowNotificationPressed())
+                  : null,
+              tooltip: localizations.showNotification,
+            ),
+
+          // Edit + delete admin actions (both disabled during a run). On a
+          // medium/expanded window there is room to show them as standalone
+          // icons; on a compact window a long exercise title would
+          // ellipsize, so they collapse into an overflow menu instead.
+          if (WindowSizeClass.of(context).hasMasterDetail) ...[
+            IconButton(
+              icon: const Icon(Icons.edit),
+              padding: const EdgeInsets.all(8.0),
+              tooltip: localizations.editExercise,
+              onPressed: _isStarted
+                  ? null
+                  : () => _editExercise(context, exercise),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete),
+              padding: const EdgeInsets.all(8.0),
+              tooltip: localizations.deleteExercise,
+              onPressed: _isStarted
+                  ? null
+                  : () => _deleteExercise(context, exercise),
+            ),
+          ] else
+            PopupMenuButton<_AppBarMenuAction>(
+              tooltip: localizations.moreActions,
+              enabled: !_isStarted,
+              position: PopupMenuPosition.under,
+              onSelected: (action) {
+                switch (action) {
+                  case _AppBarMenuAction.edit:
+                    _editExercise(context, exercise);
+                    break;
+                  case _AppBarMenuAction.delete:
+                    _deleteExercise(context, exercise);
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem<_AppBarMenuAction>(
+                  value: _AppBarMenuAction.edit,
+                  child: ListTile(
+                    leading: const Icon(Icons.edit),
+                    title: Text(localizations.editExercise),
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  ),
+                ),
+                PopupMenuItem<_AppBarMenuAction>(
+                  value: _AppBarMenuAction.delete,
+                  child: ListTile(
+                    leading: const Icon(Icons.delete),
+                    title: Text(localizations.deleteExercise),
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  ),
+                ),
+              ],
+            ),
+        ]),
+        actionsPadding: EdgeInsets.only(right: 16.0),
+      ),
+      body: SafeArea(
+        child: exercise.schedule.isEmpty
+            ? Center(child: Text(localizations.noRoundsScheduled))
+            : _buildBody(exercise, event),
+      ),
+      // Standalone / modal player surface: the docked mini-player owns
+      // play, stop and progress, so the floating control button is
+      // dropped here. In master-detail the play control lives in the
+      // master column and the mini-player is anchored there, so the
+      // detail pane keeps the lightweight status strip instead.
+      bottomNavigationBar: MasterDetailScope.maybeOf(context) == null
+          ? DrillMiniPlayer(
+              key: const ValueKey('coordinator-mini-player'),
+              exercise: exercise,
+              height: 64,
+              // Paint the accent background through the bottom safe-area
+              // inset so the home-indicator strip matches the bar instead
+              // of reading as a dark band below it.
+              applyBottomInset: true,
+              // The tile row owns the phase/countdown, so the trailing
+              // cluster collapses to just the stop button here.
+              showInlineStatus: false,
+              // We are already inside the player; tapping the bar
+              // should not try to re-open it.
+              onOpen: () {},
+              onPlay: () {
+                unawaited(HapticFeedback.mediumImpact());
+                _exerciseService.start(exercise);
+              },
+              onPickExercise: (picked) => ContextSheet.of(
+                context,
+              ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
+              bodyBuilder: _buildMiniPlayerBody,
+            )
+          : _buildExerciseStatus(event),
     );
   }
 

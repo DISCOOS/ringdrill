@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/data/plan_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
@@ -42,6 +43,17 @@ Exercise _exercise() => Exercise(
   commsMd: 'Samband: kanal 5.',
 );
 
+/// An exercise whose markdown exercises the full resolve cascade an
+/// exercise-scope field is allowed to reach (docs/variables.md): the exercise's
+/// own facets, the plan's, and a declared plan variable.
+Exercise _tokenExercise() => _exercise().copyWith(
+  methodMd:
+      'Runder: {{exercise.numberOfRounds}}. '
+      'Plan: {{plan.name}}. '
+      'Frekvens: {{var.frekvens}}.',
+  commsMd: null,
+);
+
 Plan _shell() {
   final now = DateTime.utc(2026, 1, 1);
   return Plan(
@@ -49,6 +61,7 @@ Plan _shell() {
     name: 'Test Plan',
     description: '',
     metadata: PlanMetadata(created: now, updated: now, version: '1.1'),
+    variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -57,14 +70,14 @@ Plan _shell() {
   );
 }
 
-Future<void> _seedAndInit() async {
+Future<void> _seedAndInit([Exercise? exercise]) async {
   SharedPreferences.setMockInitialValues({});
   PlanService().reset();
   final prefs = await SharedPreferences.getInstance();
   final repo = PlanRepository(prefs);
   await repo.savePlanShell(_shell());
   await repo.setActivePlanUuid(_planUuid);
-  await repo.saveExercise(_exercise());
+  await repo.saveExercise(exercise ?? _exercise());
   await PlanService().init();
 }
 
@@ -133,5 +146,30 @@ void main() {
     expect(find.textContaining('Samband: kanal 5.'), findsOneWidget);
     // An empty field contributes no block at all.
     expect(find.text(l10n.briefSectionExerciseTrainingFocus), findsNothing);
+  });
+
+  // The card renders through Rollup, which resolves via the DESIGN-010 scope
+  // cascade (ADR-0048) rather than from the passed overrides alone — so the
+  // coordinator has to *provide* those scopes or the tokens render literally.
+  // `{{var.*}}` in particular needs PlanScope for the declared-variable
+  // registry: an overrides map can only override a declared variable's value,
+  // never declare one.
+  testWidgets('resolves exercise, plan and variable tokens in the card', (
+    tester,
+  ) async {
+    await _seedAndInit(_tokenExercise());
+    await tester.pumpWidget(
+      _harness(const CoordinatorScreen(uuid: _exerciseUuid)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.infoTab));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Runder: 1.'), findsOneWidget);
+    expect(find.textContaining('Plan: Test Plan.'), findsOneWidget);
+    expect(find.textContaining('Frekvens: Kanal 6.'), findsOneWidget);
+    // And nothing is left as a literal token.
+    expect(find.textContaining('{{'), findsNothing);
   });
 }
