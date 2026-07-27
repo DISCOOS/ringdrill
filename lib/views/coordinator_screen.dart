@@ -164,11 +164,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // reorderStations and reorderExercises which carry no exercise reference).
     listen(_planService.events, (event) {
       if (!mounted) return;
-      final directMatch = event.exercise?.uuid == widget.uuid;
-      final isRefresh = event.type == PlanEventType.planRefreshed;
-      if (directMatch || isRefresh) {
-        reload(event);
-      }
+      if (_rendersChangesFrom(event)) reload(event);
     });
 
     // Listen to Notification Events
@@ -186,6 +182,18 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       },
     );
   }
+
+  /// Whether [event] can change anything this screen shows.
+  ///
+  /// Its own exercise, plus any team mutation: the team list and team detail
+  /// read names through `PlanService.getTeam`, and `teamSaved` carries only a
+  /// team — so an exercise-only test would leave a team renamed elsewhere
+  /// showing its old name. Actors are not rendered here, unlike the station and
+  /// roleplay viewers, so actor events are ignored.
+  bool _rendersChangesFrom(PlanEvent event) =>
+      event.type == PlanEventType.planRefreshed ||
+      event.exercise?.uuid == widget.uuid ||
+      event.team != null;
 
   @override
   void onLoaded() {

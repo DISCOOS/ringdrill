@@ -189,7 +189,9 @@ class PlanService {
   final StreamController<PlanEvent> _controller = StreamController.broadcast();
 
   bool _isReady = false;
-  late final PlanRepository _repo;
+  // Not `final`: [reset] drops the initialised state so the next [init] can
+  // rebind to a fresh SharedPreferences instance.
+  late PlanRepository _repo;
 
   Stream<PlanEvent> get events => _controller.stream;
 
@@ -287,6 +289,25 @@ class PlanService {
     for (final plan in List<Plan>.from(_repo.listPlans())) {
       await _repo.deletePlan(plan.uuid);
     }
+  }
+
+  /// Drops the initialised repository so the next [init] rebinds to whatever
+  /// `SharedPreferences` instance is current.
+  ///
+  /// Test-only. `SharedPreferences.setMockInitialValues` hands each test a
+  /// fresh instance, but this service is a singleton that captures the first
+  /// one — so without a reset, a re-seed between tests is invisible here (every
+  /// test keeps reading the *first* test's data) and anything written through
+  /// the service outlives the test that wrote it. Call this before [init] in
+  /// `setUp`.
+  ///
+  /// Deliberately leaves [events] alone. Subscribers are widget-scoped and
+  /// cancel on dispose, so there is nothing to clean up, and replacing the
+  /// broadcast controller would silently detach any listener that legitimately
+  /// outlives a reset.
+  @visibleForTesting
+  void reset() {
+    _isReady = false;
   }
 
   Future<void> replacePlan(Plan plan) async {

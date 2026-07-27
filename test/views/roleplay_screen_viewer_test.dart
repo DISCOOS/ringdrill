@@ -116,6 +116,10 @@ RolePlay _rolePlay() => const RolePlay(
 
 Future<void> _seedAndInit() async {
   SharedPreferences.setMockInitialValues({});
+  // PlanService is a singleton that binds its repository to the *first*
+  // SharedPreferences instance it sees. Without this, the re-seed above is
+  // invisible to it and writes made through it in one test leak into the next.
+  PlanService().reset();
   final prefs = await SharedPreferences.getInstance();
   final repo = PlanRepository(prefs);
   await repo.savePlanShell(_shell());
@@ -334,36 +338,26 @@ void main() {
   // viewer that filters plan events by those alone never refreshes and keeps
   // showing the old name. (The re-cast test below passes even when this is
   // broken, because its saveRolePlay call matches on the roleplay.)
-  testWidgets('the viewer refreshes when its cast actor is renamed externally', (
-    tester,
-  ) async {
-    await tester.pumpWidget(_buildScreen());
-    await tester.pumpAndSettle();
+  testWidgets(
+    'the viewer refreshes when its cast actor is renamed externally',
+    (tester) async {
+      await tester.pumpWidget(_buildScreen());
+      await tester.pumpAndSettle();
 
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    expect(find.text(l10n.castedByLine('Nina Actor')), findsOneWidget);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.castedByLine('Nina Actor')), findsOneWidget);
 
-    // PlanService is a singleton whose repository is bound to the *first*
-    // SharedPreferences instance, so _seedAndInit's later re-seeds are invisible
-    // to it and anything written through it here outlives this test. Put the
-    // name back so the following tests still see the seeded cast.
-    addTearDown(
-      () => PlanService().saveActor(
+      // Rename the SAME actor, as the roster editor would — no roleplay save.
+      await PlanService().saveActor(
         l10n,
-        const Actor(uuid: _actorUuid, realName: 'Nina Actor'),
-      ),
-    );
+        const Actor(uuid: _actorUuid, realName: 'Nina Renamed'),
+      );
+      await tester.pumpAndSettle();
 
-    // Rename the SAME actor, as the roster editor would — no roleplay save.
-    await PlanService().saveActor(
-      l10n,
-      const Actor(uuid: _actorUuid, realName: 'Nina Renamed'),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text(l10n.castedByLine('Nina Renamed')), findsOneWidget);
-    expect(find.text(l10n.castedByLine('Nina Actor')), findsNothing);
-  });
+      expect(find.text(l10n.castedByLine('Nina Renamed')), findsOneWidget);
+      expect(find.text(l10n.castedByLine('Nina Actor')), findsNothing);
+    },
+  );
 
   // A roleplay that cannot be resolved — a stale deep link, or one deleted
   // from another master/detail pane while this viewer was open — must not
