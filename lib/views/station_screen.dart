@@ -136,14 +136,23 @@ class _StationScreenState extends State<StationScreen>
     // CoordinatorScreen. Re-read the cached exercise; ignore a delete of the
     // exercise itself (the hosting sheet closes that case).
     listen(_planService.events, (event) {
-      if (!mounted) return;
-      final directMatch = event.exercise?.uuid == widget.uuid;
-      final isRefresh = event.type == PlanEventType.planRefreshed;
-      if (directMatch || isRefresh) {
-        reload(event);
-      }
+      if (_rendersChangesFrom(event)) reload(event);
     });
   }
+
+  /// Whether [event] can change anything this screen shows.
+  ///
+  /// Wider than CoordinatorScreen's exercise-only test, because the person rows
+  /// render each person's roleplay and the actor cast in it — and neither
+  /// `rolePlaySaved` nor `actorSaved` carries an exercise to match on. Which
+  /// specific roleplays and actors are on screen changes with the station's
+  /// contents, so any of those events counts rather than trying to track the
+  /// current set.
+  bool _rendersChangesFrom(PlanEvent event) =>
+      event.type == PlanEventType.planRefreshed ||
+      event.exercise?.uuid == widget.uuid ||
+      event.rolePlay != null ||
+      event.actor != null;
 
   @override
   void onLoaded() {

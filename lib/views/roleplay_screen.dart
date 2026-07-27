@@ -118,20 +118,35 @@ class _RolePlayScreenState extends State<RolePlayScreen>
 
     // Refresh on any plan mutation (cast/edit from the roster or another
     // pane, not just this viewer's own actions) — mirrors CoordinatorScreen.
+    // Refresh on any plan mutation this viewer actually renders — its own
+    // actions, but also a cast or edit from the roster or another pane.
     listen(_planService.events, (event) {
-      if (!mounted) return;
-      // An event's `exercise` is this roleplay's *parent*; widget.uuid is the
-      // roleplay's own uuid and would never match one. Roleplay-carrying
-      // events (cast/edit) are matched on their rolePlay instead.
-      final exerciseUuid = _exerciseUuid;
-      final directMatch =
-          (exerciseUuid != null && event.exercise?.uuid == exerciseUuid) ||
-          event.rolePlay?.uuid == widget.uuid;
-      final isRefresh = event.type == PlanEventType.planRefreshed;
-      if (directMatch || isRefresh) {
-        reload(event);
-      }
+      if (_rendersChangesFrom(event)) reload(event);
     });
+  }
+
+  /// Whether [event] can change anything this viewer shows.
+  ///
+  /// Narrower than "any plan event", but deliberately wider than
+  /// CoordinatorScreen's exercise-only test: this viewer also renders its own
+  /// roleplay and — via the cast footer, which reads the Actor fresh from
+  /// PlanService — the actor playing it. `rolePlaySaved` and `actorSaved` carry
+  /// no exercise at all, so an exercise-keyed filter would leave a re-cast or a
+  /// renamed marker showing stale text.
+  ///
+  /// While nothing is loaded, everything matches: the roleplay may be about to
+  /// reappear (a plan re-activated, an undo), and this is the only way back
+  /// from the not-found state.
+  bool _rendersChangesFrom(PlanEvent event) {
+    if (event.type == PlanEventType.planRefreshed) return true;
+    if (loadState case Loaded<_RolePlaySubject>(:final value)) {
+      final rolePlay = value.rolePlay;
+      return event.exercise?.uuid == rolePlay.exerciseUuid ||
+          event.rolePlay?.uuid == rolePlay.uuid ||
+          (rolePlay.actorUuid != null &&
+              event.actor?.uuid == rolePlay.actorUuid);
+    }
+    return true;
   }
 
   /// The parent exercise's uuid while the roleplay loads, else null. Incoming
@@ -152,8 +167,13 @@ class _RolePlayScreenState extends State<RolePlayScreen>
   _RolePlaySubject? onLoad(PlanEvent? event) {
     final rolePlay = _planService.getRolePlay(widget.uuid);
     if (rolePlay == null) return null;
-    final exercise =
-        event?.exercise ?? _planService.getExercise(rolePlay.exerciseUuid);
+    // The event's exercise is only an optimisation, and only when it is
+    // actually *this* roleplay's parent — an event about some other exercise
+    // must never be adopted as the subject.
+    final carried = event?.exercise;
+    final exercise = (carried != null && carried.uuid == rolePlay.exerciseUuid)
+        ? carried
+        : _planService.getExercise(rolePlay.exerciseUuid);
     if (exercise == null) return null;
     return _RolePlaySubject(rolePlay, exercise);
   }

@@ -328,6 +328,43 @@ void main() {
   // pane), not only on its own actions. It subscribes to
   // PlanService.events via SubscriptionBag; without that it would keep
   // showing the stale cast.
+  // Regression: the cast name is read fresh from PlanService on every build,
+  // but only a rebuild shows it. An actor renamed from the Roster tab emits
+  // actorSaved, which carries neither an exercise nor a roleplay — so a
+  // viewer that filters plan events by those alone never refreshes and keeps
+  // showing the old name. (The re-cast test below passes even when this is
+  // broken, because its saveRolePlay call matches on the roleplay.)
+  testWidgets('the viewer refreshes when its cast actor is renamed externally', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildScreen());
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.text(l10n.castedByLine('Nina Actor')), findsOneWidget);
+
+    // PlanService is a singleton whose repository is bound to the *first*
+    // SharedPreferences instance, so _seedAndInit's later re-seeds are invisible
+    // to it and anything written through it here outlives this test. Put the
+    // name back so the following tests still see the seeded cast.
+    addTearDown(
+      () => PlanService().saveActor(
+        l10n,
+        const Actor(uuid: _actorUuid, realName: 'Nina Actor'),
+      ),
+    );
+
+    // Rename the SAME actor, as the roster editor would — no roleplay save.
+    await PlanService().saveActor(
+      l10n,
+      const Actor(uuid: _actorUuid, realName: 'Nina Renamed'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.castedByLine('Nina Renamed')), findsOneWidget);
+    expect(find.text(l10n.castedByLine('Nina Actor')), findsNothing);
+  });
+
   // A roleplay that cannot be resolved — a stale deep link, or one deleted
   // from another master/detail pane while this viewer was open — must not
   // silently dismiss itself: the reader would see the view vanish with no
