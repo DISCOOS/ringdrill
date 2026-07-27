@@ -77,7 +77,10 @@ void _setWidth(WidgetTester tester, double width) {
   addTearDown(tester.view.reset);
 }
 
-Future<Exercise?> _open(WidgetTester tester, {required Exercise current}) async {
+Future<Exercise?> _open(
+  WidgetTester tester, {
+  required Exercise current,
+}) async {
   Exercise? result;
   await tester.pumpWidget(
     MaterialApp(

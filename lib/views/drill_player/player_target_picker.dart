@@ -4,6 +4,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
@@ -31,6 +32,15 @@ import 'package:ringdrill/views/widgets/team_number_badge.dart';
 /// re-scopes the list on the next open.
 ///
 /// [mode] identifies what is showing now, so it can be marked and made a no-op.
+///
+/// While an exercise is **running**, the exercise group holds only that one. This
+/// is where the "cannot switch the live exercise" rule lives now: the mini bar
+/// used to enforce it by refusing to open at all in exercise mode, which also
+/// blocked navigating *within* the running exercise — the one thing the player
+/// exists for. Omitting the others rather than disabling them keeps the list
+/// short and every row actionable, which matters most in the situation this
+/// picker is used in.
+///
 /// Returns the picked target, or null when the user dismissed the picker or
 /// re-picked what was already showing.
 Future<ContextSheetTarget?> showPlayerTargetPicker(
@@ -40,8 +50,20 @@ Future<ContextSheetTarget?> showPlayerTargetPicker(
 }) async {
   final l10n = AppLocalizations.of(context)!;
   final plan = PlanService().activePlan;
+  final exerciseService = ExerciseService();
+  // Non-null only while a session is live: the exercise the player must stay on,
+  // and then the only one listed.
+  final lockedTo = exerciseService.isStarted
+      ? exerciseService.last?.exercise.uuid
+      : null;
   final entries = <_Entry>[
-    ..._exerciseEntries(l10n, plan: plan, current: exercise, mode: mode),
+    ..._exerciseEntries(
+      l10n,
+      plan: plan,
+      current: exercise,
+      mode: mode,
+      lockedTo: lockedTo,
+    ),
     ..._stationEntries(l10n, plan: plan, exercise: exercise, mode: mode),
     ..._roleEntries(l10n, plan: plan, exercise: exercise, mode: mode),
     ..._teamEntries(l10n, plan: plan, exercise: exercise, mode: mode),
@@ -71,8 +93,11 @@ Future<ContextSheetTarget?> showPlayerTargetPicker(
         onTap: entry.isCurrent ? () => Navigator.of(context).pop() : onTap,
       );
     },
-    // Group name included, so searching "post"/"lag" narrows to a kind.
-    searchText: (entry) => '${entry.group} ${entry.title}',
+    // The badge label and group name are searchable alongside the title, so a
+    // number reaches its row directly ("1.2", "1.2-1", "#2") and a kind name
+    // ("post", "lag") narrows to that group. Operators know their posts and
+    // markers by number, which is exactly what the row shows.
+    searchText: (entry) => '${entry.label} ${entry.group} ${entry.title}',
     searchHint: l10n.pickerSearchHint,
   );
   return picked?.target;
@@ -86,6 +111,7 @@ class _Entry {
   const _Entry({
     required this.target,
     required this.group,
+    required this.label,
     required this.badge,
     required this.title,
     required this.isCurrent,
@@ -98,6 +124,10 @@ class _Entry {
   /// are the names the user already navigates by.
   final String group;
 
+  /// The badge's formatted number (`#1`, `1.2`, `1.2-1`, `1`) — held as text so
+  /// search can match it, since the badge itself is an opaque widget.
+  final String label;
+
   final Widget badge;
   final String title;
   final String? subtitle;
@@ -109,25 +139,28 @@ List<_Entry> _exerciseEntries(
   required Plan? plan,
   required Exercise current,
   required PlayerMode mode,
+  required String? lockedTo,
 }) {
   final format = plan?.exerciseNumberFormat ?? ExerciseNumberFormat.hash;
   final exercises = plan?.exercises ?? const <Exercise>[];
   final group = l10n.exercise(2);
   return [
     for (final (index, exercise) in exercises.indexed)
-      _Entry(
-        target: ExerciseSheetTarget(exerciseUuid: exercise.uuid),
-        group: group,
-        badge: ExerciseNumberBadge(
+      if (lockedTo == null || exercise.uuid == lockedTo)
+        _Entry(
+          target: ExerciseSheetTarget(exerciseUuid: exercise.uuid),
+          group: group,
           label: Numbering.exercise(format, index + 1),
-          highlight: _isCurrentExercise(mode, exercise, current),
+          badge: ExerciseNumberBadge(
+            label: Numbering.exercise(format, index + 1),
+            highlight: _isCurrentExercise(mode, exercise, current),
+          ),
+          title: _resolve(plan, exercise, exercise.name),
+          subtitle:
+              '${exercise.startTime.toMaterial().formal()} – '
+              '${exercise.endTime.toMaterial().formal()}',
+          isCurrent: _isCurrentExercise(mode, exercise, current),
         ),
-        title: _resolve(plan, exercise, exercise.name),
-        subtitle:
-            '${exercise.startTime.toMaterial().formal()} – '
-            '${exercise.endTime.toMaterial().formal()}',
-        isCurrent: _isCurrentExercise(mode, exercise, current),
-      ),
   ];
 }
 
@@ -155,6 +188,7 @@ List<_Entry> _stationEntries(
           stationIndex: station.index,
         ),
         group: group,
+        label: station.numberLabel(format, exerciseNumber: exerciseNumber),
         badge: StationNumberBadge(
           label: station.numberLabel(format, exerciseNumber: exerciseNumber),
           highlight: station.index == currentIndex,
@@ -189,6 +223,11 @@ List<_Entry> _roleEntries(
       _Entry(
         target: RoleSheetTarget(rolePlayUuid: role.uuid),
         group: group,
+        label: service.roleLabel(
+          role,
+          format: format,
+          exerciseNumber: exerciseNumber,
+        ),
         badge: RoleNumberBadge(
           label: service.roleLabel(
             role,
@@ -224,6 +263,7 @@ List<_Entry> _teamEntries(
       _Entry(
         target: TeamSheetTarget(exerciseUuid: exercise.uuid, teamIndex: index),
         group: group,
+        label: Numbering.team(index + 1),
         badge: TeamNumberBadge(
           label: Numbering.team(index + 1),
           highlight: index == currentIndex,

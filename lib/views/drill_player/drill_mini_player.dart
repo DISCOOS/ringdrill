@@ -108,10 +108,10 @@ class DrillMiniPlayer extends StatefulWidget {
   /// Called with the picked target when the user taps the badge and chooses a
   /// different one. When null the badge is plain and no picker opens.
   ///
-  /// The badge is inert while an exercise is live *in exercise mode* — the
-  /// running exercise must not be switched out from under the operator — but
-  /// stays tappable in the station, roleplay and team modes, where it only moves
-  /// between siblings inside that same live exercise.
+  /// Wired by every surface the player hosts. The picker itself is what keeps a
+  /// running exercise from being navigated away from, so this stays available
+  /// while live — moving between the live exercise's posts, markers and teams is
+  /// the point of the consolidated player (ADR-0056).
   final ValueChanged<ContextSheetTarget>? onPickTarget;
 
   /// What tapping the strip does when there is somewhere to go: the docked and
@@ -245,7 +245,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
           mainAxisSize: MainAxisSize.min,
           children: [
             InkWell(
-              onTap: _stripTap(context, event.exercise, true),
+              onTap: _stripTap(context, event.exercise),
               child: SizedBox(
                 height: widget.height,
                 // Stack layout: the round-row (badge + MiniRoundRow) scrolls
@@ -265,7 +265,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                     Row(
                       children: [
                         const SizedBox(width: 8),
-                        _buildBadge(context, event.exercise, isStarted: true),
+                        _buildBadge(context, event.exercise),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Padding(
@@ -466,7 +466,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
               : 0,
         ),
         child: InkWell(
-          onTap: _stripTap(context, exercise, false),
+          onTap: _stripTap(context, exercise),
           child: SizedBox(
             height: widget.height,
             child: Stack(
@@ -475,7 +475,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                 Row(
                   children: [
                     const SizedBox(width: 8),
-                    _buildBadge(context, exercise, isStarted: false),
+                    _buildBadge(context, exercise),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Padding(
@@ -577,16 +577,9 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
   /// exercise label separately, which is exactly the kind of duplication that
   /// drifts once the label depends on the player's [PlayerMode] as well.
   ///
-  /// [isStarted] gates interactivity, not appearance: switching the *exercise*
-  /// out from under a live session is the thing the original guard prevented,
-  /// so exercise mode's badge goes inert while running. The station, roleplay
-  /// and team modes stay tappable — they move between siblings within that same
-  /// live exercise, which is the whole point of the consolidated player.
-  Widget _buildBadge(
-    BuildContext context,
-    Exercise exercise, {
-    required bool isStarted,
-  }) {
+  /// Always interactive when the host wired [DrillMiniPlayer.onPickTarget] —
+  /// see [_canPick] for why running no longer makes it inert.
+  Widget _buildBadge(BuildContext context, Exercise exercise) {
     final plan = PlanService().activePlan;
     // Not PlanService.getExerciseNumber: that yields 0 for an exercise outside
     // the active plan, and the bar would render "#0". Falling back to 1 keeps
@@ -626,7 +619,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
       ),
     };
 
-    if (!_canPick(isStarted)) return badge;
+    if (!_canPick) return badge;
     return InkWell(
       // Keyed because the whole strip is itself an InkWell (onOpen), so "is the
       // badge tappable" cannot be answered by looking for an InkWell ancestor.
@@ -639,27 +632,22 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
 
   /// Whether this bar may open the target picker.
   ///
-  /// Preserves the original guard exactly: exercise mode goes inert while a
-  /// session is live, so the running exercise can never be switched out from
-  /// under the operator. The station, roleplay and team modes stay live — they
-  /// only move within that same running exercise.
-  ///
-  /// Shared by the badge and the strip, so the strip cannot become a way around
-  /// the guard.
-  bool _canPick(bool isStarted) =>
-      widget.onPickTarget != null &&
-      (widget.mode is! ExercisePlayerMode || !isStarted);
+  /// Not gated on the exercise running. The original guard made the whole
+  /// affordance inert in exercise mode while live, because back then the picker
+  /// *was* an exercise switcher and switching the running one had to be
+  /// impossible. Now that it navigates to any target, disabling it while running
+  /// blocked exactly what the player is for — moving between the live exercise's
+  /// posts, markers and teams. The constraint moved to where it belongs: the
+  /// picker declines to leave the running exercise (see `showPlayerTargetPicker`),
+  /// rather than the bar declining to open.
+  bool get _canPick => widget.onPickTarget != null;
 
   /// The strip's tap action: [DrillMiniPlayer.onOpen] where there is something
   /// to open, otherwise the picker.
-  VoidCallback? _stripTap(
-    BuildContext context,
-    Exercise exercise,
-    bool isStarted,
-  ) {
+  VoidCallback? _stripTap(BuildContext context, Exercise exercise) {
     final onOpen = widget.onOpen;
     if (onOpen != null) return onOpen;
-    if (!_canPick(isStarted)) return null;
+    if (!_canPick) return null;
     return () => unawaited(_openPicker(context, exercise));
   }
 

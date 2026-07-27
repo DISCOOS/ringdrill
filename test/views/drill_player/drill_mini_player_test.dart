@@ -8,26 +8,24 @@ import 'package:ringdrill/views/drill_player/mini_round_row.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 
 Exercise _makeExercise() => Exercise(
-      uuid: 'test-uuid-mini',
-      name: 'Mini Player Exercise',
-      startTime: SimpleTimeOfDay(hour: 10, minute: 0),
-      endTime: SimpleTimeOfDay(hour: 11, minute: 0),
-      numberOfTeams: 2,
-      numberOfRounds: 3,
-      executionTime: 5,
-      evaluationTime: 3,
-      rotationTime: 2,
-      stations: [],
-      schedule: [],
-    );
+  uuid: 'test-uuid-mini',
+  name: 'Mini Player Exercise',
+  startTime: SimpleTimeOfDay(hour: 10, minute: 0),
+  endTime: SimpleTimeOfDay(hour: 11, minute: 0),
+  numberOfTeams: 2,
+  numberOfRounds: 3,
+  executionTime: 5,
+  evaluationTime: 3,
+  rotationTime: 2,
+  stations: [],
+  schedule: [],
+);
 
 Widget _harness({required VoidCallback onOpen}) => MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: DrillMiniPlayer(onOpen: onOpen),
-      ),
-    );
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: Scaffold(body: DrillMiniPlayer(onOpen: onOpen)),
+);
 
 void main() {
   final exercise = _makeExercise();
@@ -55,10 +53,7 @@ void main() {
           hour: ((pastMinutes % 1440 + 1440) % 1440 ~/ 60),
           minute: ((pastMinutes % 1440 + 1440) % 1440 % 60),
         ),
-        endTime: SimpleTimeOfDay(
-          hour: (now.hour + 1) % 24,
-          minute: now.minute,
-        ),
+        endTime: SimpleTimeOfDay(hour: (now.hour + 1) % 24, minute: now.minute),
         numberOfTeams: 2,
         numberOfRounds: 2,
         executionTime: 10,
@@ -94,81 +89,90 @@ void main() {
     },
   );
 
-  testWidgets('onOpen fires when tapped on the strip, stop square stops the exercise',
-      (tester) async {
-    ExerciseService().start(exercise);
-    var tapped = false;
+  testWidgets(
+    'onOpen fires when tapped on the strip, stop square stops the exercise',
+    (tester) async {
+      ExerciseService().start(exercise);
+      var tapped = false;
 
-    await tester.pumpWidget(_harness(onOpen: () => tapped = true));
-    // Use pump() not pumpAndSettle() — ring animation never settles
-    await tester.pump();
+      await tester.pumpWidget(_harness(onOpen: () => tapped = true));
+      // Use pump() not pumpAndSettle() — ring animation never settles
+      await tester.pump();
 
-    // Tap the MiniRoundRow — main strip area opens the sheet.
-    // warnIfMissed: false because MiniRoundRow is not a hit-test target itself;
-    // the enclosing InkWell handles the gesture.
-    await tester.tap(find.byType(MiniRoundRow), warnIfMissed: false);
-    expect(tapped, isTrue);
+      // Tap the MiniRoundRow — main strip area opens the sheet.
+      // warnIfMissed: false because MiniRoundRow is not a hit-test target itself;
+      // the enclosing InkWell handles the gesture.
+      await tester.tap(find.byType(MiniRoundRow), warnIfMissed: false);
+      expect(tapped, isTrue);
 
-    // Tapping the stop square must NOT open the sheet — the inner
-    // GestureDetector wins the gesture arena over the outer InkWell — and it
-    // must stop the exercise so the mini-bar hides itself.
-    tapped = false;
-    await tester.tap(find.byIcon(Icons.stop));
-    await tester.pump();
-    expect(tapped, isFalse, reason: 'Stop tap must not bubble up to onOpen');
-    expect(ExerciseService().isStarted, isFalse,
-        reason: 'Stop tap must stop the exercise');
-    // Mini-bar hides itself when the service is no longer started.
-    expect(find.byType(ExerciseNumberBadge), findsNothing);
-  });
+      // Tapping the stop square must NOT open the sheet — the inner
+      // GestureDetector wins the gesture arena over the outer InkWell — and it
+      // must stop the exercise so the mini-bar hides itself.
+      tapped = false;
+      await tester.tap(find.byIcon(Icons.stop));
+      await tester.pump();
+      expect(tapped, isFalse, reason: 'Stop tap must not bubble up to onOpen');
+      expect(
+        ExerciseService().isStarted,
+        isFalse,
+        reason: 'Stop tap must stop the exercise',
+      );
+      // Mini-bar hides itself when the service is no longer started.
+      expect(find.byType(ExerciseNumberBadge), findsNothing);
+    },
+  );
 
-  testWidgets('pending state shows bare mm:ss countdown (no "Starts in" prefix)',
-      (tester) async {
-    // Build a fixture whose startTime is 5 minutes in the future so the
-    // service always emits a pending event regardless of when the test runs.
-    final now = DateTime.now();
-    final futureMinutes = now.hour * 60 + now.minute + 5;
-    final pendingExercise = Exercise(
-      uuid: 'test-uuid-pending',
-      name: 'Pending Exercise',
-      startTime: SimpleTimeOfDay(
-        hour: (futureMinutes ~/ 60) % 24,
-        minute: futureMinutes % 60,
-      ),
-      endTime: SimpleTimeOfDay(
-        hour: ((futureMinutes ~/ 60) + 1) % 24,
-        minute: futureMinutes % 60,
-      ),
-      numberOfTeams: 2,
-      numberOfRounds: 2,
-      executionTime: 5,
-      evaluationTime: 3,
-      rotationTime: 2,
-      stations: [],
-      schedule: [],
-    );
+  testWidgets(
+    'pending state shows bare mm:ss countdown (no "Starts in" prefix)',
+    (tester) async {
+      // Build a fixture whose startTime is 5 minutes in the future so the
+      // service always emits a pending event regardless of when the test runs.
+      final now = DateTime.now();
+      final futureMinutes = now.hour * 60 + now.minute + 5;
+      final pendingExercise = Exercise(
+        uuid: 'test-uuid-pending',
+        name: 'Pending Exercise',
+        startTime: SimpleTimeOfDay(
+          hour: (futureMinutes ~/ 60) % 24,
+          minute: futureMinutes % 60,
+        ),
+        endTime: SimpleTimeOfDay(
+          hour: ((futureMinutes ~/ 60) + 1) % 24,
+          minute: futureMinutes % 60,
+        ),
+        numberOfTeams: 2,
+        numberOfRounds: 2,
+        executionTime: 5,
+        evaluationTime: 3,
+        rotationTime: 2,
+        stations: [],
+        schedule: [],
+      );
 
-    ExerciseService().start(pendingExercise);
-    await tester.pumpWidget(_harness(onOpen: () {}));
-    // Use pump() not pumpAndSettle() — _PulsingRing animation never settles
-    await tester.pump();
+      ExerciseService().start(pendingExercise);
+      await tester.pumpWidget(_harness(onOpen: () {}));
+      // Use pump() not pumpAndSettle() — _PulsingRing animation never settles
+      await tester.pump();
 
-    // The mini-bar must be visible (exercise is started)
-    expect(find.byType(ExerciseNumberBadge), findsOneWidget);
+      // The mini-bar must be visible (exercise is started)
+      expect(find.byType(ExerciseNumberBadge), findsOneWidget);
 
-    // Pending no longer carries the "Starts in" prefix — the WAIT label
-    // next to the countdown already provides that context.
-    expect(find.textContaining('Starts in'), findsNothing);
-    expect(find.textContaining(RegExp(r'^\d{2}:\d{2}$')), findsOneWidget);
+      // Pending no longer carries the "Starts in" prefix — the WAIT label
+      // next to the countdown already provides that context.
+      expect(find.textContaining('Starts in'), findsNothing);
+      expect(find.textContaining(RegExp(r'^\d{2}:\d{2}$')), findsOneWidget);
 
-    // Exercise the per-second ticker — widget must not throw.
-    await tester.pump(const Duration(seconds: 2));
+      // Exercise the per-second ticker — widget must not throw.
+      await tester.pump(const Duration(seconds: 2));
 
-    ExerciseService().stop();
-    await tester.pump();
-  });
+      ExerciseService().stop();
+      await tester.pump();
+    },
+  );
 
-  testWidgets('running state shows phase label before countdown', (tester) async {
+  testWidgets('running state shows phase label before countdown', (
+    tester,
+  ) async {
     // Build a fixture whose startTime is 5 minutes in the past so the service
     // always emits a running event regardless of when the test runs.
     final now = DateTime.now();
@@ -180,10 +184,7 @@ void main() {
         hour: ((pastMinutes % 1440 + 1440) % 1440 ~/ 60),
         minute: ((pastMinutes % 1440 + 1440) % 1440 % 60),
       ),
-      endTime: SimpleTimeOfDay(
-        hour: (now.hour + 1) % 24,
-        minute: now.minute,
-      ),
+      endTime: SimpleTimeOfDay(hour: (now.hour + 1) % 24, minute: now.minute),
       numberOfTeams: 2,
       numberOfRounds: 2,
       executionTime: 10,
@@ -250,8 +251,9 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('pending state shows pulsing ring, not spinning indicator',
-      (tester) async {
+  testWidgets('pending state shows pulsing ring, not spinning indicator', (
+    tester,
+  ) async {
     final now = DateTime.now();
     final futureMinutes = now.hour * 60 + now.minute + 5;
     final pendingExercise = Exercise(
@@ -291,8 +293,9 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('stop square is the only stop affordance, not an IconButton',
-      (tester) async {
+  testWidgets('stop square is the only stop affordance, not an IconButton', (
+    tester,
+  ) async {
     ExerciseService().start(exercise);
 
     await tester.pumpWidget(_harness(onOpen: () {}));

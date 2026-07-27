@@ -7,62 +7,61 @@ import 'package:ringdrill/views/drill_player/mini_round_row.dart';
 import 'package:ringdrill/views/phase_widget.dart';
 
 Exercise _makeExercise() => Exercise(
-      uuid: 'test-uuid-row',
-      name: 'Row Test Exercise',
-      startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
-      endTime: const SimpleTimeOfDay(hour: 9, minute: 0),
-      numberOfTeams: 2,
-      numberOfRounds: 4,
-      executionTime: 5,
-      evaluationTime: 3,
-      rotationTime: 2,
-      stations: [],
-      schedule: [
-        [
-          const SimpleTimeOfDay(hour: 8, minute: 0), // execution starts 08:00
-          const SimpleTimeOfDay(hour: 8, minute: 5), // evaluation starts 08:05
-          const SimpleTimeOfDay(hour: 8, minute: 8), // rotation starts 08:08
-        ],
-        [
-          const SimpleTimeOfDay(hour: 8, minute: 10),
-          const SimpleTimeOfDay(hour: 8, minute: 15),
-          const SimpleTimeOfDay(hour: 8, minute: 18),
-        ],
-        [
-          const SimpleTimeOfDay(hour: 8, minute: 20),
-          const SimpleTimeOfDay(hour: 8, minute: 25),
-          const SimpleTimeOfDay(hour: 8, minute: 28),
-        ],
-        [
-          const SimpleTimeOfDay(hour: 8, minute: 30),
-          const SimpleTimeOfDay(hour: 8, minute: 35),
-          const SimpleTimeOfDay(hour: 8, minute: 38),
-        ],
-      ],
-    );
+  uuid: 'test-uuid-row',
+  name: 'Row Test Exercise',
+  startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
+  endTime: const SimpleTimeOfDay(hour: 9, minute: 0),
+  numberOfTeams: 2,
+  numberOfRounds: 4,
+  executionTime: 5,
+  evaluationTime: 3,
+  rotationTime: 2,
+  stations: [],
+  schedule: [
+    [
+      const SimpleTimeOfDay(hour: 8, minute: 0), // execution starts 08:00
+      const SimpleTimeOfDay(hour: 8, minute: 5), // evaluation starts 08:05
+      const SimpleTimeOfDay(hour: 8, minute: 8), // rotation starts 08:08
+    ],
+    [
+      const SimpleTimeOfDay(hour: 8, minute: 10),
+      const SimpleTimeOfDay(hour: 8, minute: 15),
+      const SimpleTimeOfDay(hour: 8, minute: 18),
+    ],
+    [
+      const SimpleTimeOfDay(hour: 8, minute: 20),
+      const SimpleTimeOfDay(hour: 8, minute: 25),
+      const SimpleTimeOfDay(hour: 8, minute: 28),
+    ],
+    [
+      const SimpleTimeOfDay(hour: 8, minute: 30),
+      const SimpleTimeOfDay(hour: 8, minute: 35),
+      const SimpleTimeOfDay(hour: 8, minute: 38),
+    ],
+  ],
+);
 
 ExerciseEvent _makeEvent({
   required Exercise exercise,
   required ExercisePhase phase,
   int currentRound = 0,
-}) =>
-    ExerciseEvent(
-      when: DateTime.now(),
-      phase: phase,
-      exercise: exercise,
-      elapsedTime: 0,
-      remainingTime: 5,
-      currentRound: currentRound,
-      phaseProgress: 0.0,
-      roundProgress: 0.0,
-      totalProgress: 0.0,
-    );
+}) => ExerciseEvent(
+  when: DateTime.now(),
+  phase: phase,
+  exercise: exercise,
+  elapsedTime: 0,
+  remainingTime: 5,
+  currentRound: currentRound,
+  phaseProgress: 0.0,
+  roundProgress: 0.0,
+  totalProgress: 0.0,
+);
 
 Widget _harness(Widget widget) => MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(body: Center(child: widget)),
-    );
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: Scaffold(body: Center(child: widget)),
+);
 
 void main() {
   final exercise = _makeExercise();
@@ -81,8 +80,9 @@ void main() {
     expect(find.text('R1/4'), findsNothing);
   });
 
-  testWidgets('appends total rounds cell after the three phase times',
-      (tester) async {
+  testWidgets('appends total rounds cell after the three phase times', (
+    tester,
+  ) async {
     final event = _makeEvent(
       exercise: exercise,
       phase: ExercisePhase.execution,
@@ -170,8 +170,9 @@ void main() {
     },
   );
 
-  testWidgets('completed phase stays filled when exercise advances to rotation',
-      (tester) async {
+  testWidgets('completed phase stays filled when exercise advances to rotation', (
+    tester,
+  ) async {
     // Rotation phase → execution (phase 0) and evaluation (phase 1) are done.
     final event = _makeEvent(
       exercise: exercise,
@@ -185,12 +186,14 @@ void main() {
 
     // At least two Containers with blueAccent exist — one for the completed
     // execution cell and one for the completed evaluation cell.
-    final containers = tester.widgetList<Container>(
-      find.descendant(
-        of: find.byType(MiniRoundRow),
-        matching: find.byType(Container),
-      ),
-    ).toList();
+    final containers = tester
+        .widgetList<Container>(
+          find.descendant(
+            of: find.byType(MiniRoundRow),
+            matching: find.byType(Container),
+          ),
+        )
+        .toList();
     final blueCount = containers
         .where(
           (c) =>
@@ -198,13 +201,17 @@ void main() {
               c.color == Colors.blueAccent,
         )
         .length;
-    expect(blueCount, greaterThanOrEqualTo(2),
-        reason:
-            'Execution and evaluation cells should remain filled after rotation starts');
+    expect(
+      blueCount,
+      greaterThanOrEqualTo(2),
+      reason:
+          'Execution and evaluation cells should remain filled after rotation starts',
+    );
   });
 
-  testWidgets('pending state renders row without any cell highlight',
-      (tester) async {
+  testWidgets('pending state renders row without any cell highlight', (
+    tester,
+  ) async {
     final event = _makeEvent(
       exercise: exercise,
       phase: ExercisePhase.pending,

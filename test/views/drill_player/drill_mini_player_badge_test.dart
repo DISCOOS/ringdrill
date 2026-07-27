@@ -24,10 +24,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// - The label is computed in ONE place. It used to be derived separately in
 ///   the running and the idle branch — with three badge kinds that duplication
 ///   would drift, so both branches now share `_buildBadge`.
-/// - Interactivity keeps the original guard exactly: the *exercise* badge goes
-///   inert while a session is live, so the running exercise can never be
-///   switched out from under the operator. Station and roleplay badges stay
-///   tappable, since they only move between siblings inside that live exercise.
+/// - Interactivity does *not* depend on an exercise running. The bar's picker
+///   navigates to any target now, so making it inert while live blocked exactly
+///   what the player is for — moving between the running exercise's posts,
+///   markers and teams. "Cannot switch the live exercise" moved into the picker,
+///   which disables the other exercises' rows (see player_target_picker_test).
 const _planUuid = 'prog-badge';
 const _exerciseUuid = 'ex-badge';
 const _roleUuid = 'role-badge';
@@ -212,13 +213,15 @@ void main() {
       expect(_badgeIsTappable(tester), isFalse);
     });
 
-    testWidgets('running: the exercise badge goes inert — the guard that must '
-        'survive', (tester) async {
+    // Was the opposite assertion: the badge used to go inert here, which is the
+    // reported bug — in play mode neither badge nor strip responded, so there was
+    // no way to reach the running exercise's own posts, markers or teams.
+    testWidgets('running: the exercise badge stays tappable', (tester) async {
       await tester.pumpWidget(_harness(const ExercisePlayerMode()));
       await _start(tester);
 
       expect(find.byType(ExerciseNumberBadge), findsOneWidget);
-      expect(_badgeIsTappable(tester), isFalse);
+      expect(_badgeIsTappable(tester), isTrue);
 
       await _stop(tester);
     });
@@ -286,22 +289,22 @@ void main() {
       expect(find.text(_l10n.pickerGoToTitle), findsNothing);
     });
 
-    // The strip must not become a way around the guard the badge honours.
-    testWidgets(
-      'running in exercise mode, the strip does not open the picker',
-      (tester) async {
-        await tester.pumpWidget(_harness(const ExercisePlayerMode()));
-        await _start(tester);
+    // Was asserting the opposite: the strip used to stay inert here, which is the
+    // reported bug — in play mode neither strip nor badge responded at all.
+    testWidgets('running in exercise mode, the strip opens the picker', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_harness(const ExercisePlayerMode()));
+      await _start(tester);
 
-        await tester.tap(find.byType(MiniRoundRow));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.byType(MiniRoundRow));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
-        expect(find.text(_l10n.pickerGoToTitle), findsNothing);
+      expect(find.text(_l10n.pickerGoToTitle), findsOneWidget);
 
-        await _stop(tester);
-      },
-    );
+      await _stop(tester);
+    });
 
     testWidgets('running in station mode, the strip does open it', (
       tester,

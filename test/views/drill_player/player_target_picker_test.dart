@@ -7,6 +7,7 @@ import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
+import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/drill_player/player_mode.dart';
 import 'package:ringdrill/views/drill_player/player_target_picker.dart';
@@ -86,6 +87,7 @@ Plan _shell() {
 Future<void> _seedAndInit() async {
   SharedPreferences.setMockInitialValues({});
   PlanService().reset();
+  ExerciseService().stop();
   final prefs = await SharedPreferences.getInstance();
   final repo = PlanRepository(prefs);
   await repo.savePlanShell(_shell());
@@ -184,6 +186,14 @@ Future<_HarnessState> _openPicker(WidgetTester tester, PlayerMode mode) async {
   await tester.tap(find.text('open picker'));
   await tester.pumpAndSettle();
   return tester.state<_HarnessState>(find.byType(_Harness));
+}
+
+/// Stops the session and settles a frame. Not cosmetic: the service holds a
+/// periodic timer, and a `tearDown` callback runs after the tree is disposed —
+/// too late, so the test fails on a pending timer.
+Future<void> _stopLive(WidgetTester tester) async {
+  ExerciseService().stop();
+  await tester.pump();
 }
 
 void main() {
@@ -337,6 +347,50 @@ void main() {
     });
   });
 
+  // The "cannot switch the live exercise" rule lives here now. The mini bar used
+  // to enforce it by refusing to open at all in exercise mode, which also blocked
+  // navigating *within* the running exercise — the reported bug.
+  group('while an exercise is running', () {
+    testWidgets('its own children stay pickable', (tester) async {
+      ExerciseService().start(_exercise());
+      final state = await _openPicker(tester, const ExercisePlayerMode());
+
+      await tester.tap(find.text('1.2'));
+      await tester.pumpAndSettle();
+
+      expect(state.picked, isA<StationSheetTarget>());
+      expect((state.picked! as StationSheetTarget).stationIndex, 1);
+
+      await _stopLive(tester);
+    });
+
+    // Omitted rather than shown-but-disabled: it keeps the list short and every
+    // row actionable, which matters most in the situation this picker is used in.
+    testWidgets('the exercise group holds only the running exercise', (
+      tester,
+    ) async {
+      ExerciseService().start(_exercise());
+      await _openPicker(tester, const ExercisePlayerMode());
+
+      expect(find.widgetWithText(ListTile, 'Picker Exercise'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, 'Other Exercise'), findsNothing);
+      expect(find.byType(ExerciseNumberBadge), findsOneWidget);
+      // The group header stays, so the row still reads as an exercise.
+      expect(find.text(l10n.exercise(2)), findsOneWidget);
+
+      await _stopLive(tester);
+    });
+
+    testWidgets('with nothing running, every exercise is listed', (
+      tester,
+    ) async {
+      await _openPicker(tester, const ExercisePlayerMode());
+
+      expect(find.widgetWithText(ListTile, 'Picker Exercise'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, 'Other Exercise'), findsOneWidget);
+    });
+  });
+
   // The grouping is applied to the *filtered* rows, so a search cannot strand a
   // header above a group whose rows all filtered out, nor hide the header of a
   // group that still matches. Faking headers inside itemBuilder gets this wrong.
@@ -357,6 +411,60 @@ void main() {
       expect(find.text(l10n.stationsTab), findsNothing);
       expect(find.text(l10n.scriptSegment), findsNothing);
       expect(find.text(l10n.exercise(2)), findsNothing);
+    });
+
+    // Operators know their posts and markers by number, and the number is what
+    // the row shows — so it has to be searchable, not only the name.
+    testWidgets('a formatted number reaches its row', (tester) async {
+      await _openPicker(tester, const StationPlayerMode(0));
+      final field = find.byKey(const Key('ringdrill-picker-search'));
+
+      await tester.enterText(field, '1.2-1');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ListTile, 'Pårørende'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, 'Post 1'), findsNothing);
+
+      await tester.enterText(field, '#2');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ListTile, 'Other Exercise'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, 'Picker Exercise'), findsNothing);
+    });
+
+    testWidgets('a station number matches the station, not its markør', (
+      tester,
+    ) async {
+      await _openPicker(tester, const StationPlayerMode(0));
+
+      await tester.enterText(
+        find.byKey(const Key('ringdrill-picker-search')),
+        '1.1',
+      );
+      await tester.pumpAndSettle();
+
+      // "1.1" is a prefix of the markør label "1.1-1", so both legitimately
+      // match — what matters is that the station itself is reachable this way.
+      // Scoped to the badge: the search field now contains "1.1" as well.
+      expect(
+        find.descendant(
+          of: find.byType(StationNumberBadge),
+          matching: find.text('1.1'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.stationsTab), findsOneWidget);
+    });
+
+    testWidgets('a team number reaches its team', (tester) async {
+      await _openPicker(tester, const StationPlayerMode(0));
+
+      await tester.enterText(
+        find.byKey(const Key('ringdrill-picker-search')),
+        '2',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(ListTile, 'Bravo'), findsOneWidget);
+      expect(find.text(l10n.team(2)), findsOneWidget);
     });
 
     testWidgets('a group name narrows to that kind', (tester) async {
