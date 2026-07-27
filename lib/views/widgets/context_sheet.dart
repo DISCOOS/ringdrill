@@ -334,15 +334,25 @@ class ContextSheetController {
   /// say) hands `replace` a controller that was never opened. That is how
   /// picking an exercise in the docked mini player could crash.
   ///
-  /// Keeps [replace]'s exact behaviour while open — deliberately *not* just
-  /// delegating to [show], which in the wide layout would also re-latch
-  /// `_activeScope` and null `_navigator`, losing a modal sitting above a
-  /// detail pane.
+  /// Keeps [replace]'s behaviour whenever something is actually *presenting*
+  /// the target — an inline host, a modal sheet, or a latched master/detail
+  /// scope — and only then. Delegating unconditionally would, in the wide
+  /// layout, re-latch `_activeScope` and null `_navigator`, losing a modal
+  /// sitting above a detail pane.
+  ///
+  /// [isOpen] alone is not that test. [adoptWideSelection] sets it with no
+  /// navigator and no scope: that is a *selection*, not a presentation, and
+  /// `MainScreen` re-adopts the remembered target on every Plan-segment change
+  /// — in the compact layout too, where there is no detail pane to render it.
+  /// Trusting [isOpen] there sent every open through [replace], which wrote the
+  /// target into the void: the first open worked, and after closing it nothing
+  /// could be opened again. [show] resolves modal-vs-scope from [context]
+  /// instead, so it recovers from exactly that state.
   Future<void> showOrReplace(
     BuildContext context,
     ContextSheetTarget target,
   ) async {
-    if (_isOpen) {
+    if (_isInline || isModal || _activeScope != null) {
       replace(target);
       return;
     }
