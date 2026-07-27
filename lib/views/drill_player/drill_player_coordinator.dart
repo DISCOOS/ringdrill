@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 
@@ -24,24 +23,30 @@ class DrillPlayerCoordinator {
   // re-pop the drill player as a stale "close the context sheet" action.
   bool _upgrading = false;
 
-  /// Opens the immersive DrillPlayer sheet for the currently-running (or
-  /// last-known) exercise. No-op when [ExerciseService] has no last event.
-  Future<void> openDrillPlayer(BuildContext context) {
-    final last = ExerciseService().last;
-    if (last == null) return Future<void>.value();
-    // The player hosts its own ContextSheet, opened on the exercise it is
-    // showing. There is only ever one drill player, so switching exercise from
-    // the docked mini player has to swap this body in place: with a local
-    // controller in scope, `ContextSheet.of(...).showOrReplace(...)` inside the
-    // player finds an *open* controller and replaces the target instead of
-    // stacking a second player over the first.
+  /// Opens the immersive DrillPlayer sheet on [target], defaulting to the
+  /// currently-running (or last-known) exercise. No-op when no target is given
+  /// and [ExerciseService] has no last event.
+  ///
+  /// [target] may be a station or a roleplay as readily as an exercise: the
+  /// player is a host for any of them (ADR-0056), so an item opened while its
+  /// exercise is live enters the player at that item rather than in a sheet
+  /// beside it.
+  Future<void> openDrillPlayer(
+    BuildContext context, {
+    ContextSheetTarget? target,
+  }) {
+    final initial = target ?? _lastExerciseTarget();
+    if (initial == null) return Future<void>.value();
+    // The player hosts its own ContextSheet, opened on the target it is
+    // showing. There is only ever one drill player, so switching target from
+    // inside it has to swap this body in place: with a local controller in
+    // scope, `ContextSheet.of(...)` inside the player finds an *inline*
+    // controller and replaces the target instead of stacking a second player
+    // (or a modal sheet) over the first.
     //
     // Registering also makes this the `currentController` while the player
     // lives, and disposing unregisters it, restoring the shell's.
-    final controller = ContextSheetController()
-      ..adoptInlineTarget(
-        ExerciseSheetTarget(exerciseUuid: last.exercise.uuid),
-      );
+    final controller = ContextSheetController()..adoptInlineTarget(initial);
     return showDrillPlayerSheet<void>(
       context: context,
       builder: (_) => ContextSheet(
@@ -49,6 +54,12 @@ class DrillPlayerCoordinator {
         child: _DrillPlayerHost(controller: controller),
       ),
     ).whenComplete(controller.dispose);
+  }
+
+  ContextSheetTarget? _lastExerciseTarget() {
+    final last = ExerciseService().last;
+    if (last == null) return null;
+    return ExerciseSheetTarget(exerciseUuid: last.exercise.uuid);
   }
 
   /// Hook called from the host shell's ExerciseService listener.
@@ -79,13 +90,18 @@ class DrillPlayerCoordinator {
   }
 }
 
-/// Renders whichever exercise the player's own [ContextSheetController] points
+/// Renders whichever target the player's own [ContextSheetController] points
 /// at, rebuilding when it is replaced.
 ///
-/// Keyed on the uuid: [CoordinatorScreen] resolves its exercise once, in
-/// `initState`, so reusing the element across a uuid change would keep showing
-/// the previous exercise. Mirrors how the shell's own sheet host keys its body
-/// on the target.
+/// Uses the same [defaultContextSheetBody] the shell's sheet host and the
+/// master/detail pane use, so exercise, station and roleplay are peer *modes*
+/// of one player rather than three separate players — and so the player never
+/// diverges from what the same target renders as elsewhere.
+///
+/// Keyed on the target: these screens resolve their entity once, in
+/// `initState`, so reusing the element across a target change would keep
+/// showing the previous one. [ContextSheetTarget] has no `==`, so every
+/// replacement is a distinct key and the subtree remounts.
 class _DrillPlayerHost extends StatelessWidget {
   const _DrillPlayerHost({required this.controller});
 
@@ -96,9 +112,11 @@ class _DrillPlayerHost extends StatelessWidget {
     return ValueListenableBuilder<ContextSheetTarget?>(
       valueListenable: controller.target,
       builder: (context, target, _) {
-        final uuid = target == null ? null : exerciseUuidOf(target);
-        if (uuid == null) return const SizedBox.shrink();
-        return CoordinatorScreen(key: ValueKey(uuid), uuid: uuid);
+        if (target == null) return const SizedBox.shrink();
+        return KeyedSubtree(
+          key: ValueKey(target),
+          child: defaultContextSheetBody(context, target),
+        );
       },
     );
   }

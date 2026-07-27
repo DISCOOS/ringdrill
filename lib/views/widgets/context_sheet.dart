@@ -91,6 +91,7 @@ class ContextSheetController {
   final ValueNotifier<ContextSheetTarget?> _target =
       ValueNotifier<ContextSheetTarget?>(null);
   bool _isOpen = false;
+  bool _isInline = false;
   NavigatorState? _navigator;
   MasterDetailScope? _activeScope;
   ContextSheetBodyBuilder? _bodyBuilder;
@@ -108,6 +109,12 @@ class ContextSheetController {
   /// (not a master-detail scope). Only the modal case causes the keyboard
   /// cascade that breaks text fields on routes pushed above it.
   bool get isModal => _isOpen && _navigator != null;
+
+  /// True while a host renders the target itself, with neither a modal route
+  /// nor a master/detail scope behind it — see [adoptInlineTarget]. Navigation
+  /// on such a controller replaces the host's body; it never opens a surface
+  /// on top of it.
+  bool get isInline => _isInline;
 
   /// Adopts [target] as the wide layout's current master-detail selection
   /// without [show]'s modal-vs-scope branching, for callers that only have a
@@ -127,14 +134,32 @@ class ContextSheetController {
   void adoptWideSelection(ContextSheetTarget? target) {
     _target.value = target;
     _isOpen = target != null;
+    _isInline = false;
     _navigator = null;
     _activeScope = null;
+  }
+
+  /// Drops the current selection without dismissing anything.
+  ///
+  /// [close] deliberately cannot do this: with no navigator and no active
+  /// scope — the state [adoptWideSelection] leaves behind — it returns without
+  /// touching the target, so the wide layout's detail pane keeps showing its
+  /// selection. That is correct for [close]'s own callers (and asserted by
+  /// `master_detail_target_sync_test.dart`), but the docked mini player needs
+  /// the pane cleared *before* it opens the fullscreen player over it, or the
+  /// exercise stays pinned behind the player and re-appears on dismiss.
+  void clearSelection() {
+    _activeScope?.setTarget(null);
+    _activeScope = null;
+    _target.value = null;
+    _isOpen = false;
+    _isInline = false;
   }
 
   /// Opens the controller on [target] for a host that renders the target
   /// *itself*, with neither a modal route nor a master/detail scope behind it —
   /// today the fullscreen drill player, which owns its own [ContextSheet] so
-  /// switching exercise swaps its body in place instead of stacking a second
+  /// navigating inside it swaps its body in place instead of stacking a second
   /// player on top.
   ///
   /// [close] is therefore a no-op on such a controller (there is no navigator
@@ -142,17 +167,30 @@ class ContextSheetController {
   void adoptInlineTarget(ContextSheetTarget target) {
     _target.value = target;
     _isOpen = true;
+    _isInline = true;
     _navigator = null;
     _activeScope = null;
   }
 
   Future<void> show(BuildContext context, ContextSheetTarget target) async {
+    // An inline host renders the target itself, so every non-brief navigation
+    // is a body swap. Without this branch the checks below fall through — the
+    // "navigate within the open modal" case is gated on `_navigator != null`,
+    // which is null for an inline controller — and a modal opens *on top of*
+    // the host, whose dismissal then clears `_target`/`_isOpen` and leaves the
+    // host blank. Briefs are exempt: they are a modal surface by definition
+    // (and restore the prior state on close).
+    if (_isInline && target is! BriefSheetTarget) {
+      replace(target);
+      return;
+    }
     if (target is! BriefSheetTarget) {
       final scope = MasterDetailScope.maybeOf(context);
       if (scope != null) {
         scope.setTarget(target);
         _target.value = target;
         _isOpen = true;
+        _isInline = false;
         _navigator = null;
         _activeScope = scope;
         _bodyBuilder = ContextSheet._bodyBuilderOf(context) ?? _bodyBuilder;
@@ -183,11 +221,17 @@ class ContextSheetController {
       // brief closes.
       final savedTarget = _target.value;
       final savedIsOpen = _isOpen;
+      final savedIsInline = _isInline;
       final savedNavigator = _navigator;
       final savedActiveScope = _activeScope;
       final savedBodyBuilder = _bodyBuilder;
 
       _isOpen = true;
+      // While the brief modal is up this controller *is* modal, even when the
+      // saved state is inline — otherwise a brief opened from inside the drill
+      // player would send a subsequent show() down the replace path above and
+      // swap the player's body behind the brief.
+      _isInline = false;
       // Do NOT set _target.value = BriefSheetTarget. The ValueNotifier drives
       // the master-detail detail pane, and MasterDetailScope treats
       // BriefSheetTarget as "no target", which would blank the detail pane.
@@ -240,6 +284,7 @@ class ContextSheetController {
       // Restore prior state so the detail pane re-appears.
       _target.value = savedTarget;
       _isOpen = savedIsOpen;
+      _isInline = savedIsInline;
       _navigator = savedNavigator;
       _activeScope = savedActiveScope;
       _bodyBuilder = savedBodyBuilder;
@@ -248,6 +293,7 @@ class ContextSheetController {
 
     // Non-brief target with no scope and no open sheet: open a new modal.
     _isOpen = true;
+    _isInline = false;
     _target.value = target;
     _navigator = Navigator.of(context);
     _bodyBuilder = ContextSheet._bodyBuilderOf(context) ?? _bodyBuilder;
@@ -266,6 +312,7 @@ class ContextSheetController {
     );
     _target.value = null;
     _isOpen = false;
+    _isInline = false;
     _navigator = null;
     _activeScope = null;
     _bodyBuilder = null;
