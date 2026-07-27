@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -11,12 +13,13 @@ import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
+import 'package:ringdrill/views/drill_player/drill_player_coordinator.dart';
+import 'package:ringdrill/views/drill_player/drill_player_scope.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/map_command.dart';
-import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
@@ -885,13 +888,16 @@ class _StationsViewState extends State<StationsView>
     };
   }
 
+  /// Routed through the shell's [DrillPlayerCoordinator] rather than pushing a
+  /// bare [CoordinatorScreen]: the coordinator gives the player its own inline
+  /// [ContextSheet], so the player's mini bar switches the player's own body.
+  /// Pushed bare, it had no ContextSheet above it, so `ContextSheet.of` fell
+  /// through to the shell's controller and the bar mutated the map's detail
+  /// pane behind the player instead.
   void _openDrillPlayer(BuildContext context) {
-    final last = ExerciseService().last;
-    if (last == null) return;
-    showDrillPlayerSheet<void>(
-      context: context,
-      builder: (_) => CoordinatorScreen(uuid: last.exercise.uuid),
-    );
+    final coordinator =
+        DrillPlayerScope.maybeOf(context) ?? DrillPlayerCoordinator();
+    unawaited(coordinator.openDrillPlayer(context));
   }
 
   @override

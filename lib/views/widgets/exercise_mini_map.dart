@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
@@ -6,6 +8,7 @@ import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
+import 'package:ringdrill/views/drill_player/drill_player_scope.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -68,11 +71,13 @@ List<MapMarkerSpec<int>> exerciseStationMarkers(
           color: isLive ? RingDrillColors.brandAccent : Colors.green,
           size: 32,
         ),
-        onTap: () => ContextSheet.of(context).show(
-          context,
-          StationSheetTarget(
-            exerciseUuid: exercise.uuid,
-            stationIndex: station.index,
+        onTap: () => unawaited(
+          openContextTarget(
+            context,
+            StationSheetTarget(
+              exerciseUuid: exercise.uuid,
+              stationIndex: station.index,
+            ),
           ),
         ),
       ),

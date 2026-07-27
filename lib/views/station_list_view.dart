@@ -11,6 +11,7 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
+import 'package:ringdrill/views/drill_player/drill_player_scope.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
@@ -482,7 +483,9 @@ class _StationListViewState extends State<StationListView> {
   }
 
   Future<void> _openStation(Exercise exercise, Station station) async {
-    await ContextSheet.of(context).show(
+    // A post of the *running* exercise opens as a mode of the player rather
+    // than in a sheet beside it (ADR-0056); everything else is unchanged.
+    await openContextTarget(
       context,
       StationSheetTarget(
         exerciseUuid: exercise.uuid,

@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/plan_service.dart';
+import 'package:ringdrill/views/drill_player/drill_player_scope.dart';
 import 'package:ringdrill/views/widgets/cast_pill.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
@@ -123,9 +126,9 @@ class _RoleSummaryRow extends StatelessWidget {
     final description = role.description ?? '';
 
     return InkWell(
-      onTap: () => ContextSheet.of(
-        context,
-      ).show(context, RoleSheetTarget(rolePlayUuid: role.uuid)),
+      onTap: () => unawaited(
+        openContextTarget(context, RoleSheetTarget(rolePlayUuid: role.uuid)),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(

@@ -17,8 +17,8 @@ import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/app_routes.dart';
-import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
+import 'package:ringdrill/views/drill_player/drill_player_scope.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_form_screen.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
@@ -30,7 +30,6 @@ import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
-import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_description_rollup.dart';
 import 'package:ringdrill/views/widgets/exercise_mini_map.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
@@ -288,21 +287,17 @@ class _PlanViewState extends State<PlanView> {
           onLongPress: () => _openExerciseForm(context, l10n, exercise),
           // V1: live card opens the DrillPlayer sheet (DESIGN-001).
           // All other cards keep the ContextSheet flow.
-          onOpen: () {
-            final isLive =
-                _liveEvent?.exercise.uuid == exercise.uuid &&
-                ExerciseService().isStarted;
-            if (isLive) {
-              showDrillPlayerSheet<void>(
-                context: context,
-                builder: (_) => CoordinatorScreen(uuid: exercise.uuid),
-              );
-            } else {
-              ContextSheet.of(
-                context,
-              ).show(context, ExerciseSheetTarget(exerciseUuid: exercise.uuid));
-            }
-          },
+          // openContextTarget owns the live-vs-planning split (ADR-0056):
+          // a running exercise opens in the player, anything else in the
+          // ordinary sheet. This used to branch here and push a bare
+          // CoordinatorScreen with no ContextSheet above it, so the player's
+          // own mini bar mutated the shell's detail pane behind it.
+          onOpen: () => unawaited(
+            openContextTarget(
+              context,
+              ExerciseSheetTarget(exerciseUuid: exercise.uuid),
+            ),
+          ),
         ),
       );
     }

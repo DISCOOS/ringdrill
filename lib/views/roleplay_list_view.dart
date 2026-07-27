@@ -14,6 +14,7 @@ import 'package:ringdrill/services/brief/field_resolver.dart'
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
+import 'package:ringdrill/views/drill_player/drill_player_scope.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
@@ -477,9 +478,12 @@ class _RolePlayListViewState extends State<RolePlayListView> {
   }
 
   Future<void> _openRolePlay(RolePlay rolePlay) async {
-    await ContextSheet.of(
+    // A markør of the *running* exercise opens as a mode of the player rather
+    // than in a sheet beside it (ADR-0056); everything else is unchanged.
+    await openContextTarget(
       context,
-    ).show(context, RoleSheetTarget(rolePlayUuid: rolePlay.uuid));
+      RoleSheetTarget(rolePlayUuid: rolePlay.uuid),
+    );
     if (mounted) setState(() {});
   }
 

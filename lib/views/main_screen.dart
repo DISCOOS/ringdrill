@@ -13,6 +13,7 @@ import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/drill_player/drill_player_coordinator.dart';
+import 'package:ringdrill/views/drill_player/drill_player_scope.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_status_badge.dart';
 import 'package:ringdrill/views/plan_form_screen.dart';
@@ -528,7 +529,12 @@ class _MainScreenState extends State<MainScreen>
           return Stack(
             children: [
               Positioned.fill(
-                child: ContextSheet(
+                // Above the ContextSheet so `openContextTarget` can route a
+                // planning-list tap into the player while that exercise is live
+                // (ADR-0056), and fall back to this same sheet otherwise.
+                child: DrillPlayerScope(
+                  coordinator: _drillPlayer,
+                  child: ContextSheet(
                   controller: _contextSheetController,
                   child: Scaffold(
                     key: _scaffoldKey,
@@ -572,6 +578,7 @@ class _MainScreenState extends State<MainScreen>
                       localizations,
                       useRail,
                     ),
+                  ),
                   ),
                 ),
               ),
