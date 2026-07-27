@@ -147,7 +147,10 @@ class _RingdrillPickerBodyState<T> extends State<_RingdrillPickerBody<T>> {
         const Divider(height: 1),
         if (showSearch)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            // Symmetric 8: with top 0 the field sat flush against the divider
+            // under the title. `CastPickerSheet`, which mirrors this layout by
+            // hand, has always used 8 — this was the odd one out.
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: TextField(
               key: const Key('ringdrill-picker-search'),
               controller: _searchController,
