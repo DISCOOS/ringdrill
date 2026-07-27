@@ -11,14 +11,14 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
-import 'package:ringdrill/views/widgets/player_status_card.dart';
-import 'package:ringdrill/views/widgets/schedule_card.dart';
-import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/team_form_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/player_status_card.dart';
+import 'package:ringdrill/views/widgets/schedule_card.dart';
+import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 
 class TeamExerciseScreen extends StatefulWidget {
@@ -183,11 +183,7 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
     );
     final station = widget.exercise.stations[stationIndex];
     final plan = _planService.activePlan;
-    final exerciseNumber =
-        _planService.loadExercises().indexWhere(
-          (e) => e.uuid == widget.exercise.uuid,
-        ) +
-        1;
+    final exerciseNumber = _planService.getExerciseNumber(widget.exercise.uuid);
     return PlayerStatusCell(
       icon: Icons.location_on,
       label: isNow ? l10n.statusNow : l10n.nextLabel,
@@ -216,7 +212,11 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
   PlayerStatusCell? _nextPostCell(AppLocalizations l10n, ExerciseEvent event) {
     final nextRound = event.currentRound + 1;
     if (nextRound >= widget.exercise.numberOfRounds) {
-      return finishFallbackCell(l10n, widget.exercise, icon: Icons.arrow_forward);
+      return finishFallbackCell(
+        l10n,
+        widget.exercise,
+        icon: Icons.arrow_forward,
+      );
     }
     return _postAtRoundCell(
       l10n,
@@ -231,11 +231,7 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
     final plan = _planService.activePlan;
     final format = plan?.stationNumberFormat ?? StationNumberFormat.dotted;
     final exerciseNumber = () {
-      final n =
-          _planService.loadExercises().indexWhere(
-            (e) => e.uuid == widget.exercise.uuid,
-          ) +
-          1;
+      final n = _planService.getExerciseNumber(widget.exercise.uuid);
       return n < 1 ? 1 : n;
     }();
     final rows = List.generate(widget.exercise.schedule.length, (index) {

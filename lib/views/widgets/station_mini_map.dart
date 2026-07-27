@@ -41,8 +41,7 @@ Map<String, String> _stationOverrides(Exercise exercise, Station station) {
   final service = PlanService();
   final format =
       service.activePlan?.stationNumberFormat ?? StationNumberFormat.dotted;
-  final exNum =
-      service.loadExercises().indexWhere((e) => e.uuid == exercise.uuid) + 1;
+  final exNum = service.getExerciseNumber(exercise.uuid);
   final exerciseNumber = exNum < 1 ? 1 : exNum;
   return (
     rawLabel: station.numberAndName(format, exerciseNumber: exerciseNumber),
@@ -306,8 +305,7 @@ class _MapSheetHeader extends StatelessWidget implements PreferredSizeWidget {
     // inline MasterDetailPane body, so `onClose` always just pops it.
     final service = PlanService();
     final plan = service.activePlan;
-    final exerciseNumber =
-        service.loadExercises().indexWhere((e) => e.uuid == exercise.uuid) + 1;
+    final exerciseNumber = service.getExerciseNumber(exercise.uuid);
     return AppBar(
       leading: MasterDetailLeading(onClose: () => Navigator.of(context).pop()),
       toolbarHeight: 72,

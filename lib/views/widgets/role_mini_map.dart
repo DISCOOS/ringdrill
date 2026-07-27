@@ -354,7 +354,8 @@ Future<void> openRoleMapSheet(
 /// inventing its own chrome. This map sheet is always a modal (dialog or
 /// bottom sheet), never an inline MasterDetailPane body, so `onClose`
 /// always just pops it.
-class _RoleMapSheetHeader extends StatelessWidget implements PreferredSizeWidget {
+class _RoleMapSheetHeader extends StatelessWidget
+    implements PreferredSizeWidget {
   const _RoleMapSheetHeader({
     required this.exercise,
     required this.rolePlay,
@@ -372,8 +373,7 @@ class _RoleMapSheetHeader extends StatelessWidget implements PreferredSizeWidget
   Widget build(BuildContext context) {
     final service = PlanService();
     final plan = service.activePlan;
-    final exerciseNumber =
-        service.loadExercises().indexWhere((e) => e.uuid == exercise.uuid) + 1;
+    final exerciseNumber = service.getExerciseNumber(exercise.uuid);
     final stationIndex = rolePlay.stationIndex;
     final roleNumber = stationIndex == null
         ? 0

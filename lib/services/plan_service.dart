@@ -149,28 +149,16 @@ class PlanEvent {
       PlanEvent(PlanEventType.exerciseAdded, plan, exercise: exercise);
 
   factory PlanEvent.deleted(Plan plan, Exercise exercise) =>
-      PlanEvent(
-        PlanEventType.exerciseDeleted,
-        plan,
-        exercise: exercise,
-      );
+      PlanEvent(PlanEventType.exerciseDeleted, plan, exercise: exercise);
 
   factory PlanEvent.teamSaved(Plan plan, Team team) =>
       PlanEvent(PlanEventType.teamSaved, plan, team: team);
 
   factory PlanEvent.rolePlaySaved(Plan plan, RolePlay rolePlay) =>
-      PlanEvent(
-        PlanEventType.rolePlaySaved,
-        plan,
-        rolePlay: rolePlay,
-      );
+      PlanEvent(PlanEventType.rolePlaySaved, plan, rolePlay: rolePlay);
 
   factory PlanEvent.rolePlayDeleted(Plan plan, RolePlay rolePlay) =>
-      PlanEvent(
-        PlanEventType.rolePlayDeleted,
-        plan,
-        rolePlay: rolePlay,
-      );
+      PlanEvent(PlanEventType.rolePlayDeleted, plan, rolePlay: rolePlay);
 
   factory PlanEvent.actorSaved(Plan plan, Actor actor) =>
       PlanEvent(PlanEventType.actorSaved, plan, actor: actor);
@@ -198,8 +186,7 @@ class PlanService {
 
   PlanService._internal();
 
-  final StreamController<PlanEvent> _controller =
-      StreamController.broadcast();
+  final StreamController<PlanEvent> _controller = StreamController.broadcast();
 
   bool _isReady = false;
   late final PlanRepository _repo;
@@ -218,8 +205,7 @@ class PlanService {
 
   List<Plan> listPlans() => _isReady ? _repo.listPlans() : const [];
 
-  Plan? loadPlan(String uuid) =>
-      _isReady ? _repo.loadPlan(uuid) : null;
+  Plan? loadPlan(String uuid) => _isReady ? _repo.loadPlan(uuid) : null;
 
   Plan? get activePlan {
     if (!_isReady) return null;
@@ -375,10 +361,7 @@ class PlanService {
 
   /// See [saveRolePlay] for the rationale behind requiring localizations
   /// and ensuring an active plan before write.
-  Future<void> saveActor(
-    AppLocalizations localizations,
-    Actor actor,
-  ) async {
+  Future<void> saveActor(AppLocalizations localizations, Actor actor) async {
     await _ensureActivePlan(localizations.defaultPlanName);
     await _repo.saveActor(actor);
     final plan = activePlan;
@@ -399,6 +382,10 @@ class PlanService {
   List<Exercise> loadExercises() {
     if (activePlanUuid == null) return const [];
     return _repo.loadExercises();
+  }
+
+  int getExerciseNumber(String uuid) {
+    return loadExercises().indexWhere((e) => e.uuid == uuid) + 1;
   }
 
   List<StationLocation> getLocations() {
@@ -501,15 +488,14 @@ class PlanService {
       oldToNew[orderedOldIndices[newPos]] = newPos;
     }
     final stationsByOldIndex = {for (final s in ex.stations) s.index: s};
-    final reorderedStations = List<Station>.generate(
-      orderedOldIndices.length,
-      (newPos) {
-        final oldIndex = orderedOldIndices[newPos];
-        final station = stationsByOldIndex[oldIndex]!;
-        // Only rebuild the object when the index actually changes.
-        return oldIndex != newPos ? station.copyWith(index: newPos) : station;
-      },
-    );
+    final reorderedStations = List<Station>.generate(orderedOldIndices.length, (
+      newPos,
+    ) {
+      final oldIndex = orderedOldIndices[newPos];
+      final station = stationsByOldIndex[oldIndex]!;
+      // Only rebuild the object when the index actually changes.
+      return oldIndex != newPos ? station.copyWith(index: newPos) : station;
+    });
 
     // Persist the exercise with the reordered stations. Use _repo directly
     // to avoid the index-assignment / ensureTeams / "added" event side effects
@@ -532,10 +518,7 @@ class PlanService {
     }
   }
 
-  Future<void> saveTeam(
-    AppLocalizations localizations,
-    Team team,
-  ) async {
+  Future<void> saveTeam(AppLocalizations localizations, Team team) async {
     await _ensureActivePlan(localizations.defaultPlanName);
     await _repo.saveTeam(team);
     final plan = activePlan;
@@ -558,11 +541,7 @@ class PlanService {
     String fileName,
     List<String> selected,
   ) async {
-    final plan = _planForExport(
-      uuid: uuid,
-      name: fileName,
-      selected: selected,
-    );
+    final plan = _planForExport(uuid: uuid, name: fileName, selected: selected);
     final drillFile = DrillFile.fromPlan(plan, fileName);
     _controller.add(PlanEvent.exported(plan, drillFile));
     return drillFile;
@@ -637,10 +616,7 @@ class PlanService {
     return plan?.copyWith(exercises: selected);
   }
 
-  Future<Plan> installFromFile(
-    DrillFile file, {
-    bool activate = false,
-  }) async {
+  Future<Plan> installFromFile(DrillFile file, {bool activate = false}) async {
     final incoming = file.plan();
     // Always preserve the incoming uuid. The catalog wiki model relies on
     // Plan.uuid being stable across opens so the backend ownership check
@@ -725,9 +701,7 @@ class PlanService {
       contentHash: _repo.loadPlan(installed.uuid)?.computeContentHash(),
     );
     await _repo.savePlanShell(catalogPlan);
-    _controller.add(
-      PlanEvent(PlanEventType.planInstalled, catalogPlan),
-    );
+    _controller.add(PlanEvent(PlanEventType.planInstalled, catalogPlan));
     return _repo.loadPlan(catalogPlan.uuid) ?? catalogPlan;
   }
 
@@ -867,9 +841,7 @@ class PlanService {
           contentHash: local.computeContentHash(),
         );
         await _repo.savePlanShell(published);
-        _controller.add(
-          PlanEvent(PlanEventType.planRefreshed, published),
-        );
+        _controller.add(PlanEvent(PlanEventType.planRefreshed, published));
         return CatalogRefreshOutcome(
           kind: CatalogRefreshKind.published,
           planUuid: planUuid,
@@ -926,8 +898,7 @@ class PlanService {
     final DateTime? existingInstalledAt;
     if (catalogSource != null) {
       effectiveSlug = catalogSource.slug;
-      ifMatch =
-          catalogSource.etag.isNotEmpty ? catalogSource.etag : null;
+      ifMatch = catalogSource.etag.isNotEmpty ? catalogSource.etag : null;
       existingInstalledAt = catalogSource.installedAt;
     } else {
       effectiveSlug = sanitizeSlug(slug);
@@ -964,9 +935,7 @@ class PlanService {
       contentHash: local.computeContentHash(),
     );
     await _repo.savePlanShell(published);
-    _controller.add(
-      PlanEvent(PlanEventType.planRefreshed, published),
-    );
+    _controller.add(PlanEvent(PlanEventType.planRefreshed, published));
     return (
       plan: _repo.loadPlan(published.uuid) ?? published,
       notModified: upload.notModified,
@@ -1009,11 +978,7 @@ class PlanService {
     );
     if (currentSlug == null || currentSlug == cleanSlug) {
       // First-time publish, or update in place under the same slug. No fork.
-      return publishPlan(
-        planUuid,
-        slug: cleanSlug,
-        client: client,
-      );
+      return publishPlan(planUuid, slug: cleanSlug, client: client);
     }
 
     // Fork: clone the plan locally with a fresh uuid and a local source,
@@ -1029,11 +994,7 @@ class PlanService {
     await _repo.savePlan(fork);
     _controller.add(PlanEvent(PlanEventType.planCreated, fork));
 
-    return publishPlan(
-      fork.uuid,
-      slug: cleanSlug,
-      client: client,
-    );
+    return publishPlan(fork.uuid, slug: cleanSlug, client: client);
   }
 
   List<Team> loadTeams() {
