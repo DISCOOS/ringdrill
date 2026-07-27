@@ -135,10 +135,6 @@
   "@confirm": {
     "description": "Label"
   },
-  "dismiss": "DISMISS",
-  "@dismiss": {
-    "description": "Label"
-  },
   "confirmDeleteExercise": "This will delete the exercise. Do you want to continue?",
   "@confirmDeleteExercise": {
     "description": "Message"
@@ -1907,6 +1903,18 @@
   "detailEmptyRolePlay": "Select a role",
   "@detailEmptyRolePlay": {
     "description": "Empty detail pane text shown on the role-plays tab."
+  },
+  "detailGoneRolePlay": "This role is no longer available. It may have been deleted.",
+  "@detailGoneRolePlay": {
+    "description": "Shown in the role viewer when the role it was opened for cannot be resolved — deleted from another pane, or a stale deep link. The viewer stays open with a close action rather than dismissing itself."
+  },
+  "detailGoneExercise": "This exercise is no longer available. It may have been deleted.",
+  "@detailGoneExercise": {
+    "description": "Shown in the exercise (coordinator) viewer when the exercise it was opened for cannot be resolved — deleted from another pane, or a stale deep link. The viewer stays open with a close action rather than dismissing itself."
+  },
+  "detailGoneStation": "This station is no longer available. It, or its exercise, may have been deleted.",
+  "@detailGoneStation": {
+    "description": "Shown in the station viewer when neither the station nor its parent exercise can be resolved — deleted from another pane, a stale deep link, or a station index that no longer exists. The viewer stays open with a close action rather than dismissing itself."
   },
 
   "appUserRoleSectionTitle": "My role",

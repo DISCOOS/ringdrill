@@ -122,9 +122,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirm => 'CONFIRM';
 
   @override
-  String get dismiss => 'Dismiss';
-
-  @override
   String get confirmDeleteExercise =>
       'This will delete the exercise. Do you want to continue?';
 
@@ -604,6 +601,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String exerciseAutoStoppedSnack(String exercise) {
     return '$exercise stopped automatically';
   }
+
+  @override
+  String get dismiss => 'Dismiss';
 
   @override
   String get deleteExercise => 'Delete Exercise';
@@ -1913,6 +1913,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailEmptyRolePlay => 'Select a role';
+
+  @override
+  String get detailGoneRolePlay =>
+      'This role is no longer available. It may have been deleted.';
+
+  @override
+  String get detailGoneExercise =>
+      'This exercise is no longer available. It may have been deleted.';
+
+  @override
+  String get detailGoneStation =>
+      'This station is no longer available. It, or its exercise, may have been deleted.';
 
   @override
   String get appUserRoleSectionTitle => 'My role';

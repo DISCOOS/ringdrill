@@ -302,12 +302,6 @@ abstract class AppLocalizations {
   /// **'CONFIRM'**
   String get confirm;
 
-  /// Generic dismiss-action label, e.g. on a SnackBar close button.
-  ///
-  /// In en, this message translates to:
-  /// **'Dismiss'**
-  String get dismiss;
-
   /// Message
   ///
   /// In en, this message translates to:
@@ -1045,6 +1039,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{exercise} stopped automatically'**
   String exerciseAutoStoppedSnack(String exercise);
+
+  /// Generic dismiss-action label, e.g. on a SnackBar close button.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get dismiss;
 
   /// Label
   ///
@@ -3229,6 +3229,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select a role'**
   String get detailEmptyRolePlay;
+
+  /// Shown in the role viewer when the role it was opened for cannot be resolved — deleted from another pane, or a stale deep link. The viewer stays open with a close action rather than dismissing itself.
+  ///
+  /// In en, this message translates to:
+  /// **'This role is no longer available. It may have been deleted.'**
+  String get detailGoneRolePlay;
+
+  /// Shown in the exercise (coordinator) viewer when the exercise it was opened for cannot be resolved — deleted from another pane, or a stale deep link. The viewer stays open with a close action rather than dismissing itself.
+  ///
+  /// In en, this message translates to:
+  /// **'This exercise is no longer available. It may have been deleted.'**
+  String get detailGoneExercise;
+
+  /// Shown in the station viewer when neither the station nor its parent exercise can be resolved — deleted from another pane, a stale deep link, or a station index that no longer exists. The viewer stays open with a close action rather than dismissing itself.
+  ///
+  /// In en, this message translates to:
+  /// **'This station is no longer available. It, or its exercise, may have been deleted.'**
+  String get detailGoneStation;
 
   /// Settings section heading for the staff-role selector (DESIGN-006 step 4).
   ///

@@ -10,7 +10,6 @@
   "getOnDesktop": "På Desktop",
   "installWebApp": "Installer nett-app",
   "continueOnWeb": "Fortsett på nett",
-  "dismiss":  "AVVIS",
   "storage": "Lagring",
   "documents": "Dokumenter",
   "downloads": "Nedlastinger",
@@ -877,6 +876,18 @@
   "detailEmptyRolePlay": "Velg en markør",
   "@detailEmptyRolePlay": {
     "description": "Empty detail pane text shown on the role-plays tab."
+  },
+  "detailGoneRolePlay": "Denne markøren er ikke tilgjengelig lenger. Den kan ha blitt slettet.",
+  "@detailGoneRolePlay": {
+    "description": "Shown in the role viewer when the role it was opened for cannot be resolved — deleted from another pane, or a stale deep link. The viewer stays open with a close action rather than dismissing itself."
+  },
+  "detailGoneExercise": "Denne øvelsen er ikke tilgjengelig lenger. Den kan ha blitt slettet.",
+  "@detailGoneExercise": {
+    "description": "Shown in the exercise (coordinator) viewer when the exercise it was opened for cannot be resolved — deleted from another pane, or a stale deep link. The viewer stays open with a close action rather than dismissing itself."
+  },
+  "detailGoneStation": "Denne posten er ikke tilgjengelig lenger. Posten, eller øvelsen den hører til, kan ha blitt slettet.",
+  "@detailGoneStation": {
+    "description": "Shown in the station viewer when neither the station nor its parent exercise can be resolved — deleted from another pane, a stale deep link, or a station index that no longer exists. The viewer stays open with a close action rather than dismissing itself."
   },
   "detailEmptyTeam": "Velg et lag",
   "@detailEmptyTeam": {

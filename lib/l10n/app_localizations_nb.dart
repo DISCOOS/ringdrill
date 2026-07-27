@@ -122,9 +122,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get confirm => 'BEKREFT';
 
   @override
-  String get dismiss => 'Lukk';
-
-  @override
   String get confirmDeleteExercise =>
       'Dette vil slette øvelsen. Vil du fortsette?';
 
@@ -602,6 +599,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String exerciseAutoStoppedSnack(String exercise) {
     return '$exercise avsluttet automatisk';
   }
+
+  @override
+  String get dismiss => 'Lukk';
 
   @override
   String get deleteExercise => 'Slett øvelse';
@@ -1910,6 +1910,18 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get detailEmptyRolePlay => 'Velg en markør';
+
+  @override
+  String get detailGoneRolePlay =>
+      'Denne markøren er ikke tilgjengelig lenger. Den kan ha blitt slettet.';
+
+  @override
+  String get detailGoneExercise =>
+      'Denne øvelsen er ikke tilgjengelig lenger. Den kan ha blitt slettet.';
+
+  @override
+  String get detailGoneStation =>
+      'Denne posten er ikke tilgjengelig lenger. Posten, eller øvelsen den hører til, kan ha blitt slettet.';
 
   @override
   String get appUserRoleSectionTitle => 'Min rolle';
