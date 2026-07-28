@@ -7,19 +7,29 @@ import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/drill_player/mini_round_row.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 
-Exercise _makeExercise() => Exercise(
-  uuid: 'test-uuid-mini',
-  name: 'Mini Player Exercise',
-  startTime: SimpleTimeOfDay(hour: 10, minute: 0),
-  endTime: SimpleTimeOfDay(hour: 11, minute: 0),
-  numberOfTeams: 2,
-  numberOfRounds: 3,
-  executionTime: 5,
-  evaluationTime: 3,
-  rotationTime: 2,
-  stations: [],
-  schedule: [],
-);
+/// Starts *now*, so the exercise is genuinely live whenever the suite runs.
+///
+/// It used to start at a hardcoded 10:00 with 3 × (5+3+2) = 30 minutes of
+/// content, so `ExerciseService` auto-stopped it the moment the wall clock passed
+/// 10:30 — the bar then rendered nothing and these tests failed every afternoon
+/// while passing every morning. The other fixtures in this file were already
+/// now-relative; this one was the outlier.
+Exercise _makeExercise() {
+  final now = DateTime.now();
+  return Exercise(
+    uuid: 'test-uuid-mini',
+    name: 'Mini Player Exercise',
+    startTime: SimpleTimeOfDay(hour: now.hour, minute: now.minute),
+    endTime: SimpleTimeOfDay(hour: (now.hour + 2) % 24, minute: now.minute),
+    numberOfTeams: 2,
+    numberOfRounds: 3,
+    executionTime: 5,
+    evaluationTime: 3,
+    rotationTime: 2,
+    stations: [],
+    schedule: [],
+  );
+}
 
 Widget _harness({required VoidCallback onOpen}) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
