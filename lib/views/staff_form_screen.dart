@@ -56,8 +56,12 @@ final class StaffFormDelete extends StaffFormResult {
 class _StaffFormScreenState extends State<StaffFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  /// The stored organizational roles. Markør is *not* here: it is derived from
-  /// casting (DESIGN-011) and shown read-only below.
+  /// The stored roles, including [StaffRole.actor] — which *is* stored, reversing
+  /// DESIGN-011's decision 2. Casting still implies it (see
+  /// [StaffRoles.effectiveRoles]), but the flag is what this form edits.
+  ///
+  /// Never empty once the user has touched it: unticking the last role falls back
+  /// to [StaffRole.other], since "not any of the named roles" is what that means.
   Set<StaffRole> _roles = <StaffRole>{};
 
   final _nameController = TextEditingController();
@@ -175,14 +179,14 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
     );
   }
 
-  /// The stored roles as a filter-chip multi-select, plus the derived markør
-  /// role as a read-only chip.
+  /// The roles as a filter-chip multi-select, with the read-only "Spiller" list
+  /// below naming the markører this member plays.
   ///
-  /// Markør is deliberately not selectable: a person *is* one precisely when a
-  /// roleplay is cast to them, so it is computed from the cast rather than stored
-  /// (DESIGN-011 decision 2). A stored flag could disagree with the actual
-  /// casting, with no way to tell which was right. Editing it happens in the
-  /// Spill segment, by casting.
+  /// All four roles are selectable, markør included. An earlier version showed an
+  /// extra non-interactive "Markør" chip when the member was cast without the flag
+  /// set, to explain why they read as one in the roster list. It was removed: with
+  /// the role directly selectable it renders as the same label twice, and the
+  /// Spiller list below already states the fact without the ambiguity.
   Widget _buildRoles(BuildContext context, AppLocalizations l10n) {
     final theme = Theme.of(context);
     final plays = _playedRolePlays();
@@ -231,9 +235,19 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
                 onSelected: (selected) {
                   setState(() {
                     if (selected) {
+                      // Picking anything else drops the `other` fallback: it means
+                      // "none of the named roles", so it cannot coexist with one.
+                      if (role != StaffRole.other) {
+                        _roles.remove(StaffRole.other);
+                      }
                       _roles.add(role);
                     } else {
                       _roles.remove(role);
+                      // Never leave the selection empty: unticking the last role
+                      // means "not any of the named ones", which is what `other`
+                      // says. Keeps the mandatory-role rule from being something
+                      // the user can walk into by deselecting.
+                      if (_roles.isEmpty) _roles.add(StaffRole.other);
                     }
                   });
                   // Clears the error as soon as a role is picked, instead of
@@ -241,14 +255,6 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
                   field.didChange(_roles);
                   if (field.hasError) field.validate();
                 },
-              ),
-            // Only when cast *without* the flag set: actor is a real selectable
-            // role now, so the implied chip exists just to explain why a member
-            // reads as an actor in the list without the box being ticked.
-            if (plays.isNotEmpty && !_roles.contains(StaffRole.actor))
-              Chip(
-                avatar: Icon(staffRoleIcon(StaffRole.actor), size: 18),
-                label: Text(staffRoleLabel(StaffRole.actor, l10n)),
               ),
           ],
         ),

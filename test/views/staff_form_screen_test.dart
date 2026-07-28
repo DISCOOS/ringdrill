@@ -340,7 +340,12 @@ void main() {
       );
     });
 
-    testWidgets('clearing every role blocks the save', (tester) async {
+    // Unticking the last role falls back to `other` rather than emptying the set:
+    // "not any of the named roles" is exactly what `other` says, and it keeps the
+    // mandatory-role rule from being something the user can walk into by
+    // deselecting. So the save succeeds — with `other`.
+    testWidgets('clearing the last role falls back to other', (tester) async {
+      StaffFormResult? result;
       var popped = false;
       await tester.pumpWidget(
         MaterialApp(
@@ -349,7 +354,7 @@ void main() {
           home: Builder(
             builder: (ctx) => TextButton(
               onPressed: () async {
-                await Navigator.push<StaffFormResult>(
+                result = await Navigator.push<StaffFormResult>(
                   ctx,
                   MaterialPageRoute(
                     builder: (_) => const StaffFormScreen(
@@ -373,18 +378,73 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      // Untick the only role, then try to save.
+      // Untick the only role.
       await tester.tap(find.text(staffRoleLabel(StaffRole.director, l10n)));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(l10n.staffRolesRequired),
+        findsNothing,
+        reason: 'the fallback fires at once, so there is nothing to warn about',
+      );
+
+      await tester.tap(find.text(l10n.save));
+      await tester.pumpAndSettle();
+
+      expect(popped, isTrue);
+      expect(
+        result,
+        isA<StaffFormSave>().having((r) => r.staff.roles, 'roles', {
+          StaffRole.other,
+        }),
+        reason: 'unticking the last role means `other`, not nothing',
+      );
+    });
+
+    // Picking a named role drops the fallback: `other` means "none of the named
+    // ones", so the two cannot sensibly coexist.
+    testWidgets('selecting a named role clears the other fallback', (
+      tester,
+    ) async {
+      StaffFormResult? result;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (ctx) => TextButton(
+              onPressed: () async {
+                result = await Navigator.push<StaffFormResult>(
+                  ctx,
+                  MaterialPageRoute(
+                    builder: (_) => const StaffFormScreen(
+                      staff: Staff(uuid: 'legacy', realName: 'Ola Nordmann'),
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      // Opens pre-set to `other`; pick instructor instead.
+      await tester.tap(find.text(staffRoleLabel(StaffRole.instructor, l10n)));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l10n.save));
       await tester.pumpAndSettle();
 
       expect(
-        popped,
-        isFalse,
-        reason: 'the rule holds on edit, not only create',
+        result,
+        isA<StaffFormSave>().having((r) => r.staff.roles, 'roles', {
+          StaffRole.instructor,
+        }),
       );
-      expect(find.text(l10n.staffRolesRequired), findsOneWidget);
     });
   });
 }
