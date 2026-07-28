@@ -63,19 +63,27 @@ AppUserRole? _parse(String? name) => name == null
 AppUserRole? readAppUserRoleNow() =>
     _parse(Prefs.getString(AppConfig.keyAppUserRole));
 
-/// Reads the stored [AppUserRole] preference, defaulting to [AppUserRole.director]
-/// when nothing is stored or the stored value is unrecognized — participants
-/// do not use the app, so director (full content) is the safe default,
-/// mirroring `BriefScreen._loadStoredRole`'s own default.
+/// Re-reads the store into [appUserRole].
 ///
-/// Synchronous, since [Prefs] holds the instance `main` already awaited. Also
-/// refreshes [appUserRole], so the listenable and the stored value never
-/// disagree.
-AppUserRole loadStoredAppUserRole() {
-  final role = readAppUserRoleNow() ?? AppUserRole.director;
-  appUserRole.value = role;
-  return role;
+/// The notifier seeds itself lazily on first access, which is *whenever something
+/// first touches it* — so a caller that binds [Prefs] afterwards (`main` in an
+/// unusual order, or any test that seeds a stored role) can find the notifier
+/// already initialised from an unbound read. This makes the seeding explicit
+/// instead of dependent on that order.
+///
+/// Not for reacting to changes: after seeding, the notifier leads and the store
+/// follows.
+void seedAppUserRoleFromStore() {
+  appUserRole.value = readAppUserRoleNow() ?? AppUserRole.director;
 }
+
+/// The role in force, for a caller that only needs it once.
+///
+/// Reads [appUserRole], **not** the store: a write is asynchronous while the
+/// notifier is immediate, so re-reading the store right after a change can serve
+/// the previous role. The store seeds the notifier once ([readAppUserRoleNow]);
+/// after that the notifier leads.
+AppUserRole currentAppUserRole() => appUserRole.value;
 
 /// Persists [role] and publishes it to [appUserRole].
 Future<void> setAppUserRole(AppUserRole role) async {

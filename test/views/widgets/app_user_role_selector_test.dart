@@ -48,7 +48,9 @@ void main() {
     expect(find.text(l10n.briefAudienceDirector), findsNothing);
   });
 
-  testWidgets('offers all three roles, marking the current one', (tester) async {
+  testWidgets('offers all three roles, marking the current one', (
+    tester,
+  ) async {
     await tester.pumpWidget(harness());
 
     await tester.tap(find.byType(TextButton));
@@ -82,6 +84,47 @@ void main() {
     expect(find.text(l10n.appUserRoleActor), findsOneWidget);
   });
 
+  // The drawer is a menu: once a choice is made it has served its purpose, and
+  // leaving it open hides the very UI whose affordances just changed.
+  testWidgets('picking from a drawer closes it', (tester) async {
+    final scaffoldKey = GlobalKey<ScaffoldState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          key: scaffoldKey,
+          drawer: const Drawer(child: AppUserRoleButton()),
+          body: const SizedBox.shrink(),
+        ),
+      ),
+    );
+    scaffoldKey.currentState!.openDrawer();
+    await tester.pumpAndSettle();
+    expect(find.byType(Drawer), findsOneWidget);
+
+    await tester.tap(find.byType(TextButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, l10n.appUserRoleActor));
+    await tester.pumpAndSettle();
+
+    expect(appUserRole.value, AppUserRole.actor);
+    expect(find.byType(Drawer), findsNothing);
+  });
+
+  // Same button in the rail, where there is no drawer to close.
+  testWidgets('picking outside a drawer pops nothing extra', (tester) async {
+    await tester.pumpWidget(harness());
+
+    await tester.tap(find.byType(TextButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, l10n.appUserRoleActor));
+    await tester.pumpAndSettle();
+
+    expect(appUserRole.value, AppUserRole.actor);
+    expect(find.byType(TextButton), findsOneWidget, reason: 'still mounted');
+  });
+
   testWidgets('re-picking the current role is a no-op', (tester) async {
     await tester.pumpWidget(harness());
 
@@ -101,7 +144,10 @@ void main() {
     appUserRole.value = AppUserRole.instructor;
     await tester.pumpWidget(harness(iconOnly: true));
 
-    expect(find.byIcon(appUserRoleIcon(AppUserRole.instructor)), findsOneWidget);
+    expect(
+      find.byIcon(appUserRoleIcon(AppUserRole.instructor)),
+      findsOneWidget,
+    );
     expect(
       find.byTooltip(
         '${l10n.appUserRoleSectionTitle}: ${l10n.briefAudienceInstructor}',

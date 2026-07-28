@@ -53,7 +53,15 @@ Future<void> showAppUserRolePicker(BuildContext context) async {
       );
     },
   );
-  if (picked != null) await setAppUserRole(picked);
+  if (picked == null) return;
+  await setAppUserRole(picked);
+  // The drawer is a menu: it has served its purpose once a choice is made, and
+  // leaving it open hides the very UI whose affordances just changed. No-op in
+  // the wide layout, where the selector lives in the rail and no drawer is open.
+  if (context.mounted) {
+    final scaffold = Scaffold.maybeOf(context);
+    if (scaffold?.isDrawerOpen ?? false) scaffold!.closeDrawer();
+  }
 }
 
 /// The current role, as a tappable affordance that opens

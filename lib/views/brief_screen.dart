@@ -5,6 +5,7 @@ import 'package:markdown_widget/markdown_widget.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/app_user_role.dart';
+import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
 import 'package:ringdrill/services/plan_service.dart';
@@ -64,6 +65,11 @@ class BriefScreen extends StatefulWidget {
 
 class _BriefScreenState extends State<BriefScreen> {
   BriefAudience _audience = BriefAudience.participant;
+
+  /// The role the reader is viewing *as*, which the picker selects and the
+  /// audience derives from. Held separately because two roles map to the same
+  /// audience (ADR-0057), so the audience alone cannot say which was chosen.
+  AppUserRole _asRole = AppUserRole.director;
   final BriefMarkdownController _briefController = BriefMarkdownController();
   bool _searchOpen = false;
   String _searchQuery = '';
@@ -103,18 +109,23 @@ class _BriefScreenState extends State<BriefScreen> {
     }
   }
 
-  /// Applies the stored [AppUserRole] to [_audience].
+  /// Applies the device's [AppUserRole] to [_audience].
   ///
-  /// Synchronous now: it used to await `getInstance()`, so the brief rendered once
-  /// as director and then re-rendered when the stored role arrived — a visible
-  /// double render of a whole document, and the wrong content in between for an
-  /// instructor. [Prefs] holds the instance `main` already awaited, and
-  /// [readAppUserRoleNow] returns null only when nothing is bound, in which case
-  /// the director default stands as before.
+  /// Reads the role's notifier rather than the store, for the same reason
+  /// everything else does: a write is asynchronous, so a brief opened right after
+  /// the user switched role read the *previous* one out of storage. That is what
+  /// made the viewer ignore the role just selected.
+  ///
+  /// Synchronous, so the document is never rendered as the wrong audience first —
+  /// it used to await `getInstance()` and re-render, showing an instructor
+  /// director-level content in between.
+  ///
+  /// Applied once, not tracked: this screen has its own audience switcher (the
+  /// popup menu below), and following the role live would overwrite a choice the
+  /// reader made deliberately.
   void _applyStoredRole() {
-    final role = readAppUserRoleNow();
-    if (role == null) return;
-    _audience = role.briefAudience;
+    _asRole = currentAppUserRole();
+    _audience = _asRole.briefAudience;
   }
 
   @override
@@ -414,44 +425,35 @@ class _BriefScreenState extends State<BriefScreen> {
     AppLocalizations localizations,
     BriefTheme theme,
   ) {
-    String labelFor(BriefAudience a) {
-      switch (a) {
-        case BriefAudience.participant:
-          return localizations.briefAudienceParticipant;
-        case BriefAudience.instructor:
-          return localizations.briefAudienceInstructor;
-        case BriefAudience.director:
-          return localizations.briefAudienceDirector;
-      }
-    }
-
-    // Each audience carries a recognisable icon so the unselected options read
-    // as more than blank rows; the selected one swaps its icon for a check.
-    IconData iconFor(BriefAudience a) {
-      switch (a) {
-        case BriefAudience.participant:
-          return Icons.person_outline;
-        case BriefAudience.instructor:
-          return Icons.school_outlined;
-        case BriefAudience.director:
-          return Icons.flag_outlined;
-      }
-    }
-
-    return PopupMenuButton<BriefAudience>(
-      initialValue: _audience,
-      onSelected: _setAudience,
-      tooltip: localizations.briefAudienceParticipant,
+    // Offers the *app* roles, with their own icons — the same three the drawer
+    // and rail select from (ADR-0057), so "view as" and "who I am" read alike.
+    //
+    // BriefAudience.participant is deliberately absent: participants do not use
+    // the app, so it was an option nobody in the room could be. It stays a valid
+    // audience for export and print, which is the axis it belongs to.
+    //
+    // Director and Markør resolve to the same audience by ADR-0057 (an actor is
+    // staff running the scenario from the inside), so those two entries render
+    // the same document. The check follows the *role* picked rather than the
+    // resulting audience, so choosing Markør does not silently look like
+    // choosing Øvelsesleder.
+    return PopupMenuButton<AppUserRole>(
+      initialValue: _asRole,
+      onSelected: (role) {
+        setState(() => _asRole = role);
+        _setAudience(role.briefAudience);
+      },
+      tooltip: localizations.appUserRoleSectionTitle,
       position: PopupMenuPosition.under,
-      itemBuilder: (context) => BriefAudience.values.map((a) {
-        final selected = a == _audience;
-        return PopupMenuItem<BriefAudience>(
-          value: a,
+      itemBuilder: (context) => AppUserRole.values.map((role) {
+        final selected = role == _asRole;
+        return PopupMenuItem<AppUserRole>(
+          value: role,
           child: Row(
             children: [
-              Icon(selected ? Icons.check : iconFor(a), size: 20),
+              Icon(selected ? Icons.check : appUserRoleIcon(role), size: 20),
               const SizedBox(width: 12),
-              Text(labelFor(a)),
+              Text(appUserRoleLabel(role, localizations)),
             ],
           ),
         );
@@ -462,7 +464,7 @@ class _BriefScreenState extends State<BriefScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              labelFor(_audience),
+              appUserRoleLabel(_asRole, localizations),
               style: TextStyle(
                 color: theme.text.heading,
                 fontSize: 14,

@@ -105,7 +105,7 @@ class _StationScreenState extends State<StationScreen>
   /// change made from the drawer while this screen is open. It used to be awaited
   /// once, which was both a frame late and permanently stale.
   void _bindRole() {
-    _role = loadStoredAppUserRole();
+    _role = currentAppUserRole();
     appUserRole.addListener(_onRoleChanged);
   }
 

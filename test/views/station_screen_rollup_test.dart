@@ -8,6 +8,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/prefs.dart';
@@ -89,6 +90,9 @@ Future<void> _seedAndInit({String? role}) async {
   Prefs.reset();
   Prefs.bind(prefs);
   addTearDown(Prefs.reset);
+  // The notifier leads once seeded, so seeding it is what makes the stored role
+  // actually take effect — binding alone is not enough.
+  seedAppUserRoleFromStore();
   final repo = PlanRepository(prefs);
   await repo.savePlanShell(_shell());
   await repo.setActivePlanUuid(_planUuid);

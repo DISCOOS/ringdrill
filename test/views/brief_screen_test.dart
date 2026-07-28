@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
@@ -175,7 +176,7 @@ String _markdownData(WidgetTester tester) {
 
 /// Open the audience PopupMenuButton and tap the menu item with [label].
 Future<void> _tapAudience(WidgetTester tester, String label) async {
-  await tester.tap(find.byType(PopupMenuButton<BriefAudience>));
+  await tester.tap(find.byType(PopupMenuButton<AppUserRole>));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 200));
   await tester.tap(find.text(label).last);
@@ -300,7 +301,7 @@ void main() {
       await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
       await _awaitRender(tester);
 
-      final picker = find.byType(PopupMenuButton<BriefAudience>);
+      final picker = find.byType(PopupMenuButton<AppUserRole>);
       expect(picker, findsOneWidget);
 
       // Audience picker lives in the AppBar regardless of width — the slim
@@ -321,7 +322,7 @@ void main() {
         await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
         await _awaitRender(tester);
 
-        final picker = find.byType(PopupMenuButton<BriefAudience>);
+        final picker = find.byType(PopupMenuButton<AppUserRole>);
         expect(picker, findsOneWidget);
 
         // TOC sidebar heading visible
