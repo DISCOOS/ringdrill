@@ -27,6 +27,21 @@ extension DateTimeX on DateTime {
   ]) {
     final now = reference ?? DateTime.now();
     final diff = abs ? now.difference(this).abs() : now.difference(this);
+    return diff.formal(localizations);
+  }
+}
+
+extension DurationX on Duration {
+  /// The same coarse "N minutes / N hours / N days" phrasing [DateTimeX.formal]
+  /// produces, for a span that is already a [Duration].
+  ///
+  /// Split out because a *duration* is what several callers actually have. The plan
+  /// list used to fake one by handing two bare clock faces to [DateTimeX.formal] as
+  /// value and reference, which computed `start - end` across a single calendar day
+  /// — so `20:15 - 01:15` read "19 timer" rather than 5. Callers now resolve the
+  /// span themselves (see `Exercise.scheduledDuration`) and format it here.
+  String formal(AppLocalizations localizations) {
+    final diff = this;
     final absDiff = diff.abs();
 
     if (absDiff.inSeconds < 60) {

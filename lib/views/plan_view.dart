@@ -1043,7 +1043,12 @@ class _ExerciseCardState extends State<ExerciseCard> {
     final subtitleParts = <String>[
       if (isLive) liveEvent!.getState(localizations),
       '${st.formal()} - ${et.formal()}',
-      et.toDateTime().formal(localizations, st.toDateTime()),
+      // Resolved through the exercise's own window, not two bare clock faces
+      // stamped onto today: `20:15 - 01:15` read "19 timer" because the
+      // difference was taken across one calendar day, giving 24h minus the real
+      // 5h. Same root cause as a post-midnight start waiting for the next
+      // evening — see Exercise.windowAt.
+      exercise.scheduledDuration.formal(localizations),
       '${exercise.numberOfRounds} ${localizations.round(exercise.numberOfRounds).toLowerCase()}',
       '${exercise.numberOfTeams} ${localizations.team(exercise.numberOfTeams).toLowerCase()}',
     ];
