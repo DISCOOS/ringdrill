@@ -180,13 +180,20 @@ staffing the exercise**, and was renamed accordingly.
 | `RolePlay.actorUuid` | `RolePlay.staffUuid` |
 | `Plan.actors` | `Plan.staff` |
 | — | `Staff.roles`: `Set<StaffRole>` |
+| `AppUserRole` | `StaffRole` (one enum for roster + device) |
 
-**Markør is not in the enum.** A person is a markør precisely when some
-`RolePlay.staffUuid` points at them, so it is derived from the cast. A stored flag
-could disagree with the actual casting with no way to tell which was right.
-`StaffRole` therefore holds only the *organizational* roles — director, instructor,
-other. "Deltaker" is absent for a different reason: participants are a `Team`
-count, not rostered people.
+**The role enum is `StaffRole` and it is authoritative for both axes.** DESIGN-011
+first had markør derived from casting only; that was reversed on 2026-07-28 because
+a member's role is mandatory on create and a markør-only person had nothing to
+select. `StaffRole` is now exactly `{director, instructor, actor}` and doubles as
+the device's own role — the former `AppUserRole` is gone, so "what this person is on
+the roster" and "what this device may edit" (ADR-0057) cannot disagree. `other` was
+dropped to keep that 1:1.
+
+Casting still *implies* the actor role: `Staff.effectiveRoles(isCast:)` unions the
+stored set with actor-by-casting, so a record written before the flag existed, or a
+cast made without ticking the box, reads correctly. "Deltaker" remains absent —
+participants are a `Team` count, not rostered people.
 
 **No wire alias, two deliberate exceptions.** Nothing had been published, so this
 is a straight rename and the schema marker does not move. But:

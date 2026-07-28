@@ -51,13 +51,27 @@ That name carries a **scope decision**: since "stab" means *the non-participants
 
 A Staff person carries a set of roles. With participants excluded (decision 1), the set is **markør, øvelsesleder, veileder**, plus an escape `other` — **not** deltaker (participants are a Team count, not staff). Two questions:
 
+> **Reversed 2026-07-28.** `markør` (as `StaffRole.actor`) **is stored**, and the
+> enum is now exactly `{director, instructor, actor}` — 1:1 with the device's own
+> role, which is the *same enum* rather than a parallel one (`AppUserRole` is gone;
+> `StaffRole` in `lib/models/staff_role.dart` is authoritative). Two things forced
+> it: a member's role is **mandatory when creating** one, and a person who only ever
+> plays markører had nothing to select; and someone is recruited *as* a markør
+> before any roleplay exists to cast them to, so a purely derived role cannot
+> express the plan. The derivation survives as a **fallback** —
+> `Staff.effectiveRoles(isCast:)` unions the stored set with actor-by-casting, so a
+> record written before this, or a cast made without ticking the box, still reads as
+> an actor. `other` was dropped to keep the 1:1. Consequence: the role → audience
+> mapping helper deferred below needs no separate existence, since `briefAudience`
+> now hangs off the enum itself.
+
 * **Is *markør* stored, or derived?** A person "is a markør" precisely when at least one `RolePlay.actorUuid` points at them — the casting link already exists. So markør can be **derived from casting** (single source of truth, no way for a `roles` flag to disagree with the actual cast), while the `roles` set stores only the *organizational* roles (director/instructor/other) that have no other home. **Settled: derived** (2026-07-10) — a stored markør flag could drift from the actual cast.
 * **One role or many?** A person can be both (an instructor who also plays a marker on a quiet post). So `roles` is a **set**, and the derived markør role composes with it.
 
 Sketch (additive, `@Default` empty so legacy records are valid):
 
 ```
-enum StaffRole { director, instructor, other }   // markør is derived; no participant
+enum StaffRole { director, instructor, actor }   // no `other`, no participant; 1:1 with the device role
 Staff( … existing Actor fields …, @Default({}) Set<StaffRole> roles )   // JSON still under actors/
 ```
 
@@ -93,7 +107,7 @@ The tab and its form exist (DESIGN-006 stage 4; `ActorFormScreen` → `StaffForm
 ## Settled (2026-07-10)
 
 * **Entity:** `Staff` / "Stab". Participants excluded — a Team count, not rostered.
-* **markør:** derived from casting, not stored.
+* **markør:** ~~derived from casting, not stored~~ — **stored** as `StaffRole.actor` (reversed 2026-07-28, see decision 2). Derivation kept as a fallback.
 * **Tab label:** "Bemanning" → "Stab".
 * **Wire:** clean rename `actors/`→`staff/`, `actorUuid`→`staffUuid`, `Actor`→`Staff` (no alias, nothing published; amends ADR-0018).
 * **FAB / create action:** "Nytt medlem" / "New member" (a *stabsmedlem*), following the "Ny X" convention.
