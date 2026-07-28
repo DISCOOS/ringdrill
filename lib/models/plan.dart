@@ -21,8 +21,10 @@ sealed class Plan with _$Plan {
     required String uuid,
     required String name,
     required String description,
-    @Default(ExerciseNumberFormat.hash) ExerciseNumberFormat exerciseNumberFormat,
-    @Default(StationNumberFormat.dotted) StationNumberFormat stationNumberFormat,
+    @Default(ExerciseNumberFormat.hash)
+    ExerciseNumberFormat exerciseNumberFormat,
+    @Default(StationNumberFormat.dotted)
+    StationNumberFormat stationNumberFormat,
     required PlanMetadata metadata,
     @Default(PlanSource.local()) PlanSource source,
     String? contentHash,
@@ -55,8 +57,7 @@ sealed class Plan with _$Plan {
     String? beforeRoundMd,
   }) = _Plan;
 
-  factory Plan.fromJson(Map<String, dynamic> json) =>
-      _$PlanFromJson(json);
+  factory Plan.fromJson(Map<String, dynamic> json) => _$PlanFromJson(json);
 }
 
 @freezed
@@ -381,8 +382,7 @@ PlanDiff diffPlans(Plan local, Plan remote) {
   final descriptionChanged = local.description != remote.description;
   final localTagsSorted = [...local.tags]..sort();
   final remoteTagsSorted = [...remote.tags]..sort();
-  final tagsChanged =
-      localTagsSorted.join(',') != remoteTagsSorted.join(',');
+  final tagsChanged = localTagsSorted.join(',') != remoteTagsSorted.join(',');
 
   return PlanDiff(
     nameLocal: nameChanged ? local.name : null,
@@ -582,15 +582,15 @@ _diffStations(
   // Keyed by local index (unique within `local.stations`, and every pair
   // has exactly one), since Station has no uuid to key by.
   final localRankByLocalIndex = {
-    for (final (rank, pair) in (List.of(pairs)..sort(
-      (a, b) => a.$1.index.compareTo(b.$1.index),
-    )).indexed)
+    for (final (rank, pair) in (List.of(
+      pairs,
+    )..sort((a, b) => a.$1.index.compareTo(b.$1.index))).indexed)
       pair.$1.index: rank,
   };
   final remoteRankByLocalIndex = {
-    for (final (rank, pair) in (List.of(pairs)..sort(
-      (a, b) => a.$2.index.compareTo(b.$2.index),
-    )).indexed)
+    for (final (rank, pair) in (List.of(
+      pairs,
+    )..sort((a, b) => a.$2.index.compareTo(b.$2.index))).indexed)
       pair.$1.index: rank,
   };
 
@@ -632,7 +632,11 @@ _diffStations(
   }
   modified.sort((a, b) => a.$2.compareTo(b.$2));
 
-  return (added: added, removed: removed, modified: modified.map((m) => m.$1).toList());
+  return (
+    added: added,
+    removed: removed,
+    modified: modified.map((m) => m.$1).toList(),
+  );
 }
 
 /// Best-effort field-level changes between two [Station]s, mirroring
@@ -648,11 +652,7 @@ List<FieldChange> _stationFieldChanges(Station local, Station remote) {
 
   add('name', local.name, remote.name);
   add('description', local.description, remote.description);
-  add(
-    'position',
-    _latLngLabel(local.position),
-    _latLngLabel(remote.position),
-  );
+  add('position', _latLngLabel(local.position), _latLngLabel(remote.position));
   add('equipmentMd', local.equipmentMd, remote.equipmentMd);
   add('situationMd', local.situationMd, remote.situationMd);
   add('missionMd', local.missionMd, remote.missionMd);
@@ -679,11 +679,7 @@ List<FieldChange> _teamFieldChanges(Team local, Team remote) {
     local.numberOfMembers?.toString(),
     remote.numberOfMembers?.toString(),
   );
-  add(
-    'position',
-    _latLngLabel(local.position),
-    _latLngLabel(remote.position),
-  );
+  add('position', _latLngLabel(local.position), _latLngLabel(remote.position));
   return changes;
 }
 
@@ -723,11 +719,7 @@ List<FieldChange> _rolePlayFieldChanges(RolePlay local, RolePlay remote) {
   add('background', local.background, remote.background);
   add('behavior', local.behavior, remote.behavior);
   add('propsMd', local.propsMd, remote.propsMd);
-  add(
-    'position',
-    _latLngLabel(local.position),
-    _latLngLabel(remote.position),
-  );
+  add('position', _latLngLabel(local.position), _latLngLabel(remote.position));
   return changes;
 }
 
@@ -786,18 +778,18 @@ _diffItems<T>(
   var reorderedUuids = const <String>{};
   if (localNumbersByUuid != null) {
     final commonUuids = localById.keys.where(remoteById.containsKey).toList();
-    final localRanked = [...commonUuids]..sort(
-      (a, b) =>
-          (rawIndex(at(localById, a)) ?? 0).compareTo(
-            rawIndex(at(localById, b)) ?? 0,
-          ),
-    );
-    final remoteRanked = [...commonUuids]..sort(
-      (a, b) =>
-          (rawIndex(at(remoteById, a)) ?? 0).compareTo(
-            rawIndex(at(remoteById, b)) ?? 0,
-          ),
-    );
+    final localRanked = [...commonUuids]
+      ..sort(
+        (a, b) => (rawIndex(at(localById, a)) ?? 0).compareTo(
+          rawIndex(at(localById, b)) ?? 0,
+        ),
+      );
+    final remoteRanked = [...commonUuids]
+      ..sort(
+        (a, b) => (rawIndex(at(remoteById, a)) ?? 0).compareTo(
+          rawIndex(at(remoteById, b)) ?? 0,
+        ),
+      );
     final localRank = {
       for (var i = 0; i < localRanked.length; i++) localRanked[i]: i,
     };

@@ -78,10 +78,7 @@ class WelcomeStage extends StatelessWidget {
         ),
       ),
       footer: OnboardingFooter(
-        primary: OnboardingAction(
-          label: l10n.nextLabel,
-          onPressed: onNext,
-        ),
+        primary: OnboardingAction(label: l10n.nextLabel, onPressed: onNext),
       ),
     );
   }

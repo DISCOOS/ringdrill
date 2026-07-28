@@ -21,6 +21,7 @@ sealed class RolePlay with _$RolePlay {
     int? stationIndex,
     @NullableLatLngJsonConverter() LatLng? position,
     String? actorUuid,
+
     /// Slug of a [Person] on this roleplay's station (ADR-0047,
     /// DESIGN-009). Nullable on the wire: "mandatory" is an editor-level
     /// invariant for newly authored/edited roleplays, not a wire

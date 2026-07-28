@@ -48,9 +48,7 @@ class TeamNumberBadge extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: highlight
-                ? scheme.onPrimary
-                : scheme.onSecondaryContainer,
+            color: highlight ? scheme.onPrimary : scheme.onSecondaryContainer,
           ),
         ),
       ),

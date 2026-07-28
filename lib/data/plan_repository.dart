@@ -129,10 +129,7 @@ class PlanRepository {
       rolePlays: const [],
       actors: const [],
     );
-    await _prefs.setString(
-      _planKey(plan.uuid),
-      jsonEncode(shell.toJson()),
-    );
+    await _prefs.setString(_planKey(plan.uuid), jsonEncode(shell.toJson()));
     await _writePlanBrief(plan);
   }
 
@@ -185,7 +182,9 @@ class PlanRepository {
   List<Exercise> loadExercises([String? planUuid]) {
     final uuid = _requirePlanUuid(planUuid);
     final items = <Exercise>[];
-    for (final key in _prefs.getKeys().where((k) => k.startsWith('pe:$uuid:'))) {
+    for (final key in _prefs.getKeys().where(
+      (k) => k.startsWith('pe:$uuid:'),
+    )) {
       final value = _prefs.getString(key);
       if (value == null) continue;
       final parsed = _tryParseEntry(key, value, Exercise.fromJson);
@@ -219,8 +218,7 @@ class PlanRepository {
     // Migration path: sort by name (legacy behaviour) and renumber 0..n-1.
     final sorted = [...items]..sort((x, y) => x.name.compareTo(y.name));
     return [
-      for (var i = 0; i < sorted.length; i++)
-        sorted[i].copyWith(index: i),
+      for (var i = 0; i < sorted.length; i++) sorted[i].copyWith(index: i),
     ];
   }
 
@@ -279,7 +277,9 @@ class PlanRepository {
   List<Team> loadTeams([String? planUuid]) {
     final uuid = _requirePlanUuid(planUuid);
     final items = <Team>[];
-    for (final key in _prefs.getKeys().where((k) => k.startsWith('pt:$uuid:'))) {
+    for (final key in _prefs.getKeys().where(
+      (k) => k.startsWith('pt:$uuid:'),
+    )) {
       final value = _prefs.getString(key);
       if (value == null) continue;
       final parsed = _tryParseEntry(key, value, Team.fromJson);
@@ -341,7 +341,9 @@ class PlanRepository {
   List<Session> loadSessions([String? planUuid]) {
     final uuid = _requirePlanUuid(planUuid);
     final items = <Session>[];
-    for (final key in _prefs.getKeys().where((k) => k.startsWith('ps:$uuid:'))) {
+    for (final key in _prefs.getKeys().where(
+      (k) => k.startsWith('ps:$uuid:'),
+    )) {
       final value = _prefs.getString(key);
       if (value == null) continue;
       final parsed = _tryParseEntry(key, value, Session.fromJson);
@@ -482,7 +484,9 @@ class PlanRepository {
   List<RolePlay> loadRolePlays([String? planUuid]) {
     final uuid = _requirePlanUuid(planUuid);
     final items = <RolePlay>[];
-    for (final key in _prefs.getKeys().where((k) => k.startsWith('pr:$uuid:'))) {
+    for (final key in _prefs.getKeys().where(
+      (k) => k.startsWith('pr:$uuid:'),
+    )) {
       final value = _prefs.getString(key);
       if (value == null) continue;
       final parsed = _tryParseEntry(key, value, RolePlay.fromJson);
@@ -512,10 +516,7 @@ class PlanRepository {
     await _touchPlan(planId);
   }
 
-  Future<RolePlay?> deleteRolePlay(
-    String uuid, [
-    String? planUuid,
-  ]) async {
+  Future<RolePlay?> deleteRolePlay(String uuid, [String? planUuid]) async {
     final planId = _requirePlanUuid(planUuid);
     final deleted = getRolePlay(uuid, planId);
     if (deleted != null) {
@@ -529,7 +530,9 @@ class PlanRepository {
   List<Actor> loadActors([String? planUuid]) {
     final uuid = _requirePlanUuid(planUuid);
     final items = <Actor>[];
-    for (final key in _prefs.getKeys().where((k) => k.startsWith('pa:$uuid:'))) {
+    for (final key in _prefs.getKeys().where(
+      (k) => k.startsWith('pa:$uuid:'),
+    )) {
       final value = _prefs.getString(key);
       if (value == null) continue;
       var parsed = _tryParseEntry(key, value, Actor.fromJson);
@@ -584,17 +587,13 @@ class PlanRepository {
   }
 
   String _planKey(String uuid) => 'p:$uuid';
-  String _exerciseKey(String planUuid, String uuid) =>
-      'pe:$planUuid:$uuid';
+  String _exerciseKey(String planUuid, String uuid) => 'pe:$planUuid:$uuid';
   String _teamKey(String planUuid, String uuid) => 'pt:$planUuid:$uuid';
-  String _sessionKey(String planUuid, String uuid) =>
-      'ps:$planUuid:$uuid';
-  String _rolePlayKey(String planUuid, String uuid) =>
-      'pr:$planUuid:$uuid';
+  String _sessionKey(String planUuid, String uuid) => 'ps:$planUuid:$uuid';
+  String _rolePlayKey(String planUuid, String uuid) => 'pr:$planUuid:$uuid';
   String _actorKey(String planUuid, String uuid) => 'pa:$planUuid:$uuid';
   // Actor.notes is excluded from JSON manifests (ADR-0022); stored under pan:.
-  String _actorNotesKey(String planUuid, String uuid) =>
-      'pan:$planUuid:$uuid';
+  String _actorNotesKey(String planUuid, String uuid) => 'pan:$planUuid:$uuid';
 
   // Brief markdown sidecars (ADR-0022). The *Md/brief fields on Plan,
   // Exercise, Station and RolePlay are annotated includeToJson:false because
@@ -704,10 +703,7 @@ class PlanRepository {
     return blob;
   }
 
-  Future<void> _writeExerciseBrief(
-    String planUuid,
-    Exercise exercise,
-  ) async {
+  Future<void> _writeExerciseBrief(String planUuid, Exercise exercise) async {
     final blob = _exerciseBriefBlob(exercise);
     final key = _exerciseBriefKey(planUuid, exercise.uuid);
     if (blob.isEmpty) {
@@ -764,10 +760,7 @@ class PlanRepository {
     return map;
   }
 
-  Future<void> _writeRolePlayBrief(
-    String planUuid,
-    RolePlay rolePlay,
-  ) async {
+  Future<void> _writeRolePlayBrief(String planUuid, RolePlay rolePlay) async {
     final blob = _rolePlayBriefBlob(rolePlay);
     final key = _rolePlayBriefKey(planUuid, rolePlay.uuid);
     if (blob.isEmpty) {
@@ -778,9 +771,7 @@ class PlanRepository {
   }
 
   RolePlay _applyRolePlayBrief(String planUuid, RolePlay rolePlay) {
-    final raw = _prefs.getString(
-      _rolePlayBriefKey(planUuid, rolePlay.uuid),
-    );
+    final raw = _prefs.getString(_rolePlayBriefKey(planUuid, rolePlay.uuid));
     if (raw == null) return rolePlay;
     final blob = _tryDecodeMap(raw);
     if (blob == null) return rolePlay;

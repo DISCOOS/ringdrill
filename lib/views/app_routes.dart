@@ -45,14 +45,12 @@ String planTeamPath(String planUuid, int teamIndex) =>
 String planRolePlayPath(String planUuid, String rolePlayUuid) =>
     '${planPath(planUuid)}/roleplay/$rolePlayUuid';
 
-String planBriefPath(String planUuid) =>
-    '${planPath(planUuid)}/brief';
+String planBriefPath(String planUuid) => '${planPath(planUuid)}/brief';
 
 String planExerciseBriefPath(String planUuid, String exerciseUuid) =>
     '${planExercisePath(planUuid, exerciseUuid)}/brief';
 
-String planRosterPath(String planUuid) =>
-    '${planPath(planUuid)}/roster';
+String planRosterPath(String planUuid) => '${planPath(planUuid)}/roster';
 
 /// Legacy Map tab path. New navigation uses [planMapPath].
 const String routeMap = '/map';

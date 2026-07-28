@@ -152,10 +152,8 @@ class MapConfig {
   /// normal interaction). Capping at `min(labelMinZoomFor + 5,
   /// defaultAutoFitMaxZoom)` keeps every size class's threshold reachable
   /// by the same auto-fit a caller's own "centre" button would produce.
-  static double labelDetailZoomFor(WindowSizeClass sizeClass) => math.min(
-    labelMinZoomFor(sizeClass) + 5,
-    defaultAutoFitMaxZoom,
-  );
+  static double labelDetailZoomFor(WindowSizeClass sizeClass) =>
+      math.min(labelMinZoomFor(sizeClass) + 5, defaultAutoFitMaxZoom);
 
   /// Visual scale applied to marker icons and labels for [sizeClass] —
   /// mirrors [MapView]'s own per-instance marker scaling
@@ -971,7 +969,9 @@ class _MapViewState<K> extends State<MapView<K>> {
   Widget build(BuildContext context) {
     final withToggle = widget.withToggle && widget.layers.length > 1;
     final hasTopRightColumn =
-        widget.topRightCommands.isNotEmpty || withToggle || widget.withFullscreen;
+        widget.topRightCommands.isNotEmpty ||
+        withToggle ||
+        widget.withFullscreen;
     // Zoom buttons follow the user's setting (Map → show zoom buttons),
     // which itself defaults off on touch where pinch-to-zoom suffices.
     final showZoom =
@@ -1306,9 +1306,7 @@ class _MapViewState<K> extends State<MapView<K>> {
   /// `if (a || b) SizedBox(...)` guards, and lets the same entries be laid
   /// out as either two columns or one merged column.
   static List<Widget> _column(List<(Widget?, double)> entries) {
-    final present = entries
-        .where((e) => e.$1 != null)
-        .toList(growable: false);
+    final present = entries.where((e) => e.$1 != null).toList(growable: false);
     final out = <Widget>[];
     for (var i = 0; i < present.length; i++) {
       if (i > 0) out.add(SizedBox(height: present[i].$2));

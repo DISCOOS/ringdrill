@@ -34,8 +34,7 @@ class RosterController extends ScreenController {
       // active plan (DESIGN-006: Roster is a plan-scoped layer). Falls
       // back to the bottom-nav label when no plan is active yet so the
       // header still reads cleanly on first launch.
-      PlanService().activePlan?.name ??
-      AppLocalizations.of(context)!.rosterTab;
+      PlanService().activePlan?.name ?? AppLocalizations.of(context)!.rosterTab;
 
   @override
   Widget? buildFAB(BuildContext context, BoxConstraints constraints) {
@@ -279,8 +278,7 @@ class _RosterViewState extends State<RosterView> {
     // `refreshActivePlanFromCatalog` flow as the Plan tab's segments and
     // the drawer's "Oppdater fra katalog" entry.
     final plan = _service.activePlan;
-    final isCatalogPlan =
-        plan != null && active_actions.isCatalogPlan(plan);
+    final isCatalogPlan = plan != null && active_actions.isCatalogPlan(plan);
     if (!isCatalogPlan) return content;
     return RefreshIndicator(
       key: widget.refreshIndicatorKey,

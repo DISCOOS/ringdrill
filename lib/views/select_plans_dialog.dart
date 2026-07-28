@@ -38,9 +38,7 @@ Future<List<String>?> showSelectPlansDialog(
       return StatefulBuilder(
         builder: (context, setState) {
           final headerLabelStyle = Theme.of(context).textTheme.titleSmall
-              ?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              );
+              ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
           // Match the exercises tab: ExpandableTile cards use the default
           // card surface, which only contrasts against a lighter scaffold
           // behind it. The action sheet's own surface flattens that
@@ -118,9 +116,7 @@ Future<List<String>?> showSelectPlansDialog(
                               onChanged: (_) => toggle(),
                             ),
                             title: Text(plan.name),
-                            subtitle: Text(
-                              planSubtitle(localizations, plan),
-                            ),
+                            subtitle: Text(planSubtitle(localizations, plan)),
                             onOpen: toggle,
                           );
                         },

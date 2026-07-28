@@ -175,8 +175,9 @@ class ExpandableTile extends StatelessWidget {
                               DefaultTextStyle.merge(
                                 // ADR-0037: themed bodyLarge (15) instead of a
                                 // hardcoded 16 so the tightened scale applies.
-                                style: (textTheme.bodyLarge ?? const TextStyle())
-                                    .copyWith(fontWeight: FontWeight.w600),
+                                style:
+                                    (textTheme.bodyLarge ?? const TextStyle())
+                                        .copyWith(fontWeight: FontWeight.w600),
                                 child: title,
                               ),
                               if (subtitle != null) ...[

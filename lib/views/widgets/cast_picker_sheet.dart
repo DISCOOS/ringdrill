@@ -24,9 +24,10 @@ Future<void> openCastPickerAndApply(
   final result = await showCastPickerSheet(context, rolePlay: rolePlay);
   if (result == null) return;
   final updated = switch (result) {
-    CastPickerSelect(:final actorUuid) => actorUuid == rolePlay.actorUuid
-        ? null
-        : rolePlay.copyWith(actorUuid: actorUuid),
+    CastPickerSelect(:final actorUuid) =>
+      actorUuid == rolePlay.actorUuid
+          ? null
+          : rolePlay.copyWith(actorUuid: actorUuid),
     CastPickerClear() =>
       rolePlay.actorUuid == null ? null : rolePlay.copyWith(actorUuid: null),
   };

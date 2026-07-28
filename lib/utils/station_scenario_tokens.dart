@@ -110,8 +110,7 @@ String resolvePersonFacet(
     case 'gender':
       return _effectiveField(portrayer?.gender, person.gender) ?? '';
     case 'description':
-      return _effectiveField(portrayer?.description, person.description) ??
-          '';
+      return _effectiveField(portrayer?.description, person.description) ?? '';
     case 'loc':
       final locSlug = person.locSlug;
       final loc = locSlug == null

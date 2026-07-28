@@ -1973,9 +1973,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     if (offending.isNotEmpty) {
       final sections = offending.join(', ');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l.planSaveBlockedUndeclaredVariable(sections)),
-        ),
+        SnackBar(content: Text(l.planSaveBlockedUndeclaredVariable(sections))),
       );
       return;
     }

@@ -129,9 +129,9 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
         FilledButton(
           onPressed: canSubmit
               ? () => Navigator.pop(
-                    context,
-                    PublishPlanInput(slug: _sanitizedSlug),
-                  )
+                  context,
+                  PublishPlanInput(slug: _sanitizedSlug),
+                )
               : null,
           child: Text(localizations.libraryPublishSubmit),
         ),
@@ -159,11 +159,8 @@ Future<Plan?> runPublishPlan(
     slug: slug,
     planUuid: planUuid,
     client: client,
-    upload: () => PlanService().publishPlan(
-      planUuid,
-      slug: slug,
-      client: client,
-    ),
+    upload: () =>
+        PlanService().publishPlan(planUuid, slug: slug, client: client),
   );
 }
 
@@ -181,11 +178,8 @@ Future<Plan?> runPublishPlanAs(
     slug: slug,
     planUuid: planUuid,
     client: client,
-    upload: () => PlanService().publishPlanAs(
-      planUuid,
-      slug: slug,
-      client: client,
-    ),
+    upload: () =>
+        PlanService().publishPlanAs(planUuid, slug: slug, client: client),
   );
 }
 

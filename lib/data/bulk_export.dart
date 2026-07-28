@@ -8,8 +8,7 @@ import 'package:ringdrill/models/plan.dart';
 /// Thin delegate: the encoder lives in [DrillLibrary.fromPlans]
 /// (ADR-0045) so encode and decode live together. Kept here so
 /// `MigrationPage` and the migration banner do not need to change.
-Uint8List exportAllPlans(List<Plan> plans) =>
-    DrillLibrary.fromPlans(plans);
+Uint8List exportAllPlans(List<Plan> plans) => DrillLibrary.fromPlans(plans);
 
 /// Returns the suggested filename for the outer ZIP, e.g.
 /// `ringdrill-eksport-2026-06-29.zip`.

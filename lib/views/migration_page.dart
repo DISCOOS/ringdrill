@@ -29,8 +29,7 @@ class MigrationPage extends StatelessWidget {
           // Reached via push (drawer/Settings) or cold via the shareable
           // `/migrate` URL. Pop when possible, otherwise go home so we never
           // pop the last page off the go_router stack.
-          onPressed: () =>
-              context.canPop() ? context.pop() : context.go('/'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
         title: Text(l10n.migrationSettingsEntry),
       ),
@@ -150,10 +149,7 @@ class _StepsSection extends StatelessWidget {
                 children: [
                   SizedBox(
                     width: 24,
-                    child: Text(
-                      '${i + 1}.',
-                      style: theme.textTheme.bodyMedium,
-                    ),
+                    child: Text('${i + 1}.', style: theme.textTheme.bodyMedium),
                   ),
                   Expanded(
                     child: Text(steps[i], style: theme.textTheme.bodyMedium),

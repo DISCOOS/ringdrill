@@ -142,7 +142,7 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
                 exercise: widget.exercise,
                 height: 64,
                 applyBottomInset: true,
-                  onPlay: () {
+                onPlay: () {
                   unawaited(HapticFeedback.mediumImpact());
                   _exerciseService.start(widget.exercise);
                 },

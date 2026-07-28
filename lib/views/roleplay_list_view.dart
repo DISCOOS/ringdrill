@@ -69,11 +69,7 @@ class _RolePlayListViewState extends State<RolePlayListView> {
     final station = (stationIndex != null && stationIndex < stations.length)
         ? stations[stationIndex]
         : null;
-    return effectivePlanVariables(
-      plan,
-      exercise: exercise,
-      station: station,
-    );
+    return effectivePlanVariables(plan, exercise: exercise, station: station);
   }
 
   /// The station [rolePlay] is assigned to, or `null` when unassigned/out of
@@ -558,9 +554,7 @@ class RolePlaysFilterBanner extends StatelessWidget {
     return ValueListenableBuilder<String?>(
       valueListenable: controller.filterExerciseUuid,
       builder: (context, uuid, _) {
-        final exercise = uuid == null
-            ? null
-            : PlanService().getExercise(uuid);
+        final exercise = uuid == null ? null : PlanService().getExercise(uuid);
         if (exercise == null) return const SizedBox.shrink();
         final localizations = AppLocalizations.of(context)!;
         final theme = Theme.of(context);
@@ -684,8 +678,7 @@ class RolePlaysController extends ScreenController {
     // Pick the exercise to create the role in — adaptive picker (ADR-0049):
     // bottom sheet on compact, dialog on medium/expanded.
     final exerciseFormat =
-        service.activePlan?.exerciseNumberFormat ??
-        ExerciseNumberFormat.hash;
+        service.activePlan?.exerciseNumberFormat ?? ExerciseNumberFormat.hash;
     final exercise = await showRingdrillPicker<Exercise>(
       context: context,
       title: localizations.pickExerciseForRole,

@@ -21,10 +21,10 @@ import 'package:ringdrill/theme.dart';
 @immutable
 class LiveAccent {
   const LiveAccent.inactive()
-      : background = null,
-        foreground = null,
-        iconColor = null,
-        shape = null;
+    : background = null,
+      foreground = null,
+      iconColor = null,
+      shape = null;
 
   const LiveAccent._({
     required this.background,
@@ -65,9 +65,8 @@ class LiveAccent {
   /// Canonical "this is the live one" indicator. Returns `null` when
   /// the accent is inactive so callers can drop it straight into a
   /// `leading:` slot that accepts an optional [Widget].
-  Widget? get indicator => iconColor == null
-      ? null
-      : Icon(Icons.play_circle_fill, color: iconColor);
+  Widget? get indicator =>
+      iconColor == null ? null : Icon(Icons.play_circle_fill, color: iconColor);
 
   /// Builds the live accent for the given `BuildContext`. When
   /// `isLive` is `false`, returns [LiveAccent.inactive] so the same
@@ -89,10 +88,7 @@ class LiveAccent {
       foreground: isDark ? Colors.white : const Color(0xFF1A0F00),
       iconColor: RingDrillColors.brandAccent,
       shape: RoundedRectangleBorder(
-        side: const BorderSide(
-          color: RingDrillColors.brandAccent,
-          width: 2.5,
-        ),
+        side: const BorderSide(color: RingDrillColors.brandAccent, width: 2.5),
         borderRadius: BorderRadius.circular(12),
       ),
     );

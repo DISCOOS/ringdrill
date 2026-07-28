@@ -40,11 +40,7 @@ class AnalyticsConsentStage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(
-                  Icons.insights_outlined,
-                  size: 56,
-                  color: scheme.primary,
-                ),
+                Icon(Icons.insights_outlined, size: 56, color: scheme.primary),
                 const SizedBox(height: 24),
                 Text(
                   l10n.appAnalyticsConsent,

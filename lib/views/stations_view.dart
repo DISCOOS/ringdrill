@@ -74,11 +74,7 @@ class _StationsViewState extends State<StationsView>
     final station = (stationIndex != null && stationIndex < stations.length)
         ? stations[stationIndex]
         : null;
-    return effectivePlanVariables(
-      plan,
-      exercise: exercise,
-      station: station,
-    );
+    return effectivePlanVariables(plan, exercise: exercise, station: station);
   }
 
   final _mapKey = GlobalKey<_StationsViewState>();
@@ -505,9 +501,7 @@ class _StationsViewState extends State<StationsView>
                         final ex = exercises[index];
                         final isVisible = !_hiddenExercises.contains(ex.uuid);
                         final exerciseFormat =
-                            _planService
-                                .activePlan
-                                ?.exerciseNumberFormat ??
+                            _planService.activePlan?.exerciseNumberFormat ??
                             ExerciseNumberFormat.hash;
                         return SwitchListTile.adaptive(
                           value: isVisible,

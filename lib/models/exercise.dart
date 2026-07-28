@@ -31,6 +31,7 @@ sealed class Exercise with _$Exercise {
     required SimpleTimeOfDay endTime,
     ExerciseMetadata? metadata,
     String? templateId,
+
     /// Per-scope value overrides for plan-global variables, keyed by
     /// DrillVariable.name. A key that does not name a declared variable is
     /// meaningless and is ignored at resolution time (ADR-0046). This scope
@@ -42,7 +43,8 @@ sealed class Exercise with _$Exercise {
     String? learningGoalsMd,
     @JsonKey(includeFromJson: false, includeToJson: false)
     String? trainingFocusMd,
-    @JsonKey(includeFromJson: false, includeToJson: false) String? orderFormatMd,
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    String? orderFormatMd,
     @JsonKey(includeFromJson: false, includeToJson: false)
     String? executionTipsMd,
     @JsonKey(includeFromJson: false, includeToJson: false) String? commsMd,
@@ -101,7 +103,12 @@ extension ExerciseX on Exercise {
         exerciseNumber: exerciseNumber,
         stationIndex: subByStationIndex[s.index] ?? 0,
       );
-      markers.add(((uuid, positioned++), '$number ${s.name}', s.position!, number));
+      markers.add((
+        (uuid, positioned++),
+        '$number ${s.name}',
+        s.position!,
+        number,
+      ));
     }
     return markers;
   }

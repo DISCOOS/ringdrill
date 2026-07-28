@@ -15,7 +15,8 @@ import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
-import 'package:ringdrill/views/widgets/station_mini_map.dart' show stationNumbering;
+import 'package:ringdrill/views/widgets/station_mini_map.dart'
+    show stationNumbering;
 
 /// Every one of [exercise]'s positioned stations, as the app-wide
 /// station-marker convention: number-only [MapMarkerSpec.shortLabel] at
@@ -228,7 +229,11 @@ Future<void> openExerciseMapSheet(
   Exercise exercise, {
   ExerciseEvent? liveEvent,
 }) {
-  final markers = exerciseStationMarkers(context, exercise, liveEvent: liveEvent);
+  final markers = exerciseStationMarkers(
+    context,
+    exercise,
+    liveEvent: liveEvent,
+  );
   if (markers.isEmpty) return Future.value();
 
   return showRingdrillActionSheet<void>(
@@ -240,7 +245,10 @@ Future<void> openExerciseMapSheet(
         children: [
           ExerciseMapSheetHeader(exercise: exercise),
           Expanded(
-            child: _interactiveExerciseMap(exercise: exercise, markers: markers),
+            child: _interactiveExerciseMap(
+              exercise: exercise,
+              markers: markers,
+            ),
           ),
         ],
       ),

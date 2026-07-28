@@ -42,10 +42,7 @@ class OnboardingScaffold extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-          child: _ProgressDots(
-            current: stageIndex,
-            total: totalStages,
-          ),
+          child: _ProgressDots(current: stageIndex, total: totalStages),
         ),
         Expanded(child: body),
         // Footer is centred and capped to the same readable column as
@@ -72,11 +69,7 @@ class OnboardingScaffold extends StatelessWidget {
 /// secondary action. Buttons stretch full-width and are stacked
 /// vertically so both choices read as equal weight on a phone.
 class OnboardingFooter extends StatelessWidget {
-  const OnboardingFooter({
-    super.key,
-    required this.primary,
-    this.secondary,
-  });
+  const OnboardingFooter({super.key, required this.primary, this.secondary});
 
   /// Primary affirmative action (Allow, Next, Open example). Rendered
   /// as a [FilledButton] across the top of the footer.
@@ -92,10 +85,7 @@ class OnboardingFooter extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        FilledButton(
-          onPressed: primary.onPressed,
-          child: Text(primary.label),
-        ),
+        FilledButton(onPressed: primary.onPressed, child: Text(primary.label)),
         if (secondary != null) ...[
           const SizedBox(height: 10),
           OutlinedButton(

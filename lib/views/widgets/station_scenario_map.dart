@@ -8,7 +8,8 @@ import 'package:ringdrill/views/widgets/location_kind_labels.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
 import 'package:ringdrill/views/widgets/map_legend.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
-import 'package:ringdrill/views/widgets/station_mini_map.dart' show stationNumbering, locationMarker;
+import 'package:ringdrill/views/widgets/station_mini_map.dart'
+    show stationNumbering, locationMarker;
 
 /// DESIGN-010's Post viewer map card: the station's own administrative
 /// position (id `0`, accent-colored flag, matching `StationMiniMap`'s
@@ -35,7 +36,9 @@ List<MapMarkerSpec<int>> stationScenarioMarkers(
     markers.add(
       MapMarkerSpec(
         id: 0,
-        label: resolveScopedField(context, numbering.rawLabel) ?? numbering.rawLabel,
+        label:
+            resolveScopedField(context, numbering.rawLabel) ??
+            numbering.rawLabel,
         shortLabel: numbering.shortLabel,
         point: position,
         child: Icon(Icons.flag, color: theme.colorScheme.primary, size: 30),

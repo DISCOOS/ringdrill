@@ -557,8 +557,7 @@ void _showOpenFileBottomSheet(
     OpenFileWidget(
       fileName: path.basename(filePath),
       loadFile: () async => DrillFile.fromFile(File(filePath)),
-      openPlan: (file) =>
-          PlanService().installFromFile(file, activate: true),
+      openPlan: (file) => PlanService().installFromFile(file, activate: true),
       location: location,
       isOnline: false,
     ),

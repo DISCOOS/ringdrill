@@ -29,18 +29,14 @@ class PickerErrorBanner extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
       child: Row(
         children: [
-          Icon(
-            Icons.error_outline,
-            color: colors.onErrorContainer,
-            size: 20,
-          ),
+          Icon(Icons.error_outline, color: colors.onErrorContainer, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colors.onErrorContainer,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: colors.onErrorContainer),
             ),
           ),
           IconButton(

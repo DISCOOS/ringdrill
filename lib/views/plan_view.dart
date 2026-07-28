@@ -399,8 +399,7 @@ class _PlanViewState extends State<PlanView> {
     }
 
     final plan = _planService.activePlan;
-    final isCatalogPlan =
-        plan != null && active_actions.isCatalogPlan(plan);
+    final isCatalogPlan = plan != null && active_actions.isCatalogPlan(plan);
 
     final segmentedBody = ValueListenableBuilder<PlanSegment>(
       valueListenable: widget.controller.activeSegment,
@@ -645,9 +644,7 @@ class _PlanSegmentSwitcher extends StatelessWidget {
                       controller.activeSegment.value = selected.single;
                       return;
                     }
-                    context.go(
-                      planSegmentPath(uuid, selected.single.urlSlug),
-                    );
+                    context.go(planSegmentPath(uuid, selected.single.urlSlug));
                   },
                 ),
               ),
@@ -719,19 +716,13 @@ class _PlanOverview extends StatelessWidget {
     final description = plan?.description.trim() ?? '';
     final briefIntro = plan == null
         ? null
-        : _firstParagraphText(
-            _resolvePlanText(plan, plan.briefIntroMd, l10n),
-          );
+        : _firstParagraphText(_resolvePlanText(plan, plan.briefIntroMd, l10n));
     final comms = plan == null
         ? null
-        : _firstParagraphText(
-            _resolvePlanText(plan, plan.commsMd, l10n),
-          );
+        : _firstParagraphText(_resolvePlanText(plan, plan.commsMd, l10n));
     final beforeRound = plan == null
         ? null
-        : _firstParagraphText(
-            _resolvePlanText(plan, plan.beforeRoundMd, l10n),
-          );
+        : _firstParagraphText(_resolvePlanText(plan, plan.beforeRoundMd, l10n));
     final hasContent =
         description.isNotEmpty ||
         briefIntro != null ||
@@ -920,11 +911,7 @@ class _PlanOverview extends StatelessWidget {
   /// plan-scope markdown field is shown outside the full brief — see that
   /// widget's doc comment for why the raw model field must never be read
   /// directly.
-  String? _resolvePlanText(
-    Plan plan,
-    String? md,
-    AppLocalizations l10n,
-  ) {
+  String? _resolvePlanText(Plan plan, String? md, AppLocalizations l10n) {
     if (md == null) return null;
     return ResolvedMarkdownText.resolve(plan, md, l10n);
   }
@@ -1072,10 +1059,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
     final plan = widget.plan;
     final Widget? badge = (exerciseNum != null && plan != null)
         ? ExerciseNumberBadge(
-            label: Numbering.exercise(
-              plan.exerciseNumberFormat,
-              exerciseNum,
-            ),
+            label: Numbering.exercise(plan.exerciseNumberFormat, exerciseNum),
             highlight: isLive,
           )
         : accent.indicator;
@@ -1348,10 +1332,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
     );
     if (!mounted || result == null) return;
 
-    await applyVariableAdditionsToActivePlan(
-      planService,
-      result.additions,
-    );
+    await applyVariableAdditionsToActivePlan(planService, result.additions);
     // A marker authored/edited inline from the Persons section's "Legg til
     // markør" / "Spilles av {navn}" row (DESIGN-009 prompt 4j) — held in
     // the post editor's own working copy, written back here alongside the
@@ -1431,8 +1412,9 @@ abstract class PlanPageControllerBase extends ScreenController {
   final StationListController stationListController;
   final RolePlaysController rolePlaysController;
   final TeamsPageController teamsPageController;
-  final ValueNotifier<PlanSegment> activeSegment =
-      ValueNotifier<PlanSegment>(PlanSegment.exercises);
+  final ValueNotifier<PlanSegment> activeSegment = ValueNotifier<PlanSegment>(
+    PlanSegment.exercises,
+  );
 
   /// Whether the Øvelser segment is currently in reorder mode.
   ///
@@ -1471,14 +1453,8 @@ abstract class PlanPageControllerBase extends ScreenController {
         context,
         constraints,
       ),
-      PlanSegment.script => rolePlaysController.buildFAB(
-        context,
-        constraints,
-      ),
-      PlanSegment.teams => teamsPageController.buildFAB(
-        context,
-        constraints,
-      ),
+      PlanSegment.script => rolePlaysController.buildFAB(context, constraints),
+      PlanSegment.teams => teamsPageController.buildFAB(context, constraints),
     };
   }
 
@@ -1539,10 +1515,7 @@ abstract class PlanPageControllerBase extends ScreenController {
     // Creating a new exercise — only a save (or cancel), never a delete.
     if (result is ExerciseFormSave && context.mounted) {
       final localizations = AppLocalizations.of(context)!;
-      await applyVariableAdditionsToActivePlan(
-        planService,
-        result.additions,
-      );
+      await applyVariableAdditionsToActivePlan(planService, result.additions);
       // Add the new exercise and reload the list
       await planService.saveExercise(localizations, result.exercise);
     }
@@ -1673,10 +1646,12 @@ abstract class PlanPageControllerBase extends ScreenController {
               e.uuid == exerciseUuid &&
               e.stations.any((s) => s.index == stationIndex),
         ),
-      RoleSheetTarget(:final rolePlayUuid) =>
-        planService.loadRolePlays().any((r) => r.uuid == rolePlayUuid),
-      TeamOverviewSheetTarget(:final teamIndex) =>
-        planService.loadTeams().any((t) => t.index == teamIndex),
+      RoleSheetTarget(:final rolePlayUuid) => planService.loadRolePlays().any(
+        (r) => r.uuid == rolePlayUuid,
+      ),
+      TeamOverviewSheetTarget(:final teamIndex) => planService.loadTeams().any(
+        (t) => t.index == teamIndex,
+      ),
       TeamSheetTarget(:final exerciseUuid, :final teamIndex) => exercises.any(
         (e) => e.uuid == exerciseUuid && e.numberOfTeams > teamIndex,
       ),
@@ -1825,9 +1800,7 @@ abstract class PlanPageControllerBase extends ScreenController {
                               // null (import/add without numbering) no badge is
                               // shown, same as before.
                               plan: plan,
-                              exerciseNumber: plan == null
-                                  ? null
-                                  : index + 1,
+                              exerciseNumber: plan == null ? null : index + 1,
                               localizations: localizations,
                               markers: markers,
                               allowStationActions: false,

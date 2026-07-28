@@ -155,9 +155,13 @@ List<WordDiffSegment> _coalesceReplacements(List<WordDiffSegment> raw) {
         ),
       );
     } else if (deleted.isNotEmpty) {
-      result.add(WordDiffSegment(WordDiffOp.delete, oldText: deleted.join(' ')));
+      result.add(
+        WordDiffSegment(WordDiffOp.delete, oldText: deleted.join(' ')),
+      );
     } else {
-      result.add(WordDiffSegment(WordDiffOp.insert, newText: inserted.join(' ')));
+      result.add(
+        WordDiffSegment(WordDiffOp.insert, newText: inserted.join(' ')),
+      );
     }
     i = j;
   }

@@ -20,12 +20,13 @@ class AppFlagInfo {
 }
 
 class AppFlags {
-  static const migrationDisabled =
-      bool.fromEnvironment('MIGRATION_DISABLED');
-  static const forceLegacyHost =
-      bool.fromEnvironment('RINGDRILL_FORCE_LEGACY_HOST');
-  static const localBaseUrl =
-      String.fromEnvironment('RINGDRILL_LOCAL_BASE_URL');
+  static const migrationDisabled = bool.fromEnvironment('MIGRATION_DISABLED');
+  static const forceLegacyHost = bool.fromEnvironment(
+    'RINGDRILL_FORCE_LEGACY_HOST',
+  );
+  static const localBaseUrl = String.fromEnvironment(
+    'RINGDRILL_LOCAL_BASE_URL',
+  );
 
   static const List<AppFlagInfo> all = [
     AppFlagInfo(
@@ -46,11 +47,9 @@ class AppFlags {
       name: 'RINGDRILL_LOCAL_BASE_URL',
       value: localBaseUrl,
       kind: AppFlagKind.permanent,
-      description:
-          'Points the catalog client at a local netlify dev instance.',
+      description: 'Points the catalog client at a local netlify dev instance.',
     ),
   ];
 
-  static Iterable<AppFlagInfo> get activeOnly =>
-      all.where((f) => !f.isDefault);
+  static Iterable<AppFlagInfo> get activeOnly => all.where((f) => !f.isDefault);
 }

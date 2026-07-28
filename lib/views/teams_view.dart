@@ -74,8 +74,9 @@ class _TeamsViewState extends State<TeamsView> {
       return SliverList(
         delegate: SliverChildListDelegate(
           teams.map((t) {
-            final teamExercises =
-                exercises.where((e) => e.numberOfTeams > t.index).toList();
+            final teamExercises = exercises
+                .where((e) => e.numberOfTeams > t.index)
+                .toList();
             final exerciseCount = teamExercises.length;
             final parts = <String>[
               if ((t.numberOfMembers ?? 0) > 0)
@@ -134,9 +135,10 @@ class _TeamsViewState extends State<TeamsView> {
                 onToggle: teamExercises.isEmpty
                     ? null
                     : () => setState(() {
-                          _expandedTeamIndex =
-                              _expandedTeamIndex == t.index ? null : t.index;
-                        }),
+                        _expandedTeamIndex = _expandedTeamIndex == t.index
+                            ? null
+                            : t.index;
+                      }),
                 body: teamExercises.isEmpty
                     ? null
                     : _buildTeamRotation(

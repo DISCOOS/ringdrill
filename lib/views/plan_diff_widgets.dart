@@ -42,12 +42,16 @@ class DiffGroup extends StatelessWidget {
           if (added.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
-              child: Text('${localizations.catalogDiffAdded}: ${added.join(', ')}'),
+              child: Text(
+                '${localizations.catalogDiffAdded}: ${added.join(', ')}',
+              ),
             ),
           if (removed.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
-              child: Text('${localizations.catalogDiffRemoved}: ${removed.join(', ')}'),
+              child: Text(
+                '${localizations.catalogDiffRemoved}: ${removed.join(', ')}',
+              ),
             ),
           for (final item in modified)
             DiffItemTile(label: localizations.catalogDiffModified, item: item),
@@ -562,7 +566,12 @@ class _DiffValueLine extends StatelessWidget {
       TextSpan(
         children: [
           TextSpan(text: '$label: ', style: mutedStyle),
-          ..._diffSpans(segments, baseStyle, theme, showDeletions: showDeletions),
+          ..._diffSpans(
+            segments,
+            baseStyle,
+            theme,
+            showDeletions: showDeletions,
+          ),
         ],
       ),
     );

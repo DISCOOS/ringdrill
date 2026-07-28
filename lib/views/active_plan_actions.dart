@@ -77,10 +77,7 @@ Future<void> renameActivePlan(BuildContext context) async {
 /// and [refreshActivePlanFromCatalogViaIndicator] reuses that same indicator
 /// for the drawer's "Oppdater fra katalog" entry. Only the eventual outcome
 /// is surfaced, via a single plain result snackbar.
-Future<void> refreshPlanFromCatalog(
-  BuildContext context,
-  Plan plan,
-) async {
+Future<void> refreshPlanFromCatalog(BuildContext context, Plan plan) async {
   final localizations = AppLocalizations.of(context)!;
   final client = _buildPublishClient();
   try {
@@ -595,10 +592,7 @@ Future<InstallPickedOutcome> installPickedPlanFile(BuildContext context) async {
   }
 
   try {
-    final plan = await PlanService().installFromFile(
-      drillFile,
-      activate: true,
-    );
+    final plan = await PlanService().installFromFile(drillFile, activate: true);
     return InstallPickedOutcome._(plan: plan);
   } on DrillFormatException catch (e) {
     // Format errors come from the user picking the wrong file, not
@@ -779,4 +773,3 @@ void _showSnackBar(BuildContext context, String message) {
     ),
   );
 }
-

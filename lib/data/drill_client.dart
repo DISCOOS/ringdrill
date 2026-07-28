@@ -350,13 +350,12 @@ class DrillClient {
     String? ifMatchEtag,
     String ownerId = 'anon',
     bool published = false,
-  }) =>
-      _uploadOnce(
-        file,
-        ownerId: ownerId,
-        published: published,
-        ifMatchEtag: ifMatchEtag,
-      );
+  }) => _uploadOnce(
+    file,
+    ownerId: ownerId,
+    published: published,
+    ifMatchEtag: ifMatchEtag,
+  );
 
   Future<DrillUploadResponse> _uploadOnce(
     DrillFile file, {

@@ -211,7 +211,10 @@ class _LocationCard extends StatelessWidget {
   final List<String> Function(String slug) usagesFor;
 
   /// The swipe-to-dismiss guard — mirrors `_PersonCard`'s own copy.
-  Future<bool> _confirmDelete(BuildContext context, AppLocalizations l10n) async {
+  Future<bool> _confirmDelete(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) async {
     final displayName = location.label.isEmpty ? location.slug : location.label;
     final usages = usagesFor(location.slug);
     if (usages.isNotEmpty) {

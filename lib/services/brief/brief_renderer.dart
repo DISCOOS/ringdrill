@@ -535,11 +535,7 @@ String _stationDurationLabel(Exercise exercise) {
 }
 
 /// Full Organisering markdown block used in the brief template.
-String _organisationBlock(
-  Plan plan,
-  Exercise exercise,
-  AppLocalizations l10n,
-) {
+String _organisationBlock(Plan plan, Exercise exercise, AppLocalizations l10n) {
   final phases = rotationPhaseBreakdown(exercise);
   // Ringløype line: keep config + legend on the same physical line so the
   // legend doesn't wrap unnecessarily on wide screens. Markdown reflows the
@@ -630,8 +626,7 @@ Map<String, DrillVariable> _effectiveVariables(
   Plan plan, {
   Exercise? exercise,
   Station? station,
-}) =>
-    effectiveTypedPlanVariables(plan, exercise: exercise, station: station);
+}) => effectiveTypedPlanVariables(plan, exercise: exercise, station: station);
 
 /// Converts a heading string to a GitHub-flavored markdown anchor id:
 /// lowercase, trim, replace spaces and special chars with hyphens.

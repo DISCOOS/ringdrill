@@ -415,7 +415,10 @@ class _VariableCardState extends State<_VariableCard> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final variable = widget.variable;
-    final formattedValue = formatVariableValue(variable, variableFormatOf(l10n));
+    final formattedValue = formatVariableValue(
+      variable,
+      variableFormatOf(l10n),
+    );
     final panelSurfaceColor = theme.colorScheme.surfaceContainerHighest
         .withValues(alpha: 0.5);
 
@@ -500,8 +503,7 @@ class _VariableCardState extends State<_VariableCard> {
                         icon: const Icon(Icons.more_vert),
                         onSelected: (action) => switch (action) {
                           _VariableCardAction.rename => widget.onRename(),
-                          _VariableCardAction.delete =>
-                            widget.confirmDelete(),
+                          _VariableCardAction.delete => widget.confirmDelete(),
                         },
                         itemBuilder: (context) => [
                           PopupMenuItem(
@@ -795,7 +797,9 @@ class _RenameDialogState extends State<_RenameDialog> {
         child: TextFormField(
           controller: _nameController,
           autofocus: true,
-          decoration: InputDecoration(labelText: l10n.variablesSectionNameLabel),
+          decoration: InputDecoration(
+            labelText: l10n.variablesSectionNameLabel,
+          ),
           validator: (value) => _validateName(value, l10n),
           onFieldSubmitted: (_) => _submit(),
         ),

@@ -8,7 +8,11 @@ import 'package:flutter/material.dart';
 /// `person_add`/`person_remove` for a *person* (the character); an actor is
 /// not a person, it is who enacts one.
 class _FaceBadgeIcon extends StatelessWidget {
-  const _FaceBadgeIcon({required this.size, required this.color, required this.plus});
+  const _FaceBadgeIcon({
+    required this.size,
+    required this.color,
+    required this.plus,
+  });
 
   final double size;
   final Color? color;

@@ -47,9 +47,7 @@ class PhaseHeaders extends StatelessWidget {
     final titleCell = Container(
       height: headerHeight,
       width: expandTitle ? null : titleWidth,
-      constraints: expandTitle
-          ? BoxConstraints(minWidth: titleWidth)
-          : null,
+      constraints: expandTitle ? BoxConstraints(minWidth: titleWidth) : null,
       color: color,
       child: Align(
         alignment: Alignment.centerLeft,
@@ -97,7 +95,10 @@ class PhaseHeaders extends StatelessWidget {
           color: color,
           child: Center(child: Text(localizations.roll.toUpperCase())),
         ),
-        if (expand) Expanded(child: Container(height: headerHeight, color: color)),
+        if (expand)
+          Expanded(
+            child: Container(height: headerHeight, color: color),
+          ),
       ],
     );
   }

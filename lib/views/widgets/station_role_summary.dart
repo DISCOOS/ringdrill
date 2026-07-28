@@ -71,10 +71,7 @@ class StationRoleSummary extends StatelessWidget {
               color: colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 6),
-            Text(
-              localizations.playSection,
-              style: theme.textTheme.titleSmall,
-            ),
+            Text(localizations.playSection, style: theme.textTheme.titleSmall),
             const SizedBox(width: 6),
             Text(
               '(${roles.length})',

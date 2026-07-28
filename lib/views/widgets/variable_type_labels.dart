@@ -42,5 +42,7 @@ extension VariableTypeX on VariableType {
 
 /// The [VariableFormat] for [l] — the single place the view/brief layers
 /// turn an `AppLocalizations` into the pure formatter's locale inputs.
-VariableFormat variableFormatOf(AppLocalizations l) =>
-    VariableFormat(localeName: l.localeName, hourUnit: l.variableDurationHourUnit);
+VariableFormat variableFormatOf(AppLocalizations l) => VariableFormat(
+  localeName: l.localeName,
+  hourUnit: l.variableDurationHourUnit,
+);

@@ -114,15 +114,13 @@ class WideShell extends StatelessWidget {
           onPressed: () => scaffoldKey.currentState?.openDrawer(),
         ),
       ),
-      destinations: destinations
-          .map<NavigationRailDestination>((d) {
-            return NavigationRailDestination(
-              icon: Icon(d.icon),
-              label: Text(d.label),
-              padding: EdgeInsets.symmetric(vertical: 8),
-            );
-          })
-          .toList(),
+      destinations: destinations.map<NavigationRailDestination>((d) {
+        return NavigationRailDestination(
+          icon: Icon(d.icon),
+          label: Text(d.label),
+          padding: EdgeInsets.symmetric(vertical: 8),
+        );
+      }).toList(),
       // The exercises FAB no longer lives in the rail trailing slot — in
       // the wide layout it floats at the bottom-right of the master pane
       // (see the Stack below). What sits here instead is the role selector:

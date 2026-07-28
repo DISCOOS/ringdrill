@@ -72,8 +72,11 @@ class ScheduleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isCurrent = !muted && event.isRunning && roundIndex == event.currentRound;
-    final decoration = (muted || struckThrough) ? TextDecoration.lineThrough : null;
+    final isCurrent =
+        !muted && event.isRunning && roundIndex == event.currentRound;
+    final decoration = (muted || struckThrough)
+        ? TextDecoration.lineThrough
+        : null;
     final mutedColor = muted ? theme.colorScheme.onSurfaceVariant : null;
 
     final textStyle = TextStyle(

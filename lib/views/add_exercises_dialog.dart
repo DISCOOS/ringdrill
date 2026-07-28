@@ -180,8 +180,7 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
                     const SizedBox(height: 20),
                     PickerErrorBanner(
                       message: _fromFileError!,
-                      onDismiss: () =>
-                          setState(() => _fromFileError = null),
+                      onDismiss: () => setState(() => _fromFileError = null),
                     ),
                   ],
                 ],
@@ -224,8 +223,7 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
                     itemCount: plans.length,
                     itemBuilder: (context, index) {
                       final plan = plans[index];
-                      final loaded =
-                          _planService.loadPlan(plan.uuid) ?? plan;
+                      final loaded = _planService.loadPlan(plan.uuid) ?? plan;
                       return ExpandableTile(
                         // Neutral leading: this list is a source to pull
                         // exercises from, not a single-select of the active
@@ -254,9 +252,7 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
       // Hide the active plan's catalog source: merging it back into itself
       // would either be a no-op (same content) or silently duplicate every
       // exercise. The user is already adding to that plan.
-      itemFilter: activeSlug == null
-          ? null
-          : (item) => item.slug != activeSlug,
+      itemFilter: activeSlug == null ? null : (item) => item.slug != activeSlug,
       onItemTap: (context, item) => _mergeFromCatalog(context, item),
     );
   }
@@ -349,10 +345,7 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
     }
   }
 
-  Future<void> _mergeIntoActivePlan(
-    BuildContext context,
-    Plan source,
-  ) async {
+  Future<void> _mergeIntoActivePlan(BuildContext context, Plan source) async {
     final merged = await mergePlanIntoActivePlan(context, source);
     if (!context.mounted || merged == null) return;
     Navigator.pop(context);
@@ -369,10 +362,7 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
 ///
 /// Returns the merged active [Plan], or null if the user cancelled at
 /// any step (no selection, or declined the diff confirmation).
-Future<Plan?> mergePlanIntoActivePlan(
-  BuildContext context,
-  Plan source,
-) async {
+Future<Plan?> mergePlanIntoActivePlan(BuildContext context, Plan source) async {
   final localizations = AppLocalizations.of(context)!;
   final selectedUuids = await _selectAndConfirmMerge(context, source);
   if (!context.mounted || selectedUuids == null) return null;

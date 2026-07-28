@@ -25,8 +25,10 @@ typedef StationTokenResolver =
 /// `{{station...}}`, so `BriefRenderer` keeps seeing plain mustache (the
 /// DESIGN-004 constraint).
 class TokenTextEditingController extends TextEditingController {
-  TokenTextEditingController({super.text, List<VariableToken> variables = const []})
-    : _variables = variables;
+  TokenTextEditingController({
+    super.text,
+    List<VariableToken> variables = const [],
+  }) : _variables = variables;
 
   List<VariableToken> _variables;
   StationTokenResolver? _stationTokenResolver;
@@ -116,7 +118,11 @@ class TokenTextEditingController extends TextEditingController {
     final slug = match.group(2)!;
     final facets = stationScenarioTokenFacets(match);
     final value = resolver(kind, slug, facets);
-    return _chipStyle(base, known: value != null, empty: value != null && value.isEmpty);
+    return _chipStyle(
+      base,
+      known: value != null,
+      empty: value != null && value.isEmpty,
+    );
   }
 
   /// Shared red/amber/blue chip styling: red for an unknown reference

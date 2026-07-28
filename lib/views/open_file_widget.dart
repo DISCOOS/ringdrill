@@ -67,9 +67,7 @@ class _OpenFileWidgetState extends State<OpenFileWidget> {
   String? _planName;
 
   late final Future<DrillFile> _fileFuture = widget.loadFile();
-  late final Future<Plan> _planFuture = _fileFuture.then(
-    (file) => file.plan(),
-  );
+  late final Future<Plan> _planFuture = _fileFuture.then((file) => file.plan());
 
   @override
   void initState() {
@@ -99,8 +97,7 @@ class _OpenFileWidgetState extends State<OpenFileWidget> {
           // Title
           Center(
             child: Text(
-              _planName ??
-                  '${localizations.planFile} ${widget.fileName}',
+              _planName ?? '${localizations.planFile} ${widget.fileName}',
               style: Theme.of(context).textTheme.headlineSmall,
               overflow: TextOverflow.ellipsis,
             ),

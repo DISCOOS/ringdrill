@@ -74,7 +74,8 @@ class ReorderableSection<T> extends StatefulWidget {
     int position,
     bool reordering,
     Widget dragHandle,
-  ) itemBuilder;
+  )
+  itemBuilder;
 
   /// Called exactly once, when the user leaves reorder mode ("Done"), with the
   /// new ordering. Not called on every individual drop.
@@ -203,7 +204,10 @@ class _ReorderableSectionState<T> extends State<ReorderableSection<T>> {
               ? _buildReorderListSliver(context, items)
               : _buildDefaultListSliver(context, items);
           return SliverMainAxisGroup(
-            slivers: [SliverToBoxAdapter(child: header), listSliver],
+            slivers: [
+              SliverToBoxAdapter(child: header),
+              listSliver,
+            ],
           );
         }
 

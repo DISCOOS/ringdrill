@@ -100,9 +100,10 @@ enum MapCommandEmphasis {
   /// so the controls sit clearly above the dark map, the way Google Maps
   /// lifts its dark-mode controls off the basemap. Light mode is unchanged.
   Color background(ColorScheme scheme) => switch (this) {
-    MapCommandEmphasis.tonal => scheme.brightness == Brightness.dark
-        ? scheme.surfaceContainerHighest
-        : scheme.surfaceContainerHigh,
+    MapCommandEmphasis.tonal =>
+      scheme.brightness == Brightness.dark
+          ? scheme.surfaceContainerHighest
+          : scheme.surfaceContainerHigh,
     MapCommandEmphasis.primary => scheme.primaryContainer,
   };
 

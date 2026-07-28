@@ -246,8 +246,7 @@ class _LibraryBodyState extends State<_LibraryBody>
                       children: trailingChildren,
                     ),
                   ),
-            onOpen: () =>
-                _activate(context, plan.uuid, closeOnSuccess: true),
+            onOpen: () => _activate(context, plan.uuid, closeOnSuccess: true),
             onLongPress: () => _showPlanActions(context, plan),
           ),
         );
@@ -409,8 +408,7 @@ class _LibraryBodyState extends State<_LibraryBody>
     // but we re-check here so we can surface the user-friendly snackbar
     // without going through the router. The router would still refuse
     // activation, but the URL would have already moved, which is worse UX.
-    if (ExerciseService().isStarted &&
-        _planService.activePlanUuid != uuid) {
+    if (ExerciseService().isStarted && _planService.activePlanUuid != uuid) {
       _showSnackBar(context, localizations.libraryCannotSwitchRunning);
       return;
     }

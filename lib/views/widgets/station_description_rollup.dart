@@ -33,11 +33,7 @@ class StationDescriptionRollup extends StatelessWidget {
   Map<String, String> _overridesFor() {
     final plan = PlanService().activePlan;
     if (plan == null) return const {};
-    return effectivePlanVariables(
-      plan,
-      exercise: exercise,
-      station: station,
-    );
+    return effectivePlanVariables(plan, exercise: exercise, station: station);
   }
 
   @override

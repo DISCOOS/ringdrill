@@ -51,8 +51,7 @@ class InstallGuidePage extends StatelessWidget {
           // the shareable `/install` URL. Pop when there is something to pop,
           // otherwise land on home so we never pop the last page off the
           // go_router stack.
-          onPressed: () =>
-              context.canPop() ? context.pop() : context.go('/'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
         title: Text(l10n.installGuideTitle),
       ),

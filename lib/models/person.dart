@@ -26,6 +26,5 @@ sealed class Person with _$Person {
     String? notes,
   }) = _Person;
 
-  factory Person.fromJson(Map<String, dynamic> json) =>
-      _$PersonFromJson(json);
+  factory Person.fromJson(Map<String, dynamic> json) => _$PersonFromJson(json);
 }

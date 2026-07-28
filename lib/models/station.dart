@@ -16,16 +16,19 @@ sealed class Station with _$Station {
     String? variantSuffix,
     @NullableLatLngJsonConverter() LatLng? position,
     String? description,
+
     /// Per-scope value overrides for plan-global variables, keyed by
     /// DrillVariable.name. A key that does not name a declared variable is
     /// meaningless and is ignored at resolution time (ADR-0046). This scope
     /// never declares new variables.
     @Default(<String, String>{}) Map<String, String> variableOverrides,
+
     /// Station-owned scenario geography, referenced as
     /// `{{station.loc.<slug>}}` (ADR-0047, DESIGN-009). @Default so
     /// archives without the key deserialize to an empty list (additive
     /// field, no schema bump).
     @Default(<Location>[]) List<Location> locations,
+
     /// Station-owned fictional scenario persons, referenced as
     /// `{{station.person.<slug>}}` (ADR-0047, DESIGN-009). @Default so
     /// archives without the key deserialize to an empty list (additive
@@ -38,8 +41,10 @@ sealed class Station with _$Station {
     @JsonKey(includeFromJson: false, includeToJson: false) String? logisticsMd,
     @JsonKey(includeFromJson: false, includeToJson: false)
     String? criticalQuestionsMd,
-    @JsonKey(includeFromJson: false, includeToJson: false) String? leaderAnswersMd,
-    @JsonKey(includeFromJson: false, includeToJson: false) String? directorNotesMd,
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    String? leaderAnswersMd,
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    String? directorNotesMd,
   }) = _Station;
 
   factory Station.fromJson(Map<String, dynamic> json) =>
@@ -52,12 +57,14 @@ extension StationNumbering on Station {
   /// Map marker labels use this rather than [numberAndName]: the number
   /// takes far less room above the pin and matches the StationNumberBadge
   /// used everywhere else (see `PlanService.getLocations`).
-  String numberLabel(StationNumberFormat format, {required int exerciseNumber}) =>
-      Numbering.station(
-        format,
-        exerciseNumber: exerciseNumber,
-        stationIndex: index,
-      );
+  String numberLabel(
+    StationNumberFormat format, {
+    required int exerciseNumber,
+  }) => Numbering.station(
+    format,
+    exerciseNumber: exerciseNumber,
+    stationIndex: index,
+  );
 
   /// This station's formatted number ([Numbering.station], per [format] and
   /// the 1-based [exerciseNumber]) followed by its [name] — e.g. "1.1 Turgåer".

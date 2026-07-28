@@ -11,6 +11,7 @@ class AppConfig {
       'app:librarySchemaJustMigrated';
   static const String keyAnalyticsConsent = 'app:analyticsConsent';
   static const String keyIsNotificationsEnabled = 'app:isNotificationsEnabled';
+
   /// Set to `true` after the user has answered the in-app
   /// notification-rationale pre-prompt (see ADR-0038). While `false`,
   /// boot-time service init must call into the plugin with
