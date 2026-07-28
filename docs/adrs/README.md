@@ -64,6 +64,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0054 | [Consistent map interactivity on medium/expanded windows, via a built-in `MapView.withFullscreen` command](./0054-map-interactivity-and-fullscreen-command.md) | Proposed |
 | ADR-0055 | [Dual-accept `programId`/`planId` at the Netlify API boundary, with Sentry-tracked deprecation](./0055-programid-planid-wire-back-compat.md) | Accepted |
 | ADR-0056 | [One drill player with peer modes — exercise, station, roleplay, team](./0056-player-modes-exercise-station-roleplay.md) | Accepted |
+| ADR-0057 | [Editing is gated on the device's role, and frozen on a running exercise](./0057-role-gated-editing.md) | Accepted |
 
 ## When to write an ADR
 
