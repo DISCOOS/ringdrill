@@ -210,7 +210,20 @@ export function resolvePlanIdParam(qs) {
 }
 
 /**
- * Strip the actors/ folder from a .drill archive and validate the schema.
+ * Folders holding local PII that must never reach the catalog.
+ *
+ * Two names for one thing: DESIGN-011 renames the folder `actors/` -> `staff/`,
+ * and this function is deployed independently of the app that writes the
+ * archive. Stripping both means neither deploy order can leak: an old app
+ * uploading `actors/` is stripped by a new function, and a new app uploading
+ * `staff/` is stripped by a function deployed before it. Keep `actors/` here
+ * even after the app stops writing it — .drill files already exported to disk
+ * still carry it, and they can be uploaded at any time.
+ */
+const PII_FOLDERS = ["actors/", "staff/"];
+
+/**
+ * Strip the PII folders from a .drill archive and validate the schema.
  * Returns { strippedBytes, program, error } where error is a Response when
  * invalid and program is the { name, description } read from program.json.
  *
@@ -261,10 +274,10 @@ export function stripActorsAndValidate(request, bytes) {
     const program = programInfoFromArchive(files);
     program.languageCode = languageCode;
 
-    // Strip actors/ folder entries (PII — never published to catalog)
+    // Strip the PII folders (never published to catalog) — see PII_FOLDERS.
     const stripped = {};
     for (const [name, data] of Object.entries(files)) {
-        if (!name.startsWith("actors/")) {
+        if (!PII_FOLDERS.some((folder) => name.startsWith(folder))) {
             stripped[name] = data;
         }
     }

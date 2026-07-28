@@ -15,6 +15,19 @@ import { zipSync, strFromU8, unzipSync } from "fflate";
 
 const KNOWN_SCHEMA_MAX = "1.2";
 
+/**
+ * Folders holding local PII that must never reach the catalog.
+ *
+ * Two names for one thing: DESIGN-011 renames the folder `actors/` -> `staff/`,
+ * and this function is deployed independently of the app that writes the
+ * archive. Stripping both means neither deploy order can leak: an old app
+ * uploading `actors/` is stripped by a new function, and a new app uploading
+ * `staff/` is stripped by a function deployed before it. Keep `actors/` here
+ * even after the app stops writing it — .drill files already exported to disk
+ * still carry it, and they can be uploaded at any time.
+ */
+const PII_FOLDERS = ["actors/", "staff/"];
+
 function compareSchemas(a, b) {
     const [aMaj, aMin] = a.split(".").map(Number);
     const [bMaj, bMin] = b.split(".").map(Number);
@@ -47,7 +60,7 @@ function stripActorsAndValidate(request, bytes) {
 
     const stripped = {};
     for (const [name, data] of Object.entries(files)) {
-        if (!name.startsWith("actors/")) {
+        if (!PII_FOLDERS.some((folder) => name.startsWith(folder))) {
             stripped[name] = data;
         }
     }
@@ -55,7 +68,7 @@ function stripActorsAndValidate(request, bytes) {
 }
 
 // Helper: build a minimal .drill archive
-function buildArchive({ schema, includeActors = false } = {}) {
+function buildArchive({ schema, includeActors = false, actorsFolder = "actors/" } = {}) {
     const files = {};
     if (schema !== undefined) {
         files["metadata.json"] = new TextEncoder().encode(
@@ -70,7 +83,7 @@ function buildArchive({ schema, includeActors = false } = {}) {
         JSON.stringify({ uuid: "prog-1", name: "Test" })
     );
     if (includeActors) {
-        files["actors/actor-1.json"] = new TextEncoder().encode(
+        files[`${actorsFolder}actor-1.json`] = new TextEncoder().encode(
             JSON.stringify({ uuid: "actor-1", realName: "Kari", phone: "+47999" })
         );
     }
@@ -92,6 +105,60 @@ test("strips actors/ entries from archive", () => {
         "roleplays/ entries must survive");
     assert.ok(result["metadata.json"], "metadata.json must survive");
     assert.ok(result["program.json"], "program.json must survive");
+});
+
+// DESIGN-011 renames actors/ -> staff/. This function deploys separately from
+// the app that writes the archive, so both names must be stripped: whichever
+// deploy lands first, PII must not reach the catalog. A test naming only one
+// folder would pass through the exact window where the leak happens.
+test("strips staff/ entries from archive", () => {
+    const bytes = buildArchive({
+        schema: "1.1",
+        includeActors: true,
+        actorsFolder: "staff/",
+    });
+    const { strippedBytes, error } = stripActorsAndValidate(null, bytes);
+    assert.equal(error, undefined);
+
+    const result = unzipSync(new Uint8Array(strippedBytes));
+    assert.ok(!Object.keys(result).some(k => k.startsWith("staff/")),
+        "staff/ entries must be removed");
+    assert.ok(Object.keys(result).some(k => k.startsWith("roleplays/")),
+        "roleplays/ entries must survive");
+});
+
+// A .drill exported to disk before the rename still carries actors/, and can be
+// uploaded at any time afterwards — so the old folder is stripped forever, not
+// only during the transition.
+test("strips staff/ and actors/ together", () => {
+    const files = {
+        "metadata.json": new TextEncoder().encode(
+            JSON.stringify({ version: "1.0", schema: "1.1" })
+        ),
+        "program.json": new TextEncoder().encode(
+            JSON.stringify({ uuid: "prog-1", name: "Test" })
+        ),
+        "actors/old.json": new TextEncoder().encode(
+            JSON.stringify({ uuid: "old", realName: "Kari", phone: "+47999" })
+        ),
+        "staff/new.json": new TextEncoder().encode(
+            JSON.stringify({ uuid: "new", realName: "Ola", phone: "+47888" })
+        ),
+        "roleplays/rp-1.json": new TextEncoder().encode(
+            JSON.stringify({ uuid: "rp-1", name: "Anna" })
+        ),
+    };
+    const { strippedBytes, error } = stripActorsAndValidate(
+        null,
+        Buffer.from(zipSync(files))
+    );
+    assert.equal(error, undefined);
+
+    const result = unzipSync(new Uint8Array(strippedBytes));
+    const survivors = Object.keys(result);
+    assert.ok(!survivors.some(k => k.startsWith("actors/")));
+    assert.ok(!survivors.some(k => k.startsWith("staff/")));
+    assert.ok(survivors.some(k => k.startsWith("roleplays/")));
 });
 
 test("accepts archive without actors/ folder", () => {
