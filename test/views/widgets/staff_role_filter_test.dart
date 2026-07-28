@@ -5,10 +5,14 @@ import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
 import 'package:ringdrill/views/widgets/staff_role_filter.dart';
 
-/// The filter must stay one row at any width. `SegmentedButton` neither ellipsizes
-/// nor shrinks on its own, so at phone width it wrapped the labels mid-word
-/// ("Veilede / r") — the reported bug. It now drops icons, tightens padding and
-/// shrinks the label in that order, ellipsizing only below the size floor.
+/// The filter must stay one row at any width, with every label readable.
+///
+/// Three attempts got here. `SegmentedButton` equalises every segment to the widest,
+/// so four Norwegian role names wrapped mid-word on a phone ("Veilede / r"); dropping
+/// icons and shrinking the text then clipped the leading "Ø" against the rounded end.
+/// Sizing each segment to *its own* text removes the problem instead of mitigating
+/// it, which needs [ToggleButtons] — the Material control that sizes children to
+/// their content.
 ///
 /// The widths here are deliberately far from the crossovers. Widget tests render in
 /// a placeholder font whose glyphs are much wider than the real one, so the exact
@@ -58,10 +62,12 @@ Widget _harness({
 /// Read off the built segments rather than the rendered tree: this asserts the
 /// *decision* the widget made, which is what the tiering is, and does not depend on
 /// how SegmentedButton happens to nest its icon internally.
-bool _hasIcons(WidgetTester tester) => tester
-    .widget<SegmentedButton<StaffRole>>(find.byType(SegmentedButton<StaffRole>))
-    .segments
-    .every((segment) => segment.icon != null);
+bool _hasIcons(WidgetTester tester) =>
+    find
+        .descendant(of: find.byType(ToggleButtons), matching: find.byType(Icon))
+        .evaluate()
+        .length ==
+    StaffRole.values.length;
 
 void main() {
   // The invariant that matters: one segmented row, never a wrap and never an
@@ -71,7 +77,7 @@ void main() {
       await _pump(tester, width: width);
 
       expect(
-        find.byType(SegmentedButton<StaffRole>),
+        find.byType(ToggleButtons),
         findsOneWidget,
         reason: 'width $width',
       );
@@ -90,7 +96,7 @@ void main() {
       await _pump(tester, width: 1200);
       expect(_hasIcons(tester), isTrue);
 
-      await _pump(tester, width: 700);
+      await _pump(tester, width: 500);
       expect(
         _hasIcons(tester),
         isFalse,
@@ -104,10 +110,14 @@ void main() {
   testWidgets('keeps all four segments at a narrow width', (tester) async {
     await _pump(tester, width: 300);
 
-    final button = tester.widget<SegmentedButton<StaffRole>>(
-      find.byType(SegmentedButton<StaffRole>),
-    );
-    expect(button.segments.map((s) => s.value), StaffRole.values);
+    final l10n = await AppLocalizations.delegate.load(const Locale('nb'));
+    for (final role in StaffRole.values) {
+      expect(
+        find.text(staffRoleLabel(role, l10n)),
+        findsOneWidget,
+        reason: 'no role may lose its name to the narrow layout',
+      );
+    }
   });
 
   testWidgets('deselecting the last role reports the empty set (no filter)', (
