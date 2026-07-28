@@ -1,16 +1,13 @@
-import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 
 /// The exercise the player must stay on, or null when no session is live.
 ///
-/// The single statement of ADR-0056's "cannot switch the live exercise" rule.
-/// Both surfaces that could move the player between exercises read it — the
-/// picker (which then lists only that one) and the swipe pager (whose exercise
-/// sequence then has one entry, so there is nothing to swipe to). Keeping it in
-/// one place is deliberate: the last time this rule lived in a single surface,
-/// widening another one silently became a way around it.
+/// The single statement of ADR-0056's "cannot switch the live exercise" rule,
+/// read by the picker, which then lists only that one. The swipe pager cannot
+/// breach it by construction: exercise mode has no sibling sequence at all
+/// ([playerSiblingTargets]), so there is nothing to swipe to in any state.
 String? lockedExerciseUuid() {
   final service = ExerciseService();
   if (!service.isStarted) return null;
@@ -25,6 +22,11 @@ String? lockedExerciseUuid() {
 /// swipe moves between siblings; changing kind stays an explicit act (the picker,
 /// or tapping content).
 ///
+/// A single-entry result means "nowhere to swipe", and the host then renders the
+/// target on its own — no pager at all, which is both simpler and what makes the
+/// player's entry animation clean (a `PageView` laid out during the route's
+/// transition settles its offset over the following frames).
+///
 /// Ordering mirrors the picker's groups exactly, via the same sources, so the
 /// row the picker shows next is the page a swipe lands on. Returns a single-entry
 /// list when there is nowhere to go, which the pager renders as an unswipeable
@@ -32,17 +34,14 @@ String? lockedExerciseUuid() {
 List<ContextSheetTarget> playerSiblingTargets(ContextSheetTarget target) {
   final service = PlanService();
   switch (target) {
+    // The exercise is the player's *root*, not one of a series: the player is
+    // scoped to an exercise, and its stations, markers and teams are what you
+    // leaf through inside it. Moving to another exercise is a jump between
+    // scopes, which belongs to the picker — and it is disallowed outright while
+    // one is running. So exercise mode has no sequence, and the host renders it
+    // directly rather than wrapping a single view in a pager.
     case ExerciseSheetTarget():
-      final locked = lockedExerciseUuid();
-      if (locked != null) {
-        return [ExerciseSheetTarget(exerciseUuid: locked)];
-      }
-      final exercises = service.activePlan?.exercises ?? const <Exercise>[];
-      if (exercises.isEmpty) return [target];
-      return [
-        for (final exercise in exercises)
-          ExerciseSheetTarget(exerciseUuid: exercise.uuid),
-      ];
+      return [target];
     case StationSheetTarget(:final exerciseUuid):
       final stations = service.getExercise(exerciseUuid)?.stations ?? const [];
       if (stations.isEmpty) return [target];

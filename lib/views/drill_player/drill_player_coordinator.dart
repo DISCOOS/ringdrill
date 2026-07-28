@@ -270,30 +270,27 @@ class _DrillPlayerHostState extends State<_DrillPlayerHost> {
     final pages = _pages;
     if (_siblings.isEmpty || pages == null) return const SizedBox.shrink();
     final count = _siblings.length;
-    // While the sheet is still sliding up, render the target on its own. A
-    // PageView laid out mid-transition settles its horizontal offset over the
-    // following frames, which reads as the player sliding in *from the side* and
-    // delays its first paint — the sheet's own bottom-up entry is what should be
-    // visible. Measured: with the pager deferred the body slides 342 → 106 → 0
-    // vertically with no horizontal motion at all.
-    if (!_entered) {
+    // No pager for a target with nowhere to swipe — chiefly exercise mode, the
+    // player's root. Wrapping a single view in a PageView bought nothing and cost
+    // the entry animation: one laid out while the sheet is still sliding settles
+    // its horizontal offset over the following frames, so the player appeared to
+    // arrive from the side and painted late. Rendering directly is both simpler
+    // and immediate.
+    //
+    // The same reason defers the pager in the modes that *do* page until the
+    // route's entry transition has finished.
+    if (count == 1 || !_entered) {
       final target = _siblings[_page % count];
       return KeyedSubtree(
         key: ValueKey(target),
         child: defaultContextSheetBody(context, target),
       );
     }
-    // A lone sibling still renders through the pager rather than a special case,
-    // so there is one code path — it just has nowhere to go. Its page count is
-    // capped at 1 as well as being unscrollable, so an unbounded range of
-    // identical pages can never be built.
-    final single = count == 1;
     return PageView.builder(
       key: ValueKey(_generation),
       controller: pages,
-      physics: single ? const NeverScrollableScrollPhysics() : null,
       onPageChanged: _onPageChanged,
-      itemCount: single ? 1 : null,
+      itemCount: null,
       itemBuilder: (context, page) {
         final target = _siblings[page % count];
         // Keyed on the target: these screens resolve their entity once, in

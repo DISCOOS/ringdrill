@@ -22,6 +22,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Deliberately within kind: the picker's list spans kinds, so paging it flat
 /// would change the player's mode mid-gesture. And deliberately sharing its
 /// ordering with the picker, so a swipe lands on the row the picker lists next.
+///
+/// Not covered here, because it cannot be demonstrated without contriving a
+/// layout: a body's own horizontally scrollable content keeps its gestures, since
+/// the pager is an ancestor and the inner scrollable wins the arena. Swiping over
+/// such content does not page. That is accepted rather than chased — the swipe is
+/// an accelerator, and the picker remains the complete path.
 const _planUuid = 'prog-swipe';
 const _exerciseUuid = 'ex-swipe';
 const _otherExerciseUuid = 'ex-swipe-2';
@@ -277,26 +283,44 @@ void main() {
     });
   });
 
+  // The exercise is the player's *root*, not one of a series: its stations,
+  // markers and teams are what you leaf through inside it, and moving to another
+  // exercise is a jump between scopes that belongs to the picker. So exercise
+  // mode has no pager at all — which is also what keeps the player's entry
+  // animation clean, since a PageView laid out during the route transition
+  // settles its offset over the following frames.
   group('exercise mode', () {
-    testWidgets('swiping walks the plan\'s exercises when idle', (
-      tester,
-    ) async {
+    testWidgets('builds no pager, and renders immediately', (tester) async {
       await _openPlayer(
         tester,
         const ExerciseSheetTarget(exerciseUuid: _exerciseUuid),
       );
 
-      await _swipe(tester, forward: true);
+      expect(find.byType(CoordinatorScreen), findsOneWidget);
+      expect(find.byType(PageView), findsNothing);
+    });
+
+    testWidgets('a swipe does not move to another exercise', (tester) async {
+      await _openPlayer(
+        tester,
+        const ExerciseSheetTarget(exerciseUuid: _exerciseUuid),
+      );
+
+      await tester.fling(
+        find.byType(CoordinatorScreen),
+        const Offset(-400, 0),
+        1200,
+      );
+      await tester.pumpAndSettle();
 
       expect(
         tester.widget<CoordinatorScreen>(find.byType(CoordinatorScreen)).uuid,
-        _otherExerciseUuid,
+        _exerciseUuid,
       );
     });
 
-    // The rule that must not be routed around: a live exercise has no siblings,
-    // so there is nothing to swipe to. The last time this rule lived in one
-    // surface, widening another silently bypassed it.
+    // Belt and braces on the rule that must not be routed around: even with a
+    // session live, and whatever the gesture, the player stays on it.
     testWidgets('a running exercise cannot be swiped away from', (
       tester,
     ) async {
@@ -307,7 +331,11 @@ void main() {
         settle: false,
       );
 
-      await tester.fling(find.byType(PageView), const Offset(-400, 0), 1200);
+      await tester.fling(
+        find.byType(CoordinatorScreen),
+        const Offset(-400, 0),
+        1200,
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
@@ -319,58 +347,6 @@ void main() {
       ExerciseService().stop();
       await tester.pump();
     });
-  });
-
-  // A body's own horizontal content keeps its gestures: the pager is an ancestor,
-  // and the inner scrollable wins the arena. Recorded because it is a real
-  // property of this interaction — the swipe is an accelerator, not the only way
-  // to move (the picker is), so losing it over the round table is an acceptable
-  // trade rather than a bug to chase.
-  testWidgets('on inner horizontal content, the content scrolls instead', (
-    tester,
-  ) async {
-    await _openPlayer(
-      tester,
-      const ExerciseSheetTarget(exerciseUuid: _exerciseUuid),
-    );
-
-    // The coordinator's round table occupies the body's centre.
-    await tester.flingFrom(
-      tester.getCenter(find.byType(PageView)),
-      const Offset(-400, 0),
-      1200,
-    );
-    await tester.pumpAndSettle();
-
-    expect(
-      tester.widget<CoordinatorScreen>(find.byType(CoordinatorScreen)).uuid,
-      _exerciseUuid,
-      reason: 'the table scrolled; the player stayed put',
-    );
-  });
-
-  // The other direction of travel: an external replace has to move the page,
-  // without its own onPageChanged echoing back and fighting it.
-  testWidgets('an external target change moves the page', (tester) async {
-    await _openPlayer(
-      tester,
-      const StationSheetTarget(exerciseUuid: _exerciseUuid, stationIndex: 0),
-    );
-    final controller = ContextSheet.of(
-      tester.element(find.byType(StationScreen)),
-    );
-
-    controller.replace(
-      const StationSheetTarget(exerciseUuid: _exerciseUuid, stationIndex: 2),
-    );
-    await tester.pumpAndSettle();
-
-    expect(_stationIndex(tester), 2);
-
-    // And the page still swipes afterwards — the echo guard must not have left
-    // the pager and the controller disagreeing about where they are.
-    await _swipe(tester, forward: false);
-    expect(_stationIndex(tester), 1);
   });
 
   // Regression: handing a Scrollable a *new* ScrollController does not restart
