@@ -953,7 +953,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         '${localizations.round(1)} ${event.currentRound + 1}'
         ' · ${event.getState(localizations)}';
     final timeLabel = event.isPending
-        ? DateTimeX.fromMinutes(event.remainingTime).formal(localizations)
+        // A span, formatted as one. This used to build a DateTime whose *hour and
+        // minute fields* were the remaining hours and minutes — today 01:30 for 90
+        // minutes — and then take its difference from now, so the countdown read
+        // whatever the wall clock happened to make of it: "0 sec" for anything under
+        // an hour, "47 min" for 90 minutes, "9 hours" for 10.
+        ? Duration(minutes: event.remainingTime).formal(localizations)
         : localizations.minute(event.remainingTime);
     return Material(
       elevation: 4,

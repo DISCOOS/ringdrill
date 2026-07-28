@@ -7,19 +7,6 @@ extension SimpleTimeOfDayX on SimpleTimeOfDay {
 }
 
 extension DateTimeX on DateTime {
-  static DateTime fromMinutes(int minutes) {
-    final now = DateTime.now();
-    final hours = minutes ~/ 60;
-    return DateTime(
-      now.year,
-      now.month,
-      now.day,
-      hours == 0 ? now.hour : hours,
-      hours == 0 ? now.minute : minutes - hours * 60,
-      now.second,
-    );
-  }
-
   String formal(
     AppLocalizations localizations, [
     DateTime? reference,
