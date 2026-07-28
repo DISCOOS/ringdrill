@@ -9,6 +9,7 @@ import 'package:ringdrill/views/feedback.dart';
 import 'package:ringdrill/views/migration_page.dart';
 import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
 import 'package:ringdrill/web/install_actions.dart'
     if (dart.library.io) 'package:ringdrill/views/install_actions_io.dart';
 import 'package:ringdrill/web/legacy_host_web.dart'
@@ -57,6 +58,13 @@ class MainDrawer extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              const Spacer(),
+              // The role lives in the header rather than among the tiles below:
+              // it is "who am I", not another action, and it now decides what
+              // this device may edit (ADR-0057) — so it belongs where it is
+              // visible whenever the drawer is open. Explicit white, because the
+              // header paints a fixed brand tone rather than a themed surface.
+              const AppUserRoleButton(foregroundColor: Colors.white),
             ],
           ),
         ),

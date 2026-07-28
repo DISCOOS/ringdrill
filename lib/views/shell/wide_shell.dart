@@ -7,6 +7,7 @@ import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/migration_banner.dart';
 import 'package:ringdrill/views/shell/shell_chrome.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
+import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 
 /// Wide/master-detail layout shell. Renders the [NavigationRail], the
@@ -124,8 +125,17 @@ class WideShell extends StatelessWidget {
           .toList(),
       // The exercises FAB no longer lives in the rail trailing slot — in
       // the wide layout it floats at the bottom-right of the master pane
-      // (see the Stack below). The rail just keeps a little bottom padding.
-      trailing: const SizedBox(height: 16),
+      // (see the Stack below). What sits here instead is the role selector:
+      // this layout has no drawer header on screen, and the role decides what
+      // the device may edit (ADR-0057), so it needs a home that is always
+      // visible. Icon-only, since the rail is 72px and label-less by design.
+      trailing: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: AppUserRoleButton(
+          iconOnly: true,
+          foregroundColor: unselectedIconColor,
+        ),
+      ),
     );
     final rail = wrapInRailPadding(
       context: context,

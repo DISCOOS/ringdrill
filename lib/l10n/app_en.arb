@@ -1917,13 +1917,13 @@
     "description": "Shown in the station viewer when neither the station nor its parent exercise can be resolved — deleted from another pane, a stale deep link, or a station index that no longer exists. The viewer stays open with a close action rather than dismissing itself."
   },
 
+  "appUserRoleActor": "Actor",
+  "@appUserRoleActor": {
+    "description": "Label for AppUserRole.actor — the person who portrays a marker (ADR-0057). Distinct from the marker itself, which is a RolePlay."
+  },
   "appUserRoleSectionTitle": "My role",
   "@appUserRoleSectionTitle": {
     "description": "Settings section heading for the staff-role selector (DESIGN-006 step 4)."
-  },
-  "appUserRoleSectionDescription": "Choose your staff role. Sets the default level of detail shown in briefs.",
-  "@appUserRoleSectionDescription": {
-    "description": "Subtitle under the staff-role section heading in Settings."
   },
 
   "newRole": "New role",

@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/ui_prefs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// The role the person holding *this* device has in the exercise.
@@ -40,15 +42,47 @@ enum AppUserRole {
   };
 }
 
+/// The role in force on this device, as a listenable.
+///
+/// Exists because the role now gates *edit affordances*, not just a brief's
+/// default view: every gated widget has to rebuild the moment the role changes,
+/// and before this the role was read once per screen and never re-read. Switching
+/// role from the drawer would have left every open surface stale.
+///
+/// Seeded synchronously by [readAppUserRoleNow] where possible — see [UiPrefs] —
+/// so a gated affordance never renders under the wrong role for a frame.
+final ValueNotifier<AppUserRole> appUserRole = ValueNotifier<AppUserRole>(
+  readAppUserRoleNow() ?? AppUserRole.director,
+);
+
+AppUserRole? _parse(String? name) => name == null
+    ? null
+    : AppUserRole.values.where((r) => r.name == name).firstOrNull;
+
+/// The stored role read synchronously, or null when [UiPrefs] has no bound
+/// instance yet (a test, or an entry point that skips `main`).
+AppUserRole? readAppUserRoleNow() =>
+    _parse(UiPrefs.instanceOrNull?.getString(AppConfig.keyAppUserRole));
+
 /// Reads the stored [AppUserRole] preference, defaulting to [AppUserRole.director]
 /// when nothing is stored or the stored value is unrecognized — participants
 /// do not use the app, so director (full content) is the safe default,
 /// mirroring `BriefScreen._loadStoredRole`'s own default.
+///
+/// Also refreshes [appUserRole], so a caller that reaches the stored value
+/// asynchronously brings the listenable up to date rather than leaving the two
+/// disagreeing.
 Future<AppUserRole> loadStoredAppUserRole() async {
-  final prefs = await SharedPreferences.getInstance();
-  final roleStr = prefs.getString(AppConfig.keyAppUserRole);
-  final role = roleStr == null
-      ? null
-      : AppUserRole.values.where((r) => r.name == roleStr).firstOrNull;
-  return role ?? AppUserRole.director;
+  final prefs = UiPrefs.instanceOrNull ?? await SharedPreferences.getInstance();
+  final role =
+      _parse(prefs.getString(AppConfig.keyAppUserRole)) ?? AppUserRole.director;
+  appUserRole.value = role;
+  return role;
+}
+
+/// Persists [role] and publishes it to [appUserRole].
+Future<void> setAppUserRole(AppUserRole role) async {
+  appUserRole.value = role;
+  final prefs = UiPrefs.instanceOrNull ?? await SharedPreferences.getInstance();
+  await prefs.setString(AppConfig.keyAppUserRole, role.name);
 }

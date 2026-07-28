@@ -3248,17 +3248,17 @@ abstract class AppLocalizations {
   /// **'This station is no longer available. It, or its exercise, may have been deleted.'**
   String get detailGoneStation;
 
+  /// Label for AppUserRole.actor — the person who portrays a marker (ADR-0057). Distinct from the marker itself, which is a RolePlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Actor'**
+  String get appUserRoleActor;
+
   /// Settings section heading for the staff-role selector (DESIGN-006 step 4).
   ///
   /// In en, this message translates to:
   /// **'My role'**
   String get appUserRoleSectionTitle;
-
-  /// Subtitle under the staff-role section heading in Settings.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose your staff role. Sets the default level of detail shown in briefs.'**
-  String get appUserRoleSectionDescription;
 
   /// FAB label on the Markører segment that creates a new RolePlay.
   ///

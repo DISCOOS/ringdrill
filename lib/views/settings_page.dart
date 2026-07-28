@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/map_settings.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
@@ -32,7 +31,6 @@ class SettingsPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
-            AppUserRoleSettings(),
             const Divider(),
             AnalyticsConsentSettings(),
             const Divider(),
@@ -49,90 +47,6 @@ class SettingsPage extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // App-user role
 // ---------------------------------------------------------------------------
-
-/// Lets the device user declare whether they are an Øvelsesleder (director)
-/// or a Veileder (instructor). The selection drives the default [BriefAudience]
-/// when the brief screen opens without an explicit audience argument.
-///
-/// Participants do not use the app, so [AppUserRole.participant] is not offered
-/// here. It remains a valid export/print brief audience (DESIGN-006 step 4).
-class AppUserRoleSettings extends StatefulWidget {
-  const AppUserRoleSettings({super.key});
-
-  @override
-  State<AppUserRoleSettings> createState() => _AppUserRoleSettingsState();
-}
-
-class _AppUserRoleSettingsState extends State<AppUserRoleSettings> {
-  AppUserRole? _role;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getString(AppConfig.keyAppUserRole);
-    if (!mounted) return;
-    final role = stored == null
-        ? null
-        : AppUserRole.values.where((r) => r.name == stored).firstOrNull;
-    setState(() => _role = role);
-  }
-
-  Future<void> _save(AppUserRole? role) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (role == null) {
-      await prefs.remove(AppConfig.keyAppUserRole);
-    } else {
-      await prefs.setString(AppConfig.keyAppUserRole, role.name);
-    }
-    if (mounted) setState(() => _role = role);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.appUserRoleSectionTitle,
-          // ADR-0037: themed titleMedium instead of a hardcoded 20.
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8.0),
-        Text(l10n.appUserRoleSectionDescription),
-        const SizedBox(height: 4.0),
-        RadioGroup<AppUserRole>(
-          groupValue: _role,
-          onChanged: _save,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Radio<AppUserRole>(value: AppUserRole.director),
-                title: Text(l10n.briefAudienceDirector),
-                onTap: () => _save(AppUserRole.director),
-              ),
-              ListTile(
-                leading: const Radio<AppUserRole>(
-                  value: AppUserRole.instructor,
-                ),
-                title: Text(l10n.briefAudienceInstructor),
-                onTap: () => _save(AppUserRole.instructor),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Analytics consent

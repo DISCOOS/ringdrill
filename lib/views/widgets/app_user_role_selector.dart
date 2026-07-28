@@ -1,0 +1,106 @@
+import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/services/app_user_role.dart';
+import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
+
+/// The role's own icon. Reuses the vocabulary the app already reads by: the
+/// script segment's masks for an actor, a mortarboard for the supervising
+/// instructor.
+IconData appUserRoleIcon(AppUserRole role) => switch (role) {
+  AppUserRole.director => Icons.manage_accounts,
+  AppUserRole.instructor => Icons.school,
+  AppUserRole.actor => Icons.theater_comedy,
+};
+
+/// Director and instructor reuse the brief-audience labels they have always been
+/// named by, so the same role reads the same wherever it appears.
+String appUserRoleLabel(AppUserRole role, AppLocalizations l10n) =>
+    switch (role) {
+      AppUserRole.director => l10n.briefAudienceDirector,
+      AppUserRole.instructor => l10n.briefAudienceInstructor,
+      AppUserRole.actor => l10n.appUserRoleActor,
+    };
+
+/// Picks the role this device acts as, persisting it through [setAppUserRole].
+///
+/// Adaptive picker (ADR-0049), like every other "choose one" in the app.
+Future<void> showAppUserRolePicker(BuildContext context) async {
+  final l10n = AppLocalizations.of(context)!;
+  final current = appUserRole.value;
+  final picked = await showRingdrillPicker<AppUserRole>(
+    context: context,
+    title: l10n.appUserRoleSectionTitle,
+    items: AppUserRole.values,
+    itemBuilder: (context, role, onTap) {
+      final theme = Theme.of(context);
+      final isCurrent = role == current;
+      return ListTile(
+        leading: Icon(appUserRoleIcon(role)),
+        title: Text(
+          appUserRoleLabel(role, l10n),
+          style: TextStyle(
+            fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        trailing: isCurrent
+            ? Icon(Icons.check, color: theme.colorScheme.primary)
+            : null,
+        onTap: isCurrent ? () => Navigator.of(context).pop() : onTap,
+      );
+    },
+  );
+  if (picked != null) await setAppUserRole(picked);
+}
+
+/// The current role, as a tappable affordance that opens
+/// [showAppUserRolePicker].
+///
+/// Replaces the radio list that used to live in Settings. The role now decides
+/// what this device may *edit* (ADR-0057), not only which brief variant it
+/// defaults to, so it belongs where the user can see and change it in passing —
+/// buried three taps deep in Settings is the wrong depth for something that
+/// changes what the UI offers.
+///
+/// [iconOnly] is the rail form: the wide shell's rail is 72px and icon-only, so
+/// the label moves into the tooltip.
+class AppUserRoleButton extends StatelessWidget {
+  const AppUserRoleButton({
+    super.key,
+    this.iconOnly = false,
+    this.foregroundColor,
+  });
+
+  final bool iconOnly;
+
+  /// Set where the surrounding surface is not themed — the drawer header paints
+  /// a fixed brand tone, so its content colour cannot be inferred.
+  final Color? foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return ValueListenableBuilder<AppUserRole>(
+      valueListenable: appUserRole,
+      builder: (context, role, _) {
+        final label = appUserRoleLabel(role, l10n);
+        final tooltip = '${l10n.appUserRoleSectionTitle}: $label';
+        if (iconOnly) {
+          return IconButton(
+            icon: Icon(appUserRoleIcon(role), color: foregroundColor),
+            tooltip: tooltip,
+            onPressed: () => showAppUserRolePicker(context),
+          );
+        }
+        return Tooltip(
+          message: tooltip,
+          child: TextButton.icon(
+            onPressed: () => showAppUserRolePicker(context),
+            icon: Icon(appUserRoleIcon(role), size: 18),
+            label: Text(label),
+            style: TextButton.styleFrom(foregroundColor: foregroundColor),
+          ),
+        );
+      },
+    );
+  }
+}

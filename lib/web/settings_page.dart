@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/migration_page.dart';
 import 'package:ringdrill/views/settings_page.dart'
-    show AnalyticsConsentSettings, AppUserRoleSettings;
+    show AnalyticsConsentSettings;
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/web/install_actions.dart' show openInstallGuide;
 import 'package:ringdrill/web/legacy_host_web.dart';
@@ -21,7 +21,6 @@ class SettingsPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
-            AppUserRoleSettings(),
             const Divider(),
             AnalyticsConsentSettings(),
             const Divider(),

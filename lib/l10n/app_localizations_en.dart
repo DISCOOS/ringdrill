@@ -1927,11 +1927,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'This station is no longer available. It, or its exercise, may have been deleted.';
 
   @override
-  String get appUserRoleSectionTitle => 'My role';
+  String get appUserRoleActor => 'Actor';
 
   @override
-  String get appUserRoleSectionDescription =>
-      'Choose your staff role. Sets the default level of detail shown in briefs.';
+  String get appUserRoleSectionTitle => 'My role';
 
   @override
   String get newRole => 'New role';
