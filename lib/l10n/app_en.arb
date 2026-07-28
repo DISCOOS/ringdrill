@@ -3132,5 +3132,9 @@
   "editStaff": "Edit member",
   "@editStaff": {
     "description": "Swipe-to-edit label on a staff row (ADR-0031), matching editStation/editTeam."
+  },
+  "planStatusPublishing": "Publishing …",
+  "@planStatusPublishing": {
+    "description": "Plan status badge label and tooltip while an upload started from the badge is in flight."
   }
 }

@@ -2766,4 +2766,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get editStaff => 'Rediger medlem';
+
+  @override
+  String get planStatusPublishing => 'Publiserer …';
 }

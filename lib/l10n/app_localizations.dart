@@ -4747,6 +4747,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit member'**
   String get editStaff;
+
+  /// Plan status badge label and tooltip while an upload started from the badge is in flight.
+  ///
+  /// In en, this message translates to:
+  /// **'Publishing …'**
+  String get planStatusPublishing;
 }
 
 class _AppLocalizationsDelegate

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/plan.dart';
@@ -7,6 +8,7 @@ import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/widgets/catalog_browser.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 /// Compact status indicator for the AppBar showing whether the active plan
 /// is local-only or linked to the online catalog.
@@ -18,7 +20,16 @@ import 'package:ringdrill/views/widgets/catalog_browser.dart';
 /// so users who never open the library dialog don't see the indicator
 /// permanently stuck on "Sjekker". Tapping the badge re-runs the probe.
 class PlanStatusBadge extends StatefulWidget {
-  const PlanStatusBadge({super.key});
+  const PlanStatusBadge({super.key, this.publishOverride});
+
+  /// Replaces the publish call, for tests.
+  ///
+  /// The state this widget exists to show — the spinner — only exists *during* the
+  /// await, and the real path resolves in microtasks under `flutter_test`'s stubbed
+  /// HttpClient, so the in-flight frame is never rendered and cannot be asserted.
+  /// A seam is the honest way to test a state that is defined by being mid-flight.
+  @visibleForTesting
+  final Future<void> Function(BuildContext context)? publishOverride;
 
   @override
   State<PlanStatusBadge> createState() => _PlanStatusBadgeState();
@@ -31,6 +42,16 @@ class _PlanStatusBadgeState extends State<PlanStatusBadge> {
   /// published yet. Recomputed only on [PlanEvent]s (not on every build)
   /// so the plan content hash is not re-run on each rebuild.
   bool _hasUnpublishedChanges = false;
+
+  /// True while a publish started from this badge is in flight.
+  ///
+  /// Publishing uploads the whole plan, so on a slow connection the tap looked
+  /// like it did nothing until the result snackbar arrived seconds later. The
+  /// outcome was never actually silent — `_runUpload` reports success, 409/412 and
+  /// a catch-all failure — but with no in-flight feedback there is nothing to tell
+  /// "working" from "the tap missed", and the natural response to that is to tap
+  /// again.
+  bool _publishing = false;
 
   @override
   void initState() {
@@ -92,11 +113,32 @@ class _PlanStatusBadgeState extends State<PlanStatusBadge> {
   }
 
   Future<void> _onPublishTap() async {
-    // Reuse the shared publish flow. For an already-published catalog plan
-    // this is a one-tap silent update, with 412-conflict handling and a
-    // result snackbar. A successful publish emits a PlanEvent that
-    // flips this badge back to the plain online state.
-    await active_actions.publishActivePlan(context);
+    // Debounce: a second upload of the same plan would race the first and can
+    // land a 412 against the etag the first one is about to move.
+    if (_publishing) return;
+    setState(() => _publishing = true);
+    try {
+      // Reuse the shared publish flow. For an already-published catalog plan
+      // this is a one-tap silent update, with 412-conflict handling and a
+      // result snackbar. A successful publish emits a PlanEvent that
+      // flips this badge back to the plain online state.
+      await (widget.publishOverride ?? active_actions.publishActivePlan)(
+        context,
+      );
+    } catch (e, stackTrace) {
+      // publishActivePlan reports its own failures — success, 409, 412 and a
+      // catch-all all raise a snackbar — so anything arriving here is a path that
+      // reporting missed. Caught rather than left to escape: a Future returned to
+      // a VoidCallback becomes an unhandled async error, which is logged to the
+      // console and nowhere the user or Sentry will see it.
+      unawaited(Sentry.captureException(e, stackTrace: stackTrace));
+    } finally {
+      // finally, not after the await: the first-time path opens a dialog and the
+      // conflict path opens another, either of which can throw or be dismissed.
+      // Leaving the badge spinning forever would be worse than the missing
+      // spinner this fixes.
+      if (mounted) setState(() => _publishing = false);
+    }
   }
 
   @override
@@ -119,13 +161,20 @@ class _PlanStatusBadgeState extends State<PlanStatusBadge> {
       );
     }
 
-    if (_hasUnpublishedChanges) {
+    if (_hasUnpublishedChanges || _publishing) {
+      // Kept on the unpublished branch while publishing even though the flag may
+      // already have flipped: the badge must not change label mid-upload.
       return _BadgeChip(
         icon: Icons.cloud_upload_outlined,
-        label: localizations.planStatusUnpublished,
+        label: _publishing
+            ? localizations.planStatusPublishing
+            : localizations.planStatusUnpublished,
         color: foreground,
-        tooltip: localizations.planStatusUnpublishedTooltip,
-        onTap: _onPublishTap,
+        tooltip: _publishing
+            ? localizations.planStatusPublishing
+            : localizations.planStatusUnpublishedTooltip,
+        busy: _publishing,
+        onTap: _publishing ? null : _onPublishTap,
       );
     }
 
@@ -161,6 +210,7 @@ class _BadgeChip extends StatelessWidget {
     required this.color,
     required this.tooltip,
     this.onTap,
+    this.busy = false,
   });
 
   final IconData icon;
@@ -168,6 +218,10 @@ class _BadgeChip extends StatelessWidget {
   final Color color;
   final String tooltip;
   final VoidCallback? onTap;
+
+  /// Swaps the icon for a spinner of the same size, so the badge does not change
+  /// width and shift the AppBar around it while working.
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
@@ -186,7 +240,14 @@ class _BadgeChip extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 6),
-          Icon(icon, size: 18, color: color),
+          if (busy)
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: color),
+            )
+          else
+            Icon(icon, size: 18, color: color),
         ],
       ),
     );
