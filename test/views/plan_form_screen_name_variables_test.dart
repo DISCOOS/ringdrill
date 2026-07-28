@@ -47,9 +47,7 @@ Future<void> _openForm(
           onPressed: () async {
             captured.value = await Navigator.push<Plan>(
               ctx,
-              MaterialPageRoute(
-                builder: (_) => PlanFormScreen(plan: plan),
-              ),
+              MaterialPageRoute(builder: (_) => PlanFormScreen(plan: plan)),
             );
           },
           child: const Text('Open'),

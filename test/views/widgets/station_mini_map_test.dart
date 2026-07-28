@@ -29,59 +29,49 @@ void main() {
     schedule: const [],
   );
 
-  test(
-    'a location with a position and the person home it resolves through '
-    'both produce a marker distinct from the position marker',
-    () {
-      const stationPosition = LatLng(58.99, 10.43);
-      const home = Location(
-        slug: 'home_anne',
-        label: 'Anne sitt hus',
-        kind: LocationKind.home,
-        position: LatLng(59.0, 10.5),
-      );
-      const anne = Person(
-        slug: 'anne',
-        name: 'Anne',
-        locSlug: 'home_anne',
-      );
-      final station = Station(
-        index: 0,
-        name: 'Post 1',
-        position: stationPosition,
-        locations: const [home],
-        persons: const [anne],
-      );
+  test('a location with a position and the person home it resolves through '
+      'both produce a marker distinct from the position marker', () {
+    const stationPosition = LatLng(58.99, 10.43);
+    const home = Location(
+      slug: 'home_anne',
+      label: 'Anne sitt hus',
+      kind: LocationKind.home,
+      position: LatLng(59.0, 10.5),
+    );
+    const anne = Person(slug: 'anne', name: 'Anne', locSlug: 'home_anne');
+    final station = Station(
+      index: 0,
+      name: 'Post 1',
+      position: stationPosition,
+      locations: const [home],
+      persons: const [anne],
+    );
 
-      final markers = stationMarkers(
-        exercise(stations: [station]),
-        station,
-      );
+    final markers = stationMarkers(exercise(stations: [station]), station);
 
-      expect(markers, hasLength(2));
-      final positionMarker = markers.firstWhere((m) => m.id == 0);
-      expect(positionMarker.point, stationPosition);
-      // The full label always includes the station's plan number ahead of
-      // its name ("1.1 Post 1"), not the name alone — the exact
-      // inconsistency this session's consolidation fixed across every
-      // station-position marker in the app.
-      expect(positionMarker.label, '1.1 Post 1');
-      expect(positionMarker.shortLabel, '1.1');
+    expect(markers, hasLength(2));
+    final positionMarker = markers.firstWhere((m) => m.id == 0);
+    expect(positionMarker.point, stationPosition);
+    // The full label always includes the station's plan number ahead of
+    // its name ("1.1 Post 1"), not the name alone — the exact
+    // inconsistency this session's consolidation fixed across every
+    // station-position marker in the app.
+    expect(positionMarker.label, '1.1 Post 1');
+    expect(positionMarker.shortLabel, '1.1');
 
-      final locationMarker = markers.firstWhere((m) => m.id != 0);
-      expect(locationMarker.point, home.position);
-      expect(locationMarker.label, 'Anne sitt hus');
+    final locationMarker = markers.firstWhere((m) => m.id != 0);
+    expect(locationMarker.point, home.position);
+    expect(locationMarker.label, 'Anne sitt hus');
 
-      // Distinct icon/colour from the administrative marker and correctly
-      // styled by the location's own LocationKind (ADR-0020/DESIGN-009).
-      final positionIcon = positionMarker.child as Icon;
-      final locationIcon = locationMarker.child as Icon;
-      expect(locationIcon.icon, LocationKind.home.icon);
-      expect(locationIcon.color, LocationKind.home.color);
-      expect(locationIcon.icon, isNot(positionIcon.icon));
-      expect(locationIcon.color, isNot(positionIcon.color));
-    },
-  );
+    // Distinct icon/colour from the administrative marker and correctly
+    // styled by the location's own LocationKind (ADR-0020/DESIGN-009).
+    final positionIcon = positionMarker.child as Icon;
+    final locationIcon = locationMarker.child as Icon;
+    expect(locationIcon.icon, LocationKind.home.icon);
+    expect(locationIcon.color, LocationKind.home.color);
+    expect(locationIcon.icon, isNot(positionIcon.icon));
+    expect(locationIcon.color, isNot(positionIcon.color));
+  });
 
   test('a location without a position produces no marker', () {
     const noPosition = Location(slug: 'ko', kind: LocationKind.commandPost);

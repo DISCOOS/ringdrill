@@ -4,36 +4,37 @@ import 'package:ringdrill/models/role_play.dart';
 
 void main() {
   test(
-      'RolePlay round-trips JSON for structural fields; behavior/background excluded',
-      () {
-    // behavior and background are @JsonKey(includeFromJson: false,
-    // includeToJson: false) per ADR-0022 — they live in
-    // roleplays/<uuid>/behavior.md and roleplays/<uuid>/background.md.
-    const rp = RolePlay(
-      uuid: 'rp-1',
-      index: 0,
-      exerciseUuid: 'ex-1',
-      name: 'Anna Hansen',
-      age: 67,
-      description: 'Blå jakke, rød lue',
-      background: 'Erfaren turgåer',
-      behavior: 'Forvirret, underavkjølt',
-      stationIndex: 2,
-      actorUuid: 'actor-1',
-    );
-    final json = rp.toJson();
-    expect(json.containsKey('behavior'), isFalse);
-    expect(json.containsKey('background'), isFalse);
-    final decoded = RolePlay.fromJson(json);
-    expect(decoded.uuid, rp.uuid);
-    expect(decoded.name, rp.name);
-    expect(decoded.age, rp.age);
-    expect(decoded.description, rp.description);
-    expect(decoded.stationIndex, rp.stationIndex);
-    expect(decoded.actorUuid, rp.actorUuid);
-    expect(decoded.behavior, isNull); // behavior is not in JSON
-    expect(decoded.background, isNull); // background is not in JSON
-  });
+    'RolePlay round-trips JSON for structural fields; behavior/background excluded',
+    () {
+      // behavior and background are @JsonKey(includeFromJson: false,
+      // includeToJson: false) per ADR-0022 — they live in
+      // roleplays/<uuid>/behavior.md and roleplays/<uuid>/background.md.
+      const rp = RolePlay(
+        uuid: 'rp-1',
+        index: 0,
+        exerciseUuid: 'ex-1',
+        name: 'Anna Hansen',
+        age: 67,
+        description: 'Blå jakke, rød lue',
+        background: 'Erfaren turgåer',
+        behavior: 'Forvirret, underavkjølt',
+        stationIndex: 2,
+        actorUuid: 'actor-1',
+      );
+      final json = rp.toJson();
+      expect(json.containsKey('behavior'), isFalse);
+      expect(json.containsKey('background'), isFalse);
+      final decoded = RolePlay.fromJson(json);
+      expect(decoded.uuid, rp.uuid);
+      expect(decoded.name, rp.name);
+      expect(decoded.age, rp.age);
+      expect(decoded.description, rp.description);
+      expect(decoded.stationIndex, rp.stationIndex);
+      expect(decoded.actorUuid, rp.actorUuid);
+      expect(decoded.behavior, isNull); // behavior is not in JSON
+      expect(decoded.background, isNull); // background is not in JSON
+    },
+  );
 
   test('RolePlay round-trips JSON with minimal fields only', () {
     const rp = RolePlay(

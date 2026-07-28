@@ -243,78 +243,69 @@ void main() {
     },
   );
 
-  testWidgets(
-    'a var.* token entered in the notes field resolves via '
-    'resolveScopedField -- no preview toggle on this plain form, so the '
-    "brief's own fixpoint pass is what catches it once saved (no renderer "
-    'change needed)',
-    (tester) async {
-      final captured = _Captured();
-      await _open(
-        tester,
-        captured,
-        variables: const [DrillVariable(name: 'kanal', value: 'Kanal 6')],
-      );
+  testWidgets('a var.* token entered in the notes field resolves via '
+      'resolveScopedField -- no preview toggle on this plain form, so the '
+      "brief's own fixpoint pass is what catches it once saved (no renderer "
+      'change needed)', (tester) async {
+    final captured = _Captured();
+    await _open(
+      tester,
+      captured,
+      variables: const [DrillVariable(name: 'kanal', value: 'Kanal 6')],
+    );
 
-      await tester.enterText(
-        find.widgetWithText(TextFormField, l.roleName),
-        'Anne',
-      );
-      final notesField = find.widgetWithText(
-        TextFormField,
-        l.personsSectionNotesLabel,
-      );
-      await tester.ensureVisible(notesField);
-      await tester.enterText(notesField, 'Bruk {{var.kanal}}.');
-      await tester.pump();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, l.roleName),
+      'Anne',
+    );
+    final notesField = find.widgetWithText(
+      TextFormField,
+      l.personsSectionNotesLabel,
+    );
+    await tester.ensureVisible(notesField);
+    await tester.enterText(notesField, 'Bruk {{var.kanal}}.');
+    await tester.pump();
 
-      final context = tester.element(find.byType(PersonFormScreen));
-      expect(
-        resolveScopedField(context, 'Bruk {{var.kanal}}.'),
-        'Bruk Kanal 6.',
-      );
-    },
-  );
+    final context = tester.element(find.byType(PersonFormScreen));
+    expect(resolveScopedField(context, 'Bruk {{var.kanal}}.'), 'Bruk Kanal 6.');
+  });
 
-  testWidgets(
-    'the notes field offers "Create variable" when nothing matches; '
-    'selecting it inserts the token and carries the new variable up as a '
-    'write-back addition (ADR-0047, DESIGN-009 "Inline creation and '
-    'write-back")',
-    (tester) async {
-      final captured = _Captured();
-      await _open(tester, captured);
+  testWidgets('the notes field offers "Create variable" when nothing matches; '
+      'selecting it inserts the token and carries the new variable up as a '
+      'write-back addition (ADR-0047, DESIGN-009 "Inline creation and '
+      'write-back")', (tester) async {
+    final captured = _Captured();
+    await _open(tester, captured);
 
-      await tester.enterText(
-        find.widgetWithText(TextFormField, l.roleName),
-        'Anne Glemsk',
-      );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, l.roleName),
+      'Anne Glemsk',
+    );
 
-      final notesField = find.widgetWithText(
-        TextFormField,
-        l.personsSectionNotesLabel,
-      );
-      await tester.ensureVisible(notesField);
-      await tester.enterText(notesField, '{{var.frekvens');
-      await tester.pump();
-      await tester.pump();
+    final notesField = find.widgetWithText(
+      TextFormField,
+      l.personsSectionNotesLabel,
+    );
+    await tester.ensureVisible(notesField);
+    await tester.enterText(notesField, '{{var.frekvens');
+    await tester.pump();
+    await tester.pump();
 
-      expect(find.text(l.tokenMenuCreateVariable('frekvens')), findsOneWidget);
-      await tester.tap(find.text(l.tokenMenuCreateVariable('frekvens')));
-      await tester.pump();
+    expect(find.text(l.tokenMenuCreateVariable('frekvens')), findsOneWidget);
+    await tester.tap(find.text(l.tokenMenuCreateVariable('frekvens')));
+    await tester.pump();
 
-      expect(find.textContaining('{{var.frekvens}}'), findsOneWidget);
+    expect(find.textContaining('{{var.frekvens}}'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(FilledButton, l.save));
-      await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, l.save));
+    await tester.pumpAndSettle();
 
-      expect(captured.value, isNotNull);
-      expect(
-        captured.value!.additions.variables.map((v) => v.name),
-        contains('frekvens'),
-      );
-    },
-  );
+    expect(captured.value, isNotNull);
+    expect(
+      captured.value!.additions.variables.map((v) => v.name),
+      contains('frekvens'),
+    );
+  });
 
   testWidgets(
     'the notes field offers "Create location «x»" when nothing matches; '

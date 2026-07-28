@@ -15,10 +15,7 @@ import 'package:ringdrill/views/map_view.dart';
 /// wrong behaviour when the caller already knows the exact point it wants
 /// centred (as centroidFit always does).
 void main() {
-  final points = [
-    const LatLng(59.0, 10.0),
-    const LatLng(59.01, 10.01),
-  ];
+  final points = [const LatLng(59.0, 10.0), const LatLng(59.01, 10.01)];
   final centroid = points.average();
 
   Future<MapController> pumpWithBottomPadding(
@@ -58,7 +55,10 @@ void main() {
         tester,
         const EdgeInsets.all(50),
       );
-      expect(controller.camera.center.latitude, closeTo(centroid.latitude, 1e-9));
+      expect(
+        controller.camera.center.latitude,
+        closeTo(centroid.latitude, 1e-9),
+      );
       expect(
         controller.camera.center.longitude,
         closeTo(centroid.longitude, 1e-9),
@@ -74,7 +74,10 @@ void main() {
         tester,
         const EdgeInsets.fromLTRB(50, 50, 50, 300),
       );
-      expect(controller.camera.center.latitude, closeTo(centroid.latitude, 1e-9));
+      expect(
+        controller.camera.center.latitude,
+        closeTo(centroid.latitude, 1e-9),
+      );
       expect(
         controller.camera.center.longitude,
         closeTo(centroid.longitude, 1e-9),
@@ -90,7 +93,10 @@ void main() {
         tester,
         const EdgeInsets.fromLTRB(50, 300, 50, 50),
       );
-      expect(controller.camera.center.latitude, closeTo(centroid.latitude, 1e-9));
+      expect(
+        controller.camera.center.latitude,
+        closeTo(centroid.latitude, 1e-9),
+      );
       expect(
         controller.camera.center.longitude,
         closeTo(centroid.longitude, 1e-9),
@@ -105,7 +111,10 @@ void main() {
         tester,
         const EdgeInsets.fromLTRB(20, 50, 200, 50),
       );
-      expect(controller.camera.center.latitude, closeTo(centroid.latitude, 1e-9));
+      expect(
+        controller.camera.center.latitude,
+        closeTo(centroid.latitude, 1e-9),
+      );
       expect(
         controller.camera.center.longitude,
         closeTo(centroid.longitude, 1e-9),
@@ -128,16 +137,13 @@ void main() {
     },
   );
 
-  testWidgets(
-    'more bottom padding than the previous test still forces more '
-    'zoom-out to fit the same bounds',
-    (tester) async {
-      final roomy = await pumpWithBottomPadding(
-        tester,
-        const EdgeInsets.fromLTRB(20, 20, 20, 300),
-      );
-      expect(tightZoom, isNotNull);
-      expect(roomy.camera.zoom, lessThan(tightZoom!));
-    },
-  );
+  testWidgets('more bottom padding than the previous test still forces more '
+      'zoom-out to fit the same bounds', (tester) async {
+    final roomy = await pumpWithBottomPadding(
+      tester,
+      const EdgeInsets.fromLTRB(20, 20, 20, 300),
+    );
+    expect(tightZoom, isNotNull);
+    expect(roomy.camera.zoom, lessThan(tightZoom!));
+  });
 }

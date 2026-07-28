@@ -37,93 +37,91 @@ void main() {
 
   tearDown(() => PlanService().clearAllForTest());
 
-  testWidgets(
-    'result reaches the caller as soon as the form pops, while the '
-    're-opened sheet is still up',
-    (tester) async {
-      // Compact window (< 600 logical px wide) so openFormSurface takes the
-      // modal-sheet path under test; wider layouts use a dialog and never
-      // hit the sheet close/re-open logic.
-      useCompactWindow(tester);
+  testWidgets('result reaches the caller as soon as the form pops, while the '
+      're-opened sheet is still up', (tester) async {
+    // Compact window (< 600 logical px wide) so openFormSurface takes the
+    // modal-sheet path under test; wider layouts use a dialog and never
+    // hit the sheet close/re-open logic.
+    useCompactWindow(tester);
 
-      String? received;
-      var completed = false;
+    String? received;
+    var completed = false;
 
-      final controller = ContextSheetController();
-      addTearDown(controller.dispose);
+    final controller = ContextSheetController();
+    addTearDown(controller.dispose);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: ContextSheet(
-            controller: controller,
-            // The sheet body carries the edit affordance, exactly like the
-            // production sheet bodies (TeamScreen, CoordinatorScreen, …).
-            bodyBuilder: (context, target) => Scaffold(
-              body: Center(
-                child: TextButton(
-                  onPressed: () async {
-                    final result = await openFormSurface<String>(
-                      context,
-                      builder: (_) => const _FakeForm(),
-                    );
-                    received = result;
-                    completed = true;
-                  },
-                  child: const Text('edit'),
-                ),
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ContextSheet(
+          controller: controller,
+          // The sheet body carries the edit affordance, exactly like the
+          // production sheet bodies (TeamScreen, CoordinatorScreen, …).
+          bodyBuilder: (context, target) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () async {
+                  final result = await openFormSurface<String>(
+                    context,
+                    builder: (_) => const _FakeForm(),
+                  );
+                  received = result;
+                  completed = true;
+                },
+                child: const Text('edit'),
               ),
             ),
-            child: Builder(
-              builder: (context) => Scaffold(
-                body: Center(
-                  child: TextButton(
-                    onPressed: () => controller.show(
-                      context,
-                      const TeamOverviewSheetTarget(teamIndex: 0),
-                    ),
-                    child: const Text('open sheet'),
+          ),
+          child: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: TextButton(
+                  onPressed: () => controller.show(
+                    context,
+                    const TeamOverviewSheetTarget(teamIndex: 0),
                   ),
+                  child: const Text('open sheet'),
                 ),
               ),
             ),
           ),
         ),
-      );
+      ),
+    );
 
-      // Open the modal sheet, then start an edit from inside it.
-      await tester.tap(find.text('open sheet'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('edit'));
-      await tester.pumpAndSettle();
+    // Open the modal sheet, then start an edit from inside it.
+    await tester.tap(find.text('open sheet'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('edit'));
+    await tester.pumpAndSettle();
 
-      // The sheet was dismissed and the form route is up.
-      expect(find.text('save'), findsOneWidget);
+    // The sheet was dismissed and the form route is up.
+    expect(find.text('save'), findsOneWidget);
 
-      // Save: the form pops with a result and openFormSurface re-opens the
-      // sheet to the saved target (asserted via the sheet chrome — the
-      // re-opened body is the default TeamScreen, not the harness builder).
-      await tester.tap(find.text('save'));
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const Key('ringdrill-sheet-drag-handle')),
-        findsOneWidget,
-        reason: 'sheet re-opened',
-      );
+    // Save: the form pops with a result and openFormSurface re-opens the
+    // sheet to the saved target (asserted via the sheet chrome — the
+    // re-opened body is the default TeamScreen, not the harness builder).
+    await tester.tap(find.text('save'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('ringdrill-sheet-drag-handle')),
+      findsOneWidget,
+      reason: 'sheet re-opened',
+    );
 
-      // The caller must have its result NOW — not when the re-opened sheet
-      // is eventually dismissed (by which time the calling context is long
-      // disposed and the save would be skipped).
-      expect(
-        completed,
-        isTrue,
-        reason: 'openFormSurface must return once the form pops; awaiting '
-            'the sheet re-open blocks the caller\'s save',
-      );
-      expect(received, 'edited-value');
-    },
-  );
+    // The caller must have its result NOW — not when the re-opened sheet
+    // is eventually dismissed (by which time the calling context is long
+    // disposed and the save would be skipped).
+    expect(
+      completed,
+      isTrue,
+      reason:
+          'openFormSurface must return once the form pops; awaiting '
+          'the sheet re-open blocks the caller\'s save',
+    );
+    expect(received, 'edited-value');
+  });
 }
 
 class _FakeForm extends StatelessWidget {

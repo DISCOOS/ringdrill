@@ -25,10 +25,7 @@ void main() {
     });
 
     test('does not match a plain var.* or unrelated station.* token', () {
-      expect(
-        stationScenarioTokenPattern.hasMatch('{{var.frekvens}}'),
-        isFalse,
-      );
+      expect(stationScenarioTokenPattern.hasMatch('{{var.frekvens}}'), isFalse);
       expect(
         stationScenarioTokenPattern.hasMatch('{{station.position.utm}}'),
         isFalse,
@@ -45,10 +42,7 @@ void main() {
         slug: 'b',
         position: LatLng(59.9139, 10.7522),
       );
-      expect(
-        resolveLocationFacet(withPositionOnly, const []),
-        isNotEmpty,
-      );
+      expect(resolveLocationFacet(withPositionOnly, const []), isNotEmpty);
 
       const withNeither = Location(slug: 'c');
       expect(resolveLocationFacet(withNeither, const []), isEmpty);
@@ -83,17 +77,20 @@ void main() {
 
     test('bare token and named facets resolve the person\'s own fields '
         'when there is no portraying override', () {
-      expect(resolvePersonFacet(person, null, const [loc], const []), 'Anne Glemsk');
+      expect(
+        resolvePersonFacet(person, null, const [loc], const []),
+        'Anne Glemsk',
+      );
       expect(resolvePersonFacet(person, null, const [loc], ['age']), '47');
-      expect(resolvePersonFacet(person, null, const [loc], ['gender']), 'woman');
+      expect(
+        resolvePersonFacet(person, null, const [loc], ['gender']),
+        'woman',
+      );
       expect(
         resolvePersonFacet(person, null, const [loc], ['description']),
         'Rød jakke',
       );
-      expect(
-        resolvePersonFacet(person, null, const [loc], ['loc']),
-        'Hjemme',
-      );
+      expect(resolvePersonFacet(person, null, const [loc], ['loc']), 'Hjemme');
       expect(
         resolvePersonFacet(person, null, const [loc], ['loc', 'place']),
         'Hjemme',
@@ -107,10 +104,7 @@ void main() {
         'Anne (spilt av Kari)',
       );
       // Age is untouched by the override, so it falls back to the person.
-      expect(
-        resolvePersonFacet(person, portrayer, const [loc], ['age']),
-        '47',
-      );
+      expect(resolvePersonFacet(person, portrayer, const [loc], ['age']), '47');
     });
 
     test('an empty portrayer field falls back to the person\'s own value', () {

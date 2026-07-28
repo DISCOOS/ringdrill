@@ -135,26 +135,23 @@ void main() {
       });
     });
 
-    test(
-      'a station override shadows both the exercise and plan default',
-      () {
-        final plan = _emptyPlan().copyWith(
-          variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
-        );
-        final exercise = _exercise(
-          variableOverrides: const {'frekvens': 'Kanal 8'},
-        );
-        const station = Station(
-          index: 0,
-          name: 'Post',
-          variableOverrides: {'frekvens': 'Kanal 9'},
-        );
-        expect(
-          effectivePlanVariables(plan, exercise: exercise, station: station),
-          {'frekvens': 'Kanal 9'},
-        );
-      },
-    );
+    test('a station override shadows both the exercise and plan default', () {
+      final plan = _emptyPlan().copyWith(
+        variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+      );
+      final exercise = _exercise(
+        variableOverrides: const {'frekvens': 'Kanal 8'},
+      );
+      const station = Station(
+        index: 0,
+        name: 'Post',
+        variableOverrides: {'frekvens': 'Kanal 9'},
+      );
+      expect(
+        effectivePlanVariables(plan, exercise: exercise, station: station),
+        {'frekvens': 'Kanal 9'},
+      );
+    });
 
     test('an override keyed on an undeclared variable name is ignored', () {
       final plan = _emptyPlan().copyWith(
@@ -172,27 +169,24 @@ void main() {
       expect(effectivePlanVariables(_emptyPlan()), <String, String>{});
     });
 
-    test(
-      'a location-typed variable renders its bare place + UTM display, '
-      'not the raw structured value (DESIGN-008 follow-up 11)',
-      () {
-        final plan = _emptyPlan().copyWith(
-          variables: const [
-            DrillVariable(
-              name: 'oppmote',
-              type: VariableType.location,
-              location: VariableLocation(
-                place: 'Meiselen 14',
-                position: LatLng(59.7445, 10.2045),
-              ),
+    test('a location-typed variable renders its bare place + UTM display, '
+        'not the raw structured value (DESIGN-008 follow-up 11)', () {
+      final plan = _emptyPlan().copyWith(
+        variables: const [
+          DrillVariable(
+            name: 'oppmote',
+            type: VariableType.location,
+            location: VariableLocation(
+              place: 'Meiselen 14',
+              position: LatLng(59.7445, 10.2045),
             ),
-          ],
-        );
-        final value = effectivePlanVariables(plan)['oppmote']!;
-        expect(value, startsWith('Meiselen 14 ('));
-        expect(value, contains('32V'));
-      },
-    );
+          ),
+        ],
+      );
+      final value = effectivePlanVariables(plan)['oppmote']!;
+      expect(value, startsWith('Meiselen 14 ('));
+      expect(value, contains('32V'));
+    });
   });
 
   group('facet-aware token pattern (DESIGN-008 follow-up 11)', () {
@@ -229,9 +223,7 @@ void main() {
         ],
       );
       final exercise = _exercise(
-        variableOverrides: const {
-          'oppmote': '59.744500,10.204500 Lokalt sted',
-        },
+        variableOverrides: const {'oppmote': '59.744500,10.204500 Lokalt sted'},
       );
       final effective = effectiveTypedPlanVariables(
         plan,

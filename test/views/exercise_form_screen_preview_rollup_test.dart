@@ -102,7 +102,10 @@ void main() {
       // The default section is now previewable: its eye is enabled and, when
       // tapped, replaces the structural fields with the rollup.
       expect(find.byTooltip(l.formSectionPreviewAction), findsOneWidget);
-      expect(find.widgetWithText(TextFormField, l.exerciseName), findsOneWidget);
+      expect(
+        find.widgetWithText(TextFormField, l.exerciseName),
+        findsOneWidget,
+      );
 
       await tester.tap(find.byTooltip(l.formSectionPreviewAction));
       await tester.pumpAndSettle();

@@ -11,18 +11,16 @@ import 'package:ringdrill/views/shell/window_size_class.dart';
 /// compact (18 > 16.5), which read as "labels only switch to full text at
 /// an unreasonably tight zoom" on phones while medium/expanded looked fine.
 void main() {
-  test(
-    'labelDetailZoomFor never exceeds defaultAutoFitMaxZoom, for every '
-    'WindowSizeClass',
-    () {
-      for (final sizeClass in WindowSizeClass.values) {
-        expect(
-          MapConfig.labelDetailZoomFor(sizeClass),
-          lessThanOrEqualTo(MapConfig.defaultAutoFitMaxZoom),
-          reason: '$sizeClass\'s full-label threshold must be reachable '
-              'by an auto-fit, which never zooms past defaultAutoFitMaxZoom',
-        );
-      }
-    },
-  );
+  test('labelDetailZoomFor never exceeds defaultAutoFitMaxZoom, for every '
+      'WindowSizeClass', () {
+    for (final sizeClass in WindowSizeClass.values) {
+      expect(
+        MapConfig.labelDetailZoomFor(sizeClass),
+        lessThanOrEqualTo(MapConfig.defaultAutoFitMaxZoom),
+        reason:
+            '$sizeClass\'s full-label threshold must be reachable '
+            'by an auto-fit, which never zooms past defaultAutoFitMaxZoom',
+      );
+    }
+  });
 }

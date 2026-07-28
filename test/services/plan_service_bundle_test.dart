@@ -80,26 +80,29 @@ void main() {
       );
     });
 
-    test('a bundle with one corrupt inner entry imports the good ones', () async {
-      final bundle = _withCorruptEntry(
-        DrillLibrary.fromPlans([
-          _plan('good-a', 'Good plan A'),
-          _plan('good-b', 'Good plan B'),
-        ]),
-      );
+    test(
+      'a bundle with one corrupt inner entry imports the good ones',
+      () async {
+        final bundle = _withCorruptEntry(
+          DrillLibrary.fromPlans([
+            _plan('good-a', 'Good plan A'),
+            _plan('good-b', 'Good plan B'),
+          ]),
+        );
 
-      final result = await PlanService().installBundle(bundle);
+        final result = await PlanService().installBundle(bundle);
 
-      expect(result.imported, 2);
-      expect(result.skipped, hasLength(1));
-      expect(result.skipped.single.fileName, 'corrupt.drill');
-      expect(result.skipped.single.reason, DrillFormatReason.notArchive);
-      expect(result.hasFailures, isTrue);
-      expect(
-        PlanService().listPlans().map((p) => p.uuid),
-        containsAll(['good-a', 'good-b']),
-      );
-    });
+        expect(result.imported, 2);
+        expect(result.skipped, hasLength(1));
+        expect(result.skipped.single.fileName, 'corrupt.drill');
+        expect(result.skipped.single.reason, DrillFormatReason.notArchive);
+        expect(result.hasFailures, isTrue);
+        expect(
+          PlanService().listPlans().map((p) => p.uuid),
+          containsAll(['good-a', 'good-b']),
+        );
+      },
+    );
 
     test('an empty bundle throws DrillLibraryException', () async {
       expect(

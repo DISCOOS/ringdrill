@@ -1,5 +1,5 @@
 .PHONY: \
-	build watch i18n release patch publish \
+	build watch i18n format format-check release patch publish \
 	build-web build-web-js upload-symbols-web strip-source-maps-web release-web \
 	release-android patch-android \
 	release-ios patch-ios \
@@ -8,7 +8,7 @@
 	netlify-dev netlify-dev-catalog-seed-all site-dev catalog-seed catalog-seed-demos catalog-feed catalog-reset
 
 .SILENT: \
-	build watch i18n release patch
+	build watch i18n format format-check release patch
 
 # Local Netlify dev configuration. Override on the command line, e.g.:
 #   make catalog-seed SEED_DRILL=path/to/other.drill
@@ -68,6 +68,23 @@ watch:
 i18n:
 	echo "Generate Flutter localizations from ARB..."
 	flutter gen-l10n
+
+# Apply Dart's default formatting across the tree.
+#
+# `lib/` and `test/` are formatted baselines, so a `git diff` after this target
+# is your own change and nothing else. That was not always true: while the
+# baseline had drifted, running the formatter to tidy one file reformatted dozens
+# of unrelated ones, which then had to be reverted out of each commit to keep it
+# scoped. Keep it that way — see AGENTS.md rule 10.
+format:
+	echo "Format Dart sources..."
+	dart format lib/ test/ bin/
+
+# Fails when anything is unformatted, without writing. For a pre-commit hook or
+# a CI gate.
+format-check:
+	echo "Check Dart formatting..."
+	dart format --output=none --set-exit-if-changed lib/ test/ bin/
 
 # Web release pipeline. Decomposed so CI can run the steps individually
 # (one log group per step) but `make release-web` is the one-shot used

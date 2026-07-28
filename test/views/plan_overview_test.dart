@@ -146,8 +146,7 @@ class _PlanOverviewHarness extends StatefulWidget {
   final ThemeData? theme;
 
   @override
-  State<_PlanOverviewHarness> createState() =>
-      _PlanOverviewHarnessState();
+  State<_PlanOverviewHarness> createState() => _PlanOverviewHarnessState();
 }
 
 class _PlanOverviewHarnessState extends State<_PlanOverviewHarness> {
@@ -157,10 +156,7 @@ class _PlanOverviewHarnessState extends State<_PlanOverviewHarness> {
   void initState() {
     super.initState();
     _router = GoRouter(
-      initialLocation: planSegmentPath(
-        _planUuid,
-        planSegmentDefaultSlug,
-      ),
+      initialLocation: planSegmentPath(_planUuid, planSegmentDefaultSlug),
       redirect: (context, state) {
         final segments = state.uri.pathSegments;
         if (segments.length >= 3 && segments[0] == 'plan') {
@@ -284,10 +280,7 @@ void main() {
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       // Overview description and switcher are both visible initially.
-      expect(
-        find.text('Plan description text').hitTestable(),
-        findsOneWidget,
-      );
+      expect(find.text('Plan description text').hitTestable(), findsOneWidget);
       expect(
         find.byType(SegmentedButton<PlanSegment>).hitTestable(),
         findsOneWidget,
@@ -349,10 +342,7 @@ void main() {
       await tester.pumpWidget(_harness(controllers));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('Plan description text').hitTestable(),
-        findsOneWidget,
-      );
+      expect(find.text('Plan description text').hitTestable(), findsOneWidget);
 
       // Scroll down: the overview scrolls out of view.
       await tester.drag(
@@ -378,10 +368,7 @@ void main() {
             .selected,
         {PlanSegment.exercises},
       );
-      expect(
-        find.text('Plan description text').hitTestable(),
-        findsOneWidget,
-      );
+      expect(find.text('Plan description text').hitTestable(), findsOneWidget);
     },
   );
 

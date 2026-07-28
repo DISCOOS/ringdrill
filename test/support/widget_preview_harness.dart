@@ -206,8 +206,9 @@ Future<void> renderPreview(
       debugShowCheckedModeBanner: false,
       theme: _previewTheme(Brightness.light),
       darkTheme: _previewTheme(Brightness.dark),
-      themeMode:
-          brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
+      themeMode: brightness == Brightness.dark
+          ? ThemeMode.dark
+          : ThemeMode.light,
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,

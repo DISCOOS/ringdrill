@@ -19,15 +19,18 @@ void main() {
     (tester) async {
       late BuildContext ctx;
       await tester.pumpWidget(
-        MaterialApp(home: Builder(builder: (context) {
-          ctx = context;
-          return const SizedBox();
-        })),
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              ctx = context;
+              return const SizedBox();
+            },
+          ),
+        ),
       );
 
       final controller = TokenTextEditingController(
-        text:
-            'A {{var.frekvens}} B {{var.tom}} C {{var.mangler}} D',
+        text: 'A {{var.frekvens}} B {{var.tom}} C {{var.mangler}} D',
         variables: const [
           VariableToken(name: 'frekvens', effectiveValue: 'Kanal 6'),
           VariableToken(name: 'tom', effectiveValue: ''),
@@ -61,10 +64,14 @@ void main() {
     (tester) async {
       late BuildContext ctx;
       await tester.pumpWidget(
-        MaterialApp(home: Builder(builder: (context) {
-          ctx = context;
-          return const SizedBox();
-        })),
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              ctx = context;
+              return const SizedBox();
+            },
+          ),
+        ),
       );
 
       final controller = TokenTextEditingController(
@@ -102,10 +109,14 @@ void main() {
     (tester) async {
       late BuildContext ctx;
       await tester.pumpWidget(
-        MaterialApp(home: Builder(builder: (context) {
-          ctx = context;
-          return const SizedBox();
-        })),
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              ctx = context;
+              return const SizedBox();
+            },
+          ),
+        ),
       );
 
       const baseStyle = TextStyle(color: Colors.black);
@@ -126,20 +137,23 @@ void main() {
     },
   );
 
-  test('controller.text stays the raw string with literal {{...}} after rendering', () {
-    const raw = 'Kanal {{var.frekvens}} ved {{station.position.utm}}';
-    final controller = TokenTextEditingController(
-      text: raw,
-      variables: const [
-        VariableToken(name: 'frekvens', effectiveValue: 'Kanal 6'),
-      ],
-    );
+  test(
+    'controller.text stays the raw string with literal {{...}} after rendering',
+    () {
+      const raw = 'Kanal {{var.frekvens}} ved {{station.position.utm}}';
+      final controller = TokenTextEditingController(
+        text: raw,
+        variables: const [
+          VariableToken(name: 'frekvens', effectiveValue: 'Kanal 6'),
+        ],
+      );
 
-    // buildTextSpan is only reachable with a BuildContext in a widget test,
-    // but the property under test — that rendering never rewrites the
-    // stored text — holds regardless of whether it has been called yet.
-    expect(controller.text, raw);
-  });
+      // buildTextSpan is only reachable with a BuildContext in a widget test,
+      // but the property under test — that rendering never rewrites the
+      // stored text — holds regardless of whether it has been called yet.
+      expect(controller.text, raw);
+    },
+  );
 
   testWidgets(
     'backspace at the token boundary removes one character, not the whole token '

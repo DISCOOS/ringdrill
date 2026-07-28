@@ -107,10 +107,8 @@ Widget _buildScreen({required int stationIndex}) {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => StationScreen(
-          stationIndex: stationIndex,
-          uuid: _exerciseUuid,
-        ),
+        builder: (context, state) =>
+            StationScreen(stationIndex: stationIndex, uuid: _exerciseUuid),
       ),
     ],
   );
@@ -128,96 +126,85 @@ void main() {
     l10n = await AppLocalizations.delegate.load(const Locale('en'));
   });
 
-  testWidgets(
-    'running: station 1 shows the team at this post now/next',
-    (tester) async {
-      final exercise = _exercise(startTime: _startTimeMinutesAgo(3));
-      await _seedAndInit(exercise);
-      ExerciseService().debugNowOverride = () => _fixedNow;
-      addTearDown(() => ExerciseService().debugNowOverride = DateTime.now);
-      ExerciseService().start(exercise);
+  testWidgets('running: station 1 shows the team at this post now/next', (
+    tester,
+  ) async {
+    final exercise = _exercise(startTime: _startTimeMinutesAgo(3));
+    await _seedAndInit(exercise);
+    ExerciseService().debugNowOverride = () => _fixedNow;
+    addTearDown(() => ExerciseService().debugNowOverride = DateTime.now);
+    ExerciseService().start(exercise);
 
-      // Station 1 (0-based): round0 -> team1 ("Team 2"), round1 -> team0
-      // ("Team 1").
-      await tester.pumpWidget(_buildScreen(stationIndex: 1));
-      await tester.pump();
+    // Station 1 (0-based): round0 -> team1 ("Team 2"), round1 -> team0
+    // ("Team 1").
+    await tester.pumpWidget(_buildScreen(stationIndex: 1));
+    await tester.pump();
 
-      final cardFinder = find.byType(PlayerStatusCard);
-      expect(cardFinder, findsOneWidget);
+    final cardFinder = find.byType(PlayerStatusCard);
+    expect(cardFinder, findsOneWidget);
 
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.textContaining(l10n.statusNow),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.text('${l10n.team(1)} 2'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.text('${l10n.team(1)} 1'),
-        ),
-        findsOneWidget,
-      );
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.textContaining(l10n.statusNow),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: cardFinder, matching: find.text('${l10n.team(1)} 2')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: cardFinder, matching: find.text('${l10n.team(1)} 1')),
+      findsOneWidget,
+    );
 
-      ExerciseService().stop();
-      await tester.pump();
-    },
-  );
+    ExerciseService().stop();
+    await tester.pump();
+  });
 
-  testWidgets(
-    'running: station 1 on the last round falls back to the exercise '
-    'finish time instead of an empty next-cell',
-    (tester) async {
-      // 3 minutes into round 2's (the last round's) execution phase: 2 full
-      // rounds (20 min each: executionTime 10 + evaluationTime 5 +
-      // rotationTime 5) plus 3 minutes.
-      final exercise = _exercise(startTime: _startTimeMinutesAgo(43));
-      await _seedAndInit(exercise);
-      ExerciseService().debugNowOverride = () => _fixedNow;
-      addTearDown(() => ExerciseService().debugNowOverride = DateTime.now);
-      ExerciseService().start(exercise);
+  testWidgets('running: station 1 on the last round falls back to the exercise '
+      'finish time instead of an empty next-cell', (tester) async {
+    // 3 minutes into round 2's (the last round's) execution phase: 2 full
+    // rounds (20 min each: executionTime 10 + evaluationTime 5 +
+    // rotationTime 5) plus 3 minutes.
+    final exercise = _exercise(startTime: _startTimeMinutesAgo(43));
+    await _seedAndInit(exercise);
+    ExerciseService().debugNowOverride = () => _fixedNow;
+    addTearDown(() => ExerciseService().debugNowOverride = DateTime.now);
+    ExerciseService().start(exercise);
 
-      // Station 0 (0-based): round2 -> team1 ("Team 2"), so the "now" cell
-      // is active — only the "next" cell is exhausted (no round after the
-      // last one).
-      await tester.pumpWidget(_buildScreen(stationIndex: 0));
-      await tester.pump();
+    // Station 0 (0-based): round2 -> team1 ("Team 2"), so the "now" cell
+    // is active — only the "next" cell is exhausted (no round after the
+    // last one).
+    await tester.pumpWidget(_buildScreen(stationIndex: 0));
+    await tester.pump();
 
-      final cardFinder = find.byType(PlayerStatusCard);
-      expect(cardFinder, findsOneWidget);
+    final cardFinder = find.byType(PlayerStatusCard);
+    expect(cardFinder, findsOneWidget);
 
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.text(
-            '${l10n.nextLabel} · ${exercise.endTime}',
-          ),
-        ),
-        findsOneWidget,
-        reason: 'the next-cell label still reads "Next", with the '
-            "exercise's finish time appended inline",
-      );
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.text(l10n.statusFinishValue),
-        ),
-        findsOneWidget,
-        reason: 'the next-cell value reads "Finish" instead of being empty',
-      );
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.text('${l10n.nextLabel} · ${exercise.endTime}'),
+      ),
+      findsOneWidget,
+      reason:
+          'the next-cell label still reads "Next", with the '
+          "exercise's finish time appended inline",
+    );
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.text(l10n.statusFinishValue),
+      ),
+      findsOneWidget,
+      reason: 'the next-cell value reads "Finish" instead of being empty',
+    );
 
-      ExerciseService().stop();
-      await tester.pump();
-    },
-  );
+    ExerciseService().stop();
+    await tester.pump();
+  });
 
   testWidgets(
     'running: station 2 has no team round0 — shows "Not active now"',

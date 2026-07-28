@@ -53,27 +53,27 @@ const _roleStation1 = RolePlay(
 );
 
 Exercise _exercise() => Exercise(
-      uuid: _exerciseUuid,
-      name: 'Test Exercise SRS',
-      startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
-      numberOfTeams: 1,
-      numberOfRounds: 1,
-      executionTime: 10,
-      evaluationTime: 5,
-      rotationTime: 2,
-      stations: const [
-        Station(index: 0, name: 'Post A'),
-        Station(index: 1, name: 'Post B'),
-      ],
-      schedule: const [
-        [
-          SimpleTimeOfDay(hour: 8, minute: 0),
-          SimpleTimeOfDay(hour: 8, minute: 10),
-          SimpleTimeOfDay(hour: 8, minute: 15),
-        ],
-      ],
-      endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
-    );
+  uuid: _exerciseUuid,
+  name: 'Test Exercise SRS',
+  startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
+  numberOfTeams: 1,
+  numberOfRounds: 1,
+  executionTime: 10,
+  evaluationTime: 5,
+  rotationTime: 2,
+  stations: const [
+    Station(index: 0, name: 'Post A'),
+    Station(index: 1, name: 'Post B'),
+  ],
+  schedule: const [
+    [
+      SimpleTimeOfDay(hour: 8, minute: 0),
+      SimpleTimeOfDay(hour: 8, minute: 10),
+      SimpleTimeOfDay(hour: 8, minute: 15),
+    ],
+  ],
+  endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
+);
 
 Map<String, Object> _buildPrefs() {
   final ex = _exercise();
@@ -98,8 +98,7 @@ Map<String, Object> _buildPrefs() {
     'pe:$_planUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
     'pr:$_planUuid:${_roleWithAge.uuid}': jsonEncode(_roleWithAge.toJson()),
     'pr:$_planUuid:${_roleCast.uuid}': jsonEncode(_roleCast.toJson()),
-    'pr:$_planUuid:${_roleStation1.uuid}':
-        jsonEncode(_roleStation1.toJson()),
+    'pr:$_planUuid:${_roleStation1.uuid}': jsonEncode(_roleStation1.toJson()),
     'pa:$_planUuid:$_actorAUuid': jsonEncode(_actorA.toJson()),
   };
 }
@@ -119,8 +118,8 @@ Widget _buildWidget({required int stationIndex}) {
           // Minimal body builder: renders the role-uuid text the test asserts on.
           bodyBuilder: (ctx, target) => switch (target) {
             RoleSheetTarget(:final rolePlayUuid) => Scaffold(
-                body: Center(child: Text('RolePlay $rolePlayUuid')),
-              ),
+              body: Center(child: Text('RolePlay $rolePlayUuid')),
+            ),
             _ => const SizedBox.shrink(),
           },
           child: Scaffold(
@@ -147,8 +146,9 @@ void main() {
     await PlanService().init();
   });
 
-  testWidgets('returns SizedBox.shrink when no roles match stationIndex',
-      (tester) async {
+  testWidgets('returns SizedBox.shrink when no roles match stationIndex', (
+    tester,
+  ) async {
     // Station 2 has no roles seeded — widget should be effectively empty.
     await tester.pumpWidget(_buildWidget(stationIndex: 2));
     await tester.pump();
@@ -157,7 +157,9 @@ void main() {
     expect(find.text(l10n.playSection), findsNothing);
   });
 
-  testWidgets('renders header with role count when roles exist', (tester) async {
+  testWidgets('renders header with role count when roles exist', (
+    tester,
+  ) async {
     await tester.pumpWidget(_buildWidget(stationIndex: 0));
     await tester.pump();
 
@@ -167,8 +169,9 @@ void main() {
     expect(find.text('(2)'), findsOneWidget);
   });
 
-  testWidgets('renders one row per matching role with age suffix in title',
-      (tester) async {
+  testWidgets('renders one row per matching role with age suffix in title', (
+    tester,
+  ) async {
     await tester.pumpWidget(_buildWidget(stationIndex: 0));
     await tester.pump();
 
@@ -188,7 +191,9 @@ void main() {
     expect(find.text(_actorA.realName), findsOneWidget);
   });
 
-  testWidgets('cast pill shows noCastLine when no actor is cast', (tester) async {
+  testWidgets('cast pill shows noCastLine when no actor is cast', (
+    tester,
+  ) async {
     await tester.pumpWidget(_buildWidget(stationIndex: 0));
     await tester.pump();
 
@@ -205,14 +210,12 @@ void main() {
     await tester.tap(find.text('Olav Berg · 45'));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('RolePlay ${_roleWithAge.uuid}'),
-      findsOneWidget,
-    );
+    expect(find.text('RolePlay ${_roleWithAge.uuid}'), findsOneWidget);
   });
 
-  testWidgets('trailing cast icon is not wrapped in IconButton or InkWell',
-      (tester) async {
+  testWidgets('trailing cast icon is not wrapped in IconButton or InkWell', (
+    tester,
+  ) async {
     await tester.pumpWidget(_buildWidget(stationIndex: 0));
     await tester.pump();
 
@@ -220,8 +223,11 @@ void main() {
     // There should be no extra InkWells for the trailing icon.
     final inkWells = tester.widgetList<InkWell>(find.byType(InkWell));
     // 2 rows at station 0 → 2 InkWells (row body taps only)
-    expect(inkWells.length, 2,
-        reason: 'Only row-body InkWells; trailing icon must not be wrapped');
+    expect(
+      inkWells.length,
+      2,
+      reason: 'Only row-body InkWells; trailing icon must not be wrapped',
+    );
 
     // No IconButton anywhere
     expect(find.byType(IconButton), findsNothing);

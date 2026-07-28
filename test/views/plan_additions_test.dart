@@ -117,22 +117,25 @@ void main() {
 
     tearDown(() => PlanService().clearAllForTest());
 
-    test('saves each roleplay through the repo (DESIGN-009 prompt 4j)', () async {
-      const rolePlay = RolePlay(
-        uuid: 'rp-new',
-        index: 0,
-        exerciseUuid: 'ex-1',
-        name: 'Ukjent',
-        stationIndex: 0,
-        personRef: 'anne',
-      );
-      await applyPendingRolePlayAdditions(
-        PlanService(),
-        l10n,
-        variableAdditions(const [], rolePlays: const [rolePlay]),
-      );
-      expect(PlanService().getRolePlay('rp-new')?.name, 'Ukjent');
-    });
+    test(
+      'saves each roleplay through the repo (DESIGN-009 prompt 4j)',
+      () async {
+        const rolePlay = RolePlay(
+          uuid: 'rp-new',
+          index: 0,
+          exerciseUuid: 'ex-1',
+          name: 'Ukjent',
+          stationIndex: 0,
+          personRef: 'anne',
+        );
+        await applyPendingRolePlayAdditions(
+          PlanService(),
+          l10n,
+          variableAdditions(const [], rolePlays: const [rolePlay]),
+        );
+        expect(PlanService().getRolePlay('rp-new')?.name, 'Ukjent');
+      },
+    );
 
     test('no-op with no roleplays', () async {
       await applyPendingRolePlayAdditions(PlanService(), l10n, noPlanAdditions);

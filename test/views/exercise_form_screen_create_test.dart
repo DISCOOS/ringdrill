@@ -34,9 +34,7 @@ void main() {
               onPressed: () async {
                 final result = await Navigator.push<ExerciseFormSave>(
                   ctx,
-                  MaterialPageRoute(
-                    builder: (_) => const ExerciseFormScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const ExerciseFormScreen()),
                 );
                 if (result != null) {
                   await PlanService().saveExercise(l10n, result.exercise);

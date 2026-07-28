@@ -39,55 +39,52 @@ final _a = Exercise(
 );
 
 void main() {
-  testWidgets(
-    'the navigation rail scrolls instead of overflowing on a short '
-    'medium-width viewport (a landscape phone)',
-    (tester) async {
-      SharedPreferences.setMockInitialValues({
-        'app:activePlan:v1': _p,
-        'app:librarySchema:v1': '1',
-        'p:$_p': jsonEncode({
-          'uuid': _p,
-          'name': 'P',
-          'description': '',
-          'metadata': {
-            'created': '2026-01-01T00:00:00.000Z',
-            'updated': '2026-01-01T00:00:00.000Z',
-            'version': '1.1',
-          },
-          'exercises': [],
-          'teams': [],
-          'sessions': [],
-          'rolePlays': [],
-          'actors': [],
-        }),
-        'pe:$_p:$_exA': jsonEncode(_a.toJson()),
-      });
-      await PlanService().init();
-      await PlanService().setActive(_p);
+  testWidgets('the navigation rail scrolls instead of overflowing on a short '
+      'medium-width viewport (a landscape phone)', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'app:activePlan:v1': _p,
+      'app:librarySchema:v1': '1',
+      'p:$_p': jsonEncode({
+        'uuid': _p,
+        'name': 'P',
+        'description': '',
+        'metadata': {
+          'created': '2026-01-01T00:00:00.000Z',
+          'updated': '2026-01-01T00:00:00.000Z',
+          'version': '1.1',
+        },
+        'exercises': [],
+        'teams': [],
+        'sessions': [],
+        'rolePlays': [],
+        'actors': [],
+      }),
+      'pe:$_p:$_exA': jsonEncode(_a.toJson()),
+    });
+    await PlanService().init();
+    await PlanService().setActive(_p);
 
-      // Wide enough for the master-detail rail shell — the wide layout needs
-      // `maxWidth - railWidth(72) - masterWidth(320) >= 360`, so ~752px up,
-      // still medium (<840) — but short enough that the rail's items exceed
-      // the available height.
-      tester.view.physicalSize = const Size(800, 260);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
+    // Wide enough for the master-detail rail shell — the wide layout needs
+    // `maxWidth - railWidth(72) - masterWidth(320) >= 360`, so ~752px up,
+    // still medium (<840) — but short enough that the rail's items exceed
+    // the available height.
+    tester.view.physicalSize = const Size(800, 260);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
 
-      final router = buildRouter(false, true);
-      addTearDown(router.dispose);
-      await tester.pumpWidget(
-        MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: router,
-        ),
-      );
-      await tester.pumpAndSettle();
+    final router = buildRouter(false, true);
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      expect(find.byType(NavigationRail), findsOneWidget);
-      // No RenderFlex overflow was thrown while laying the rail out.
-      expect(tester.takeException(), isNull);
-    },
-  );
+    expect(find.byType(NavigationRail), findsOneWidget);
+    // No RenderFlex overflow was thrown while laying the rail out.
+    expect(tester.takeException(), isNull);
+  });
 }

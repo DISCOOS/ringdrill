@@ -31,11 +31,7 @@ Plan _basePlan({
   );
 }
 
-Future<Plan?> _openForm(
-  WidgetTester tester,
-  Plan plan, {
-  Size? size,
-}) async {
+Future<Plan?> _openForm(WidgetTester tester, Plan plan, {Size? size}) async {
   if (size != null) {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
@@ -52,9 +48,7 @@ Future<Plan?> _openForm(
           onPressed: () async {
             result = await Navigator.push<Plan>(
               ctx,
-              MaterialPageRoute(
-                builder: (_) => PlanFormScreen(plan: plan),
-              ),
+              MaterialPageRoute(builder: (_) => PlanFormScreen(plan: plan)),
             );
           },
           child: const Text('Open'),
@@ -149,76 +143,70 @@ void main() {
       },
     );
 
-    testWidgets(
-      'compact: removing the current section falls back to "Plan"; '
-      '"Plan" itself offers a disabled remove action',
-      (tester) async {
-        await _openForm(
-          tester,
-          _basePlan(commsMd: 'gamle talegrupper'),
-          size: const Size(400, 800),
-        );
-        final l = await AppLocalizations.delegate.load(const Locale('en'));
+    testWidgets('compact: removing the current section falls back to "Plan"; '
+        '"Plan" itself offers a disabled remove action', (tester) async {
+      await _openForm(
+        tester,
+        _basePlan(commsMd: 'gamle talegrupper'),
+        size: const Size(400, 800),
+      );
+      final l = await AppLocalizations.delegate.load(const Locale('en'));
 
-        // The overflow is always rendered now (DESIGN-008 follow-up 02, so
-        // the prev/next controls next to it never shift), but disabled on
-        // the non-removable default "Plan" section — tapping it opens
-        // nothing.
-        expect(find.byIcon(Icons.more_vert), findsOneWidget);
-        await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
-        expect(find.text(l.formSectionRemoveAction), findsNothing);
+      // The overflow is always rendered now (DESIGN-008 follow-up 02, so
+      // the prev/next controls next to it never shift), but disabled on
+      // the non-removable default "Plan" section — tapping it opens
+      // nothing.
+      expect(find.byIcon(Icons.more_vert), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      expect(find.text(l.formSectionRemoveAction), findsNothing);
 
-        await tester.tap(find.text(l.planSectionPlan));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(l.briefSectionPlanComms));
-        await tester.pumpAndSettle();
+      await tester.tap(find.text(l.planSectionPlan));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l.briefSectionPlanComms));
+      await tester.pumpAndSettle();
 
-        // "Comms" is removable: its overflow menu offers "Remove section".
-        await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(l.formSectionRemoveAction));
-        await tester.pumpAndSettle();
+      // "Comms" is removable: its overflow menu offers "Remove section".
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l.formSectionRemoveAction));
+      await tester.pumpAndSettle();
 
-        // Falls back to the default section, where the overflow is
-        // disabled again.
-        expect(find.text(l.planSectionPlan), findsOneWidget);
-        expect(find.byIcon(Icons.more_vert), findsOneWidget);
-        await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
-        expect(find.text(l.formSectionRemoveAction), findsNothing);
+      // Falls back to the default section, where the overflow is
+      // disabled again.
+      expect(find.text(l.planSectionPlan), findsOneWidget);
+      expect(find.byIcon(Icons.more_vert), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      expect(find.text(l.formSectionRemoveAction), findsNothing);
 
-        await tester.tap(find.text(l.save));
-        await tester.pumpAndSettle();
-      },
-    );
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+    });
 
-    testWidgets(
-      'wide: rail lists sections, detail pane switches, no duplicate '
-      'AppBar or close button',
-      (tester) async {
-        await _openForm(
-          tester,
-          _basePlan(commsMd: 'gamle talegrupper'),
-          size: const Size(1200, 900),
-        );
-        final l = await AppLocalizations.delegate.load(const Locale('en'));
+    testWidgets('wide: rail lists sections, detail pane switches, no duplicate '
+        'AppBar or close button', (tester) async {
+      await _openForm(
+        tester,
+        _basePlan(commsMd: 'gamle talegrupper'),
+        size: const Size(1200, 900),
+      );
+      final l = await AppLocalizations.delegate.load(const Locale('en'));
 
-        expect(find.byType(AppBar), findsOneWidget);
-        expect(find.byIcon(Icons.close), findsOneWidget);
-        expect(find.text(l.planSectionPlan), findsWidgets);
-        expect(find.text(l.briefSectionPlanIntro), findsOneWidget);
-        expect(find.text(l.briefSectionPlanComms), findsOneWidget);
+      expect(find.byType(AppBar), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.text(l.planSectionPlan), findsWidgets);
+      expect(find.text(l.briefSectionPlanIntro), findsOneWidget);
+      expect(find.text(l.briefSectionPlanComms), findsOneWidget);
 
-        // Plan's fields render in the detail pane by default.
-        expect(find.text('Vinterøvelse'), findsOneWidget);
+      // Plan's fields render in the detail pane by default.
+      expect(find.text('Vinterøvelse'), findsOneWidget);
 
-        await tester.tap(find.text(l.briefSectionPlanComms));
-        await tester.pumpAndSettle();
-        expect(find.text('gamle talegrupper'), findsOneWidget);
-        expect(find.text('Vinterøvelse'), findsNothing);
-      },
-    );
+      await tester.tap(find.text(l.briefSectionPlanComms));
+      await tester.pumpAndSettle();
+      expect(find.text('gamle talegrupper'), findsOneWidget);
+      expect(find.text('Vinterøvelse'), findsNothing);
+    });
 
     testWidgets(
       'save round-trips a name edit in "Plan" and a markdown section edit',
@@ -239,9 +227,7 @@ void main() {
                   captured = await Navigator.push<Plan>(
                     ctx,
                     MaterialPageRoute(
-                      builder: (_) => PlanFormScreen(
-                        plan: _basePlan(),
-                      ),
+                      builder: (_) => PlanFormScreen(plan: _basePlan()),
                     ),
                   );
                 },

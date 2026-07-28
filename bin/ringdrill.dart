@@ -38,7 +38,8 @@ Future<void> main(List<String> argv) async {
     ..addOption(
       'token',
       abbr: 't',
-      help: 'Admin bearer token (env: RINGDRILL_ADMIN_TOKEN). '
+      help:
+          'Admin bearer token (env: RINGDRILL_ADMIN_TOKEN). '
           'Only required for admin commands.',
       defaultsTo: Platform.environment['RINGDRILL_ADMIN_TOKEN'],
     )
@@ -66,10 +67,7 @@ Future<void> main(List<String> argv) async {
       help: 'Page size (feed/list-all command). Default: 50.',
       defaultsTo: '50',
     )
-    ..addOption(
-      'cursor',
-      help: 'Pagination cursor (feed/list-all command).',
-    )
+    ..addOption('cursor', help: 'Pagination cursor (feed/list-all command).')
     // download
     ..addOption(
       'out',
@@ -270,11 +268,7 @@ Future<void> _runUpload(
   _printUpload(response, jsonOut);
 }
 
-Future<void> _runFeed(
-  DrillClient client,
-  ArgResults res,
-  bool jsonOut,
-) async {
+Future<void> _runFeed(DrillClient client, ArgResults res, bool jsonOut) async {
   final limit = int.tryParse(res['limit'] as String) ?? 50;
   final cursor = res['cursor'] as String?;
   final page = await client.marketFeed(limit: limit, cursor: cursor);
@@ -296,7 +290,8 @@ Future<void> _runDownload(
   if (versionStr != null && version == null) {
     _fail('Invalid --version: $versionStr');
   }
-  final outPath = (res['out'] as String?) ?? '$slug.${DrillFile.drillExtension}';
+  final outPath =
+      (res['out'] as String?) ?? '$slug.${DrillFile.drillExtension}';
   final response = await client.download(slug, version: version);
   File(outPath).writeAsBytesSync(response.bytes);
   _printDownload(slug, outPath, response, jsonOut);

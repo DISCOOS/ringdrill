@@ -33,9 +33,7 @@ void main() {
   });
 
   group('PositionFormat.dd', () {
-    testWidgets('renders decimal-degree lat/lng as a CodeChip', (
-      tester,
-    ) async {
+    testWidgets('renders decimal-degree lat/lng as a CodeChip', (tester) async {
       await pump(
         tester,
         const PositionWidget(position: position, format: PositionFormat.dd),

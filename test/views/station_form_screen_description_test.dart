@@ -50,11 +50,7 @@ void main() {
     await useWideSurface(tester);
     await openStation(
       tester,
-      const Station(
-        index: 0,
-        name: 'Demens',
-        position: LatLng(58.99, 10.43),
-      ),
+      const Station(index: 0, name: 'Demens', position: LatLng(58.99, 10.43)),
     );
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
@@ -71,11 +67,7 @@ void main() {
     await useWideSurface(tester);
     await openStation(
       tester,
-      const Station(
-        index: 0,
-        name: 'Demens',
-        position: LatLng(58.99, 10.43),
-      ),
+      const Station(index: 0, name: 'Demens', position: LatLng(58.99, 10.43)),
     );
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 

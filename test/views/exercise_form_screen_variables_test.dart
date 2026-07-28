@@ -212,12 +212,7 @@ void main() {
     'returns it in additions.variables (ADR-0047, DESIGN-009 follow-up 4)',
     (tester) async {
       final captured = _Captured();
-      await _openForm(
-        tester,
-        _exercise(methodMd: 'x'),
-        const [],
-        captured,
-      );
+      await _openForm(tester, _exercise(methodMd: 'x'), const [], captured);
 
       await _openSwitcherFrom(tester, l.exercise(1));
       await tester.tap(find.text(l.briefSectionExerciseMethod));
@@ -240,10 +235,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured.value, isNotNull);
-      expect(
-        captured.value!.additions.variables.map((v) => v.name),
-        ['frekvens'],
-      );
+      expect(captured.value!.additions.variables.map((v) => v.name), [
+        'frekvens',
+      ]);
       expect(captured.value!.additions.stationLocations, isEmpty);
       expect(captured.value!.additions.stationPersons, isEmpty);
     },

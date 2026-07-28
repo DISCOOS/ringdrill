@@ -181,43 +181,45 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(captured.value, isNotNull);
-    expect(captured.value!.rolePlay.behavior, 'Sier hei ved {{station.loc.lkp}}.');
+    expect(
+      captured.value!.rolePlay.behavior,
+      'Sier hei ved {{station.loc.lkp}}.',
+    );
   });
 
-  testWidgets(
-    'a faceted token keys on the same slug as the bare token',
-    (tester) async {
-      final station = Station(
+  testWidgets('a faceted token keys on the same slug as the bare token', (
+    tester,
+  ) async {
+    final station = Station(
+      index: 0,
+      name: 'Post 1',
+      persons: const [Person(slug: 'anne', name: 'Anne Glemsk')],
+    );
+    final captured = _Captured();
+    await _openForm(
+      tester,
+      RolePlay(
+        uuid: 'role-1',
         index: 0,
-        name: 'Post 1',
-        persons: const [Person(slug: 'anne', name: 'Anne Glemsk')],
-      );
-      final captured = _Captured();
-      await _openForm(
-        tester,
-        RolePlay(
-          uuid: 'role-1',
-          index: 0,
-          exerciseUuid: 'ex-1',
-          name: 'Anne Glemsk',
-          stationIndex: 0,
-          personRef: 'anne',
-          behavior: 'Sier hei ved {{station.loc.ghost.place}}.',
-        ),
-        _exercise(stations: [station]),
-        captured,
-      );
+        exerciseUuid: 'ex-1',
+        name: 'Anne Glemsk',
+        stationIndex: 0,
+        personRef: 'anne',
+        behavior: 'Sier hei ved {{station.loc.ghost.place}}.',
+      ),
+      _exercise(stations: [station]),
+      captured,
+    );
 
-      await tester.tap(find.text(l.save));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text(l.save));
+    await tester.pumpAndSettle();
 
-      expect(captured.value, isNull);
-      expect(
-        find.text(
-          l.saveBlockedUnresolvedReference(l.roleBehavior, 'station.loc.ghost'),
-        ),
-        findsOneWidget,
-      );
-    },
-  );
+    expect(captured.value, isNull);
+    expect(
+      find.text(
+        l.saveBlockedUnresolvedReference(l.roleBehavior, 'station.loc.ghost'),
+      ),
+      findsOneWidget,
+    );
+  });
 }

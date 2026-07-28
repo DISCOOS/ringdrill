@@ -13,11 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const _planUuid = 'prog-1';
 
-Plan _shell({
-  String? briefIntroMd,
-  String? commsMd,
-  String? beforeRoundMd,
-}) {
+Plan _shell({String? briefIntroMd, String? commsMd, String? beforeRoundMd}) {
   final now = DateTime.utc(2026, 1, 1);
   return Plan(
     uuid: _planUuid,
@@ -74,27 +70,30 @@ Future<PlanRepository> _repo() async {
 
 void main() {
   group('Exercise brief fields survive a repository round-trip', () {
-    test('exercise-level markdown is restored on getExercise and load', () async {
-      final repo = await _repo();
-      await repo.saveExercise(
-        _exercise(
-          methodMd: 'Metode-tekst',
-          learningGoalsMd: 'Læringsmål-tekst',
-          commsMd: 'Samband-tekst',
-        ),
-      );
+    test(
+      'exercise-level markdown is restored on getExercise and load',
+      () async {
+        final repo = await _repo();
+        await repo.saveExercise(
+          _exercise(
+            methodMd: 'Metode-tekst',
+            learningGoalsMd: 'Læringsmål-tekst',
+            commsMd: 'Samband-tekst',
+          ),
+        );
 
-      final fetched = repo.getExercise('ex-1');
-      expect(fetched, isNotNull);
-      expect(fetched!.methodMd, 'Metode-tekst');
-      expect(fetched.learningGoalsMd, 'Læringsmål-tekst');
-      expect(fetched.commsMd, 'Samband-tekst');
+        final fetched = repo.getExercise('ex-1');
+        expect(fetched, isNotNull);
+        expect(fetched!.methodMd, 'Metode-tekst');
+        expect(fetched.learningGoalsMd, 'Læringsmål-tekst');
+        expect(fetched.commsMd, 'Samband-tekst');
 
-      final loaded = repo.loadExercises().single;
-      expect(loaded.methodMd, 'Metode-tekst');
-      expect(loaded.learningGoalsMd, 'Læringsmål-tekst');
-      expect(loaded.commsMd, 'Samband-tekst');
-    });
+        final loaded = repo.loadExercises().single;
+        expect(loaded.methodMd, 'Metode-tekst');
+        expect(loaded.learningGoalsMd, 'Læringsmål-tekst');
+        expect(loaded.commsMd, 'Samband-tekst');
+      },
+    );
 
     test('nested station markdown is restored', () async {
       final repo = await _repo();
@@ -171,9 +170,7 @@ void main() {
   test('savePlan round-trips nested exercise + roleplay markdown', () async {
     final repo = await _repo();
     final plan = _shell(briefIntroMd: 'Intro').copyWith(
-      exercises: [
-        _exercise(methodMd: 'Metode'),
-      ],
+      exercises: [_exercise(methodMd: 'Metode')],
       rolePlays: const [
         RolePlay(
           uuid: 'rp-1',

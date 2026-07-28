@@ -33,10 +33,7 @@ void main() {
     });
 
     test('deploy preview host → false', () {
-      expect(
-        checkIsLegacyHostName('abc--ringdrill.netlify.app'),
-        isFalse,
-      );
+      expect(checkIsLegacyHostName('abc--ringdrill.netlify.app'), isFalse);
     });
 
     test('empty string → false', () {

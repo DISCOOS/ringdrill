@@ -73,8 +73,9 @@ void main() {
       // time regardless of updateShouldNotify, defeating the test.
       final probe = _Probe(onBuild: (_) => builds++);
 
-      Widget host(List<DrillVariable> variables) =>
-          MaterialApp(home: PlanScope(variables: variables, child: probe));
+      Widget host(List<DrillVariable> variables) => MaterialApp(
+        home: PlanScope(variables: variables, child: probe),
+      );
 
       await tester.pumpWidget(
         host(const [DrillVariable(name: 'frekvens', value: 'Kanal 6')]),

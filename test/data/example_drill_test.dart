@@ -58,7 +58,10 @@ void main() {
       test('has 3 teams starting with "$expectedTeamPrefix"', () {
         final teams = drill.plan().teams;
         expect(teams, hasLength(3));
-        expect(teams.every((t) => t.name.startsWith(expectedTeamPrefix)), isTrue);
+        expect(
+          teams.every((t) => t.name.startsWith(expectedTeamPrefix)),
+          isTrue,
+        );
       });
 
       test('has at least 1 RolePlay on exercise #2', () {

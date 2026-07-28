@@ -112,10 +112,7 @@ Future<void> _pumpAtPaneWidth(WidgetTester tester, double paneWidth) async {
         child: SizedBox(
           width: paneWidth,
           height: 800,
-          child: const StationScreen(
-            stationIndex: 0,
-            uuid: _exerciseUuid,
-          ),
+          child: const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
         ),
       ),
     ),
@@ -130,83 +127,70 @@ void main() {
     l10n = await AppLocalizations.delegate.load(const Locale('en'));
   });
 
-  testWidgets(
-    'a medium (700px) pane uses the Info/Script/Map selector, not '
-    'WideDetailMapSplit; Info shows description + schedule, Script shows '
-    'persons + locations',
-    (tester) async {
-      await _seedAndInit();
-      tester.view.physicalSize = const Size(700, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+  testWidgets('a medium (700px) pane uses the Info/Script/Map selector, not '
+      'WideDetailMapSplit; Info shows description + schedule, Script shows '
+      'persons + locations', (tester) async {
+    await _seedAndInit();
+    tester.view.physicalSize = const Size(700, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(
-        _harness(
-          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
-        ),
-      );
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      _harness(const StationScreen(stationIndex: 0, uuid: _exerciseUuid)),
+    );
+    await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      expect(find.byType(WideDetailMapSplit), findsNothing);
+    expect(tester.takeException(), isNull);
+    expect(find.byType(WideDetailMapSplit), findsNothing);
 
-      // Default Info segment: description + schedule; persons (Script) not
-      // yet visible.
-      expect(
-        find.text(l10n.postDescriptionCardTitle.toUpperCase()),
-        findsOneWidget,
-      );
-      expect(
-        find.text(l10n.stationTimingCardTitle.toUpperCase()),
-        findsOneWidget,
-      );
-      expect(find.text(l10n.personsSectionTitle.toUpperCase()), findsNothing);
+    // Default Info segment: description + schedule; persons (Script) not
+    // yet visible.
+    expect(
+      find.text(l10n.postDescriptionCardTitle.toUpperCase()),
+      findsOneWidget,
+    );
+    expect(
+      find.text(l10n.stationTimingCardTitle.toUpperCase()),
+      findsOneWidget,
+    );
+    expect(find.text(l10n.personsSectionTitle.toUpperCase()), findsNothing);
 
-      // Script segment: persons + locations.
-      await tester.tap(find.byIcon(Icons.theater_comedy));
-      await tester.pumpAndSettle();
-      expect(find.text(l10n.personsSectionTitle.toUpperCase()), findsOneWidget);
-      expect(
-        find.text(l10n.locationsSectionTitle.toUpperCase()),
-        findsOneWidget,
-      );
-      expect(
-        find.text(l10n.postDescriptionCardTitle.toUpperCase()),
-        findsNothing,
-      );
-    },
-  );
+    // Script segment: persons + locations.
+    await tester.tap(find.byIcon(Icons.theater_comedy));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.personsSectionTitle.toUpperCase()), findsOneWidget);
+    expect(find.text(l10n.locationsSectionTitle.toUpperCase()), findsOneWidget);
+    expect(
+      find.text(l10n.postDescriptionCardTitle.toUpperCase()),
+      findsNothing,
+    );
+  });
 
-  testWidgets(
-    'an expanded (900px) pane splits — map pane beside a capped left '
-    'column, no overflow',
-    (tester) async {
-      await _seedAndInit();
-      tester.view.physicalSize = const Size(900, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+  testWidgets('an expanded (900px) pane splits — map pane beside a capped left '
+      'column, no overflow', (tester) async {
+    await _seedAndInit();
+    tester.view.physicalSize = const Size(900, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(
-        _harness(
-          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
-        ),
-      );
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      _harness(const StationScreen(stationIndex: 0, uuid: _exerciseUuid)),
+    );
+    await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      expect(find.byType(WideDetailMapSplit), findsOneWidget);
-      // Every section is still present, now split across the two panes.
-      expect(
-        find.text(l10n.postDescriptionCardTitle.toUpperCase()),
-        findsOneWidget,
-      );
-      expect(find.text(l10n.personsSectionTitle.toUpperCase()), findsOneWidget);
-      expect(
-        find.text(l10n.stationTimingCardTitle.toUpperCase()),
-        findsOneWidget,
-      );
-    },
-  );
+    expect(tester.takeException(), isNull);
+    expect(find.byType(WideDetailMapSplit), findsOneWidget);
+    // Every section is still present, now split across the two panes.
+    expect(
+      find.text(l10n.postDescriptionCardTitle.toUpperCase()),
+      findsOneWidget,
+    );
+    expect(find.text(l10n.personsSectionTitle.toUpperCase()), findsOneWidget);
+    expect(
+      find.text(l10n.stationTimingCardTitle.toUpperCase()),
+      findsOneWidget,
+    );
+  });
 
   testWidgets(
     'a ~430px pane inside a 1200px window stacks — pane width drives the '
@@ -240,15 +224,15 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(
-        _harness(
-          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
-        ),
+        _harness(const StationScreen(stationIndex: 0, uuid: _exerciseUuid)),
       );
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
 
-      final splitHeight = tester.getSize(find.byType(WideDetailMapSplit)).height;
+      final splitHeight = tester
+          .getSize(find.byType(WideDetailMapSplit))
+          .height;
       final panelRect = tester.getRect(find.byType(StationPositionPanel));
 
       // The panel used to sit at a small fixed height (~200) regardless of
@@ -264,27 +248,24 @@ void main() {
     },
   );
 
-  testWidgets(
-    'a short expanded pane still fills the map with no overflow',
-    (tester) async {
-      await _seedAndInit();
-      tester.view.physicalSize = const Size(900, 500);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+  testWidgets('a short expanded pane still fills the map with no overflow', (
+    tester,
+  ) async {
+    await _seedAndInit();
+    tester.view.physicalSize = const Size(900, 500);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(
-        _harness(
-          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
-        ),
-      );
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      _harness(const StationScreen(stationIndex: 0, uuid: _exerciseUuid)),
+    );
+    await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      final splitHeight = tester.getSize(find.byType(WideDetailMapSplit)).height;
-      final panelRect = tester.getRect(find.byType(StationPositionPanel));
-      expect(panelRect.height, closeTo(splitHeight, 1));
-    },
-  );
+    expect(tester.takeException(), isNull);
+    final splitHeight = tester.getSize(find.byType(WideDetailMapSplit)).height;
+    final panelRect = tester.getRect(find.byType(StationPositionPanel));
+    expect(panelRect.height, closeTo(splitHeight, 1));
+  });
 
   testWidgets(
     'the medium (700px) layout shows the Info/Map selector; the Map segment '
@@ -298,9 +279,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(
-        _harness(
-          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
-        ),
+        _harness(const StationScreen(stationIndex: 0, uuid: _exerciseUuid)),
       );
       await tester.pumpAndSettle();
 
@@ -330,9 +309,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(
-        _harness(
-          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
-        ),
+        _harness(const StationScreen(stationIndex: 0, uuid: _exerciseUuid)),
       );
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.map));
@@ -346,36 +323,33 @@ void main() {
     },
   );
 
-  testWidgets(
-    'the expanded map pane is directly interactive with its own FAB '
-    'commands, even at a pane width just past the 840px split threshold',
-    (tester) async {
-      await _seedAndInit();
-      // Deliberately close to (not far past) the 840px expanded threshold:
-      // WideDetailMapSplit's own fixed-width left column (440px) plus its
-      // 16px gutter leaves the map pane itself only ~410px wide here — a
-      // real regression left the map static in exactly this range, because
-      // an earlier version of the mini-maps' interactive gate re-checked
-      // WindowSizeClass off that narrower *local* map-pane width instead
-      // of trusting fillHeight (already only ever true once the screen
-      // itself committed to its expanded layout) plus a height check.
-      tester.view.physicalSize = const Size(900, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+  testWidgets('the expanded map pane is directly interactive with its own FAB '
+      'commands, even at a pane width just past the 840px split threshold', (
+    tester,
+  ) async {
+    await _seedAndInit();
+    // Deliberately close to (not far past) the 840px expanded threshold:
+    // WideDetailMapSplit's own fixed-width left column (440px) plus its
+    // 16px gutter leaves the map pane itself only ~410px wide here — a
+    // real regression left the map static in exactly this range, because
+    // an earlier version of the mini-maps' interactive gate re-checked
+    // WindowSizeClass off that narrower *local* map-pane width instead
+    // of trusting fillHeight (already only ever true once the screen
+    // itself committed to its expanded layout) plus a height check.
+    tester.view.physicalSize = const Size(900, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(
-        _harness(
-          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
-        ),
-      );
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      _harness(const StationScreen(stationIndex: 0, uuid: _exerciseUuid)),
+    );
+    await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      expect(find.byIcon(Icons.center_focus_strong_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.open_in_full), findsOneWidget);
-      expect(find.byIcon(Icons.layers), findsOneWidget);
-    },
-  );
+    expect(tester.takeException(), isNull);
+    expect(find.byIcon(Icons.center_focus_strong_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.open_in_full), findsOneWidget);
+    expect(find.byIcon(Icons.layers), findsOneWidget);
+  });
 
   testWidgets(
     'medium body defaults to the Info segment (no map yet); selecting Map '
@@ -387,9 +361,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(
-        _harness(
-          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
-        ),
+        _harness(const StationScreen(stationIndex: 0, uuid: _exerciseUuid)),
       );
       await tester.pumpAndSettle();
 

@@ -14,9 +14,8 @@ import 'package:ringdrill/views/station_form_screen.dart';
 /// shows the marker inline; the new roleplay rides the post editor's own
 /// [PlanAdditions] write-back rather than being saved directly.
 
-Station _station({
-  List<Person> persons = const [],
-}) => Station(index: 0, name: 'Post 1', persons: persons);
+Station _station({List<Person> persons = const []}) =>
+    Station(index: 0, name: 'Post 1', persons: persons);
 
 Exercise _exercise(Station station) => Exercise(
   uuid: 'ex-1',
@@ -208,34 +207,33 @@ void main() {
     },
   );
 
-  testWidgets(
-    'cancelling the post edit discards a marker added this session',
-    (tester) async {
-      final station = _station(
-        persons: const [Person(slug: 'anne', name: 'Anne Glemsk')],
-      );
-      final captured = _Captured();
-      await _openForm(tester, station, captured);
+  testWidgets('cancelling the post edit discards a marker added this session', (
+    tester,
+  ) async {
+    final station = _station(
+      persons: const [Person(slug: 'anne', name: 'Anne Glemsk')],
+    );
+    final captured = _Captured();
+    await _openForm(tester, station, captured);
 
-      await tester.tap(find.text(l.personsSectionTitle));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(l.personsSectionAddMarkerAction));
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.descendant(
-          of: find.byType(RolePlayFormScreen),
-          matching: find.text(l.formDoneAction),
-        ),
-      );
-      await tester.pumpAndSettle();
+    await tester.tap(find.text(l.personsSectionTitle));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l.personsSectionAddMarkerAction));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(RolePlayFormScreen),
+        matching: find.text(l.formDoneAction),
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      expect(find.text(l.noCastLine), findsOneWidget);
+    expect(find.text(l.noCastLine), findsOneWidget);
 
-      // Close the post editor without saving.
-      await tester.tap(find.byIcon(Icons.close));
-      await tester.pumpAndSettle();
+    // Close the post editor without saving.
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
 
-      expect(captured.value, isNull);
-    },
-  );
+    expect(captured.value, isNull);
+  });
 }

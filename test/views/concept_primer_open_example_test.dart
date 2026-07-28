@@ -163,10 +163,13 @@ void main() {
   // propagates it. The UI wraps this in try/catch and falls back gracefully —
   // that path is covered by the router tests above (route leaves /welcome and
   // flag is set on any tap). This test confirms the exception source.
-  test('DrillFile.fromBytes with corrupt zip throws FormatException on plan()', () {
-    final corrupt = DrillFile.fromBytes('bad.drill', [0, 1, 2, 3]);
-    expect(() => corrupt.plan(), throwsA(isA<Exception>()));
-  });
+  test(
+    'DrillFile.fromBytes with corrupt zip throws FormatException on plan()',
+    () {
+      final corrupt = DrillFile.fromBytes('bad.drill', [0, 1, 2, 3]);
+      expect(() => corrupt.plan(), throwsA(isA<Exception>()));
+    },
+  );
 
   // Verifies that asset loading roundtrip works for both bundled assets.
   test('en example asset loads and parses via rootBundle', () async {

@@ -38,16 +38,19 @@ Exercise _ex(String uuid, String name, {int index = 0}) => Exercise(
 
 void main() {
   group('PlanRepository._normaliseExerciseOrder', () {
-    test('legacy plan (all index 0, n>1) loads in name order with indices 0..n-1', () {
-      final items = [
-        _ex('c', 'Zebra', index: 0),
-        _ex('a', 'Alpha', index: 0),
-        _ex('b', 'Mango', index: 0),
-      ];
-      final result = PlanRepository.normaliseExerciseOrderForTest(items);
-      expect(result.map((e) => e.name).toList(), ['Alpha', 'Mango', 'Zebra']);
-      expect(result.map((e) => e.index).toList(), [0, 1, 2]);
-    });
+    test(
+      'legacy plan (all index 0, n>1) loads in name order with indices 0..n-1',
+      () {
+        final items = [
+          _ex('c', 'Zebra', index: 0),
+          _ex('a', 'Alpha', index: 0),
+          _ex('b', 'Mango', index: 0),
+        ];
+        final result = PlanRepository.normaliseExerciseOrderForTest(items);
+        expect(result.map((e) => e.name).toList(), ['Alpha', 'Mango', 'Zebra']);
+        expect(result.map((e) => e.index).toList(), [0, 1, 2]);
+      },
+    );
 
     test('valid permutation loads in index order, untouched', () {
       final items = [

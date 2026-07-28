@@ -251,9 +251,7 @@ void main() {
   });
 
   group('Active-plan guard and AppBar action (Step 5)', () {
-    testWidgets('with active plan: noActivePlanHint not shown', (
-      tester,
-    ) async {
+    testWidgets('with active plan: noActivePlanHint not shown', (tester) async {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
 

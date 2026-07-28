@@ -295,33 +295,30 @@ void main() {
       expect(result, isNot(contains('{{station.position}}')));
     });
 
-    test(
-      '{{plan.name}} and {{plan.description}} resolve inside plan-scope '
-      'markdown fields (briefIntroMd, commsMd, beforeRoundMd)',
-      () async {
-        final exercise = _designExercise();
-        final plan = _emptyPlan().copyWith(
-          name: 'Vinterøvelse Nordland',
-          description: 'Samvirkeøvelse',
-          exercises: [exercise],
-          briefIntroMd: 'Velkommen til {{plan.name}}.',
-          commsMd: '{{plan.description}} — se innledningen.',
-          beforeRoundMd: 'Plan: {{plan.name}}.',
-        );
+    test('{{plan.name}} and {{plan.description}} resolve inside plan-scope '
+        'markdown fields (briefIntroMd, commsMd, beforeRoundMd)', () async {
+      final exercise = _designExercise();
+      final plan = _emptyPlan().copyWith(
+        name: 'Vinterøvelse Nordland',
+        description: 'Samvirkeøvelse',
+        exercises: [exercise],
+        briefIntroMd: 'Velkommen til {{plan.name}}.',
+        commsMd: '{{plan.description}} — se innledningen.',
+        beforeRoundMd: 'Plan: {{plan.name}}.',
+      );
 
-        final result = await renderer.render(
-          plan: plan,
-          audience: BriefAudience.participant,
-          l10n: _l10n,
-        );
+      final result = await renderer.render(
+        plan: plan,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
 
-        expect(result, contains('Velkommen til Vinterøvelse Nordland.'));
-        expect(result, contains('Samvirkeøvelse — se innledningen.'));
-        expect(result, contains('Plan: Vinterøvelse Nordland.'));
-        expect(result, isNot(contains('{{plan.name}}')));
-        expect(result, isNot(contains('{{plan.description}}')));
-      },
-    );
+      expect(result, contains('Velkommen til Vinterøvelse Nordland.'));
+      expect(result, contains('Samvirkeøvelse — se innledningen.'));
+      expect(result, contains('Plan: Vinterøvelse Nordland.'));
+      expect(result, isNot(contains('{{plan.name}}')));
+      expect(result, isNot(contains('{{plan.description}}')));
+    });
 
     test(
       'exercise-scope cross-references resolve inside exercise-scope markdown fields',
@@ -699,12 +696,8 @@ void main() {
         templateId: null,
       );
 
-      final planA = _emptyPlan().copyWith(
-        exercises: [exerciseWithTemplate],
-      );
-      final planB = _emptyPlan().copyWith(
-        exercises: [exerciseNoTemplate],
-      );
+      final planA = _emptyPlan().copyWith(exercises: [exerciseWithTemplate]);
+      final planB = _emptyPlan().copyWith(exercises: [exerciseNoTemplate]);
 
       final resultA = await renderer.render(
         plan: planA,

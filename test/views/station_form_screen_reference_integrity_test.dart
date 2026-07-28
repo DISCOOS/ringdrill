@@ -47,8 +47,10 @@ Future<void> _openForm(
             captured.value = await Navigator.push<StationFormResult>(
               ctx,
               MaterialPageRoute(
-                builder: (_) =>
-                    StationFormScreen(station: station, parentExercise: _exercise()),
+                builder: (_) => StationFormScreen(
+                  station: station,
+                  parentExercise: _exercise(),
+                ),
               ),
             );
           },
@@ -183,29 +185,28 @@ void main() {
     );
   });
 
-  testWidgets(
-    'a faceted token keys on the same slug as the bare token',
-    (tester) async {
-      final captured = _Captured();
-      await _openForm(
-        tester,
-        stationWith(situationMd: 'Se {{station.loc.ghost.place}}.'),
-        captured,
-      );
+  testWidgets('a faceted token keys on the same slug as the bare token', (
+    tester,
+  ) async {
+    final captured = _Captured();
+    await _openForm(
+      tester,
+      stationWith(situationMd: 'Se {{station.loc.ghost.place}}.'),
+      captured,
+    );
 
-      await tester.tap(find.text(l.save));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text(l.save));
+    await tester.pumpAndSettle();
 
-      expect(captured.value, isNull);
-      expect(
-        find.text(
-          l.saveBlockedUnresolvedReference(
-            l.briefSectionStationSituation,
-            'station.loc.ghost',
-          ),
+    expect(captured.value, isNull);
+    expect(
+      find.text(
+        l.saveBlockedUnresolvedReference(
+          l.briefSectionStationSituation,
+          'station.loc.ghost',
         ),
-        findsOneWidget,
-      );
-    },
-  );
+      ),
+      findsOneWidget,
+    );
+  });
 }

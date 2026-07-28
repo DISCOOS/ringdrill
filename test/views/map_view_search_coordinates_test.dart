@@ -107,23 +107,20 @@ void main() {
     expect(h.geocoder.searchCount, 0);
   });
 
-  testWidgets(
-    'out-of-range and garbage input does not move the map and falls '
-    'through to the geocoder',
-    (tester) async {
-      final h = await _pumpMap(tester);
+  testWidgets('out-of-range and garbage input does not move the map and falls '
+      'through to the geocoder', (tester) async {
+    final h = await _pumpMap(tester);
 
-      await _search(tester, '123,456');
-      _expectCenteredOn(h.map, MapConfig.initialCenter);
-      expect(
-        h.geocoder.searchCount,
-        1,
-        reason: 'an out-of-range pair must fall through to the geocoder',
-      );
+    await _search(tester, '123,456');
+    _expectCenteredOn(h.map, MapConfig.initialCenter);
+    expect(
+      h.geocoder.searchCount,
+      1,
+      reason: 'an out-of-range pair must fall through to the geocoder',
+    );
 
-      await _search(tester, 'not a coordinate');
-      _expectCenteredOn(h.map, MapConfig.initialCenter);
-      expect(h.geocoder.searchCount, 2);
-    },
-  );
+    await _search(tester, 'not a coordinate');
+    _expectCenteredOn(h.map, MapConfig.initialCenter);
+    expect(h.geocoder.searchCount, 2);
+  });
 }

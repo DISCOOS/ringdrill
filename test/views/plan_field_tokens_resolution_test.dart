@@ -114,10 +114,7 @@ void main() {
     () async {
       final tokens = PlanFieldTokens.plan(_l10n);
       final briefIntroMd = tokens.map((t) => _wrap(t.name)).join('\n');
-      final plan = _plan(
-        briefIntroMd: briefIntroMd,
-        exercise: _exercise(),
-      );
+      final plan = _plan(briefIntroMd: briefIntroMd, exercise: _exercise());
 
       final rendered = await BriefRenderer().render(
         plan: plan,

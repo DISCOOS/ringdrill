@@ -11,7 +11,8 @@ Map<String, Object> _basePrefs({bool includeActor = false}) {
   final prefs = <String, Object>{
     'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
-    'p:$_planUuid': '''{
+    'p:$_planUuid':
+        '''{
       "uuid": "$_planUuid",
       "name": "Test",
       "description": "",

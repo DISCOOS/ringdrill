@@ -40,34 +40,32 @@ void main() {
     const supported = [Locale('en'), Locale('nb')];
 
     test('maps a no_NO device locale onto nb', () {
-      final resolved = resolveSupportedLocale(
-        const [Locale('no', 'NO')],
-        supported,
-      );
+      final resolved = resolveSupportedLocale(const [
+        Locale('no', 'NO'),
+      ], supported);
       expect(resolved, const Locale('nb'));
     });
 
     test('matches by language even when region differs', () {
-      final resolved = resolveSupportedLocale(
-        const [Locale('en', 'US')],
-        supported,
-      );
+      final resolved = resolveSupportedLocale(const [
+        Locale('en', 'US'),
+      ], supported);
       expect(resolved, const Locale('en'));
     });
 
     test('walks the device list in order', () {
-      final resolved = resolveSupportedLocale(
-        const [Locale('de'), Locale('nb', 'NO')],
-        supported,
-      );
+      final resolved = resolveSupportedLocale(const [
+        Locale('de'),
+        Locale('nb', 'NO'),
+      ], supported);
       expect(resolved, const Locale('nb'));
     });
 
     test('falls back to the first supported locale when nothing matches', () {
-      final resolved = resolveSupportedLocale(
-        const [Locale('fr'), Locale('de')],
-        supported,
-      );
+      final resolved = resolveSupportedLocale(const [
+        Locale('fr'),
+        Locale('de'),
+      ], supported);
       expect(resolved, const Locale('en'));
     });
 

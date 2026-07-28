@@ -79,41 +79,38 @@ void main() {
     l = await AppLocalizations.delegate.load(const Locale('en'));
   });
 
-  testWidgets(
-    'defaults to the selected person\'s location: the bar shows the '
-    'location name as its label, no reset',
-    (tester) async {
-      final station = _stationWith(
-        const [Location(slug: 'lkp', label: 'Sist kjent', position: _lkp)],
-        const [Person(slug: 'anne', name: 'Anne Glemsk', locSlug: 'lkp')],
-      );
-      final captured = _Captured();
-      await _openForm(
-        tester,
-        const RolePlay(
-          uuid: 'role-1',
-          index: 0,
-          exerciseUuid: 'ex-1',
-          name: 'Anne Glemsk',
-          stationIndex: 0,
-          personRef: 'anne',
-        ),
-        station,
-        captured,
-      );
+  testWidgets('defaults to the selected person\'s location: the bar shows the '
+      'location name as its label, no reset', (tester) async {
+    final station = _stationWith(
+      const [Location(slug: 'lkp', label: 'Sist kjent', position: _lkp)],
+      const [Person(slug: 'anne', name: 'Anne Glemsk', locSlug: 'lkp')],
+    );
+    final captured = _Captured();
+    await _openForm(
+      tester,
+      const RolePlay(
+        uuid: 'role-1',
+        index: 0,
+        exerciseUuid: 'ex-1',
+        name: 'Anne Glemsk',
+        stationIndex: 0,
+        personRef: 'anne',
+      ),
+      station,
+      captured,
+    );
 
-      // Following: the location name is the bar's label, no reset link.
-      expect(find.byType(PositionFormField), findsOneWidget);
-      expect(find.text('Sist kjent'), findsWidgets);
-      expect(find.byKey(const Key('position-reset')), findsNothing);
+    // Following: the location name is the bar's label, no reset link.
+    expect(find.byType(PositionFormField), findsOneWidget);
+    expect(find.text('Sist kjent'), findsWidgets);
+    expect(find.byKey(const Key('position-reset')), findsNothing);
 
-      await tester.tap(find.text(l.save));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text(l.save));
+    await tester.pumpAndSettle();
 
-      expect(captured.value, isNotNull);
-      expect(captured.value!.rolePlay.position, _lkp);
-    },
-  );
+    expect(captured.value, isNotNull);
+    expect(captured.value!.rolePlay.position, _lkp);
+  });
 
   testWidgets(
     'a person with no loc location falls back to the plain picker — no '

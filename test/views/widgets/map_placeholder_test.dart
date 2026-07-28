@@ -6,8 +6,7 @@ import 'package:ringdrill/views/widgets/map_placeholder.dart';
 /// icon + message in a card-shaped tonal box, either a fixed height or
 /// filling a height-bounded parent.
 void main() {
-  Widget harness(Widget child) =>
-      MaterialApp(home: Scaffold(body: child));
+  Widget harness(Widget child) => MaterialApp(home: Scaffold(body: child));
 
   testWidgets('renders the icon and message', (tester) async {
     await tester.pumpWidget(
@@ -41,12 +40,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      harness(
-        const SizedBox(
-          height: 500,
-          child: MapPlaceholder(message: 'x'),
-        ),
-      ),
+      harness(const SizedBox(height: 500, child: MapPlaceholder(message: 'x'))),
     );
 
     // No fixed height of its own — takes the parent's tight 500.

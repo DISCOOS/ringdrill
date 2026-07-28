@@ -105,12 +105,8 @@ Map<String, Object> _basePrefs() {
       'actors': [],
     }),
     'pe:$_planUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
-    'pr:$_planUuid:${_roleForHilde.uuid}': jsonEncode(
-      _roleForHilde.toJson(),
-    ),
-    'pa:$_planUuid:${_actorForHilde.uuid}': jsonEncode(
-      _actorForHilde.toJson(),
-    ),
+    'pr:$_planUuid:${_roleForHilde.uuid}': jsonEncode(_roleForHilde.toJson()),
+    'pa:$_planUuid:${_actorForHilde.uuid}': jsonEncode(_actorForHilde.toJson()),
   };
 }
 
@@ -126,10 +122,8 @@ Widget _buildScreen({int stationIndex = 0}) {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => StationScreen(
-          stationIndex: stationIndex,
-          uuid: _exerciseUuid,
-        ),
+        builder: (context, state) =>
+            StationScreen(stationIndex: stationIndex, uuid: _exerciseUuid),
       ),
     ],
   );

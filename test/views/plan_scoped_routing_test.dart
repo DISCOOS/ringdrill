@@ -130,9 +130,7 @@ void main() {
     );
   });
 
-  testWidgets('unknown plan uuid falls back to active plan', (
-    tester,
-  ) async {
+  testWidgets('unknown plan uuid falls back to active plan', (tester) async {
     final router = await _pumpRouter(tester);
 
     await _go(tester, router, planPath('does-not-exist'));
@@ -167,20 +165,14 @@ void main() {
 
   test('legacy detail links redirect to canonical detail paths', () {
     final cases = {
-      '$routePlan/$_exerciseUuid': planExercisePath(
-        _planUuid,
-        _exerciseUuid,
-      ),
+      '$routePlan/$_exerciseUuid': planExercisePath(_planUuid, _exerciseUuid),
       '$routeStations/$_exerciseUuid/0': planStationPath(
         _planUuid,
         _exerciseUuid,
         0,
       ),
       '$routeTeams/0': planTeamPath(_planUuid, 0),
-      '$routeRolePlays/$_roleUuid': planRolePlayPath(
-        _planUuid,
-        _roleUuid,
-      ),
+      '$routeRolePlays/$_roleUuid': planRolePlayPath(_planUuid, _roleUuid),
       '$routeBrief/plan/$_planUuid': planBriefPath(_planUuid),
       '$routeBrief/$_exerciseUuid': planExerciseBriefPath(
         _planUuid,

@@ -97,11 +97,7 @@ void main() {
           bordered: true,
           rows: [
             const ScheduleTableRow(roundIndex: 0, label: 'Lag 1'),
-            const ScheduleTableRow(
-              roundIndex: 1,
-              label: 'Lag ×',
-              muted: true,
-            ),
+            const ScheduleTableRow(roundIndex: 1, label: 'Lag ×', muted: true),
           ],
         ),
       ),
@@ -113,70 +109,67 @@ void main() {
     expect(activeText.style?.decoration, isNot(TextDecoration.lineThrough));
   });
 
-  testWidgets(
-    'the running round shows the house highlight; no round does when '
-    'pending',
-    (tester) async {
-      final running = _makeEvent(
-        exercise: exercise,
-        phase: ExercisePhase.execution,
-        currentRound: 1,
-      );
-      await tester.pumpWidget(
-        _harness(
-          ScheduleTable(
-            headerLabel: 'Runde',
-            event: running,
-            exercise: exercise,
-            rows: [
-              const ScheduleTableRow(roundIndex: 0, label: 'Runde 1'),
-              const ScheduleTableRow(roundIndex: 1, label: 'Runde 2'),
-            ],
+  testWidgets('the running round shows the house highlight; no round does when '
+      'pending', (tester) async {
+    final running = _makeEvent(
+      exercise: exercise,
+      phase: ExercisePhase.execution,
+      currentRound: 1,
+    );
+    await tester.pumpWidget(
+      _harness(
+        ScheduleTable(
+          headerLabel: 'Runde',
+          event: running,
+          exercise: exercise,
+          rows: [
+            const ScheduleTableRow(roundIndex: 0, label: 'Runde 1'),
+            const ScheduleTableRow(roundIndex: 1, label: 'Runde 2'),
+          ],
+        ),
+      ),
+    );
+
+    bool blueBehind(String label) {
+      final containers = tester.widgetList<Container>(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text(label),
+            matching: find.byType(ScheduleRow),
           ),
+          matching: find.byType(Container),
         ),
       );
-
-      bool blueBehind(String label) {
-        final containers = tester.widgetList<Container>(
-          find.descendant(
-            of: find.ancestor(
-              of: find.text(label),
-              matching: find.byType(ScheduleRow),
-            ),
-            matching: find.byType(Container),
-          ),
-        );
-        return containers.any(
-          (c) =>
-              (c.decoration as BoxDecoration?)?.color == Colors.blueAccent ||
-              c.color == Colors.blueAccent,
-        );
-      }
-
-      expect(blueBehind('Runde 1'), isFalse);
-      expect(blueBehind('Runde 2'), isTrue);
-
-      final pending = _makeEvent(
-        exercise: exercise,
-        phase: ExercisePhase.pending,
-        currentRound: 1,
+      return containers.any(
+        (c) =>
+            (c.decoration as BoxDecoration?)?.color == Colors.blueAccent ||
+            c.color == Colors.blueAccent,
       );
-      await tester.pumpWidget(
-        _harness(
-          ScheduleTable(
-            headerLabel: 'Runde',
-            event: pending,
-            exercise: exercise,
-            rows: [
-              const ScheduleTableRow(roundIndex: 0, label: 'Runde 1'),
-              const ScheduleTableRow(roundIndex: 1, label: 'Runde 2'),
-            ],
-          ),
+    }
+
+    expect(blueBehind('Runde 1'), isFalse);
+    expect(blueBehind('Runde 2'), isTrue);
+
+    final pending = _makeEvent(
+      exercise: exercise,
+      phase: ExercisePhase.pending,
+      currentRound: 1,
+    );
+    await tester.pumpWidget(
+      _harness(
+        ScheduleTable(
+          headerLabel: 'Runde',
+          event: pending,
+          exercise: exercise,
+          rows: [
+            const ScheduleTableRow(roundIndex: 0, label: 'Runde 1'),
+            const ScheduleTableRow(roundIndex: 1, label: 'Runde 2'),
+          ],
         ),
-      );
-      expect(blueBehind('Runde 2'), isFalse);
-    },
-  );
+      ),
+    );
+    expect(blueBehind('Runde 2'), isFalse);
+  });
 
   testWidgets(
     'fillWidth drives the header and rows to the same width in both modes: '
@@ -204,9 +197,7 @@ void main() {
 
       await tester.pumpWidget(build(fillWidth: true));
       final fillHeaderWidth = tester.getSize(find.byType(PhaseHeaders)).width;
-      final fillRowWidth = tester
-          .getSize(find.byType(ScheduleRow).at(0))
-          .width;
+      final fillRowWidth = tester.getSize(find.byType(ScheduleRow).at(0)).width;
       expect(
         fillHeaderWidth,
         closeTo(fillRowWidth, 0.5),
@@ -215,9 +206,7 @@ void main() {
       expect(fillHeaderWidth, closeTo(400, 0.5));
 
       await tester.pumpWidget(build(fillWidth: false));
-      final shrinkHeaderWidth = tester
-          .getSize(find.byType(PhaseHeaders))
-          .width;
+      final shrinkHeaderWidth = tester.getSize(find.byType(PhaseHeaders)).width;
       final shrinkRowWidth = tester
           .getSize(find.byType(ScheduleRow).at(0))
           .width;
@@ -234,47 +223,43 @@ void main() {
     },
   );
 
-  testWidgets(
-    'the coordinator round table (fillWidth: false) shrink-wraps',
-    (tester) async {
-      final event = _makeEvent(
-        exercise: exercise,
-        phase: ExercisePhase.pending,
-      );
-      await tester.pumpWidget(
-        _harness(
-          // A loose (not tight) bound: ConstrainedBox only caps maxWidth, the
-          // way Align/Center/IntrinsicWidth do at the real call site in
-          // coordinator_screen.dart. A tight SizedBox would force the
-          // Column to 400 regardless of its children's width and prove
-          // nothing.
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: ScheduleTable(
-              headerLabel: 'Runde',
-              labelWidth: 90,
-              event: event,
-              exercise: exercise,
-              fillWidth: false,
-              rows: [
-                const ScheduleTableRow(roundIndex: 0, label: 'Runde 1'),
-                const ScheduleTableRow(roundIndex: 1, label: 'Runde 2'),
-              ],
-            ),
+  testWidgets('the coordinator round table (fillWidth: false) shrink-wraps', (
+    tester,
+  ) async {
+    final event = _makeEvent(exercise: exercise, phase: ExercisePhase.pending);
+    await tester.pumpWidget(
+      _harness(
+        // A loose (not tight) bound: ConstrainedBox only caps maxWidth, the
+        // way Align/Center/IntrinsicWidth do at the real call site in
+        // coordinator_screen.dart. A tight SizedBox would force the
+        // Column to 400 regardless of its children's width and prove
+        // nothing.
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: ScheduleTable(
+            headerLabel: 'Runde',
+            labelWidth: 90,
+            event: event,
+            exercise: exercise,
+            fillWidth: false,
+            rows: [
+              const ScheduleTableRow(roundIndex: 0, label: 'Runde 1'),
+              const ScheduleTableRow(roundIndex: 1, label: 'Runde 2'),
+            ],
           ),
         ),
-      );
+      ),
+    );
 
-      final tableWidth = tester.getSize(find.byType(ScheduleTable)).width;
-      expect(
-        tableWidth,
-        lessThan(400),
-        reason:
-            'the coordinator round table minimizes instead of stretching '
-            'to the parent width',
-      );
-    },
-  );
+    final tableWidth = tester.getSize(find.byType(ScheduleTable)).width;
+    expect(
+      tableWidth,
+      lessThan(400),
+      reason:
+          'the coordinator round table minimizes instead of stretching '
+          'to the parent width',
+    );
+  });
 
   testWidgets(
     'DRILL/EVAL/ROLL center over their time columns in both width modes',
@@ -302,11 +287,7 @@ void main() {
       );
 
       Future<void> expectCentered() async {
-        for (final entry in const [
-          ('DRILL', 0),
-          ('EVAL', 1),
-          ('ROLL', 2),
-        ]) {
+        for (final entry in const [('DRILL', 0), ('EVAL', 1), ('ROLL', 2)]) {
           final (text, phaseIndex) = entry;
           final headerX = tester.getCenter(find.text(text)).dx;
           final cellX = tester

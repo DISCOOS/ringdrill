@@ -65,10 +65,16 @@ void main() {
         canonicalizeVariableValue(VariableType.date, '2026-05-17'),
         '2026-05-17',
       );
-      expect(canonicalizeVariableValue(VariableType.date, '17.05.2026'), isNull);
+      expect(
+        canonicalizeVariableValue(VariableType.date, '17.05.2026'),
+        isNull,
+      );
       // DateTime.parse would roll 2026-02-30 over to March — rejected, not
       // silently accepted as a different date.
-      expect(canonicalizeVariableValue(VariableType.date, '2026-02-30'), isNull);
+      expect(
+        canonicalizeVariableValue(VariableType.date, '2026-02-30'),
+        isNull,
+      );
     });
 
     test('duration is whole non-negative minutes', () {
@@ -110,11 +116,14 @@ void main() {
       expect(decoded.position, isNull);
     });
 
-    test('an out-of-range leading pair reads as place text, not a position', () {
-      final decoded = decodeLocationValue('123,456 not a coordinate');
-      expect(decoded.position, isNull);
-      expect(decoded.place, '123,456 not a coordinate');
-    });
+    test(
+      'an out-of-range leading pair reads as place text, not a position',
+      () {
+        final decoded = decodeLocationValue('123,456 not a coordinate');
+        expect(decoded.position, isNull);
+        expect(decoded.place, '123,456 not a coordinate');
+      },
+    );
   });
 
   group('parseCoordinateInput', () {
@@ -186,7 +195,11 @@ void main() {
     });
 
     test('a time renders HH:MM', () {
-      const v = DrillVariable(name: 'x', type: VariableType.time, value: '12:00');
+      const v = DrillVariable(
+        name: 'x',
+        type: VariableType.time,
+        value: '12:00',
+      );
       expect(formatVariableValue(v, _nb), '12:00');
     });
 

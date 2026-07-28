@@ -84,45 +84,42 @@ void main() {
     l = await AppLocalizations.delegate.load(const Locale('en'));
   });
 
-  testWidgets(
-    'setting position inline via the map picker persists on save, '
-    'without leaving the form',
-    (tester) async {
-      final captured = _Captured();
-      await _open(tester, captured);
+  testWidgets('setting position inline via the map picker persists on save, '
+      'without leaving the form', (tester) async {
+    final captured = _Captured();
+    await _open(tester, captured);
 
-      await tester.enterText(
-        find.widgetWithText(TextFormField, l.locationsSectionLabelLabel),
-        'LKP',
-      );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, l.locationsSectionLabelLabel),
+      'LKP',
+    );
 
-      // Open the real map picker (real FlutterMap, real pan gesture, real
-      // "confirm" tap) -- same drive as position_form_field_test.dart. Tap
-      // the position card's chevron (there is no separate map icon button);
-      // scroll it into view first since this form has fields above the
-      // position section that push it below the fold on the default test
-      // surface.
-      await tester.ensureVisible(find.byIcon(Icons.chevron_right));
-      await tester.tap(find.byIcon(Icons.chevron_right));
-      await tester.pumpAndSettle();
-      expect(_pickerMap(), findsOneWidget);
+    // Open the real map picker (real FlutterMap, real pan gesture, real
+    // "confirm" tap) -- same drive as position_form_field_test.dart. Tap
+    // the position card's chevron (there is no separate map icon button);
+    // scroll it into view first since this form has fields above the
+    // position section that push it below the fold on the default test
+    // surface.
+    await tester.ensureVisible(find.byIcon(Icons.chevron_right));
+    await tester.tap(find.byIcon(Icons.chevron_right));
+    await tester.pumpAndSettle();
+    expect(_pickerMap(), findsOneWidget);
 
-      await tester.drag(_pickerMap(), const Offset(-200, -150));
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.byIcon(Icons.check));
-      await tester.pumpAndSettle();
+    await tester.drag(_pickerMap(), const Offset(-200, -150));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byIcon(Icons.check));
+    await tester.pumpAndSettle();
 
-      // The picker returns to the Location form itself -- not out of the
-      // whole add flow -- so the author can keep filling other fields.
-      expect(find.widgetWithText(TextFormField, 'LKP'), findsOneWidget);
+    // The picker returns to the Location form itself -- not out of the
+    // whole add flow -- so the author can keep filling other fields.
+    expect(find.widgetWithText(TextFormField, 'LKP'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(FilledButton, l.save));
-      await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, l.save));
+    await tester.pumpAndSettle();
 
-      expect(captured.value, isNotNull);
-      expect(captured.value!.location.position, isNotNull);
-    },
-  );
+    expect(captured.value, isNotNull);
+    expect(captured.value!.location.position, isNotNull);
+  });
 
   testWidgets('the category grid sets kind', (tester) async {
     final captured = _Captured();

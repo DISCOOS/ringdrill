@@ -52,14 +52,11 @@ void main() {
     return controller.camera.zoom;
   }
 
-  testWidgets(
-    'a tight cluster (6 markers ~100 m apart) is capped at '
-    'defaultAutoFitMaxZoom, not zoomed in tighter',
-    (tester) async {
-      final zoom = await pumpAndGetZoom(tester, tightCluster);
-      expect(zoom, MapConfig.defaultAutoFitMaxZoom);
-    },
-  );
+  testWidgets('a tight cluster (6 markers ~100 m apart) is capped at '
+      'defaultAutoFitMaxZoom, not zoomed in tighter', (tester) async {
+    final zoom = await pumpAndGetZoom(tester, tightCluster);
+    expect(zoom, MapConfig.defaultAutoFitMaxZoom);
+  });
 
   testWidgets(
     'a widely-spread cluster (needs to zoom OUT further than the cap) is '

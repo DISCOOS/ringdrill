@@ -124,10 +124,7 @@ Widget _harness(_HarnessControllers controllers) {
       builder: (context, _, child) => Scaffold(
         appBar: AppBar(
           actions: [
-            ...?controllers.plan.buildActions(
-              context,
-              const BoxConstraints(),
-            ),
+            ...?controllers.plan.buildActions(context, const BoxConstraints()),
           ],
         ),
         body: child!,

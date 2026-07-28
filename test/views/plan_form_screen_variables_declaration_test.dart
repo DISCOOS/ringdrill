@@ -66,9 +66,7 @@ Future<void> _openForm(
           onPressed: () async {
             captured.value = await Navigator.push<Plan>(
               ctx,
-              MaterialPageRoute(
-                builder: (_) => PlanFormScreen(plan: plan),
-              ),
+              MaterialPageRoute(builder: (_) => PlanFormScreen(plan: plan)),
             );
           },
           child: const Text('Open'),
@@ -140,10 +138,13 @@ Future<void> _expandCard(
     of: _variableCardOf(name),
     matching: find.text(l.variablesSectionCustomizeAction),
   );
-  if (find.descendant(
-    of: _variableCardOf(name),
-    matching: find.byIcon(Icons.keyboard_arrow_up),
-  ).evaluate().isNotEmpty) {
+  if (find
+      .descendant(
+        of: _variableCardOf(name),
+        matching: find.byIcon(Icons.keyboard_arrow_up),
+      )
+      .evaluate()
+      .isNotEmpty) {
     return;
   }
   await tester.tap(tilpass);
@@ -160,13 +161,15 @@ Finder _variableCardMenu(String name) => find.descendant(
 /// The inline type-aware value field on [name]'s *expanded* card — distinct
 /// from the hint field, which is a plain sibling `TextFormField` outside
 /// [VariableValueField].
-Finder _variableValueFieldOf(String name) => find.descendant(
-  of: find.descendant(
-    of: _variableCardOf(name),
-    matching: find.byType(VariableValueField),
-  ),
-  matching: find.byType(TextFormField),
-).first;
+Finder _variableValueFieldOf(String name) => find
+    .descendant(
+      of: find.descendant(
+        of: _variableCardOf(name),
+        matching: find.byType(VariableValueField),
+      ),
+      matching: find.byType(TextFormField),
+    )
+    .first;
 
 /// Swipes [name]'s card end-to-start past the dismiss threshold — the same
 /// offset `station_form_screen_locations_persons_test.dart` uses for
@@ -183,57 +186,54 @@ void main() {
     l = await AppLocalizations.delegate.load(const Locale('en'));
   });
 
-  testWidgets(
-    'declare a variable (name + hint only), expand its card to set a '
-    'value, reference it, save: the popped Plan has both',
-    (tester) async {
-      final captured = _Captured();
-      await _openForm(tester, _plan(briefIntroMd: 'Intro'), captured);
+  testWidgets('declare a variable (name + hint only), expand its card to set a '
+      'value, reference it, save: the popped Plan has both', (tester) async {
+    final captured = _Captured();
+    await _openForm(tester, _plan(briefIntroMd: 'Intro'), captured);
 
-      await _openSwitcherFrom(tester, l.planSectionPlan);
-      await tester.tap(find.text(l.variablesSectionTitle));
-      await tester.pumpAndSettle();
+    await _openSwitcherFrom(tester, l.planSectionPlan);
+    await tester.tap(find.text(l.variablesSectionTitle));
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.text(l.variablesSectionAddAction));
-      await tester.pumpAndSettle();
-      // Only name + hint in the creation dialog — no value field.
-      expect(
-        find.widgetWithText(TextFormField, l.variablesSectionValueLabel),
-        findsNothing,
-      );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, l.variablesSectionNameLabel),
-        'frekvens',
-      );
-      await tester.tap(
-        find.widgetWithText(FilledButton, l.variablesSectionAddAction),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('frekvens'), findsOneWidget);
-      expect(find.text(l.variablesSectionNoValuePlaceholder), findsOneWidget);
+    await tester.tap(find.text(l.variablesSectionAddAction));
+    await tester.pumpAndSettle();
+    // Only name + hint in the creation dialog — no value field.
+    expect(
+      find.widgetWithText(TextFormField, l.variablesSectionValueLabel),
+      findsNothing,
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, l.variablesSectionNameLabel),
+      'frekvens',
+    );
+    await tester.tap(
+      find.widgetWithText(FilledButton, l.variablesSectionAddAction),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('frekvens'), findsOneWidget);
+    expect(find.text(l.variablesSectionNoValuePlaceholder), findsOneWidget);
 
-      await _expandCard(tester, l, 'frekvens');
-      await tester.enterText(_variableValueFieldOf('frekvens'), 'Kanal 6');
-      await tester.pumpAndSettle();
+    await _expandCard(tester, l, 'frekvens');
+    await tester.enterText(_variableValueFieldOf('frekvens'), 'Kanal 6');
+    await tester.pumpAndSettle();
 
-      await _openSwitcherFrom(tester, l.variablesSectionTitle);
-      await tester.tap(find.text(l.briefSectionPlanIntro));
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.widgetWithText(TextFormField, l.briefSectionPlanIntro),
-        'Kanal {{var.frekvens}}',
-      );
+    await _openSwitcherFrom(tester, l.variablesSectionTitle);
+    await tester.tap(find.text(l.briefSectionPlanIntro));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, l.briefSectionPlanIntro),
+      'Kanal {{var.frekvens}}',
+    );
 
-      await tester.tap(find.text(l.save));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text(l.save));
+    await tester.pumpAndSettle();
 
-      expect(captured.value, isNotNull);
-      final saved = captured.value!;
-      expect(saved.variables.single.name, 'frekvens');
-      expect(saved.variables.single.value, 'Kanal 6');
-      expect(saved.briefIntroMd, 'Kanal {{var.frekvens}}');
-    },
-  );
+    expect(captured.value, isNotNull);
+    final saved = captured.value!;
+    expect(saved.variables.single.name, 'frekvens');
+    expect(saved.variables.single.value, 'Kanal 6');
+    expect(saved.briefIntroMd, 'Kanal {{var.frekvens}}');
+  });
 
   testWidgets(
     'create-inline via the insertion menu declares an empty (amber) variable',
@@ -266,78 +266,74 @@ void main() {
     },
   );
 
-  testWidgets(
-    'the ⋮ menu only appears once the card is expanded (DESIGN-008 '
-    'follow-up 12)',
-    (tester) async {
-      await _openForm(
-        tester,
-        _plan(
-          variables: const [DrillVariable(name: 'frekvens', value: 'X')],
-        ),
-        _Captured(),
-      );
+  testWidgets('the ⋮ menu only appears once the card is expanded (DESIGN-008 '
+      'follow-up 12)', (tester) async {
+    await _openForm(
+      tester,
+      _plan(
+        variables: const [DrillVariable(name: 'frekvens', value: 'X')],
+      ),
+      _Captured(),
+    );
 
-      await _openSwitcherFrom(tester, l.planSectionPlan);
-      await tester.tap(find.text(l.variablesSectionTitle));
-      await tester.pumpAndSettle();
+    await _openSwitcherFrom(tester, l.planSectionPlan);
+    await tester.tap(find.text(l.variablesSectionTitle));
+    await tester.pumpAndSettle();
 
-      // Collapsed: neither the panel content nor the ⋮ menu is showing.
-      expect(find.byType(VariableValueField), findsNothing);
-      expect(_variableCardMenu('frekvens'), findsNothing);
+    // Collapsed: neither the panel content nor the ⋮ menu is showing.
+    expect(find.byType(VariableValueField), findsNothing);
+    expect(_variableCardMenu('frekvens'), findsNothing);
 
-      await _expandCard(tester, l, 'frekvens');
-      expect(_variableCardMenu('frekvens'), findsOneWidget);
+    await _expandCard(tester, l, 'frekvens');
+    expect(_variableCardMenu('frekvens'), findsOneWidget);
 
-      await tester.tap(_variableCardMenu('frekvens'));
-      await tester.pumpAndSettle();
-      expect(find.text(l.variablesSectionRenameAction), findsOneWidget);
-      expect(find.text(l.variablesSectionDeleteAction), findsOneWidget);
-    },
-  );
+    await tester.tap(_variableCardMenu('frekvens'));
+    await tester.pumpAndSettle();
+    expect(find.text(l.variablesSectionRenameAction), findsOneWidget);
+    expect(find.text(l.variablesSectionDeleteAction), findsOneWidget);
+  });
 
-  testWidgets(
-    'expanding a card collapses whichever other card was expanded '
-    '(DESIGN-008 follow-up 12: mutually exclusive expansion)',
-    (tester) async {
-      await _openForm(
-        tester,
-        _plan(
-          variables: const [
-            DrillVariable(name: 'frekvens', value: 'Kanal 6'),
-            DrillVariable(name: 'talegruppe', value: 'VFOLD'),
-          ],
-        ),
-        _Captured(),
-      );
+  testWidgets('expanding a card collapses whichever other card was expanded '
+      '(DESIGN-008 follow-up 12: mutually exclusive expansion)', (
+    tester,
+  ) async {
+    await _openForm(
+      tester,
+      _plan(
+        variables: const [
+          DrillVariable(name: 'frekvens', value: 'Kanal 6'),
+          DrillVariable(name: 'talegruppe', value: 'VFOLD'),
+        ],
+      ),
+      _Captured(),
+    );
 
-      await _openSwitcherFrom(tester, l.planSectionPlan);
-      await tester.tap(find.text(l.variablesSectionTitle));
-      await tester.pumpAndSettle();
+    await _openSwitcherFrom(tester, l.planSectionPlan);
+    await tester.tap(find.text(l.variablesSectionTitle));
+    await tester.pumpAndSettle();
 
-      await _expandCard(tester, l, 'frekvens');
-      expect(find.byType(VariableValueField), findsOneWidget);
+    await _expandCard(tester, l, 'frekvens');
+    expect(find.byType(VariableValueField), findsOneWidget);
 
-      await _expandCard(tester, l, 'talegruppe');
-      // Only the newly expanded card's panel is showing — "frekvens"
-      // collapsed back automatically.
-      expect(find.byType(VariableValueField), findsOneWidget);
-      expect(
-        find.descendant(
-          of: _variableCardOf('talegruppe'),
-          matching: find.byType(VariableValueField),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: _variableCardOf('frekvens'),
-          matching: find.byType(VariableValueField),
-        ),
-        findsNothing,
-      );
-    },
-  );
+    await _expandCard(tester, l, 'talegruppe');
+    // Only the newly expanded card's panel is showing — "frekvens"
+    // collapsed back automatically.
+    expect(find.byType(VariableValueField), findsOneWidget);
+    expect(
+      find.descendant(
+        of: _variableCardOf('talegruppe'),
+        matching: find.byType(VariableValueField),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: _variableCardOf('frekvens'),
+        matching: find.byType(VariableValueField),
+      ),
+      findsNothing,
+    );
+  });
 
   testWidgets('renaming a variable rewrites every reference in the editor', (
     tester,
@@ -841,84 +837,78 @@ void main() {
     },
   );
 
-  testWidgets(
-    'the bottom search bar filters by name and hint, matching '
-    "Persons/Locations' own bar (DESIGN-008 follow-up 12)",
-    (tester) async {
-      await _openForm(
-        tester,
-        _plan(
-          variables: const [
-            DrillVariable(name: 'frekvens', value: 'Kanal 6', hint: 'Radio'),
-            DrillVariable(name: 'talegruppe', value: 'VFOLD'),
-          ],
-        ),
-        _Captured(),
-      );
+  testWidgets('the bottom search bar filters by name and hint, matching '
+      "Persons/Locations' own bar (DESIGN-008 follow-up 12)", (tester) async {
+    await _openForm(
+      tester,
+      _plan(
+        variables: const [
+          DrillVariable(name: 'frekvens', value: 'Kanal 6', hint: 'Radio'),
+          DrillVariable(name: 'talegruppe', value: 'VFOLD'),
+        ],
+      ),
+      _Captured(),
+    );
 
-      await _openSwitcherFrom(tester, l.planSectionPlan);
-      await tester.tap(find.text(l.variablesSectionTitle));
-      await tester.pumpAndSettle();
+    await _openSwitcherFrom(tester, l.planSectionPlan);
+    await tester.tap(find.text(l.variablesSectionTitle));
+    await tester.pumpAndSettle();
 
-      expect(find.text('frekvens'), findsOneWidget);
-      expect(find.text('talegruppe'), findsOneWidget);
+    expect(find.text('frekvens'), findsOneWidget);
+    expect(find.text('talegruppe'), findsOneWidget);
 
-      // Matches the name.
-      await tester.enterText(
-        find.widgetWithText(TextField, l.variablesSectionSearchHint),
-        'tale',
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('frekvens'), findsNothing);
-      expect(find.text('talegruppe'), findsOneWidget);
+    // Matches the name.
+    await tester.enterText(
+      find.widgetWithText(TextField, l.variablesSectionSearchHint),
+      'tale',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('frekvens'), findsNothing);
+    expect(find.text('talegruppe'), findsOneWidget);
 
-      // Matches the hint too.
-      await tester.enterText(
-        find.widgetWithText(TextField, l.variablesSectionSearchHint),
-        'radio',
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('frekvens'), findsOneWidget);
-      expect(find.text('talegruppe'), findsNothing);
+    // Matches the hint too.
+    await tester.enterText(
+      find.widgetWithText(TextField, l.variablesSectionSearchHint),
+      'radio',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('frekvens'), findsOneWidget);
+    expect(find.text('talegruppe'), findsNothing);
 
-      // Clearing the query restores the full list.
-      await tester.enterText(
-        find.widgetWithText(TextField, l.variablesSectionSearchHint),
-        '',
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('frekvens'), findsOneWidget);
-      expect(find.text('talegruppe'), findsOneWidget);
-    },
-  );
+    // Clearing the query restores the full list.
+    await tester.enterText(
+      find.widgetWithText(TextField, l.variablesSectionSearchHint),
+      '',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('frekvens'), findsOneWidget);
+    expect(find.text('talegruppe'), findsOneWidget);
+  });
 
-  testWidgets(
-    'the "+ Ny variabel" action lives in the bottom search/add bar '
-    '(DESIGN-008 follow-up 12)',
-    (tester) async {
-      await _openForm(
-        tester,
-        _plan(
-          variables: const [DrillVariable(name: 'frekvens', value: 'X')],
-        ),
-        _Captured(),
-      );
+  testWidgets('the "+ Ny variabel" action lives in the bottom search/add bar '
+      '(DESIGN-008 follow-up 12)', (tester) async {
+    await _openForm(
+      tester,
+      _plan(
+        variables: const [DrillVariable(name: 'frekvens', value: 'X')],
+      ),
+      _Captured(),
+    );
 
-      await _openSwitcherFrom(tester, l.planSectionPlan);
-      await tester.tap(find.text(l.variablesSectionTitle));
-      await tester.pumpAndSettle();
+    await _openSwitcherFrom(tester, l.planSectionPlan);
+    await tester.tap(find.text(l.variablesSectionTitle));
+    await tester.pumpAndSettle();
 
-      expect(
-        find.ancestor(
-          of: find.text(l.variablesSectionAddAction),
-          matching: find.byType(TextButton),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.widgetWithText(TextField, l.variablesSectionSearchHint),
-        findsOneWidget,
-      );
-    },
-  );
+    expect(
+      find.ancestor(
+        of: find.text(l.variablesSectionAddAction),
+        matching: find.byType(TextButton),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.widgetWithText(TextField, l.variablesSectionSearchHint),
+      findsOneWidget,
+    );
+  });
 }

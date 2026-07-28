@@ -79,63 +79,62 @@ void main() {
     l10n = await AppLocalizations.delegate.load(const Locale('en'));
   });
 
-  testWidgets(
-    'running: team 0 shows the badged post it is at now/next',
-    (tester) async {
-      final exercise = _exercise(startTime: _startTimeMinutesAgo(3));
-      ExerciseService().debugNowOverride = () => _fixedNow;
-      addTearDown(() => ExerciseService().debugNowOverride = DateTime.now);
-      // Team 0: stationIndex(0, round) = round % 3 -> round0: station0
-      // ("Post 1"), round1: station1 ("Post 2").
-      ExerciseService().start(exercise);
+  testWidgets('running: team 0 shows the badged post it is at now/next', (
+    tester,
+  ) async {
+    final exercise = _exercise(startTime: _startTimeMinutesAgo(3));
+    ExerciseService().debugNowOverride = () => _fixedNow;
+    addTearDown(() => ExerciseService().debugNowOverride = DateTime.now);
+    // Team 0: stationIndex(0, round) = round % 3 -> round0: station0
+    // ("Post 1"), round1: station1 ("Post 2").
+    ExerciseService().start(exercise);
 
-      await tester.pumpWidget(
-        _harness(TeamExerciseScreen(teamIndex: 0, exercise: exercise)),
-      );
-      await tester.pump();
+    await tester.pumpWidget(
+      _harness(TeamExerciseScreen(teamIndex: 0, exercise: exercise)),
+    );
+    await tester.pump();
 
-      final cardFinder = find.byType(PlayerStatusCard);
-      expect(cardFinder, findsOneWidget);
+    final cardFinder = find.byType(PlayerStatusCard);
+    expect(cardFinder, findsOneWidget);
 
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.textContaining(l10n.statusNow),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.textContaining(l10n.nextLabel),
-        ),
-        findsOneWidget,
-      );
-      // Both post names appear, each with its own number badge — not a
-      // bare label baked into the surface title.
-      expect(
-        find.descendant(of: cardFinder, matching: find.text('Post 1')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: cardFinder, matching: find.text('Post 2')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: cardFinder, matching: find.text('1.1')),
-        findsOneWidget,
-        reason: 'the "Nå" post is badged with the dotted station number',
-      );
-      expect(
-        find.descendant(of: cardFinder, matching: find.text('1.2')),
-        findsOneWidget,
-        reason: 'the "Neste" post is badged with the dotted station number',
-      );
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.textContaining(l10n.statusNow),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.textContaining(l10n.nextLabel),
+      ),
+      findsOneWidget,
+    );
+    // Both post names appear, each with its own number badge — not a
+    // bare label baked into the surface title.
+    expect(
+      find.descendant(of: cardFinder, matching: find.text('Post 1')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: cardFinder, matching: find.text('Post 2')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: cardFinder, matching: find.text('1.1')),
+      findsOneWidget,
+      reason: 'the "Nå" post is badged with the dotted station number',
+    );
+    expect(
+      find.descendant(of: cardFinder, matching: find.text('1.2')),
+      findsOneWidget,
+      reason: 'the "Neste" post is badged with the dotted station number',
+    );
 
-      ExerciseService().stop();
-      await tester.pump();
-    },
-  );
+    ExerciseService().stop();
+    await tester.pump();
+  });
 
   testWidgets(
     'running: team 0 on the last round falls back to the exercise finish '
@@ -166,7 +165,8 @@ void main() {
           matching: find.text('${l10n.nextLabel} · ${exercise.endTime}'),
         ),
         findsOneWidget,
-        reason: 'the next-cell label still reads "Next", with the '
+        reason:
+            'the next-cell label still reads "Next", with the '
             "exercise's finish time appended inline",
       );
       expect(

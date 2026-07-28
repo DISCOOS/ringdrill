@@ -94,8 +94,9 @@ class EditableRow extends StatelessWidget {
     required this.target,
     required this.onEdit,
     required this.builder,
-    this.exerciseUuid,
     required this.dismissKey,
+    required this.label,
+    this.exerciseUuid,
   });
 
   final EditTarget target;
@@ -111,6 +112,11 @@ class EditableRow extends StatelessWidget {
 
   /// Key for the [Dismissible]. Must be stable and unique within the list.
   final Key dismissKey;
+
+  /// Named on the swipe background, e.g. "Rediger post". Kept rather than
+  /// reduced to a bare pencil: the lists this replaces all showed the action in
+  /// words, and a swipe that reveals only an icon is guessable at best.
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -134,9 +140,19 @@ class EditableRow extends StatelessWidget {
           },
           background: Container(
             alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             color: scheme.secondaryContainer,
-            child: Icon(Icons.edit, color: scheme.onSecondaryContainer),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(color: scheme.onSecondaryContainer),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.edit, color: scheme.onSecondaryContainer),
+              ],
+            ),
           ),
           child: row,
         );

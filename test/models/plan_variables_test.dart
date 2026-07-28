@@ -13,30 +13,30 @@ void main() {
   final now = DateTime(2026);
 
   Plan base() => Plan(
-        uuid: 'prog-1',
-        name: 'Test',
-        description: '',
-        metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
-        teams: const [],
-        sessions: const [],
-        exercises: const [],
-        rolePlays: const [],
-        actors: const [],
-      );
+    uuid: 'prog-1',
+    name: 'Test',
+    description: '',
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
+    teams: const [],
+    sessions: const [],
+    exercises: const [],
+    rolePlays: const [],
+    actors: const [],
+  );
 
   Map<String, dynamic> minimalJson() => {
-        'uuid': 'prog-1',
-        'name': 'Test',
-        'description': '',
-        'metadata': {
-          'created': '2026-01-01T00:00:00.000',
-          'updated': '2026-01-01T00:00:00.000',
-          'version': '1.0',
-        },
-        'teams': [],
-        'sessions': [],
-        'exercises': [],
-      };
+    'uuid': 'prog-1',
+    'name': 'Test',
+    'description': '',
+    'metadata': {
+      'created': '2026-01-01T00:00:00.000',
+      'updated': '2026-01-01T00:00:00.000',
+      'version': '1.0',
+    },
+    'teams': [],
+    'sessions': [],
+    'exercises': [],
+  };
 
   const freq = DrillVariable(
     name: 'frekvens',
@@ -107,14 +107,15 @@ void main() {
 
       expect(decoded.variables, isEmpty);
       expect(decoded.exercises.single.variableOverrides, isEmpty);
-      expect(decoded.exercises.single.stations.single.variableOverrides,
-          isEmpty);
+      expect(
+        decoded.exercises.single.stations.single.variableOverrides,
+        isEmpty,
+      );
     });
   });
 
   group('round-trips', () {
-    test('Plan registry round-trips through the real DrillFile archive',
-        () {
+    test('Plan registry round-trips through the real DrillFile archive', () {
       final plan = base().copyWith(variables: [freq, meetingPoint]);
 
       final drillFile = DrillFile.fromPlan(plan, 'test');
@@ -174,17 +175,15 @@ void main() {
         schedule: const [],
         variableOverrides: const {'frekvens': 'Kanal 8'},
       );
-      final plan = base()
-          .copyWith(variables: [freq], exercises: [exercise]);
+      final plan = base().copyWith(variables: [freq], exercises: [exercise]);
 
       final decoded = DrillFile.fromPlan(plan, 'test').plan();
       final decodedExercise = decoded.exercises.single;
 
       expect(decodedExercise.variableOverrides, {'frekvens': 'Kanal 8'});
-      expect(
-        decodedExercise.stations.single.variableOverrides,
-        {'frekvens': 'Kanal 8'},
-      );
+      expect(decodedExercise.stations.single.variableOverrides, {
+        'frekvens': 'Kanal 8',
+      });
     });
   });
 
@@ -219,19 +218,19 @@ void main() {
 
     test('changes when an exercise variableOverrides entry changes', () {
       Exercise exercise(String value) => Exercise(
-            uuid: 'ex-1',
-            name: 'Ex',
-            startTime: SimpleTimeOfDay(hour: 8, minute: 0),
-            endTime: SimpleTimeOfDay(hour: 9, minute: 0),
-            numberOfTeams: 1,
-            numberOfRounds: 1,
-            executionTime: 10,
-            evaluationTime: 5,
-            rotationTime: 5,
-            stations: const [],
-            schedule: const [],
-            variableOverrides: {'frekvens': value},
-          );
+        uuid: 'ex-1',
+        name: 'Ex',
+        startTime: SimpleTimeOfDay(hour: 8, minute: 0),
+        endTime: SimpleTimeOfDay(hour: 9, minute: 0),
+        numberOfTeams: 1,
+        numberOfRounds: 1,
+        executionTime: 10,
+        evaluationTime: 5,
+        rotationTime: 5,
+        stations: const [],
+        schedule: const [],
+        variableOverrides: {'frekvens': value},
+      );
 
       final prog = base().copyWith(exercises: [exercise('Kanal 6')]);
       final changed = base().copyWith(exercises: [exercise('Kanal 8')]);
@@ -240,24 +239,20 @@ void main() {
 
     test('changes when a station variableOverrides entry changes', () {
       Exercise exercise(String value) => Exercise(
-            uuid: 'ex-1',
-            name: 'Ex',
-            startTime: SimpleTimeOfDay(hour: 8, minute: 0),
-            endTime: SimpleTimeOfDay(hour: 9, minute: 0),
-            numberOfTeams: 1,
-            numberOfRounds: 1,
-            executionTime: 10,
-            evaluationTime: 5,
-            rotationTime: 5,
-            stations: [
-              Station(
-                index: 0,
-                name: 'S1',
-                variableOverrides: {'frekvens': value},
-              ),
-            ],
-            schedule: const [],
-          );
+        uuid: 'ex-1',
+        name: 'Ex',
+        startTime: SimpleTimeOfDay(hour: 8, minute: 0),
+        endTime: SimpleTimeOfDay(hour: 9, minute: 0),
+        numberOfTeams: 1,
+        numberOfRounds: 1,
+        executionTime: 10,
+        evaluationTime: 5,
+        rotationTime: 5,
+        stations: [
+          Station(index: 0, name: 'S1', variableOverrides: {'frekvens': value}),
+        ],
+        schedule: const [],
+      );
 
       final prog = base().copyWith(exercises: [exercise('Kanal 6')]);
       final changed = base().copyWith(exercises: [exercise('Kanal 8')]);

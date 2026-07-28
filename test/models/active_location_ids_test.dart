@@ -33,10 +33,10 @@ void main() {
     });
 
     test('round 0 lights the first two positioned stations', () {
-      expect(
-        exercise.activeLocationIds(0),
-        {const ('ex-1', 0), const ('ex-1', 1)},
-      );
+      expect(exercise.activeLocationIds(0), {
+        const ('ex-1', 0),
+        const ('ex-1', 1),
+      });
     });
 
     test('round 1 lights only station 1 (station 2 has no position)', () {
@@ -46,10 +46,10 @@ void main() {
     });
 
     test('round 3 lights stations 0 and 3', () {
-      expect(
-        exercise.activeLocationIds(3),
-        {const ('ex-1', 0), const ('ex-1', 2)},
-      );
+      expect(exercise.activeLocationIds(3), {
+        const ('ex-1', 0),
+        const ('ex-1', 2),
+      });
     });
 
     test('returns an empty set when no station is live', () {

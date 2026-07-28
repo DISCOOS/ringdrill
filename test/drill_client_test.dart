@@ -67,8 +67,7 @@ void main() {
       final client = DrillClient(
         baseUrl: 'https://example.test',
         httpClient: MockClient(
-          (_) async =>
-              http.Response('bytes', 200, headers: {'x-version': '7'}),
+          (_) async => http.Response('bytes', 200, headers: {'x-version': '7'}),
         ),
       );
 

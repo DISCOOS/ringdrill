@@ -143,26 +143,23 @@ void main() {
     },
   );
 
-  testWidgets(
-    'shows the sidebar toggle instead of the close-X under a '
-    'MasterDetailScope with a collapse toggle (wide)',
-    (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: MasterDetailScope(
-            target: ValueNotifier<ContextSheetTarget?>(null),
-            emptyPaneBuilder: (_) => const SizedBox.shrink(),
-            onToggleMaster: () {},
-            child: const TeamScreen(teamIndex: 0),
-          ),
+  testWidgets('shows the sidebar toggle instead of the close-X under a '
+      'MasterDetailScope with a collapse toggle (wide)', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MasterDetailScope(
+          target: ValueNotifier<ContextSheetTarget?>(null),
+          emptyPaneBuilder: (_) => const SizedBox.shrink(),
+          onToggleMaster: () {},
+          child: const TeamScreen(teamIndex: 0),
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      expect(find.byIcon(CupertinoIcons.sidebar_left), findsOneWidget);
-      expect(find.byIcon(Icons.close), findsNothing);
-    },
-  );
+    expect(find.byIcon(CupertinoIcons.sidebar_left), findsOneWidget);
+    expect(find.byIcon(Icons.close), findsNothing);
+  });
 }

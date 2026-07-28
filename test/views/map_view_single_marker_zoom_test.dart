@@ -51,16 +51,13 @@ void main() {
     child: const Icon(Icons.place),
   );
 
-  testWidgets(
-    'exactly one marker zooms to defaultAutoFitMaxZoom, not the '
-    '(unrelated) full-label detail threshold',
-    (tester) async {
-      final controller = await pumpWith(tester, [
-        marker(0, const LatLng(59.0, 10.0)),
-      ]);
-      expect(controller.camera.zoom, MapConfig.defaultAutoFitMaxZoom);
-    },
-  );
+  testWidgets('exactly one marker zooms to defaultAutoFitMaxZoom, not the '
+      '(unrelated) full-label detail threshold', (tester) async {
+    final controller = await pumpWith(tester, [
+      marker(0, const LatLng(59.0, 10.0)),
+    ]);
+    expect(controller.camera.zoom, MapConfig.defaultAutoFitMaxZoom);
+  });
 
   testWidgets('zero markers also uses defaultAutoFitMaxZoom', (tester) async {
     final controller = await pumpWith(tester, []);

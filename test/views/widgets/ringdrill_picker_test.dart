@@ -105,12 +105,7 @@ void main() {
     (tester) async {
       _setWidth(tester, 1000);
       final items = List.generate(8, (i) => 'Item $i');
-      await _open(
-        tester,
-        _Captured(),
-        items: items,
-        searchText: (s) => s,
-      );
+      await _open(tester, _Captured(), items: items, searchText: (s) => s);
 
       expect(find.byKey(const Key('ringdrill-picker-search')), findsOneWidget);
       expect(find.text('Item 0'), findsOneWidget);

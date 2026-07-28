@@ -102,37 +102,34 @@ void main() {
     expect(captured, <String, String>{});
   });
 
-  testWidgets(
-    'the local-value field is accented only when overridden '
-    '(DESIGN-008 follow-up 12)',
-    (tester) async {
-      await _pump(
-        tester,
-        variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
-        inherited: const {'frekvens': 'Kanal 6'},
-        overrides: const {},
-        onChanged: (_) {},
-      );
-      expect(
-        tester.widget<VariableValueField>(find.byType(VariableValueField)).accent,
-        isFalse,
-        reason: 'inheriting (no local override) is not accented',
-      );
+  testWidgets('the local-value field is accented only when overridden '
+      '(DESIGN-008 follow-up 12)', (tester) async {
+    await _pump(
+      tester,
+      variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+      inherited: const {'frekvens': 'Kanal 6'},
+      overrides: const {},
+      onChanged: (_) {},
+    );
+    expect(
+      tester.widget<VariableValueField>(find.byType(VariableValueField)).accent,
+      isFalse,
+      reason: 'inheriting (no local override) is not accented',
+    );
 
-      await _pump(
-        tester,
-        variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
-        inherited: const {'frekvens': 'Kanal 6'},
-        overrides: const {'frekvens': 'Kanal 8'},
-        onChanged: (_) {},
-      );
-      expect(
-        tester.widget<VariableValueField>(find.byType(VariableValueField)).accent,
-        isTrue,
-        reason: 'a set local override is accented',
-      );
-    },
-  );
+    await _pump(
+      tester,
+      variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+      inherited: const {'frekvens': 'Kanal 6'},
+      overrides: const {'frekvens': 'Kanal 8'},
+      onChanged: (_) {},
+    );
+    expect(
+      tester.widget<VariableValueField>(find.byType(VariableValueField)).accent,
+      isTrue,
+      reason: 'a set local override is accented',
+    );
+  });
 
   testWidgets('has no add/rename/delete affordance', (tester) async {
     await _pump(
@@ -161,10 +158,7 @@ void main() {
             location: VariableLocation(position: LatLng(59.7445, 10.2045)),
           ),
         ],
-        inherited: const {
-          'tid': '09:05',
-          'oppmote': '59.744500,10.204500',
-        },
+        inherited: const {'tid': '09:05', 'oppmote': '59.744500,10.204500'},
         overrides: const {},
         onChanged: (_) {},
       );

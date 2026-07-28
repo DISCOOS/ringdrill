@@ -33,7 +33,10 @@ void main() {
       var toggled = false;
       var closed = false;
       await tester.pumpWidget(
-        _harness(onToggleMaster: () => toggled = true, onClose: () => closed = true),
+        _harness(
+          onToggleMaster: () => toggled = true,
+          onClose: () => closed = true,
+        ),
       );
 
       expect(find.byIcon(CupertinoIcons.sidebar_left), findsOneWidget);

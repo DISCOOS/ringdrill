@@ -11,10 +11,7 @@ import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Finder _pencilFor(String realName) => find.descendant(
-  of: find.ancestor(
-    of: find.text(realName),
-    matching: find.byType(ListTile),
-  ),
+  of: find.ancestor(of: find.text(realName), matching: find.byType(ListTile)),
   matching: find.byIcon(Icons.edit_outlined),
 );
 
@@ -347,10 +344,7 @@ void main() {
       await tester.pumpWidget(_buildPicker(_roleA));
       await tester.pump();
 
-      expect(
-        find.byWidgetPredicate((w) => w is PopupMenuButton),
-        findsNothing,
-      );
+      expect(find.byWidgetPredicate((w) => w is PopupMenuButton), findsNothing);
     });
 
     testWidgets(

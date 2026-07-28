@@ -72,14 +72,11 @@ void main() {
       expect(DrillLibrary.sniff(content), DrillArchiveKind.invalid);
     });
 
-    test(
-      'ZIP with neither program.json nor .drill entries -> invalid',
-      () {
-        final archive = Archive()..addFile(_entry('readme.txt', 'hello'));
-        final content = ZipEncoder().encode(archive);
-        expect(DrillLibrary.sniff(content), DrillArchiveKind.invalid);
-      },
-    );
+    test('ZIP with neither program.json nor .drill entries -> invalid', () {
+      final archive = Archive()..addFile(_entry('readme.txt', 'hello'));
+      final content = ZipEncoder().encode(archive);
+      expect(DrillLibrary.sniff(content), DrillArchiveKind.invalid);
+    });
 
     test('empty ZIP -> DrillArchiveKind.invalid', () {
       final content = _emptyZip();
@@ -218,8 +215,10 @@ void main() {
         _plan('uuid-2', 'My Plan'),
       ]);
       final archive = ZipDecoder().decodeBytes(bundle);
-      final names =
-          archive.files.where((f) => f.isFile).map((f) => f.name).toSet();
+      final names = archive.files
+          .where((f) => f.isFile)
+          .map((f) => f.name)
+          .toSet();
 
       expect(names, contains('my-plan.drill'));
       expect(names, contains('my-plan-1.drill'));

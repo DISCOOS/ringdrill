@@ -71,7 +71,9 @@ void main() {
   }
 
   const phoneSize = Size(390, 844); // genuinely compact: width < 600
-  final compactDetailZoom = MapConfig.labelDetailZoomFor(WindowSizeClass.compact);
+  final compactDetailZoom = MapConfig.labelDetailZoomFor(
+    WindowSizeClass.compact,
+  );
 
   testWidgets(
     'true phone window: just below labelDetailZoomFor(compact), shows the '

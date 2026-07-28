@@ -50,9 +50,7 @@ Color? _chipColor(WidgetTester tester, String token) {
 
 void main() {
   group('RingDrillTextArea — tokenAware: false (legacy, default)', () {
-    testWidgets('renders a plain field with no insertion menu', (
-      tester,
-    ) async {
+    testWidgets('renders a plain field with no insertion menu', (tester) async {
       final controller = TextEditingController(text: 'plain markdown');
       await _pump(
         tester,
@@ -109,9 +107,7 @@ void main() {
     testWidgets(
       'a variable added to the scope re-resolves an amber chip to blue on rebuild',
       (tester) async {
-        final controller = TokenTextEditingController(
-          text: '{{var.frekvens}}',
-        );
+        final controller = TokenTextEditingController(text: '{{var.frekvens}}');
 
         Widget host(List<DrillVariable> variables) => MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -128,9 +124,7 @@ void main() {
           ),
         );
 
-        await tester.pumpWidget(
-          host(const [DrillVariable(name: 'frekvens')]),
-        );
+        await tester.pumpWidget(host(const [DrillVariable(name: 'frekvens')]));
         expect(_chipColor(tester, '{{var.frekvens}}'), Colors.amber.shade900);
 
         await tester.pumpWidget(
@@ -141,9 +135,7 @@ void main() {
     );
 
     testWidgets('overrides shadow the declared value', (tester) async {
-      final controller = TokenTextEditingController(
-        text: '{{var.frekvens}}',
-      );
+      final controller = TokenTextEditingController(text: '{{var.frekvens}}');
       await _pump(
         tester,
         RingDrillTextArea(
@@ -215,9 +207,7 @@ void main() {
 
   group('RingDrillTextField — tokenAware: true', () {
     testWidgets('renders chips resolved from PlanScope', (tester) async {
-      final controller = TokenTextEditingController(
-        text: '{{var.frekvens}}',
-      );
+      final controller = TokenTextEditingController(text: '{{var.frekvens}}');
       await _pump(
         tester,
         RingDrillTextField(
@@ -250,9 +240,7 @@ void main() {
               body: PlanScope(
                 variables: const [],
                 child: StationScope(
-                  locations: const [
-                    Location(slug: 'lkp', place: 'Sentrum'),
-                  ],
+                  locations: const [Location(slug: 'lkp', place: 'Sentrum')],
                   persons: const [],
                   child: RingDrillTextArea(
                     controller: controller,

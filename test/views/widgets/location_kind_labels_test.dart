@@ -16,10 +16,7 @@ void main() {
     expect(LocationKind.commandPost.label(l), l.locationKindCommandPostLabel);
     expect(LocationKind.home.label(l), l.locationKindHomeLabel);
     expect(LocationKind.trackFound.label(l), l.locationKindTrackFoundLabel);
-    expect(
-      LocationKind.dogInterest.label(l),
-      l.locationKindDogInterestLabel,
-    );
+    expect(LocationKind.dogInterest.label(l), l.locationKindDogInterestLabel);
     expect(LocationKind.obstacle.label(l), l.locationKindObstacleLabel);
     expect(
       LocationKind.notSearchable.label(l),
@@ -27,10 +24,7 @@ void main() {
     );
     expect(LocationKind.phoneTrace.label(l), l.locationKindPhoneTraceLabel);
     expect(LocationKind.observation.label(l), l.locationKindObservationLabel);
-    expect(
-      LocationKind.vantagePoint.label(l),
-      l.locationKindVantagePointLabel,
-    );
+    expect(LocationKind.vantagePoint.label(l), l.locationKindVantagePointLabel);
     expect(
       LocationKind.containmentPost.label(l),
       l.locationKindContainmentPostLabel,

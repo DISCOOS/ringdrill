@@ -357,23 +357,20 @@ void main() {
       expect(result, isNot(contains('{{var.frekvens}}')));
     });
 
-    test(
-      'a variable in plan.description resolves in the subtitle',
-      () async {
-        final plan = _emptyPlan().copyWith(
-          description: 'Beskrivelse {{var.frekvens}}',
-          variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
-        );
+    test('a variable in plan.description resolves in the subtitle', () async {
+      final plan = _emptyPlan().copyWith(
+        description: 'Beskrivelse {{var.frekvens}}',
+        variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+      );
 
-        final result = await renderer.render(
-          plan: plan,
-          audience: BriefAudience.participant,
-          l10n: _l10n,
-        );
+      final result = await renderer.render(
+        plan: plan,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
 
-        expect(result, contains('_Beskrivelse Kanal 6_'));
-      },
-    );
+      expect(result, contains('_Beskrivelse Kanal 6_'));
+    });
 
     test(
       'a variable in exercise.name resolves in the heading, and the TOC anchor '
@@ -601,27 +598,24 @@ void main() {
       expect(result, isNot(contains('{{var.year}}')));
     });
 
-    test(
-      'a three-level chain field -> {{plan.description}} -> {{plan.name}} '
-      '-> {{var.year}} resolves fully',
-      () async {
-        final plan = _emptyPlan().copyWith(
-          name: 'LSOR Eidene {{var.year}}',
-          description: 'Se planen {{plan.name}}',
-          variables: const [DrillVariable(name: 'year', value: '2026')],
-          commsMd: 'Detaljer: {{plan.description}}.',
-        );
+    test('a three-level chain field -> {{plan.description}} -> {{plan.name}} '
+        '-> {{var.year}} resolves fully', () async {
+      final plan = _emptyPlan().copyWith(
+        name: 'LSOR Eidene {{var.year}}',
+        description: 'Se planen {{plan.name}}',
+        variables: const [DrillVariable(name: 'year', value: '2026')],
+        commsMd: 'Detaljer: {{plan.description}}.',
+      );
 
-        final result = await renderer.render(
-          plan: plan,
-          audience: BriefAudience.participant,
-          l10n: _l10n,
-        );
+      final result = await renderer.render(
+        plan: plan,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
 
-        expect(result, contains('Detaljer: Se planen LSOR Eidene 2026.'));
-        expect(result, isNot(contains('{{var.year}}')));
-      },
-    );
+      expect(result, contains('Detaljer: Se planen LSOR Eidene 2026.'));
+      expect(result, isNot(contains('{{var.year}}')));
+    });
 
     test('a circular cross-reference terminates and leaves a literal token '
         'instead of hanging', () async {

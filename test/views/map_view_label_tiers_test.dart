@@ -105,19 +105,16 @@ void main() {
     expect(MapConfig.labelMinZoom, lessThanOrEqualTo(13.5));
   });
 
-  test(
-    'labelDetailZoomFor(compact) is capped at defaultAutoFitMaxZoom, not '
-    'left unreachable above it',
-    () {
-      // Previously labelMinZoomFor(compact) + 5 = 18, uncapped — above
-      // defaultAutoFitMaxZoom (16.5), so no auto-fit could ever reach it
-      // and compact-window markers only ever showed the short chip.
-      // Capping at defaultAutoFitMaxZoom keeps compact's threshold
-      // reachable, exactly like medium's (which already sat at 16.5).
-      expect(
-        MapConfig.labelDetailZoomFor(WindowSizeClass.compact),
-        MapConfig.defaultAutoFitMaxZoom,
-      );
-    },
-  );
+  test('labelDetailZoomFor(compact) is capped at defaultAutoFitMaxZoom, not '
+      'left unreachable above it', () {
+    // Previously labelMinZoomFor(compact) + 5 = 18, uncapped — above
+    // defaultAutoFitMaxZoom (16.5), so no auto-fit could ever reach it
+    // and compact-window markers only ever showed the short chip.
+    // Capping at defaultAutoFitMaxZoom keeps compact's threshold
+    // reachable, exactly like medium's (which already sat at 16.5).
+    expect(
+      MapConfig.labelDetailZoomFor(WindowSizeClass.compact),
+      MapConfig.defaultAutoFitMaxZoom,
+    );
+  });
 }

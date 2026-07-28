@@ -160,28 +160,27 @@ void main() {
   });
 
   group('ReorderableSection — mode toggle', () {
-    testWidgets(
-      'entering reorder mode shows drag handles and Done button',
-      (tester) async {
-        final commits = <List<String>>[];
-        await tester.pumpWidget(
-          _wrap(_Harness(items: ['A', 'B', 'C'], commits: commits)),
-        );
-        await tester.pumpAndSettle();
+    testWidgets('entering reorder mode shows drag handles and Done button', (
+      tester,
+    ) async {
+      final commits = <List<String>>[];
+      await tester.pumpWidget(
+        _wrap(_Harness(items: ['A', 'B', 'C'], commits: commits)),
+      );
+      await tester.pumpAndSettle();
 
-        // Default: no handles.
-        expect(find.byIcon(Icons.drag_handle), findsNothing);
-        expect(find.text(l10n.exerciseReorderDone), findsNothing);
+      // Default: no handles.
+      expect(find.byIcon(Icons.drag_handle), findsNothing);
+      expect(find.text(l10n.exerciseReorderDone), findsNothing);
 
-        await tester.tap(find.text(l10n.exerciseReorderMode));
-        await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.exerciseReorderMode));
+      await tester.pumpAndSettle();
 
-        // Reorder: one handle per item, Done visible, Reorder gone.
-        expect(find.byIcon(Icons.drag_handle), findsNWidgets(3));
-        expect(find.text(l10n.exerciseReorderDone), findsOneWidget);
-        expect(find.text(l10n.exerciseReorderMode), findsNothing);
-      },
-    );
+      // Reorder: one handle per item, Done visible, Reorder gone.
+      expect(find.byIcon(Icons.drag_handle), findsNWidgets(3));
+      expect(find.text(l10n.exerciseReorderDone), findsOneWidget);
+      expect(find.text(l10n.exerciseReorderMode), findsNothing);
+    });
 
     testWidgets(
       'tapping Done exits reorder mode and restores the default view',
@@ -202,35 +201,34 @@ void main() {
       },
     );
 
-    testWidgets(
-      'external notifier flip forces exit from reorder mode',
-      (tester) async {
-        final commits = <List<String>>[];
-        final notifier = ValueNotifier<bool>(false);
-        addTearDown(notifier.dispose);
+    testWidgets('external notifier flip forces exit from reorder mode', (
+      tester,
+    ) async {
+      final commits = <List<String>>[];
+      final notifier = ValueNotifier<bool>(false);
+      addTearDown(notifier.dispose);
 
-        await tester.pumpWidget(
-          _wrap(
-            _Harness(
-              items: ['A', 'B', 'C'],
-              commits: commits,
-              externalNotifier: notifier,
-            ),
+      await tester.pumpWidget(
+        _wrap(
+          _Harness(
+            items: ['A', 'B', 'C'],
+            commits: commits,
+            externalNotifier: notifier,
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        // Enter reorder mode via the notifier.
-        notifier.value = true;
-        await tester.pumpAndSettle();
-        expect(find.byIcon(Icons.drag_handle), findsNWidgets(3));
+      // Enter reorder mode via the notifier.
+      notifier.value = true;
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.drag_handle), findsNWidgets(3));
 
-        // Force-exit via the notifier (simulates segment switch).
-        notifier.value = false;
-        await tester.pumpAndSettle();
-        expect(find.byIcon(Icons.drag_handle), findsNothing);
-      },
-    );
+      // Force-exit via the notifier (simulates segment switch).
+      notifier.value = false;
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.drag_handle), findsNothing);
+    });
   });
 
   group('ReorderableSection — deferred commit', () {

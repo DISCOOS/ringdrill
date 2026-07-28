@@ -221,27 +221,28 @@ void main() {
 
   // The other half of the invariant: the wide layout must still adopt, or the
   // detail pane would sit empty and its leading chevron would make no sense.
-  testWidgets('wide: a selection is adopted and survives a segment round trip', (
-    tester,
-  ) async {
-    await _pumpApp(tester, size: const Size(1200, 800));
+  testWidgets(
+    'wide: a selection is adopted and survives a segment round trip',
+    (tester) async {
+      await _pumpApp(tester, size: const Size(1200, 800));
 
-    // Auto-select-first fills the pane without a tap.
-    expect(_controller(tester).isOpen, isTrue);
-    expect(find.text('Station A1'), findsOneWidget);
+      // Auto-select-first fills the pane without a tap.
+      expect(_controller(tester).isOpen, isTrue);
+      expect(find.text('Station A1'), findsOneWidget);
 
-    await tester.tap(find.text('Exercise B').first);
-    await tester.pumpAndSettle();
-    expect(find.text('Station B1'), findsOneWidget);
+      await tester.tap(find.text('Exercise B').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Station B1'), findsOneWidget);
 
-    await _tapSegment(tester, l10n.stationsTab);
-    await _tapSegment(tester, l10n.exercise(2));
+      await _tapSegment(tester, l10n.stationsTab);
+      await _tapSegment(tester, l10n.exercise(2));
 
-    expect(_controller(tester).isOpen, isTrue);
-    expect(
-      find.text('Station B1'),
-      findsOneWidget,
-      reason: 'the remembered pick is restored, not discarded',
-    );
-  });
+      expect(_controller(tester).isOpen, isTrue);
+      expect(
+        find.text('Station B1'),
+        findsOneWidget,
+        reason: 'the remembered pick is restored, not discarded',
+      );
+    },
+  );
 }

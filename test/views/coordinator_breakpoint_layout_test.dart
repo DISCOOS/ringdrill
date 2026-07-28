@@ -121,7 +121,9 @@ void main() {
     addTearDown(() => ExerciseService().debugNowOverride = DateTime.now);
     ExerciseService().start(exercise);
 
-    await tester.pumpWidget(_harness(const CoordinatorScreen(uuid: _exerciseUuid)));
+    await tester.pumpWidget(
+      _harness(const CoordinatorScreen(uuid: _exerciseUuid)),
+    );
     await tester.pump();
   }
 

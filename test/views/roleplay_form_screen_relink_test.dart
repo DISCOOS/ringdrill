@@ -66,8 +66,10 @@ Future<void> _open(WidgetTester tester, _Captured captured) async {
             captured.value = await Navigator.push<RolePlayFormSave>(
               ctx,
               MaterialPageRoute(
-                builder: (_) =>
-                    RolePlayFormScreen(rolePlay: _rolePlay(), exercise: _exercise()),
+                builder: (_) => RolePlayFormScreen(
+                  rolePlay: _rolePlay(),
+                  exercise: _exercise(),
+                ),
               ),
             );
           },
@@ -149,28 +151,27 @@ void main() {
     },
   );
 
-  testWidgets(
-    'tapping a broken-reference chip opens that section to fix it',
-    (tester) async {
-      await _open(tester, _Captured());
+  testWidgets('tapping a broken-reference chip opens that section to fix it', (
+    tester,
+  ) async {
+    await _open(tester, _Captured());
 
-      // Re-link to Post B so the Behaviour token breaks and the chip shows.
-      await tester.tap(find.byKey(const Key('station-field')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Post B').last);
-      await tester.pumpAndSettle();
+    // Re-link to Post B so the Behaviour token breaks and the chip shows.
+    await tester.tap(find.byKey(const Key('station-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Post B').last);
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(ActionChip, l.roleBehavior));
-      await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ActionChip, l.roleBehavior));
+    await tester.pumpAndSettle();
 
-      // The Behaviour section is now selected in the rail.
-      final tile = tester.widget<ListTile>(
-        find.ancestor(
-          of: find.text(l.roleBehavior),
-          matching: find.byType(ListTile),
-        ),
-      );
-      expect(tile.selected, isTrue);
-    },
-  );
+    // The Behaviour section is now selected in the rail.
+    final tile = tester.widget<ListTile>(
+      find.ancestor(
+        of: find.text(l.roleBehavior),
+        matching: find.byType(ListTile),
+      ),
+    );
+    expect(tile.selected, isTrue);
+  });
 }

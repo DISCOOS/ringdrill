@@ -38,13 +38,15 @@ void main() {
       );
     });
 
-    test('prompts when auto-apply is not safe (e.g. offline or mid-session)',
-        () {
-      expect(
-        decidePwaUpdateAction(canAutoApply: false, isExerciseRunning: false),
-        PwaUpdateAction.prompt,
-      );
-    });
+    test(
+      'prompts when auto-apply is not safe (e.g. offline or mid-session)',
+      () {
+        expect(
+          decidePwaUpdateAction(canAutoApply: false, isExerciseRunning: false),
+          PwaUpdateAction.prompt,
+        );
+      },
+    );
 
     test('prompts when neither safe nor idle', () {
       expect(

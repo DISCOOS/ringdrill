@@ -70,10 +70,7 @@ Future<GoRouter> _pumpRouterWithGate(
 /// Advance the [PageView] in [ConceptPrimerScreen] from the welcome
 /// stage to the start stage by tapping "Next". The two-stage flow
 /// used in these tests only needs a single advance.
-Future<void> _advanceToStart(
-  WidgetTester tester,
-  AppLocalizations l10n,
-) async {
+Future<void> _advanceToStart(WidgetTester tester, AppLocalizations l10n) async {
   await tester.tap(find.text(l10n.nextLabel));
   await tester.pumpAndSettle();
 }

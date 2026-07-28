@@ -12,15 +12,18 @@ void main() {
     expect(slug, matches(slugPattern));
   });
 
-  test('repeated calls against an accumulating isTaken set are all distinct', () {
-    final existing = <String>{};
-    for (var i = 0; i < 50; i++) {
-      final slug = randomSlug(existing.contains);
-      expect(slug, matches(slugPattern));
-      expect(existing, isNot(contains(slug)));
-      existing.add(slug);
-    }
-  });
+  test(
+    'repeated calls against an accumulating isTaken set are all distinct',
+    () {
+      final existing = <String>{};
+      for (var i = 0; i < 50; i++) {
+        final slug = randomSlug(existing.contains);
+        expect(slug, matches(slugPattern));
+        expect(existing, isNot(contains(slug)));
+        existing.add(slug);
+      }
+    },
+  );
 
   test('a collision forces a fresh value, not a _2 suffix', () {
     final calls = <String>[];

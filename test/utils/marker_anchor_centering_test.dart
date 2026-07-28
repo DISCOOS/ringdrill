@@ -58,7 +58,10 @@ void main() {
     'point centroid, unchanged from before this correction existed',
     (tester) async {
       final controller = await pumpWithAnchorHeight(tester, 0);
-      expect(controller.camera.center.latitude, closeTo(centroid.latitude, 1e-9));
+      expect(
+        controller.camera.center.latitude,
+        closeTo(centroid.latitude, 1e-9),
+      );
       expect(
         controller.camera.center.longitude,
         closeTo(centroid.longitude, 1e-9),

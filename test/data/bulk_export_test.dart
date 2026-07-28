@@ -45,8 +45,9 @@ void main() {
 
       final bytes = exportAllPlans(plans);
       final archive = ZipDecoder().decodeBytes(bytes);
-      final drillFiles =
-          archive.files.where((f) => f.isFile && f.name.endsWith('.drill'));
+      final drillFiles = archive.files.where(
+        (f) => f.isFile && f.name.endsWith('.drill'),
+      );
 
       expect(drillFiles.length, 3);
     });
@@ -59,11 +60,10 @@ void main() {
 
       final bytes = exportAllPlans(plans);
       final archive = ZipDecoder().decodeBytes(bytes);
-      final names =
-          archive.files
-              .where((f) => f.isFile && f.name.endsWith('.drill'))
-              .map((f) => f.name)
-              .toSet();
+      final names = archive.files
+          .where((f) => f.isFile && f.name.endsWith('.drill'))
+          .map((f) => f.name)
+          .toSet();
 
       expect(names, contains('alfa-plan.drill'));
       expect(names, contains('beta-plan.drill'));
@@ -93,17 +93,15 @@ void main() {
       expect(hasPlan, isTrue);
     });
 
-    test('deduplicates filenames for plans with identical sanitised slugs',
-        () {
-      final plans = [
-        _plan('uuid-1', 'My Plan'),
-        _plan('uuid-2', 'My Plan'),
-      ];
+    test('deduplicates filenames for plans with identical sanitised slugs', () {
+      final plans = [_plan('uuid-1', 'My Plan'), _plan('uuid-2', 'My Plan')];
 
       final bytes = exportAllPlans(plans);
       final archive = ZipDecoder().decodeBytes(bytes);
-      final names =
-          archive.files.where((f) => f.isFile).map((f) => f.name).toList();
+      final names = archive.files
+          .where((f) => f.isFile)
+          .map((f) => f.name)
+          .toList();
 
       expect(names.toSet().length, names.length);
     });

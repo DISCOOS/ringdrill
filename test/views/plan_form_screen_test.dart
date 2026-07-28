@@ -43,9 +43,7 @@ Future<Plan?> _openForm(WidgetTester tester, Plan plan) async {
           onPressed: () async {
             result = await Navigator.push<Plan>(
               ctx,
-              MaterialPageRoute(
-                builder: (_) => PlanFormScreen(plan: plan),
-              ),
+              MaterialPageRoute(builder: (_) => PlanFormScreen(plan: plan)),
             );
           },
           child: const Text('Open'),
@@ -60,10 +58,7 @@ Future<Plan?> _openForm(WidgetTester tester, Plan plan) async {
 
 void main() {
   testWidgets('renders base fields with seeded values', (tester) async {
-    await _openForm(
-      tester,
-      _basePlan(description: 'En kjent rute'),
-    );
+    await _openForm(tester, _basePlan(description: 'En kjent rute'));
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
     expect(find.text(l10n.planName), findsOneWidget);
@@ -84,9 +79,8 @@ void main() {
               captured = await Navigator.push<Plan>(
                 ctx,
                 MaterialPageRoute(
-                  builder: (_) => PlanFormScreen(
-                    plan: _basePlan(languageCode: 'nb'),
-                  ),
+                  builder: (_) =>
+                      PlanFormScreen(plan: _basePlan(languageCode: 'nb')),
                 ),
               );
             },

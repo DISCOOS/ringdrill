@@ -108,8 +108,7 @@ Widget _stationHarness(String uuid) {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) =>
-            StationScreen(stationIndex: 0, uuid: uuid),
+        builder: (context, state) => StationScreen(stationIndex: 0, uuid: uuid),
       ),
     ],
   );

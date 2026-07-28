@@ -67,9 +67,7 @@ void main() {
 
     test('zip without program.json -> DrillFormatReason.missingPlan', () {
       final archive = Archive()
-        ..addFile(
-          _entry('teams/ignored.json', '{"uuid":"x","name":"T"}'),
-        );
+        ..addFile(_entry('teams/ignored.json', '{"uuid":"x","name":"T"}'));
       final bytes = ZipEncoder().encode(archive);
       final file = DrillFile.fromBytes('no-plan.drill', bytes);
       DrillFormatException? caught;
@@ -86,9 +84,7 @@ void main() {
       'zip with malformed program.json -> DrillFormatReason.corruptManifest',
       () {
         final archive = Archive()
-          ..addFile(
-            _entry('program.json', '{ this is not valid json'),
-          );
+          ..addFile(_entry('program.json', '{ this is not valid json'));
         final bytes = ZipEncoder().encode(archive);
         final file = DrillFile.fromBytes('corrupt.drill', bytes);
         DrillFormatException? caught;

@@ -170,9 +170,7 @@ class _Harness extends StatelessWidget {
                   ),
                 ),
               )
-            : Builder(
-                builder: (context) => Scaffold(body: _buttons(context)),
-              ),
+            : Builder(builder: (context) => Scaffold(body: _buttons(context))),
       ),
     );
   }

@@ -158,7 +158,10 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Card(
-              child: RolePositionPanel(exercise: exercise(), rolePlay: rolePlay()),
+              child: RolePositionPanel(
+                exercise: exercise(),
+                rolePlay: rolePlay(),
+              ),
             ),
           ),
         ),

@@ -41,17 +41,18 @@ void main() {
       VariableType.location: '',
     };
     for (final type in VariableType.values) {
-      final variable = DrillVariable(name: 'x', value: values[type]!, type: type);
+      final variable = DrillVariable(
+        name: 'x',
+        value: values[type]!,
+        type: type,
+      );
       final decoded = DrillVariable.fromJson(variable.toJson());
       expect(decoded, variable, reason: 'round-trip for $type');
     }
   });
 
   test('an unknown type slug decodes to string (forward compatibility)', () {
-    final decoded = DrillVariable.fromJson({
-      'name': 'x',
-      'type': 'hologram',
-    });
+    final decoded = DrillVariable.fromJson({'name': 'x', 'type': 'hologram'});
     expect(decoded.type, VariableType.string);
   });
 

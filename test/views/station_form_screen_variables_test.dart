@@ -195,10 +195,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured.value, isNotNull);
-      expect(
-        captured.value!.additions.variables.map((v) => v.name),
-        ['frekvens'],
-      );
+      expect(captured.value!.additions.variables.map((v) => v.name), [
+        'frekvens',
+      ]);
     },
   );
 
@@ -284,9 +283,7 @@ void main() {
       expect(captured.value, isNull);
       expect(
         find.text(
-          l.planSaveBlockedUndeclaredVariable(
-            l.briefSectionStationSituation,
-          ),
+          l.planSaveBlockedUndeclaredVariable(l.briefSectionStationSituation),
         ),
         findsOneWidget,
       );

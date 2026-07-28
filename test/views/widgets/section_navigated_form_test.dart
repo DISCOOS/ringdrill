@@ -14,7 +14,8 @@ List<FormSection> _sections([int count = 3]) => [
       id: String.fromCharCode('a'.codeUnitAt(0) + i),
       label: 'Section ${String.fromCharCode('A'.codeUnitAt(0) + i)}',
       icon: Icons.description_outlined,
-      builder: (_) => Text('Body ${String.fromCharCode('A'.codeUnitAt(0) + i)}'),
+      builder: (_) =>
+          Text('Body ${String.fromCharCode('A'.codeUnitAt(0) + i)}'),
     ),
 ];
 
@@ -64,12 +65,13 @@ Future<AppLocalizations> _pump(
 /// The [IconButton] with tooltip [message] — `find.byTooltip` locates the
 /// wrapping `Tooltip`, not the button itself, so this walks up to the
 /// `IconButton` ancestor that actually carries `onPressed`.
-IconButton _iconButton(WidgetTester tester, String message) => tester.widget<IconButton>(
-  find.ancestor(
-    of: find.byTooltip(message),
-    matching: find.byType(IconButton),
-  ),
-);
+IconButton _iconButton(WidgetTester tester, String message) =>
+    tester.widget<IconButton>(
+      find.ancestor(
+        of: find.byTooltip(message),
+        matching: find.byType(IconButton),
+      ),
+    );
 
 void main() {
   testWidgets(
@@ -77,10 +79,7 @@ void main() {
     (tester) async {
       final l = await _pump(tester, sections: _sections());
 
-      expect(
-        _iconButton(tester, l.formSectionPrevious).onPressed,
-        isNull,
-      );
+      expect(_iconButton(tester, l.formSectionPrevious).onPressed, isNull);
       expect(find.text('Body A'), findsOneWidget);
 
       await tester.tap(find.byTooltip(l.formSectionNext));
@@ -90,38 +89,30 @@ void main() {
     },
   );
 
-  testWidgets('compact: next is disabled on the last section, previous goes back', (
-    tester,
-  ) async {
-    final l = await _pump(
-      tester,
-      sections: _sections(),
-      initialSectionId: 'c',
-    );
+  testWidgets(
+    'compact: next is disabled on the last section, previous goes back',
+    (tester) async {
+      final l = await _pump(
+        tester,
+        sections: _sections(),
+        initialSectionId: 'c',
+      );
 
-    expect(
-      _iconButton(tester, l.formSectionNext).onPressed,
-      isNull,
-    );
-    expect(find.text('Body C'), findsOneWidget);
+      expect(_iconButton(tester, l.formSectionNext).onPressed, isNull);
+      expect(find.text('Body C'), findsOneWidget);
 
-    await tester.tap(find.byTooltip(l.formSectionPrevious));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(l.formSectionPrevious));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Body B'), findsOneWidget);
-  });
+      expect(find.text('Body B'), findsOneWidget);
+    },
+  );
 
   testWidgets('compact: in the middle both controls work', (tester) async {
     final l = await _pump(tester, sections: _sections(), initialSectionId: 'b');
 
-    expect(
-      _iconButton(tester, l.formSectionPrevious).onPressed,
-      isNotNull,
-    );
-    expect(
-      _iconButton(tester, l.formSectionNext).onPressed,
-      isNotNull,
-    );
+    expect(_iconButton(tester, l.formSectionPrevious).onPressed, isNotNull);
+    expect(_iconButton(tester, l.formSectionNext).onPressed, isNotNull);
 
     await tester.tap(find.byTooltip(l.formSectionNext));
     await tester.pumpAndSettle();
@@ -134,86 +125,73 @@ void main() {
     expect(find.text('Body A'), findsOneWidget);
   });
 
-  testWidgets(
-    'arrows traverse only active sections, never the addable ones',
-    (tester) async {
-      final l = await _pump(
-        tester,
-        sections: _sections(2),
-        addable: [
-          FormSection(
-            id: 'addable',
-            label: 'Addable',
-            icon: Icons.add_circle_outline,
-            builder: (_) => const Text('Body Addable'),
-          ),
-        ],
-        initialSectionId: 'b',
-      );
+  testWidgets('arrows traverse only active sections, never the addable ones', (
+    tester,
+  ) async {
+    final l = await _pump(
+      tester,
+      sections: _sections(2),
+      addable: [
+        FormSection(
+          id: 'addable',
+          label: 'Addable',
+          icon: Icons.add_circle_outline,
+          builder: (_) => const Text('Body Addable'),
+        ),
+      ],
+      initialSectionId: 'b',
+    );
 
-      // At the last active section, next is disabled even though an
-      // addable section exists beyond it — the arrows never reach into
-      // `addable`.
-      expect(
-        _iconButton(tester, l.formSectionNext).onPressed,
-        isNull,
-      );
-      expect(find.text('Body B'), findsOneWidget);
-    },
-  );
+    // At the last active section, next is disabled even though an
+    // addable section exists beyond it — the arrows never reach into
+    // `addable`.
+    expect(_iconButton(tester, l.formSectionNext).onPressed, isNull);
+    expect(find.text('Body B'), findsOneWidget);
+  });
 
   testWidgets('compact: with a single active section both are disabled', (
     tester,
   ) async {
     final l = await _pump(tester, sections: _sections(1));
 
-    expect(
-      _iconButton(tester, l.formSectionPrevious).onPressed,
-      isNull,
-    );
-    expect(
-      _iconButton(tester, l.formSectionNext).onPressed,
-      isNull,
-    );
+    expect(_iconButton(tester, l.formSectionPrevious).onPressed, isNull);
+    expect(_iconButton(tester, l.formSectionNext).onPressed, isNull);
   });
 
-  testWidgets(
-    'wide: no duplicated section title and no ‹ › — the rail is the '
-    'navigation, only ⋮ remains (DESIGN-008 follow-up 12)',
-    (tester) async {
-      // The ⋮ overlay only renders for a removable section (a base
-      // section shows no header at all), so select one here to assert
-      // it's present.
-      await _pump(
-        tester,
-        sections: [
-          FormSection(
-            id: 'a',
-            label: 'Section A',
-            icon: Icons.description_outlined,
-            builder: (_) => const Text('Body A'),
-          ),
-          FormSection(
-            id: 'b',
-            label: 'Section B',
-            icon: Icons.description_outlined,
-            removable: true,
-            builder: (_) => const Text('Body B'),
-          ),
-        ],
-        initialSectionId: 'b',
-        size: const Size(900, 800),
-      );
+  testWidgets('wide: no duplicated section title and no ‹ › — the rail is the '
+      'navigation, only ⋮ remains (DESIGN-008 follow-up 12)', (tester) async {
+    // The ⋮ overlay only renders for a removable section (a base
+    // section shows no header at all), so select one here to assert
+    // it's present.
+    await _pump(
+      tester,
+      sections: [
+        FormSection(
+          id: 'a',
+          label: 'Section A',
+          icon: Icons.description_outlined,
+          builder: (_) => const Text('Body A'),
+        ),
+        FormSection(
+          id: 'b',
+          label: 'Section B',
+          icon: Icons.description_outlined,
+          removable: true,
+          builder: (_) => const Text('Body B'),
+        ),
+      ],
+      initialSectionId: 'b',
+      size: const Size(900, 800),
+    );
 
-      // "Section B" appears once — in the rail — never repeated as a
-      // heading in the detail pane.
-      expect(find.text('Section B'), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_left), findsNothing);
-      expect(find.byIcon(Icons.chevron_right), findsNothing);
-      expect(find.byType(PopupMenuButton<String>), findsOneWidget);
-      expect(find.text('Body B'), findsOneWidget);
-    },
-  );
+    // "Section B" appears once — in the rail — never repeated as a
+    // heading in the detail pane.
+    expect(find.text('Section B'), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_left), findsNothing);
+    expect(find.byIcon(Icons.chevron_right), findsNothing);
+    expect(find.byType(PopupMenuButton<String>), findsOneWidget);
+    expect(find.text('Body B'), findsOneWidget);
+  });
 
   testWidgets(
     'wide: tapping a rail item switches sections; the selected item is '
@@ -222,10 +200,7 @@ void main() {
       await _pump(tester, sections: _sections(), size: const Size(900, 800));
 
       ListTile railTile(String label) => tester.widget<ListTile>(
-        find.ancestor(
-          of: find.text(label),
-          matching: find.byType(ListTile),
-        ),
+        find.ancestor(of: find.text(label), matching: find.byType(ListTile)),
       );
 
       expect(railTile('Section A').selected, isTrue);
@@ -275,11 +250,7 @@ void main() {
       // The × close affordance is unaffected by the label.
       expect(find.byIcon(Icons.close), findsOneWidget);
 
-      await _pump(
-        tester,
-        sections: _sections(),
-        commitsToParent: true,
-      );
+      await _pump(tester, sections: _sections(), commitsToParent: true);
 
       expect(
         find.descendant(
@@ -296,45 +267,42 @@ void main() {
     },
   );
 
-  testWidgets(
-    'compact: the top AppBar shows only the entity title and Save '
-    '(follow-up 04)',
-    (tester) async {
-      final l = await _pump(tester, sections: _sections());
+  testWidgets('compact: the top AppBar shows only the entity title and Save '
+      '(follow-up 04)', (tester) async {
+    final l = await _pump(tester, sections: _sections());
 
-      expect(
-        find.descendant(of: find.byType(AppBar), matching: find.text('Test')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: find.byType(AppBar), matching: find.text(l.save)),
-        findsOneWidget,
-      );
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: find.text('Test')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: find.text(l.save)),
+      findsOneWidget,
+    );
 
-      // The switcher, prev/next and overflow all moved out of the AppBar.
-      expect(
-        find.descendant(
-          of: find.byType(AppBar),
-          matching: find.text('Section A'),
-        ),
-        findsNothing,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(AppBar),
-          matching: find.byIcon(Icons.chevron_left),
-        ),
-        findsNothing,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(AppBar),
-          matching: find.byIcon(Icons.more_vert),
-        ),
-        findsNothing,
-      );
-    },
-  );
+    // The switcher, prev/next and overflow all moved out of the AppBar.
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Section A'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.byIcon(Icons.chevron_left),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.byIcon(Icons.more_vert),
+      ),
+      findsNothing,
+    );
+  });
 
   testWidgets(
     'compact: the selector and prev/next live in the bottom bar, not the AppBar',
@@ -388,99 +356,92 @@ void main() {
     },
   );
 
-  testWidgets(
-    'compact: the bottom bar overflow is disabled unless the current '
-    'section is removable, and removing falls back to the first section',
-    (tester) async {
-      final l = await _pump(
-        tester,
-        sections: [
-          FormSection(
-            id: 'a',
-            label: 'A',
-            icon: Icons.description_outlined,
-            builder: (_) => const Text('Body A'),
+  testWidgets('compact: the bottom bar overflow is disabled unless the current '
+      'section is removable, and removing falls back to the first section', (
+    tester,
+  ) async {
+    final l = await _pump(
+      tester,
+      sections: [
+        FormSection(
+          id: 'a',
+          label: 'A',
+          icon: Icons.description_outlined,
+          builder: (_) => const Text('Body A'),
+        ),
+        FormSection(
+          id: 'b',
+          label: 'B',
+          icon: Icons.description_outlined,
+          removable: true,
+          builder: (_) => const Text('Body B'),
+        ),
+      ],
+    );
+
+    PopupMenuButton<String> overflow() =>
+        tester.widget<PopupMenuButton<String>>(
+          find.descendant(
+            of: find.byType(BottomAppBar),
+            matching: find.byType(PopupMenuButton<String>),
           ),
-          FormSection(
-            id: 'b',
-            label: 'B',
-            icon: Icons.description_outlined,
-            removable: true,
-            builder: (_) => const Text('Body B'),
-          ),
-        ],
-      );
+        );
 
-      PopupMenuButton<String> overflow() => tester.widget<PopupMenuButton<String>>(
-        find.descendant(
-          of: find.byType(BottomAppBar),
-          matching: find.byType(PopupMenuButton<String>),
-        ),
-      );
+    // "A" is not removable: the overflow is present (so prev/next never
+    // shift, per the earlier fix) but disabled.
+    expect(overflow().enabled, isFalse);
 
-      // "A" is not removable: the overflow is present (so prev/next never
-      // shift, per the earlier fix) but disabled.
-      expect(overflow().enabled, isFalse);
+    await tester.tap(find.byTooltip(l.formSectionNext));
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip(l.formSectionNext));
-      await tester.pumpAndSettle();
+    // "B" is removable: enabled, and removing it falls back to "A".
+    expect(overflow().enabled, isTrue);
 
-      // "B" is removable: enabled, and removing it falls back to "A".
-      expect(overflow().enabled, isTrue);
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    expect(find.text(l.formSectionRemoveAction), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
-      expect(find.text(l.formSectionRemoveAction), findsOneWidget);
+    await tester.tap(find.text(l.formSectionRemoveAction));
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.text(l.formSectionRemoveAction));
-      await tester.pumpAndSettle();
+    expect(find.text('Body A'), findsOneWidget);
+  });
 
-      expect(find.text('Body A'), findsOneWidget);
-    },
-  );
+  testWidgets('entityName: default section shows title; '
+      'non-default sections show entityName in the AppBar', (tester) async {
+    await _pump(tester, sections: _sections(), entityName: 'My Entity');
 
-  testWidgets(
-    'entityName: default section shows title; '
-    'non-default sections show entityName in the AppBar',
-    (tester) async {
-      await _pump(
-        tester,
-        sections: _sections(),
-        entityName: 'My Entity',
-      );
+    // Default (first) section: the static title is in the AppBar.
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: find.text('Test')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('My Entity'),
+      ),
+      findsNothing,
+    );
 
-      // Default (first) section: the static title is in the AppBar.
-      expect(
-        find.descendant(of: find.byType(AppBar), matching: find.text('Test')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(AppBar),
-          matching: find.text('My Entity'),
-        ),
-        findsNothing,
-      );
+    // Navigate to the second section.
+    final l = await AppLocalizations.delegate.load(const Locale('en'));
+    await tester.tap(find.byTooltip(l.formSectionNext));
+    await tester.pumpAndSettle();
 
-      // Navigate to the second section.
-      final l = await AppLocalizations.delegate.load(const Locale('en'));
-      await tester.tap(find.byTooltip(l.formSectionNext));
-      await tester.pumpAndSettle();
-
-      // Non-default section: entityName replaces the static title.
-      expect(
-        find.descendant(
-          of: find.byType(AppBar),
-          matching: find.text('My Entity'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: find.byType(AppBar), matching: find.text('Test')),
-        findsNothing,
-      );
-    },
-  );
+    // Non-default section: entityName replaces the static title.
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('My Entity'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: find.text('Test')),
+      findsNothing,
+    );
+  });
 
   testWidgets(
     'entityName: omitting entityName shows title on all sections (no change)',

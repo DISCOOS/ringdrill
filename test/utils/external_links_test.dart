@@ -55,14 +55,17 @@ void main() {
       expect(fake.launchedUrls, contains('tel:+4712345678'));
     });
 
-    test('the platform launch outcome is passed through as the result', () async {
-      final fake = _FakeUrlLauncher(launchResult: false);
-      UrlLauncherPlatform.instance = fake;
+    test(
+      'the platform launch outcome is passed through as the result',
+      () async {
+        final fake = _FakeUrlLauncher(launchResult: false);
+        UrlLauncherPlatform.instance = fake;
 
-      final result = await launchExternalApp('tel:+4712345678');
+        final result = await launchExternalApp('tel:+4712345678');
 
-      expect(result, isFalse);
-      expect(fake.launchedUrls, contains('tel:+4712345678'));
-    });
+        expect(result, isFalse);
+        expect(fake.launchedUrls, contains('tel:+4712345678'));
+      },
+    );
   });
 }

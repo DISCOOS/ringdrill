@@ -101,8 +101,10 @@ Future<void> _pumpWideApp(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Finder _railIcon(IconData icon) =>
-    find.descendant(of: find.byType(NavigationRail), matching: find.byIcon(icon));
+Finder _railIcon(IconData icon) => find.descendant(
+  of: find.byType(NavigationRail),
+  matching: find.byIcon(icon),
+);
 
 Future<void> _tapSegment(WidgetTester tester, String label) async {
   await tester.tap(
@@ -242,38 +244,35 @@ void main() {
     expect(find.byIcon(Icons.close), findsNothing);
   });
 
-  testWidgets(
-    'the sidebar toggle collapses/expands the master pane and stays '
-    'present in both states',
-    (tester) async {
-      await _pumpWideApp(tester);
+  testWidgets('the sidebar toggle collapses/expands the master pane and stays '
+      'present in both states', (tester) async {
+    await _pumpWideApp(tester);
 
-      // Expanded: the master pane's segment switcher is visible alongside
-      // the sidebar toggle in the detail leading.
-      expect(find.byType(SegmentedButton<PlanSegment>), findsOneWidget);
-      final toggle = find.byIcon(CupertinoIcons.sidebar_left);
-      expect(toggle, findsOneWidget);
+    // Expanded: the master pane's segment switcher is visible alongside
+    // the sidebar toggle in the detail leading.
+    expect(find.byType(SegmentedButton<PlanSegment>), findsOneWidget);
+    final toggle = find.byIcon(CupertinoIcons.sidebar_left);
+    expect(toggle, findsOneWidget);
 
-      await tester.tap(toggle);
-      await tester.pumpAndSettle();
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
 
-      // Collapsed: the master pane is clipped out, the detail pane's content
-      // stays, and the toggle is still there (same control, now "show").
-      // The SegmentedButton is still in the element tree (kept mounted for
-      // perf) but has 0 visible width, so it must not be hit-testable.
-      expect(
-        find.byType(SegmentedButton<PlanSegment>).hitTestable(),
-        findsNothing,
-      );
-      expect(find.text('Station A1'), findsOneWidget);
-      expect(find.byIcon(CupertinoIcons.sidebar_left), findsOneWidget);
+    // Collapsed: the master pane is clipped out, the detail pane's content
+    // stays, and the toggle is still there (same control, now "show").
+    // The SegmentedButton is still in the element tree (kept mounted for
+    // perf) but has 0 visible width, so it must not be hit-testable.
+    expect(
+      find.byType(SegmentedButton<PlanSegment>).hitTestable(),
+      findsNothing,
+    );
+    expect(find.text('Station A1'), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.sidebar_left), findsOneWidget);
 
-      await tester.tap(find.byIcon(CupertinoIcons.sidebar_left));
-      await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(CupertinoIcons.sidebar_left));
+    await tester.pumpAndSettle();
 
-      expect(find.byType(SegmentedButton<PlanSegment>), findsOneWidget);
-    },
-  );
+    expect(find.byType(SegmentedButton<PlanSegment>), findsOneWidget);
+  });
 
   testWidgets(
     'the master-pane-collapsed preference persists across an app restart',

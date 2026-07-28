@@ -57,9 +57,9 @@ void main() {
             builder: (context) => TextButton(
               onPressed: () async {
                 if (withSnackBar) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Refreshing…')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Refreshing…')));
                 }
                 result = await showCatalogConflictDialog(
                   context,
@@ -79,37 +79,36 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets(
-    'shows a Dialog with field-level diff detail on wide surfaces',
-    (tester) async {
-      tester.view.physicalSize = const Size(1000, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+  testWidgets('shows a Dialog with field-level diff detail on wide surfaces', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
 
-      await openDialog(tester);
+    await openDialog(tester);
 
-      expect(find.byType(Dialog), findsOneWidget);
-      // Modified exercise shows its name plus which fields changed and
-      // their before/after values — not just "Ladder" in a bare list. "Old"
-      // and "New" render as separate colored spans (not one contiguous
-      // "Old method"/"New method" phrase) since the shared word "method"
-      // only appears once in the word-diff — see the dedicated direction
-      // test below for the actual old/new color assertion.
-      expect(find.textContaining('Old'), findsOneWidget);
-      expect(find.textContaining('New'), findsOneWidget);
-      // A structural (non-scalar) change renders the field label alone.
-      expect(find.textContaining('Stations'), findsOneWidget);
-      // RolePlays now get their own diff group (previously missing).
-      expect(find.textContaining('Anna'), findsOneWidget);
-      expect(find.textContaining('30'), findsOneWidget);
-      expect(find.textContaining('31'), findsOneWidget);
+    expect(find.byType(Dialog), findsOneWidget);
+    // Modified exercise shows its name plus which fields changed and
+    // their before/after values — not just "Ladder" in a bare list. "Old"
+    // and "New" render as separate colored spans (not one contiguous
+    // "Old method"/"New method" phrase) since the shared word "method"
+    // only appears once in the word-diff — see the dedicated direction
+    // test below for the actual old/new color assertion.
+    expect(find.textContaining('Old'), findsOneWidget);
+    expect(find.textContaining('New'), findsOneWidget);
+    // A structural (non-scalar) change renders the field label alone.
+    expect(find.textContaining('Stations'), findsOneWidget);
+    // RolePlays now get their own diff group (previously missing).
+    expect(find.textContaining('Anna'), findsOneWidget);
+    expect(find.textContaining('30'), findsOneWidget);
+    expect(find.textContaining('31'), findsOneWidget);
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      await tester.tap(find.text(l10n.catalogConflictOverwrite));
-      await tester.pumpAndSettle();
-      expect(result, CatalogConflictChoice.overwriteLocal);
-    },
-  );
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    await tester.tap(find.text(l10n.catalogConflictOverwrite));
+    await tester.pumpAndSettle();
+    expect(result, CatalogConflictChoice.overwriteLocal);
+  });
 
   testWidgets(
     'shows the version comparison line with both versions when known',
@@ -152,26 +151,23 @@ void main() {
     },
   );
 
-  testWidgets(
-    'shows "None" on both sides when neither version is known — the '
-    'version info is always shown, never hidden entirely',
-    (tester) async {
-      tester.view.physicalSize = const Size(1000, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+  testWidgets('shows "None" on both sides when neither version is known — the '
+      'version info is always shown, never hidden entirely', (tester) async {
+    tester.view.physicalSize = const Size(1000, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
 
-      await openDialog(tester);
+    await openDialog(tester);
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(
-        _versionLineText(tester),
-        '${l10n.catalogConflictVersionLocalLabel} '
-        '${l10n.catalogConflictVersionUnknown}  →  '
-        '${l10n.catalogConflictVersionCatalogLabel} '
-        '${l10n.catalogConflictVersionUnknown}',
-      );
-    },
-  );
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(
+      _versionLineText(tester),
+      '${l10n.catalogConflictVersionLocalLabel} '
+      '${l10n.catalogConflictVersionUnknown}  →  '
+      '${l10n.catalogConflictVersionCatalogLabel} '
+      '${l10n.catalogConflictVersionUnknown}',
+    );
+  });
 
   testWidgets(
     'a field change reads old (catalog) to new (local), not the reverse, '
@@ -195,7 +191,10 @@ void main() {
       // "Old" and "New" don't share any words, so the word-diff renders
       // them as a single replace: "Old" struck through, "New" kept plain.
       expect(_spanStyle(tester, 'Old')?.decoration, TextDecoration.lineThrough);
-      expect(_spanStyle(tester, 'New')?.decoration, isNot(TextDecoration.lineThrough));
+      expect(
+        _spanStyle(tester, 'New')?.decoration,
+        isNot(TextDecoration.lineThrough),
+      );
     },
   );
 
@@ -277,10 +276,7 @@ void main() {
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       final publishBox =
           tester.renderObject(
-                find.widgetWithText(
-                  FilledButton,
-                  l10n.catalogConflictPublish,
-                ),
+                find.widgetWithText(FilledButton, l10n.catalogConflictPublish),
               )
               as RenderBox;
       final publishRight =
@@ -301,9 +297,7 @@ void main() {
       // inset is subtracted — knock off the 16px right inset to get the
       // actual content edge the buttons should align against.
       final contentRight =
-          contentBox.localToGlobal(Offset.zero).dx +
-          contentBox.size.width -
-          16;
+          contentBox.localToGlobal(Offset.zero).dx + contentBox.size.width - 16;
 
       expect(publishRight, closeTo(contentRight, 1));
     },
@@ -525,29 +519,31 @@ void main() {
     },
   );
 
-  Exercise buildExercise(String uuid, String name, {int index = 0}) =>
-      Exercise(
-        uuid: uuid,
-        index: index,
-        name: name,
-        startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
-        numberOfTeams: 1,
-        numberOfRounds: 1,
-        executionTime: 10,
-        evaluationTime: 5,
-        rotationTime: 2,
-        stations: const [Station(index: 0, name: 'Station 1')],
-        schedule: const [
-          [
-            SimpleTimeOfDay(hour: 8, minute: 0),
-            SimpleTimeOfDay(hour: 8, minute: 10),
-            SimpleTimeOfDay(hour: 8, minute: 15),
-          ],
-        ],
-        endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
-      );
+  Exercise buildExercise(String uuid, String name, {int index = 0}) => Exercise(
+    uuid: uuid,
+    index: index,
+    name: name,
+    startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
+    numberOfTeams: 1,
+    numberOfRounds: 1,
+    executionTime: 10,
+    evaluationTime: 5,
+    rotationTime: 2,
+    stations: const [Station(index: 0, name: 'Station 1')],
+    schedule: const [
+      [
+        SimpleTimeOfDay(hour: 8, minute: 0),
+        SimpleTimeOfDay(hour: 8, minute: 10),
+        SimpleTimeOfDay(hour: 8, minute: 15),
+      ],
+    ],
+    endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
+  );
 
-  Future<void> openRealDiffDialog(WidgetTester tester, PlanDiff realDiff) async {
+  Future<void> openRealDiffDialog(
+    WidgetTester tester,
+    PlanDiff realDiff,
+  ) async {
     result = null;
     await tester.pumpWidget(
       MaterialApp(
@@ -833,9 +829,7 @@ void main() {
           local.exercises[1]
               .copyWith(
                 stations: [
-                  local.exercises[1].stations.single.copyWith(
-                    name: 'Old name',
-                  ),
+                  local.exercises[1].stations.single.copyWith(name: 'Old name'),
                 ],
               )
               .copyWith(methodMd: 'Old method'),
@@ -889,10 +883,7 @@ void main() {
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       expect(find.text(l10n.stationsTab), findsOneWidget);
-      expect(
-        find.text('${l10n.catalogDiffAdded}: Ny post'),
-        findsOneWidget,
-      );
+      expect(find.text('${l10n.catalogDiffAdded}: Ny post'), findsOneWidget);
     },
   );
 }

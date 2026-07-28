@@ -8,16 +8,16 @@ void main() {
   final now = DateTime(2026);
 
   Plan base() => Plan(
-        uuid: 'prog-1',
-        name: 'Test',
-        description: '',
-        metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
-        teams: const [],
-        sessions: const [],
-        exercises: const [],
-        rolePlays: const [],
-        actors: const [],
-      );
+    uuid: 'prog-1',
+    name: 'Test',
+    description: '',
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
+    teams: const [],
+    sessions: const [],
+    exercises: const [],
+    rolePlays: const [],
+    actors: const [],
+  );
 
   const rp1 = RolePlay(
     uuid: 'rp-1',
@@ -70,10 +70,7 @@ void main() {
     final differentLanguage = prog.copyWith(
       metadata: prog.metadata.copyWith(languageCode: 'en'),
     );
-    expect(
-      prog.computeContentHash(),
-      isNot(withLanguage.computeContentHash()),
-    );
+    expect(prog.computeContentHash(), isNot(withLanguage.computeContentHash()));
     expect(
       withLanguage.computeContentHash(),
       isNot(differentLanguage.computeContentHash()),
@@ -83,7 +80,9 @@ void main() {
   test('content hash is stable across metadata timestamp changes', () {
     final prog = base();
     final touched = prog.copyWith(
-      metadata: prog.metadata.copyWith(updated: now.add(const Duration(days: 1))),
+      metadata: prog.metadata.copyWith(
+        updated: now.add(const Duration(days: 1)),
+      ),
     );
     expect(prog.computeContentHash(), touched.computeContentHash());
   });
@@ -106,9 +105,7 @@ void main() {
     // hash out, via a round-trip through copyWith to rule out identity
     // short-circuits.
     final prog = base();
-    final same = prog.copyWith(
-      exerciseNumberFormat: ExerciseNumberFormat.hash,
-    );
+    final same = prog.copyWith(exerciseNumberFormat: ExerciseNumberFormat.hash);
     expect(prog.computeContentHash(), same.computeContentHash());
   });
 
@@ -143,11 +140,17 @@ void main() {
     final withTags = prog.copyWith(tags: ['sar', 'urban']);
     final differentTags = prog.copyWith(tags: ['sar']);
     expect(prog.computeContentHash(), isNot(withTags.computeContentHash()));
-    expect(withTags.computeContentHash(), isNot(differentTags.computeContentHash()));
+    expect(
+      withTags.computeContentHash(),
+      isNot(differentTags.computeContentHash()),
+    );
     // Order-insensitive: same tags in different order must still differ from
     // empty (they serialise as an ordered list, so ordering IS significant in
     // the current hash — this test just confirms tags are included at all).
-    expect(prog.computeContentHash(), isNot(differentTags.computeContentHash()));
+    expect(
+      prog.computeContentHash(),
+      isNot(differentTags.computeContentHash()),
+    );
   });
 
   test('diffPlans detects tag changes', () {

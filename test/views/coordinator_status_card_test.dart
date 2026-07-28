@@ -116,153 +116,156 @@ void main() {
     l10n = await AppLocalizations.delegate.load(const Locale('en'));
   });
 
-  testWidgets(
-    'running: shows two "Next" cells with no icon, no "Now" cell',
-    (tester) async {
-      // 3 minutes into round 0's execution phase (executionTime: 10), well
-      // clear of round-boundary jitter, regardless of when the test runs.
-      final exercise = _exercise(startTime: _startTimeMinutesAgo(3));
-      await _seedAndInit(exercise);
-      ExerciseService().debugNowOverride = () => _fixedNow;
-      addTearDown(() => ExerciseService().debugNowOverride = DateTime.now);
-      ExerciseService().start(exercise);
+  testWidgets('running: shows two "Next" cells with no icon, no "Now" cell', (
+    tester,
+  ) async {
+    // 3 minutes into round 0's execution phase (executionTime: 10), well
+    // clear of round-boundary jitter, regardless of when the test runs.
+    final exercise = _exercise(startTime: _startTimeMinutesAgo(3));
+    await _seedAndInit(exercise);
+    ExerciseService().debugNowOverride = () => _fixedNow;
+    addTearDown(() => ExerciseService().debugNowOverride = DateTime.now);
+    ExerciseService().start(exercise);
 
-      await tester.pumpWidget(
-        _harness(const CoordinatorScreen(uuid: _exerciseUuid)),
-      );
-      await tester.pump();
+    await tester.pumpWidget(
+      _harness(const CoordinatorScreen(uuid: _exerciseUuid)),
+    );
+    await tester.pump();
 
-      final cardFinder = find.byType(PlayerStatusCard);
-      expect(cardFinder, findsOneWidget);
+    final cardFinder = find.byType(PlayerStatusCard);
+    expect(cardFinder, findsOneWidget);
 
-      // The label row combines the label with an inline time ("Next ·
-      // 08:10"), per the mockup, so match on containment. Both cells share
-      // the plain "Next" label (B3) — the phase/round distinction is
-      // carried by the value/time, not the label.
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.textContaining(l10n.nextLabel),
-        ),
-        findsNWidgets(2),
-      );
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.textContaining(l10n.statusNextPhase),
-        ),
-        findsNothing,
-        reason: '"Next phase" overflowed the half-card and is replaced by '
-            'the plain "Next" label (B3)',
-      );
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.textContaining(l10n.statusNextRound),
-        ),
-        findsNothing,
-        reason: '"Next round" overflowed the half-card and is replaced by '
-            'the plain "Next" label (B3)',
-      );
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.textContaining(l10n.statusNow),
-        ),
-        findsNothing,
-        reason: 'the coordinator has no "Nå" cell — the phase is already '
-            'in the countdown line',
-      );
-      // No icon on either now/next cell (B3).
-      expect(
-        find.descendant(of: cardFinder, matching: find.byIcon(Icons.repeat)),
-        findsNothing,
-      );
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.byIcon(Icons.arrow_forward),
-        ),
-        findsNothing,
-      );
+    // The label row combines the label with an inline time ("Next ·
+    // 08:10"), per the mockup, so match on containment. Both cells share
+    // the plain "Next" label (B3) — the phase/round distinction is
+    // carried by the value/time, not the label.
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.textContaining(l10n.nextLabel),
+      ),
+      findsNWidgets(2),
+    );
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.textContaining(l10n.statusNextPhase),
+      ),
+      findsNothing,
+      reason:
+          '"Next phase" overflowed the half-card and is replaced by '
+          'the plain "Next" label (B3)',
+    );
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.textContaining(l10n.statusNextRound),
+      ),
+      findsNothing,
+      reason:
+          '"Next round" overflowed the half-card and is replaced by '
+          'the plain "Next" label (B3)',
+    );
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.textContaining(l10n.statusNow),
+      ),
+      findsNothing,
+      reason:
+          'the coordinator has no "Nå" cell — the phase is already '
+          'in the countdown line',
+    );
+    // No icon on either now/next cell (B3).
+    expect(
+      find.descendant(of: cardFinder, matching: find.byIcon(Icons.repeat)),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.byIcon(Icons.arrow_forward),
+      ),
+      findsNothing,
+    );
 
-      // Round 0 execution's next phase is round 0's evaluation ("EVAL").
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.text(l10n.eval.toUpperCase()),
-        ),
-        findsOneWidget,
-      );
-      // The next round after round 0 is round 1 (displayed as "Round 2").
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.text('${l10n.round(1)} 2'),
-        ),
-        findsOneWidget,
-      );
+    // Round 0 execution's next phase is round 0's evaluation ("EVAL").
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.text(l10n.eval.toUpperCase()),
+      ),
+      findsOneWidget,
+    );
+    // The next round after round 0 is round 1 (displayed as "Round 2").
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.text('${l10n.round(1)} 2'),
+      ),
+      findsOneWidget,
+    );
 
-      // Stop inside the FakeAsync zone so the periodic timer is cancelled
-      // before the framework's pending-timer invariant check.
-      ExerciseService().stop();
-      await tester.pump();
-    },
-  );
+    // Stop inside the FakeAsync zone so the periodic timer is cancelled
+    // before the framework's pending-timer invariant check.
+    ExerciseService().stop();
+    await tester.pump();
+  });
 
-  testWidgets(
-    'running: mid last round, the next-round cell falls back to the '
-    'exercise finish time while next-phase still shows the real phase',
-    (tester) async {
-      // 3 minutes into round 2's (the last round's) execution phase: 2 full
-      // rounds (20 min each: executionTime 10 + evaluationTime 5 +
-      // rotationTime 5) plus 3 minutes.
-      final exercise = _exercise(startTime: _startTimeMinutesAgo(43));
-      await _seedAndInit(exercise);
-      ExerciseService().debugNowOverride = () => _fixedNow;
-      addTearDown(() => ExerciseService().debugNowOverride = DateTime.now);
-      ExerciseService().start(exercise);
+  testWidgets('running: mid last round, the next-round cell falls back to the '
+      'exercise finish time while next-phase still shows the real phase', (
+    tester,
+  ) async {
+    // 3 minutes into round 2's (the last round's) execution phase: 2 full
+    // rounds (20 min each: executionTime 10 + evaluationTime 5 +
+    // rotationTime 5) plus 3 minutes.
+    final exercise = _exercise(startTime: _startTimeMinutesAgo(43));
+    await _seedAndInit(exercise);
+    ExerciseService().debugNowOverride = () => _fixedNow;
+    addTearDown(() => ExerciseService().debugNowOverride = DateTime.now);
+    ExerciseService().start(exercise);
 
-      await tester.pumpWidget(
-        _harness(const CoordinatorScreen(uuid: _exerciseUuid)),
-      );
-      await tester.pump();
+    await tester.pumpWidget(
+      _harness(const CoordinatorScreen(uuid: _exerciseUuid)),
+    );
+    await tester.pump();
 
-      final cardFinder = find.byType(PlayerStatusCard);
-      expect(cardFinder, findsOneWidget);
+    final cardFinder = find.byType(PlayerStatusCard);
+    expect(cardFinder, findsOneWidget);
 
-      // Next phase (round 2 execution's next phase is round 2's EVAL) is
-      // unaffected — only the next-round cell is exhausted.
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.text(l10n.eval.toUpperCase()),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.text('${l10n.nextLabel} · ${exercise.endTime}'),
-        ),
-        findsOneWidget,
-        reason: 'the next-round cell falls back to "Next · finish time" '
-            'instead of being empty',
-      );
-      expect(
-        find.descendant(
-          of: cardFinder,
-          matching: find.text(l10n.statusFinishValue),
-        ),
-        findsOneWidget,
-        reason: 'only the next-round cell falls back here — next phase '
-            'still has a real phase to show',
-      );
+    // Next phase (round 2 execution's next phase is round 2's EVAL) is
+    // unaffected — only the next-round cell is exhausted.
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.text(l10n.eval.toUpperCase()),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.text('${l10n.nextLabel} · ${exercise.endTime}'),
+      ),
+      findsOneWidget,
+      reason:
+          'the next-round cell falls back to "Next · finish time" '
+          'instead of being empty',
+    );
+    expect(
+      find.descendant(
+        of: cardFinder,
+        matching: find.text(l10n.statusFinishValue),
+      ),
+      findsOneWidget,
+      reason:
+          'only the next-round cell falls back here — next phase '
+          'still has a real phase to show',
+    );
 
-      ExerciseService().stop();
-      await tester.pump();
-    },
-  );
+    ExerciseService().stop();
+    await tester.pump();
+  });
 
   testWidgets(
     'running: last phase of the last round, both next-cells fall back to '
@@ -291,7 +294,8 @@ void main() {
           matching: find.text('${l10n.nextLabel} · ${exercise.endTime}'),
         ),
         findsNWidgets(2),
-        reason: 'both cells fall back to "Next · finish time" — there is '
+        reason:
+            'both cells fall back to "Next · finish time" — there is '
             'no further phase or round to report',
       );
       expect(

@@ -55,10 +55,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(
-        find.textContaining('{{exercise.numberOfRounds}}'),
-        findsNothing,
-      );
+      expect(find.textContaining('{{exercise.numberOfRounds}}'), findsNothing);
       expect(
         find.textContaining('This exercise runs 4 rounds.'),
         findsOneWidget,

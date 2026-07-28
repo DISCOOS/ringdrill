@@ -41,7 +41,9 @@ void main() {
     testWidgets('renders the label and the hidden-from-participants icon', (
       tester,
     ) async {
-      await tester.pumpWidget(_harness(const GateBadge(label: 'Director only')));
+      await tester.pumpWidget(
+        _harness(const GateBadge(label: 'Director only')),
+      );
 
       expect(find.text('Director only'), findsOneWidget);
       expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);

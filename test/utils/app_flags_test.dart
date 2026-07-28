@@ -17,13 +17,19 @@ void main() {
 
     test('each entry has a non-empty description and a kind', () {
       for (final f in AppFlags.all) {
-        expect(f.description, isNotEmpty, reason: '${f.name} has empty description');
+        expect(
+          f.description,
+          isNotEmpty,
+          reason: '${f.name} has empty description',
+        );
         expect(f.kind, isA<AppFlagKind>(), reason: '${f.name} missing kind');
       }
     });
 
     test('MIGRATION_DISABLED defaults to false', () {
-      final flag = AppFlags.all.firstWhere((f) => f.name == 'MIGRATION_DISABLED');
+      final flag = AppFlags.all.firstWhere(
+        (f) => f.name == 'MIGRATION_DISABLED',
+      );
       expect(flag.value, false);
     });
 

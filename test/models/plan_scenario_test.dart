@@ -11,16 +11,16 @@ void main() {
   final now = DateTime(2026);
 
   Plan base() => Plan(
-        uuid: 'prog-1',
-        name: 'Test',
-        description: '',
-        metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
-        teams: const [],
-        sessions: const [],
-        exercises: const [],
-        rolePlays: const [],
-        actors: const [],
-      );
+    uuid: 'prog-1',
+    name: 'Test',
+    description: '',
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
+    teams: const [],
+    sessions: const [],
+    exercises: const [],
+    rolePlays: const [],
+    actors: const [],
+  );
 
   const lkp = Location(
     slug: 'lkp',
@@ -133,26 +133,28 @@ void main() {
   });
 
   group('content hash sensitivity', () {
-    Station stationWith({List<Location> locations = const [], List<Person> persons = const []}) =>
-        Station(index: 0, name: 'S1', locations: locations, persons: persons);
+    Station stationWith({
+      List<Location> locations = const [],
+      List<Person> persons = const [],
+    }) => Station(index: 0, name: 'S1', locations: locations, persons: persons);
 
     Plan planWithStation(Station station) => base().copyWith(
-          exercises: [
-            Exercise(
-              uuid: 'ex-1',
-              name: 'Ex',
-              startTime: SimpleTimeOfDay(hour: 8, minute: 0),
-              endTime: SimpleTimeOfDay(hour: 9, minute: 0),
-              numberOfTeams: 1,
-              numberOfRounds: 1,
-              executionTime: 10,
-              evaluationTime: 5,
-              rotationTime: 5,
-              stations: [station],
-              schedule: const [],
-            ),
-          ],
-        );
+      exercises: [
+        Exercise(
+          uuid: 'ex-1',
+          name: 'Ex',
+          startTime: SimpleTimeOfDay(hour: 8, minute: 0),
+          endTime: SimpleTimeOfDay(hour: 9, minute: 0),
+          numberOfTeams: 1,
+          numberOfRounds: 1,
+          executionTime: 10,
+          evaluationTime: 5,
+          rotationTime: 5,
+          stations: [station],
+          schedule: const [],
+        ),
+      ],
+    );
 
     test('changes when a station gains a location', () {
       final prog = planWithStation(stationWith());
@@ -194,12 +196,12 @@ void main() {
 
     test('changes when a roleplay personRef changes', () {
       RolePlay rolePlay(String? ref) => RolePlay(
-            uuid: 'rp-1',
-            index: 0,
-            exerciseUuid: 'ex-1',
-            name: 'Anne',
-            personRef: ref,
-          );
+        uuid: 'rp-1',
+        index: 0,
+        exerciseUuid: 'ex-1',
+        name: 'Anne',
+        personRef: ref,
+      );
 
       final prog = base().copyWith(rolePlays: [rolePlay('anne')]);
       final changed = base().copyWith(rolePlays: [rolePlay('other')]);
@@ -208,12 +210,12 @@ void main() {
 
     test('changes when a roleplay gender changes', () {
       RolePlay rolePlay(String? gender) => RolePlay(
-            uuid: 'rp-1',
-            index: 0,
-            exerciseUuid: 'ex-1',
-            name: 'Anne',
-            gender: gender,
-          );
+        uuid: 'rp-1',
+        index: 0,
+        exerciseUuid: 'ex-1',
+        name: 'Anne',
+        gender: gender,
+      );
 
       final prog = base().copyWith(rolePlays: [rolePlay('female')]);
       final changed = base().copyWith(rolePlays: [rolePlay('male')]);

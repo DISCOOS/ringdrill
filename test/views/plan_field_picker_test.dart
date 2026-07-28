@@ -63,11 +63,7 @@ void main() {
             uuid: 'pgm-1',
             name: 'Vinterøvelse',
             description: '',
-            metadata: PlanMetadata(
-              created: now,
-              updated: now,
-              version: '1.0',
-            ),
+            metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
             teams: const [],
             sessions: const [],
             exercises: const [],
@@ -333,77 +329,71 @@ void main() {
       schedule: const [],
     );
 
-    testWidgets(
-      'the behavior field offers plan/exercise/station/roleplay plan '
-      'fields, coexisting with station.loc/person entries the linked '
-      'station supplies',
-      (tester) async {
-        final station = Station(
-          index: 0,
-          name: 'Post 1',
-          position: const LatLng(58.99, 10.43),
-          locations: const [Location(slug: 'lkp', place: 'Sentrum')],
-          persons: const [Person(slug: 'anne', name: 'Anne Glemsk')],
-        );
-        await _pumpAndOpen(
-          tester,
-          RolePlayFormScreen(
-            rolePlay: rolePlay(),
-            exercise: exercise(station),
-            variables: const <DrillVariable>[],
-          ),
-        );
+    testWidgets('the behavior field offers plan/exercise/station/roleplay plan '
+        'fields, coexisting with station.loc/person entries the linked '
+        'station supplies', (tester) async {
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        position: const LatLng(58.99, 10.43),
+        locations: const [Location(slug: 'lkp', place: 'Sentrum')],
+        persons: const [Person(slug: 'anne', name: 'Anne Glemsk')],
+      );
+      await _pumpAndOpen(
+        tester,
+        RolePlayFormScreen(
+          rolePlay: rolePlay(),
+          exercise: exercise(station),
+          variables: const <DrillVariable>[],
+        ),
+      );
 
-        await tester.tap(find.text(l.roleBehavior));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byType(TextField));
+      await tester.tap(find.text(l.roleBehavior));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(TextField));
 
-        await tester.enterText(
-          find.byType(TextField),
-          'x {{exercise.startTime',
-        );
-        await tester.pump();
-        await tester.pump();
-        expect(find.text(l.startTime), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'x {{exercise.startTime');
+      await tester.pump();
+      await tester.pump();
+      expect(find.text(l.startTime), findsOneWidget);
 
-        await tester.enterText(find.byType(TextField), 'x {{station.name');
-        await tester.pump();
-        await tester.pump();
-        expect(find.text(l.stationName), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'x {{station.name');
+      await tester.pump();
+      await tester.pump();
+      expect(find.text(l.stationName), findsOneWidget);
 
-        // roleplay.name is not self-referential here (this is the behavior
-        // field, not the name field), so the full roleplay(l) set is on
-        // offer, roleplay.name included.
-        await tester.enterText(find.byType(TextField), 'x {{roleplay.');
-        await tester.pump();
-        await tester.pump();
-        final behaviorMenu = find.byType(ListView);
-        expect(
-          find.descendant(of: behaviorMenu, matching: find.text(l.roleName)),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(of: behaviorMenu, matching: find.text(l.roleAge)),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: behaviorMenu,
-            matching: find.text(l.roleDescription),
-          ),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(of: behaviorMenu, matching: find.text(l.positionUtm)),
-          findsOneWidget,
-        );
+      // roleplay.name is not self-referential here (this is the behavior
+      // field, not the name field), so the full roleplay(l) set is on
+      // offer, roleplay.name included.
+      await tester.enterText(find.byType(TextField), 'x {{roleplay.');
+      await tester.pump();
+      await tester.pump();
+      final behaviorMenu = find.byType(ListView);
+      expect(
+        find.descendant(of: behaviorMenu, matching: find.text(l.roleName)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: behaviorMenu, matching: find.text(l.roleAge)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: behaviorMenu,
+          matching: find.text(l.roleDescription),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: behaviorMenu, matching: find.text(l.positionUtm)),
+        findsOneWidget,
+      );
 
-        await tester.enterText(find.byType(TextField), 'x {{station.person.');
-        await tester.pump();
-        await tester.pump();
-        expect(find.text('Anne Glemsk'), findsWidgets);
-      },
-    );
+      await tester.enterText(find.byType(TextField), 'x {{station.person.');
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Anne Glemsk'), findsWidgets);
+    });
 
     // The three cases below each open the form fresh and enter text on the
     // name field exactly once. The name field's RingDrillTextField takes an

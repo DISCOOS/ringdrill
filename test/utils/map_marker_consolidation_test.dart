@@ -37,36 +37,30 @@ void main() {
     position: LatLng(59.0, 10.0),
   );
 
-  test(
-    'stationNumbering always joins the plan number with the (unresolved) '
-    'name for the full label, and the number alone for the short one',
-    () {
-      final numbering = stationNumbering(exercise(stations: [station]), station);
-      expect(numbering.rawLabel, '1.1 Turgåer');
-      expect(numbering.shortLabel, '1.1');
-    },
-  );
+  test('stationNumbering always joins the plan number with the (unresolved) '
+      'name for the full label, and the number alone for the short one', () {
+    final numbering = stationNumbering(exercise(stations: [station]), station);
+    expect(numbering.rawLabel, '1.1 Turgåer');
+    expect(numbering.shortLabel, '1.1');
+  });
 
-  test(
-    'locationMarker never sets a shortLabel — locations don\'t need a '
-    'zoom-tiered short form the way a station\'s own number does',
-    () {
-      const location = Location(
-        slug: 'lkp',
-        label: 'Sist kjent posisjon',
-        kind: LocationKind.lkp,
-        position: LatLng(59.1, 10.1),
-      );
-      final marker = locationMarker(location, id: 7);
-      expect(marker.id, 7);
-      expect(marker.label, 'Sist kjent posisjon');
-      expect(marker.shortLabel, isNull);
-      expect(marker.point, location.position);
-      final icon = marker.child as Icon;
-      expect(icon.icon, LocationKind.lkp.icon);
-      expect(icon.color, LocationKind.lkp.color);
-    },
-  );
+  test('locationMarker never sets a shortLabel — locations don\'t need a '
+      'zoom-tiered short form the way a station\'s own number does', () {
+    const location = Location(
+      slug: 'lkp',
+      label: 'Sist kjent posisjon',
+      kind: LocationKind.lkp,
+      position: LatLng(59.1, 10.1),
+    );
+    final marker = locationMarker(location, id: 7);
+    expect(marker.id, 7);
+    expect(marker.label, 'Sist kjent posisjon');
+    expect(marker.shortLabel, isNull);
+    expect(marker.point, location.position);
+    final icon = marker.child as Icon;
+    expect(icon.icon, LocationKind.lkp.icon);
+    expect(icon.color, LocationKind.lkp.color);
+  });
 
   test('locationMarker falls back to the slug when label is empty', () {
     const location = Location(
@@ -78,90 +72,86 @@ void main() {
     expect(marker.label, 'lkp');
   });
 
-  testWidgets(
-    'roleMarker resolves plan-variable/cross-reference tokens in the '
-    'role\'s name when an exercise is supplied, and reuses across marker '
-    'id types (int for the single-role view, a compound key for the '
-    'all-exercises map)',
-    (tester) async {
-      const rolePlay = RolePlay(
-        uuid: 'rp-1',
-        index: 0,
-        exerciseUuid: 'ex-1',
-        name: 'Hilde',
-        position: LatLng(58.99, 10.43),
-      );
+  testWidgets('roleMarker resolves plan-variable/cross-reference tokens in the '
+      'role\'s name when an exercise is supplied, and reuses across marker '
+      'id types (int for the single-role view, a compound key for the '
+      'all-exercises map)', (tester) async {
+    const rolePlay = RolePlay(
+      uuid: 'rp-1',
+      index: 0,
+      exerciseUuid: 'ex-1',
+      name: 'Hilde',
+      position: LatLng(58.99, 10.43),
+    );
 
-      late BuildContext capturedContext;
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Builder(
-            builder: (context) {
-              capturedContext = context;
-              return const SizedBox.shrink();
-            },
-          ),
+    late BuildContext capturedContext;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) {
+            capturedContext = context;
+            return const SizedBox.shrink();
+          },
         ),
-      );
+      ),
+    );
 
-      final intMarker = roleMarker<int>(
-        capturedContext,
-        rolePlay,
-        null,
-        id: 0,
-        exercise: exercise(),
-      );
-      expect(intMarker, isNotNull);
-      expect(intMarker!.id, 0);
-      expect(intMarker.label, 'Hilde');
-      expect(intMarker.point, rolePlay.position);
+    final intMarker = roleMarker<int>(
+      capturedContext,
+      rolePlay,
+      null,
+      id: 0,
+      exercise: exercise(),
+    );
+    expect(intMarker, isNotNull);
+    expect(intMarker!.id, 0);
+    expect(intMarker.label, 'Hilde');
+    expect(intMarker.point, rolePlay.position);
 
-      final compoundKeyMarker = roleMarker<(String, int)>(
-        capturedContext,
-        rolePlay,
-        null,
-        id: (rolePlay.exerciseUuid, rolePlay.index),
-        exercise: exercise(),
-      );
-      expect(compoundKeyMarker, isNotNull);
-      expect(compoundKeyMarker!.id, ('ex-1', 0));
-      expect(compoundKeyMarker.label, 'Hilde');
-    },
-  );
+    final compoundKeyMarker = roleMarker<(String, int)>(
+      capturedContext,
+      rolePlay,
+      null,
+      id: (rolePlay.exerciseUuid, rolePlay.index),
+      exercise: exercise(),
+    );
+    expect(compoundKeyMarker, isNotNull);
+    expect(compoundKeyMarker!.id, ('ex-1', 0));
+    expect(compoundKeyMarker.label, 'Hilde');
+  });
 
-  testWidgets(
-    'roleMarker falls back to the raw name when no exercise is given '
-    '(a stale roleplay whose parent exercise could not be resolved)',
-    (tester) async {
-      const rolePlay = RolePlay(
-        uuid: 'rp-1',
-        index: 0,
-        exerciseUuid: 'ex-1',
-        name: 'Hilde',
-        position: LatLng(58.99, 10.43),
-      );
+  testWidgets('roleMarker falls back to the raw name when no exercise is given '
+      '(a stale roleplay whose parent exercise could not be resolved)', (
+    tester,
+  ) async {
+    const rolePlay = RolePlay(
+      uuid: 'rp-1',
+      index: 0,
+      exerciseUuid: 'ex-1',
+      name: 'Hilde',
+      position: LatLng(58.99, 10.43),
+    );
 
-      late BuildContext capturedContext;
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Builder(
-            builder: (context) {
-              capturedContext = context;
-              return const SizedBox.shrink();
-            },
-          ),
+    late BuildContext capturedContext;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) {
+            capturedContext = context;
+            return const SizedBox.shrink();
+          },
         ),
-      );
+      ),
+    );
 
-      final marker = roleMarker<int>(capturedContext, rolePlay, null, id: 0);
-      expect(marker, isNotNull);
-      expect(marker!.label, 'Hilde');
-    },
-  );
+    final marker = roleMarker<int>(capturedContext, rolePlay, null, id: 0);
+    expect(marker, isNotNull);
+    expect(marker!.label, 'Hilde');
+  });
 
   test('roleMarker returns null when the role has no central position', () {
     const rolePlay = RolePlay(

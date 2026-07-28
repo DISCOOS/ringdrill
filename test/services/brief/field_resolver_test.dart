@@ -123,13 +123,16 @@ void main() {
     group('ActionChipFormatter', () {
       const formatter = ActionChipFormatter();
 
-      test('position with a coordinate encodes a ringdrill://chip map link', () {
-        expect(
-          formatter.position('32V 601234 6643210', latLng),
-          '[32V 601234 6643210]'
-          '(ringdrill://chip?action=map&lat=58.99&lng=10.43)',
-        );
-      });
+      test(
+        'position with a coordinate encodes a ringdrill://chip map link',
+        () {
+          expect(
+            formatter.position('32V 601234 6643210', latLng),
+            '[32V 601234 6643210]'
+            '(ringdrill://chip?action=map&lat=58.99&lng=10.43)',
+          );
+        },
+      );
 
       test('position without a coordinate degrades to a copy chip', () {
         expect(

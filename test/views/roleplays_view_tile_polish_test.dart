@@ -97,32 +97,29 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets(
-    'Fix 1: scenario/position/cast sections share the same symmetric '
-    'spacing (Column.spacing, no separate divider widget)',
-    (tester) async {
-      await expandFirstRole(tester);
+  testWidgets('Fix 1: scenario/position/cast sections share the same symmetric '
+      'spacing (Column.spacing, no separate divider widget)', (tester) async {
+    await expandFirstRole(tester);
 
-      // Description, position and cast are all present, one gap between
-      // each pair of adjacent sections.
-      final descriptionRect = tester.getRect(
-        find.byType(RolePlayDescriptionRollup),
-      );
-      final positionRect = tester.getRect(find.byType(RolePositionPanel));
-      // The cast section's own Row (holding the CastPill + phone chip) is
-      // the section's top edge — the CastPill itself is vertically centred
-      // within that Row (default CrossAxisAlignment.center) and sits lower
-      // than the row's top whenever the phone chip is taller than the pill.
-      final castRowRect = tester.getRect(
-        find
-            .ancestor(of: find.byType(CastPill).first, matching: find.byType(Row))
-            .first,
-      );
+    // Description, position and cast are all present, one gap between
+    // each pair of adjacent sections.
+    final descriptionRect = tester.getRect(
+      find.byType(RolePlayDescriptionRollup),
+    );
+    final positionRect = tester.getRect(find.byType(RolePositionPanel));
+    // The cast section's own Row (holding the CastPill + phone chip) is
+    // the section's top edge — the CastPill itself is vertically centred
+    // within that Row (default CrossAxisAlignment.center) and sits lower
+    // than the row's top whenever the phone chip is taller than the pill.
+    final castRowRect = tester.getRect(
+      find
+          .ancestor(of: find.byType(CastPill).first, matching: find.byType(Row))
+          .first,
+    );
 
-      expect(positionRect.top - descriptionRect.bottom, 8.0);
-      expect(castRowRect.top - positionRect.bottom, 8.0);
-    },
-  );
+    expect(positionRect.top - descriptionRect.bottom, 8.0);
+    expect(castRowRect.top - positionRect.bottom, 8.0);
+  });
 
   testWidgets(
     'Fix 3: Cast tile shows the actor name, the phone number, and never '

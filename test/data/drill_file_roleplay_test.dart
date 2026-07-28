@@ -117,10 +117,7 @@ void main() {
       notes: 'Keep in character',
     );
 
-    final plan = _emptyPlan().copyWith(
-      rolePlays: [rp1, rp2],
-      actors: [actor1],
-    );
+    final plan = _emptyPlan().copyWith(rolePlays: [rp1, rp2], actors: [actor1]);
 
     final drillFile = DrillFile.fromPlan(plan, 'test');
     final decoded = drillFile.plan();
@@ -232,10 +229,7 @@ void main() {
       realName: 'Kari',
       notes: 'Stay in character',
     );
-    final plan = _emptyPlan().copyWith(
-      rolePlays: [rp],
-      actors: [actor],
-    );
+    final plan = _emptyPlan().copyWith(rolePlays: [rp], actors: [actor]);
 
     final drillFile = DrillFile.fromPlan(plan, 'test');
     final archive = ZipDecoder().decodeBytes(drillFile.content);
@@ -283,20 +277,45 @@ void main() {
     final encoder = ZipEncoder();
 
     final metaBytes = utf8.encode(
-      jsonEncode({'created': now.toIso8601String(), 'updated': now.toIso8601String(), 'version': '1.0', 'schema': '1.1'}),
+      jsonEncode({
+        'created': now.toIso8601String(),
+        'updated': now.toIso8601String(),
+        'version': '1.0',
+        'schema': '1.1',
+      }),
     );
     archive.addFile(ArchiveFile('metadata.json', metaBytes.length, metaBytes));
 
     final progBytes = utf8.encode(
-      jsonEncode({'uuid': 'prog-1', 'name': 'T', 'description': '', 'metadata': {'created': now.toIso8601String(), 'updated': now.toIso8601String(), 'version': '1.0'}, 'teams': [], 'sessions': [], 'exercises': []}),
+      jsonEncode({
+        'uuid': 'prog-1',
+        'name': 'T',
+        'description': '',
+        'metadata': {
+          'created': now.toIso8601String(),
+          'updated': now.toIso8601String(),
+          'version': '1.0',
+        },
+        'teams': [],
+        'sessions': [],
+        'exercises': [],
+      }),
     );
     archive.addFile(ArchiveFile('program.json', progBytes.length, progBytes));
 
     // roleplay JSON with inline (legacy) value
     final rpBytes = utf8.encode(
-      jsonEncode({'uuid': 'rp-1', 'index': 0, 'exerciseUuid': 'ex-1', 'name': 'Anna', 'behavior': 'legacy inline'}),
+      jsonEncode({
+        'uuid': 'rp-1',
+        'index': 0,
+        'exerciseUuid': 'ex-1',
+        'name': 'Anna',
+        'behavior': 'legacy inline',
+      }),
     );
-    archive.addFile(ArchiveFile('roleplays/rp-1.json', rpBytes.length, rpBytes));
+    archive.addFile(
+      ArchiveFile('roleplays/rp-1.json', rpBytes.length, rpBytes),
+    );
 
     // .md file with different content — should win
     final mdBytes = utf8.encode('md file content');
@@ -331,7 +350,10 @@ void main() {
 
     // Verify the archive: behavior.md present (zero bytes), background.md absent
     final archive = ZipDecoder().decodeBytes(drillFile.content);
-    final names = archive.files.where((f) => f.isFile).map((f) => f.name).toSet();
+    final names = archive.files
+        .where((f) => f.isFile)
+        .map((f) => f.name)
+        .toSet();
     expect(names.contains('roleplays/rp-1/behavior.md'), isTrue);
     expect(names.contains('roleplays/rp-1/background.md'), isFalse);
 
@@ -360,27 +382,30 @@ void main() {
     expect(hash2, isNot(hash1));
   });
 
-  test('identical content with different archive-entry order produces equal hashes', () {
-    const rp1 = RolePlay(
-      uuid: 'aaa-rp',
-      index: 0,
-      exerciseUuid: 'ex-1',
-      name: 'First',
-      behavior: 'Calm',
-    );
-    const rp2 = RolePlay(
-      uuid: 'zzz-rp',
-      index: 1,
-      exerciseUuid: 'ex-1',
-      name: 'Second',
-      background: 'History',
-    );
+  test(
+    'identical content with different archive-entry order produces equal hashes',
+    () {
+      const rp1 = RolePlay(
+        uuid: 'aaa-rp',
+        index: 0,
+        exerciseUuid: 'ex-1',
+        name: 'First',
+        behavior: 'Calm',
+      );
+      const rp2 = RolePlay(
+        uuid: 'zzz-rp',
+        index: 1,
+        exerciseUuid: 'ex-1',
+        name: 'Second',
+        background: 'History',
+      );
 
-    final planA = _emptyPlan().copyWith(rolePlays: [rp1, rp2]);
-    final planB = _emptyPlan().copyWith(rolePlays: [rp2, rp1]);
+      final planA = _emptyPlan().copyWith(rolePlays: [rp1, rp2]);
+      final planB = _emptyPlan().copyWith(rolePlays: [rp2, rp1]);
 
-    expect(planA.computeContentHash(), planB.computeContentHash());
-  });
+      expect(planA.computeContentHash(), planB.computeContentHash());
+    },
+  );
 
   test('roundtrip preserves content hash', () {
     const rp = RolePlay(
@@ -396,10 +421,7 @@ void main() {
       realName: 'Kari',
       notes: 'Stay in character',
     );
-    final plan = _emptyPlan().copyWith(
-      rolePlays: [rp],
-      actors: [actor],
-    );
+    final plan = _emptyPlan().copyWith(rolePlays: [rp], actors: [actor]);
 
     final hashBefore = plan.computeContentHash();
     final drillFile = DrillFile.fromPlan(plan, 'test');

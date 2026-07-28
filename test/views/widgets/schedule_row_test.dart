@@ -86,47 +86,46 @@ void main() {
     expect(find.text('08:08'), findsOneWidget);
   });
 
-  testWidgets(
-    'the current round gets the house highlight only while running',
-    (tester) async {
-      final running = _makeEvent(
-        exercise: exercise,
-        phase: ExercisePhase.execution,
-        currentRound: 0,
-      );
-      final rowKey = GlobalKey();
-      await tester.pumpWidget(
-        _harness(
-          ScheduleRow(
-            key: rowKey,
-            label: 'Runde 1',
-            event: running,
-            exercise: exercise,
-            roundIndex: 0,
-          ),
+  testWidgets('the current round gets the house highlight only while running', (
+    tester,
+  ) async {
+    final running = _makeEvent(
+      exercise: exercise,
+      phase: ExercisePhase.execution,
+      currentRound: 0,
+    );
+    final rowKey = GlobalKey();
+    await tester.pumpWidget(
+      _harness(
+        ScheduleRow(
+          key: rowKey,
+          label: 'Runde 1',
+          event: running,
+          exercise: exercise,
+          roundIndex: 0,
         ),
-      );
-      expect(_hasBlueAccent(tester, find.byKey(rowKey)), isTrue);
+      ),
+    );
+    expect(_hasBlueAccent(tester, find.byKey(rowKey)), isTrue);
 
-      final pending = _makeEvent(
-        exercise: exercise,
-        phase: ExercisePhase.pending,
-        currentRound: 0,
-      );
-      await tester.pumpWidget(
-        _harness(
-          ScheduleRow(
-            key: rowKey,
-            label: 'Runde 1',
-            event: pending,
-            exercise: exercise,
-            roundIndex: 0,
-          ),
+    final pending = _makeEvent(
+      exercise: exercise,
+      phase: ExercisePhase.pending,
+      currentRound: 0,
+    );
+    await tester.pumpWidget(
+      _harness(
+        ScheduleRow(
+          key: rowKey,
+          label: 'Runde 1',
+          event: pending,
+          exercise: exercise,
+          roundIndex: 0,
         ),
-      );
-      expect(_hasBlueAccent(tester, find.byKey(rowKey)), isFalse);
-    },
-  );
+      ),
+    );
+    expect(_hasBlueAccent(tester, find.byKey(rowKey)), isFalse);
+  });
 
   testWidgets(
     'a muted row is struck through and never current even when running on '
@@ -163,32 +162,29 @@ void main() {
     },
   );
 
-  testWidgets(
-    'struckThrough alone strikes the text but stays eligible for the '
-    'current-round highlight',
-    (tester) async {
-      final running = _makeEvent(
-        exercise: exercise,
-        phase: ExercisePhase.execution,
-        currentRound: 0,
-      );
-      final rowKey = GlobalKey();
-      await tester.pumpWidget(
-        _harness(
-          ScheduleRow(
-            key: rowKey,
-            label: 'Post ×',
-            event: running,
-            exercise: exercise,
-            roundIndex: 0,
-            struckThrough: true,
-          ),
+  testWidgets('struckThrough alone strikes the text but stays eligible for the '
+      'current-round highlight', (tester) async {
+    final running = _makeEvent(
+      exercise: exercise,
+      phase: ExercisePhase.execution,
+      currentRound: 0,
+    );
+    final rowKey = GlobalKey();
+    await tester.pumpWidget(
+      _harness(
+        ScheduleRow(
+          key: rowKey,
+          label: 'Post ×',
+          event: running,
+          exercise: exercise,
+          roundIndex: 0,
+          struckThrough: true,
         ),
-      );
+      ),
+    );
 
-      expect(_hasBlueAccent(tester, find.byKey(rowKey)), isTrue);
-      final text = tester.widget<Text>(find.text('Post ×'));
-      expect(text.style?.decoration, TextDecoration.lineThrough);
-    },
-  );
+    expect(_hasBlueAccent(tester, find.byKey(rowKey)), isTrue);
+    final text = tester.widget<Text>(find.text('Post ×'));
+    expect(text.style?.decoration, TextDecoration.lineThrough);
+  });
 }

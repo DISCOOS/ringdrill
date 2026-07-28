@@ -53,31 +53,36 @@ void main() {
     },
   );
 
-  test('a PlanSource.catalog(...) round-trips with its discriminator intact', () {
-    final plan = buildPlan();
-    final drill = DrillFile.fromPlan(plan, 'test');
-    final archive = ZipDecoder().decodeBytes(drill.content);
-    final manifest = archive.files.singleWhere((f) => f.name == 'program.json');
-    final json =
-        jsonDecode(utf8.decode(manifest.content as List<int>))
-            as Map<String, dynamic>;
+  test(
+    'a PlanSource.catalog(...) round-trips with its discriminator intact',
+    () {
+      final plan = buildPlan();
+      final drill = DrillFile.fromPlan(plan, 'test');
+      final archive = ZipDecoder().decodeBytes(drill.content);
+      final manifest = archive.files.singleWhere(
+        (f) => f.name == 'program.json',
+      );
+      final json =
+          jsonDecode(utf8.decode(manifest.content as List<int>))
+              as Map<String, dynamic>;
 
-    // The union discriminator is keyed by the factory name (frozen),
-    // never the Dart class name (renamed Program -> Plan).
-    expect(json['source']['runtimeType'], 'catalog');
+      // The union discriminator is keyed by the factory name (frozen),
+      // never the Dart class name (renamed Program -> Plan).
+      expect(json['source']['runtimeType'], 'catalog');
 
-    final decoded = drill.plan();
-    expect(decoded.source, plan.source);
-    decoded.source.when(
-      local: () => fail('expected catalog source'),
-      imported: (_) => fail('expected catalog source'),
-      catalog: (slug, latestEtag, installedAt, latestVersion) {
-        expect(slug, 'wire-roundtrip');
-        expect(latestEtag, '"etag-v1"');
-        expect(latestVersion, '1');
-      },
-    );
-  });
+      final decoded = drill.plan();
+      expect(decoded.source, plan.source);
+      decoded.source.when(
+        local: () => fail('expected catalog source'),
+        imported: (_) => fail('expected catalog source'),
+        catalog: (slug, latestEtag, installedAt, latestVersion) {
+          expect(slug, 'wire-roundtrip');
+          expect(latestEtag, '"etag-v1"');
+          expect(latestVersion, '1');
+        },
+      );
+    },
+  );
 
   test('a drill authored before the rename still imports', () {
     final bytes = File('test/fixtures/test-7x.drill').readAsBytesSync();

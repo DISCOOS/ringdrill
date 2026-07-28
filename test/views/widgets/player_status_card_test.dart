@@ -285,10 +285,7 @@ void main() {
       final trailingCenter = tester
           .getRect(
             find
-                .ancestor(
-                  of: find.text('Next'),
-                  matching: find.byType(Column),
-                )
+                .ancestor(of: find.text('Next'), matching: find.byType(Column))
                 .first,
           )
           .center
@@ -318,7 +315,11 @@ void main() {
     (tester) async {
       final exercise = _exercise();
 
-      final cell = finishFallbackCell(l10n, exercise, icon: Icons.arrow_forward);
+      final cell = finishFallbackCell(
+        l10n,
+        exercise,
+        icon: Icons.arrow_forward,
+      );
 
       expect(cell.label, l10n.nextLabel);
       expect(cell.time, exercise.endTime.toString());
@@ -358,17 +359,14 @@ void main() {
     },
   );
 
-  testWidgets(
-    'has no collapse handle — PlayerStatusCard is never collapsible '
-    '(DESIGN-010 follow-up: collapsible-section-cards)',
-    (tester) async {
-      final exercise = _exercise();
-      final event = _runningEvent(exercise);
-      await tester.pumpWidget(_harness(PlayerStatusCard(event: event)));
-      await tester.pumpAndSettle();
+  testWidgets('has no collapse handle — PlayerStatusCard is never collapsible '
+      '(DESIGN-010 follow-up: collapsible-section-cards)', (tester) async {
+    final exercise = _exercise();
+    final event = _runningEvent(exercise);
+    await tester.pumpWidget(_harness(PlayerStatusCard(event: event)));
+    await tester.pumpAndSettle();
 
-      expect(find.byType(CollapseChevron), findsNothing);
-      expect(find.byIcon(Icons.expand_more), findsNothing);
-    },
-  );
+    expect(find.byType(CollapseChevron), findsNothing);
+    expect(find.byIcon(Icons.expand_more), findsNothing);
+  });
 }

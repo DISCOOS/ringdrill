@@ -167,12 +167,12 @@ void main() {
 
       // The field text updates to the canonical label; suggestions go away.
       expect(
-        tester.widget<TextField>(
-          find.descendant(
-            of: placeField,
-            matching: find.byType(TextField),
-          ),
-        ).controller!.text,
+        tester
+            .widget<TextField>(
+              find.descendant(of: placeField, matching: find.byType(TextField)),
+            )
+            .controller!
+            .text,
         hit.label,
       );
       expect(find.text(hit.label), findsOneWidget);
@@ -234,9 +234,12 @@ void main() {
         l.locationsSectionPlaceLabel,
       );
       expect(
-        tester.widget<TextField>(
-          find.descendant(of: placeField, matching: find.byType(TextField)),
-        ).controller!.text,
+        tester
+            .widget<TextField>(
+              find.descendant(of: placeField, matching: find.byType(TextField)),
+            )
+            .controller!
+            .text,
         geocoder.reverseLabel,
       );
     },
@@ -286,9 +289,12 @@ void main() {
       // The author chose a new point, so the address is re-derived from it —
       // the typed value is replaced, automatically, with no refresh action.
       expect(
-        tester.widget<TextField>(
-          find.descendant(of: placeField, matching: find.byType(TextField)),
-        ).controller!.text,
+        tester
+            .widget<TextField>(
+              find.descendant(of: placeField, matching: find.byType(TextField)),
+            )
+            .controller!
+            .text,
         geocoder.reverseLabel,
       );
     },
@@ -374,8 +380,11 @@ void main() {
 
       // The search must have gone through the injected fake, not a new
       // NominatimGeocodingService instance.
-      expect(geocoder.searchCount, greaterThan(0),
-          reason: 'MapView must use the injected geocodingService');
+      expect(
+        geocoder.searchCount,
+        greaterThan(0),
+        reason: 'MapView must use the injected geocodingService',
+      );
     },
   );
 }

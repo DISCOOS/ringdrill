@@ -43,51 +43,50 @@ void main() {
     ),
   );
 
-  testWidgets(
-    'a positioned station renders the shared card shell with the UTM '
-    'coordinate, and tapping the thumbnail opens the interactive map sheet',
-    (tester) async {
-      final station = Station(
-        index: 0,
-        name: 'Post 1',
-        position: const LatLng(58.99, 10.43),
-      );
-      await pump(tester, station);
+  testWidgets('a positioned station renders the shared card shell with the UTM '
+      'coordinate, and tapping the thumbnail opens the interactive map sheet', (
+    tester,
+  ) async {
+    final station = Station(
+      index: 0,
+      name: 'Post 1',
+      position: const LatLng(58.99, 10.43),
+    );
+    await pump(tester, station);
 
-      expect(find.byType(PositionCardShell), findsOneWidget);
-      expect(find.text(l.noLocation), findsNothing);
+    expect(find.byType(PositionCardShell), findsOneWidget);
+    expect(find.text(l.noLocation), findsNothing);
 
-      // No default chevron_right (dropped from PositionCardShell's bar);
-      // no onTap is passed here, so the bar itself is a no-op — only the
-      // StationMiniMap thumbnail's own tap opens the sheet.
-      expect(find.byIcon(Icons.chevron_right), findsNothing);
+    // No default chevron_right (dropped from PositionCardShell's bar);
+    // no onTap is passed here, so the bar itself is a no-op — only the
+    // StationMiniMap thumbnail's own tap opens the sheet.
+    expect(find.byIcon(Icons.chevron_right), findsNothing);
 
-      expect(find.byType(BottomSheet), findsNothing);
-      await tester.tap(find.byType(StationMiniMap));
-      await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsNothing);
+    await tester.tap(find.byType(StationMiniMap));
+    await tester.pumpAndSettle();
 
-      // The default (non-fillHeight) 200px map height is below
-      // MapConfig.minInteractiveHeight, so StationMiniMap stays a static
-      // tap-to-expand preview even at this (medium) test width —
-      // flutter_test's default ~800x600 MediaQuery reads as
-      // WindowSizeClass.medium (hasMasterDetail), but there isn't room
-      // here for the interactive command stack. openStationMapSheet is
-      // reachable only from that static preview now, so it always opens a
-      // bottom sheet (see the "fillHeight + wide window" test below for
-      // the genuinely interactive, wide-and-tall case).
-      expect(find.byType(BottomSheet), findsOneWidget);
-      expect(find.byType(Dialog), findsNothing);
+    // The default (non-fillHeight) 200px map height is below
+    // MapConfig.minInteractiveHeight, so StationMiniMap stays a static
+    // tap-to-expand preview even at this (medium) test width —
+    // flutter_test's default ~800x600 MediaQuery reads as
+    // WindowSizeClass.medium (hasMasterDetail), but there isn't room
+    // here for the interactive command stack. openStationMapSheet is
+    // reachable only from that static preview now, so it always opens a
+    // bottom sheet (see the "fillHeight + wide window" test below for
+    // the genuinely interactive, wide-and-tall case).
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.byType(Dialog), findsNothing);
 
-      // The header mirrors StationScreen's own AppBar exactly:
-      // MasterDetailLeading always renders a close-X in `leading` (there is
-      // no MasterDetailScope reachable from a sheet's Overlay, so it never
-      // shows the sidebar-toggle branch instead).
-      expect(find.byIcon(Icons.close), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.close));
-      await tester.pumpAndSettle();
-      expect(find.byType(BottomSheet), findsNothing);
-    },
-  );
+    // The header mirrors StationScreen's own AppBar exactly:
+    // MasterDetailLeading always renders a close-X in `leading` (there is
+    // no MasterDetailScope reachable from a sheet's Overlay, so it never
+    // shows the sidebar-toggle branch instead).
+    expect(find.byIcon(Icons.close), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsNothing);
+  });
 
   testWidgets(
     'interactive: true renders a directly interactive map with its own FAB '

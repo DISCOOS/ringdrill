@@ -97,8 +97,9 @@ void main() {
     expect(find.text('99887766'), findsOneWidget);
   });
 
-  testWidgets('tapping an actor row opens ActorFormScreen in edit mode',
-      (tester) async {
+  testWidgets('tapping an actor row opens ActorFormScreen in edit mode', (
+    tester,
+  ) async {
     await tester.pumpWidget(_buildView());
     await tester.pump();
 
@@ -118,8 +119,9 @@ void main() {
     expect(find.text(l10n.newActor), findsOneWidget);
   });
 
-  testWidgets('tapping FAB opens ActorFormScreen in create mode',
-      (tester) async {
+  testWidgets('tapping FAB opens ActorFormScreen in create mode', (
+    tester,
+  ) async {
     await tester.pumpWidget(_buildView());
     await tester.pump();
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
@@ -132,8 +134,9 @@ void main() {
     expect(find.text(l10n.newActor), findsWidgets);
   });
 
-  testWidgets('swiping a cast actor shows castDeleteBlocked SnackBar',
-      (tester) async {
+  testWidgets('swiping a cast actor shows castDeleteBlocked SnackBar', (
+    tester,
+  ) async {
     await tester.pumpWidget(_buildView());
     await tester.pumpAndSettle();
 

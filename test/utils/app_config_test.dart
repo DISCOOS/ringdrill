@@ -73,11 +73,7 @@ void main() {
 
     test('native release build returns ringDrillBaseUrl', () {
       expect(
-        AppConfig.catalogBaseUrl(
-          isWeb: false,
-          isRelease: true,
-          isDebug: false,
-        ),
+        AppConfig.catalogBaseUrl(isWeb: false, isRelease: true, isDebug: false),
         equals(AppConfig.ringDrillBaseUrl),
       );
     });

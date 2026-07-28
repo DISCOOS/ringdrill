@@ -177,30 +177,37 @@ void main() {
       // Indices are reassigned densely to match list position.
       expect(ex.stations.map((s) => s.index).toList(), [0, 1, 2]);
       // Names reflect the new order.
-      expect(ex.stations.map((s) => s.name).toList(), ['Gamma', 'Alpha', 'Beta']);
+      expect(ex.stations.map((s) => s.name).toList(), [
+        'Gamma',
+        'Alpha',
+        'Beta',
+      ]);
     });
 
-    test('a RolePlay whose stationIndex pointed at a moved station follows it', () async {
-      final service = PlanService();
-      await service.saveExercise(l10n, exThreeStations('ex-s'));
+    test(
+      'a RolePlay whose stationIndex pointed at a moved station follows it',
+      () async {
+        final service = PlanService();
+        await service.saveExercise(l10n, exThreeStations('ex-s'));
 
-      // Marker at old station index 0 (Alpha).
-      final rp = RolePlay(
-        uuid: 'rp-1',
-        index: 0,
-        exerciseUuid: 'ex-s',
-        name: 'Testspiller',
-        stationIndex: 0,
-      );
-      await service.saveRolePlay(l10n, rp);
+        // Marker at old station index 0 (Alpha).
+        final rp = RolePlay(
+          uuid: 'rp-1',
+          index: 0,
+          exerciseUuid: 'ex-s',
+          name: 'Testspiller',
+          stationIndex: 0,
+        );
+        await service.saveRolePlay(l10n, rp);
 
-      // Reorder: old index 0 (Alpha) → new position 1.
-      await service.reorderStations('ex-s', [2, 0, 1]);
+        // Reorder: old index 0 (Alpha) → new position 1.
+        await service.reorderStations('ex-s', [2, 0, 1]);
 
-      // The marker should now point at new index 1 (Alpha's new position).
-      final loaded = service.getRolePlay('rp-1')!;
-      expect(loaded.stationIndex, 1);
-    });
+        // The marker should now point at new index 1 (Alpha's new position).
+        final loaded = service.getRolePlay('rp-1')!;
+        expect(loaded.stationIndex, 1);
+      },
+    );
 
     test('a RolePlay with stationIndex == null is left untouched', () async {
       final service = PlanService();
@@ -307,7 +314,10 @@ void main() {
         const RolePlay(uuid: 'rp-1', index: 0, exerciseUuid: 'ex-1', name: 'A'),
       );
 
-      final types = await capture(service, () => service.deleteRolePlay('rp-1'));
+      final types = await capture(
+        service,
+        () => service.deleteRolePlay('rp-1'),
+      );
 
       expect(types, contains(PlanEventType.rolePlayDeleted));
     });
@@ -332,7 +342,10 @@ void main() {
         const Actor(uuid: 'actor-1', realName: 'Kari'),
       );
 
-      final types = await capture(service, () => service.deleteActor('actor-1'));
+      final types = await capture(
+        service,
+        () => service.deleteActor('actor-1'),
+      );
 
       expect(types, contains(PlanEventType.actorDeleted));
     });

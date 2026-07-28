@@ -47,11 +47,7 @@ void main() {
       uuid: planUuid,
       name: 'Sample Plan',
       description: '',
-      metadata: PlanMetadata(
-        created: now,
-        updated: now,
-        version: '1.0',
-      ),
+      metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
       source: PlanSource.catalog(
         slug: slug,
         latestEtag: installedEtag,
@@ -150,11 +146,18 @@ void main() {
             },
       );
 
-      expect(conflictCallbackInvoked, isTrue,
-          reason: 'Conflict dialog must open even when remote returns 304');
-      expect(seenRemoteUnchanged, isTrue,
-          reason: 'Service must signal remoteUnchanged so UI can pick the '
-              'right wording (Revert vs. Update).');
+      expect(
+        conflictCallbackInvoked,
+        isTrue,
+        reason: 'Conflict dialog must open even when remote returns 304',
+      );
+      expect(
+        seenRemoteUnchanged,
+        isTrue,
+        reason:
+            'Service must signal remoteUnchanged so UI can pick the '
+            'right wording (Revert vs. Update).',
+      );
       expect(seenDiff, isNotNull);
       // Local edit showed up as a modified exercise in the diff.
       expect(seenDiff!.modifiedExercises.map((i) => i.name), contains('Run'));
@@ -172,36 +175,33 @@ void main() {
     },
   );
 
-  test(
-    'unchanged remote + clean local short-circuits to upToDate',
-    () async {
-      final service = PlanService();
-      final baseline = buildBaselinePlan('plan-clean');
-      await service.replacePlan(baseline);
+  test('unchanged remote + clean local short-circuits to upToDate', () async {
+    final service = PlanService();
+    final baseline = buildBaselinePlan('plan-clean');
+    await service.replacePlan(baseline);
 
-      final client = buildMockClient(baseline);
+    final client = buildMockClient(baseline);
 
-      var conflictCalled = false;
-      final outcome = await service.refreshCatalogItem(
-        baseline.uuid,
-        client,
-        onConflict:
-            (
-              diff, {
-              required ownedSlug,
-              required remoteUnchanged,
-              required localVersion,
-              required catalogVersion,
-            }) async {
-              conflictCalled = true;
-              return CatalogConflictChoice.cancel;
-            },
-      );
+    var conflictCalled = false;
+    final outcome = await service.refreshCatalogItem(
+      baseline.uuid,
+      client,
+      onConflict:
+          (
+            diff, {
+            required ownedSlug,
+            required remoteUnchanged,
+            required localVersion,
+            required catalogVersion,
+          }) async {
+            conflictCalled = true;
+            return CatalogConflictChoice.cancel;
+          },
+    );
 
-      expect(conflictCalled, isFalse);
-      expect(outcome.kind, CatalogRefreshKind.upToDate);
-    },
-  );
+    expect(conflictCalled, isFalse);
+    expect(outcome.kind, CatalogRefreshKind.upToDate);
+  });
 
   // Regression test: a plan whose catalog slug has been removed server-side
   // used to make refreshCatalogItem call download() anyway, which throws an

@@ -34,9 +34,7 @@ Future<void> _pump(WidgetTester tester, Widget child) {
 }
 
 void main() {
-  testWidgets('resolves a declared variable before rendering', (
-    tester,
-  ) async {
+  testWidgets('resolves a declared variable before rendering', (tester) async {
     await _pump(
       tester,
       ResolvedMarkdownText(
@@ -61,10 +59,7 @@ void main() {
       ),
     );
 
-    expect(
-      find.text('Vinterøvelse Nordland — Samvirkeøvelse'),
-      findsOneWidget,
-    );
+    expect(find.text('Vinterøvelse Nordland — Samvirkeøvelse'), findsOneWidget);
   });
 
   testWidgets('an undeclared variable renders the localized placeholder', (
@@ -76,7 +71,10 @@ void main() {
     );
 
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    expect(find.text('Kanal ${l10n.briefUnknownVariable('mangler')}.'), findsOneWidget);
+    expect(
+      find.text('Kanal ${l10n.briefUnknownVariable('mangler')}.'),
+      findsOneWidget,
+    );
     expect(find.textContaining('{{var.mangler}}'), findsNothing);
   });
 

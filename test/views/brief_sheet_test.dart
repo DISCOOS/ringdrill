@@ -90,10 +90,7 @@ Widget _buildLauncher({String? exerciseUuid, String? planUuid}) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: _BriefSheetHarness(
-      exerciseUuid: exerciseUuid,
-      planUuid: planUuid,
-    ),
+    home: _BriefSheetHarness(exerciseUuid: exerciseUuid, planUuid: planUuid),
   );
 }
 

@@ -84,8 +84,9 @@ void main() {
       expect(find.textContaining('web.ringdrill.app'), findsNothing);
     });
 
-    testWidgets('visible when dismiss timestamp is older than 24 hours',
-        (tester) async {
+    testWidgets('visible when dismiss timestamp is older than 24 hours', (
+      tester,
+    ) async {
       final twoDaysAgo = _now.subtract(const Duration(hours: 25));
       SharedPreferences.setMockInitialValues({
         AppConfig.keyMigrationBannerDismissedAt:
@@ -109,8 +110,9 @@ void main() {
   });
 
   group('MigrationBanner dismiss', () {
-    testWidgets('tapping close writes dismiss timestamp and hides banner',
-        (tester) async {
+    testWidgets('tapping close writes dismiss timestamp and hides banner', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _harness(
           MigrationBanner(
@@ -197,8 +199,9 @@ void main() {
   });
 
   group('MigrationBanner force-show', () {
-    testWidgets('force-show tick re-surfaces a dismissed banner',
-        (tester) async {
+    testWidgets('force-show tick re-surfaces a dismissed banner', (
+      tester,
+    ) async {
       // Dismissed 1 hour ago, so it starts hidden.
       final oneHourAgo = _now.subtract(const Duration(hours: 1));
       SharedPreferences.setMockInitialValues({

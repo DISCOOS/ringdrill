@@ -241,7 +241,10 @@ void main() {
         // pushed past the bottom edge.
         final map = tester.getRect(find.byType(FlutterMap));
         for (final icon in icons) {
-          expect(tester.getRect(find.byIcon(icon)).bottom, lessThan(map.bottom));
+          expect(
+            tester.getRect(find.byIcon(icon)).bottom,
+            lessThan(map.bottom),
+          );
         }
       },
     );

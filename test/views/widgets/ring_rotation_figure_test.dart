@@ -35,9 +35,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('RingRotationFigure respects the size parameter', (
-    tester,
-  ) async {
+  testWidgets('RingRotationFigure respects the size parameter', (tester) async {
     await tester.pumpWidget(
       _wrap(const RingRotationFigure(size: 120), theme: ThemeData.light()),
     );

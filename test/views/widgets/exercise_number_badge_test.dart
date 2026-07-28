@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 
 Widget _harness(Widget badge) => MaterialApp(
-      home: Scaffold(body: Center(child: badge)),
-    );
+  home: Scaffold(body: Center(child: badge)),
+);
 
 void main() {
   testWidgets('renders #1 for label: "#1"', (tester) async {

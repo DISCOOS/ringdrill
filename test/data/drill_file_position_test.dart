@@ -132,7 +132,9 @@ void main() {
     );
     final plan = emptyPlan().copyWith(exercises: [exercise]);
     final moved = plan.copyWith(
-      exercises: [exercise.copyWith(stations: [movedStation])],
+      exercises: [
+        exercise.copyWith(stations: [movedStation]),
+      ],
     );
 
     expect(plan.computeContentHash(), isNot(moved.computeContentHash()));

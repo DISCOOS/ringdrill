@@ -5,28 +5,28 @@ void main() {
   final now = DateTime(2026);
 
   Plan base() => Plan(
-        uuid: 'prog-1',
-        name: 'Test',
-        description: '',
-        metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
-        teams: const [],
-        sessions: const [],
-        exercises: const [],
-      );
+    uuid: 'prog-1',
+    name: 'Test',
+    description: '',
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
+    teams: const [],
+    sessions: const [],
+    exercises: const [],
+  );
 
   Map<String, dynamic> minimalJson() => {
-        'uuid': 'prog-1',
-        'name': 'Test',
-        'description': '',
-        'metadata': {
-          'created': '2026-01-01T00:00:00.000',
-          'updated': '2026-01-01T00:00:00.000',
-          'version': '1.0',
-        },
-        'teams': [],
-        'sessions': [],
-        'exercises': [],
-      };
+    'uuid': 'prog-1',
+    'name': 'Test',
+    'description': '',
+    'metadata': {
+      'created': '2026-01-01T00:00:00.000',
+      'updated': '2026-01-01T00:00:00.000',
+      'version': '1.0',
+    },
+    'teams': [],
+    'sessions': [],
+    'exercises': [],
+  };
 
   test('program.json without tags deserializes to empty list', () {
     final json = minimalJson(); // no 'tags' key

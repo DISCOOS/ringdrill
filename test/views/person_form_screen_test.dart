@@ -206,7 +206,9 @@ void main() {
     },
   );
 
-  testWidgets('the location picker label reads "Lokasjon" (nb)', (tester) async {
+  testWidgets('the location picker label reads "Lokasjon" (nb)', (
+    tester,
+  ) async {
     final lNb = await AppLocalizations.delegate.load(const Locale('nb'));
     final captured = _Captured();
     await tester.pumpWidget(
@@ -225,10 +227,7 @@ void main() {
                     child: StationScope(
                       locations: [],
                       persons: [],
-                      child: PersonFormScreen(
-                        existingSlugs: {},
-                        locations: [],
-                      ),
+                      child: PersonFormScreen(existingSlugs: {}, locations: []),
                     ),
                   ),
                 ),

@@ -20,25 +20,22 @@ void main() {
   // values the pre-ADR-0053 defaults used, unaffected by capping.
   const roomyViewport = Size(1200, 900);
 
-  testWidgets(
-    'omitting labels keeps the original flat left/right padding on a '
-    'roomy viewport (the icon-only footprint floor sits under the 64px '
-    'side floor there), plus half the icon-only height on top of the '
-    'search-field reserve — the icon itself still renders and still '
-    'needs edge clearance even with no label to protect',
-    (tester) async {
-      final padding = MapConfig.fitPadding(
-        withSearch: true,
-        viewport: roomyViewport,
-      );
-      expect(padding.left, 64);
-      expect(padding.right, 64);
-      // 112 (search reserve) + half of the icon-only height (32px at the
-      // expanded 1.35x marker scale, split top/bottom per the centring
-      // rule below) = 112 + 21.6.
-      expect(padding.top, 112 + 32 * 1.35 / 2);
-    },
-  );
+  testWidgets('omitting labels keeps the original flat left/right padding on a '
+      'roomy viewport (the icon-only footprint floor sits under the 64px '
+      'side floor there), plus half the icon-only height on top of the '
+      'search-field reserve — the icon itself still renders and still '
+      'needs edge clearance even with no label to protect', (tester) async {
+    final padding = MapConfig.fitPadding(
+      withSearch: true,
+      viewport: roomyViewport,
+    );
+    expect(padding.left, 64);
+    expect(padding.right, 64);
+    // 112 (search reserve) + half of the icon-only height (32px at the
+    // expanded 1.35x marker scale, split top/bottom per the centring
+    // rule below) = 112 + 21.6.
+    expect(padding.top, 112 + 32 * 1.35 / 2);
+  });
 
   testWidgets('a wide label widens left/right padding beyond the flat 64px', (
     tester,
@@ -163,10 +160,7 @@ void main() {
         withCenter: true,
         viewport: viewport,
       );
-      final zoomOnly = MapConfig.fitPadding(
-        withZoom: true,
-        viewport: viewport,
-      );
+      final zoomOnly = MapConfig.fitPadding(withZoom: true, viewport: viewport);
       final allThree = MapConfig.fitPadding(
         withLocate: true,
         withZoom: true,
@@ -187,27 +181,24 @@ void main() {
     },
   );
 
-  testWidgets(
-    'the command-column reserve scales with MapCommandSize at wider '
-    'viewport widths, matching the larger FAB diameter MapView itself '
-    'renders there',
-    (tester) async {
-      final compact = MapConfig.fitPadding(
-        withCenter: true,
-        withZoom: true,
-        withLocate: true,
-        viewport: const Size(360, 800),
-      );
-      final expanded = MapConfig.fitPadding(
-        withCenter: true,
-        withZoom: true,
-        withLocate: true,
-        viewport: const Size(1000, 800),
-      );
+  testWidgets('the command-column reserve scales with MapCommandSize at wider '
+      'viewport widths, matching the larger FAB diameter MapView itself '
+      'renders there', (tester) async {
+    final compact = MapConfig.fitPadding(
+      withCenter: true,
+      withZoom: true,
+      withLocate: true,
+      viewport: const Size(360, 800),
+    );
+    final expanded = MapConfig.fitPadding(
+      withCenter: true,
+      withZoom: true,
+      withLocate: true,
+      viewport: const Size(1000, 800),
+    );
 
-      expect(expanded.bottom, greaterThan(compact.bottom));
-    },
-  );
+    expect(expanded.bottom, greaterThan(compact.bottom));
+  });
 
   testWidgets(
     'aesthetic padding shrinks in absolute terms on a small viewport, not '
@@ -231,23 +222,20 @@ void main() {
     },
   );
 
-  testWidgets(
-    'a marker\'s icon still reserves its own footprint with an empty '
-    'labels list — it renders regardless of whether its label does (the '
-    'showLabels: false case passes an empty list on purpose), so reserving '
-    'zero footprint let the topmost marker\'s icon clip at the viewport '
-    'edge (reported: a static preview\'s top marker sitting right at the '
-    'border, with "250 m" of scale bar to spare)',
-    (tester) async {
-      const miniMap = Size(360, 200);
-      final padding = MapConfig.fitPadding(viewport: miniMap);
-      // compact scale (1.0): 24px aesthetic no-overlay base (capped for
-      // this short a viewport) + half the 32px icon-only height = 40px —
-      // the reverted (bugged) behaviour would land exactly on the 24px
-      // aesthetic base alone, with nothing reserved for the icon.
-      expect(padding.top, 40);
-    },
-  );
+  testWidgets('a marker\'s icon still reserves its own footprint with an empty '
+      'labels list — it renders regardless of whether its label does (the '
+      'showLabels: false case passes an empty list on purpose), so reserving '
+      'zero footprint let the topmost marker\'s icon clip at the viewport '
+      'edge (reported: a static preview\'s top marker sitting right at the '
+      'border, with "250 m" of scale bar to spare)', (tester) async {
+    const miniMap = Size(360, 200);
+    final padding = MapConfig.fitPadding(viewport: miniMap);
+    // compact scale (1.0): 24px aesthetic no-overlay base (capped for
+    // this short a viewport) + half the 32px icon-only height = 40px —
+    // the reverted (bugged) behaviour would land exactly on the 24px
+    // aesthetic base alone, with nothing reserved for the icon.
+    expect(padding.top, 40);
+  });
 
   group('MapView self-computed default fit', () {
     List<MapMarkerSpec<int>> markers() => [
