@@ -30,6 +30,34 @@ String? exerciseUuidOf(ContextSheetTarget? target) => switch (target) {
   _ => null,
 };
 
+/// Whether [a] and [b] point at the same thing.
+///
+/// The targets deliberately have **no** `==`: `_DrillPlayerHost` and the sheet
+/// hosts key their body on `ValueKey(target)` precisely so that replacing a
+/// target with an equivalent one still remounts — those screens resolve their
+/// entity in `initState`, so a reused element would keep showing the old one.
+/// Value equality would silently defeat that, hence a separate predicate for the
+/// callers that need "is this the same target" without wanting that behaviour.
+///
+/// The switch is exhaustive, so a new target kind is a compile error here rather
+/// than a silently-never-equal case.
+bool sameTarget(ContextSheetTarget? a, ContextSheetTarget? b) {
+  if (a == null || b == null) return a == null && b == null;
+  return _identityOf(a) == _identityOf(b);
+}
+
+String _identityOf(ContextSheetTarget target) => switch (target) {
+  ExerciseSheetTarget(:final exerciseUuid) => 'exercise:$exerciseUuid',
+  StationSheetTarget(:final exerciseUuid, :final stationIndex) =>
+    'station:$exerciseUuid:$stationIndex',
+  TeamSheetTarget(:final exerciseUuid, :final teamIndex) =>
+    'team:$exerciseUuid:$teamIndex',
+  TeamOverviewSheetTarget(:final teamIndex) => 'teamOverview:$teamIndex',
+  RoleSheetTarget(:final rolePlayUuid) => 'role:$rolePlayUuid',
+  BriefSheetTarget(:final planUuid, :final exerciseUuid, :final audience) =>
+    'brief:$planUuid:$exerciseUuid:${audience?.name}',
+};
+
 class ExerciseSheetTarget extends ContextSheetTarget {
   const ExerciseSheetTarget({required this.exerciseUuid});
 

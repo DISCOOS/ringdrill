@@ -133,8 +133,12 @@ Widget _harness(ContextSheetTarget target, {bool withScope = true}) {
 Future<void> _tapRowWhileLive(WidgetTester tester) async {
   await _startLive(tester);
   await tester.tap(find.text('open row'));
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 400));
+  // Several bounded pumps: the player's body is a PageView, so the route
+  // transition and the pager's first layout take more than one frame — and a
+  // live exercise animates the mini player forever, so pumpAndSettle is out.
+  for (var i = 0; i < 4; i++) {
+    await tester.pump(const Duration(milliseconds: 300));
+  }
 }
 
 Future<void> _startLive(WidgetTester tester) async {

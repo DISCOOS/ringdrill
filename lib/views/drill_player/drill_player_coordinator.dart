@@ -1,5 +1,6 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/views/drill_player/player_targets.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 
@@ -91,28 +92,177 @@ class DrillPlayerCoordinator {
 }
 
 /// Renders whichever target the player's own [ContextSheetController] points
-/// at, rebuilding when it is replaced.
+/// at, and lets a horizontal swipe move between that target's siblings.
 ///
 /// Uses the same [defaultContextSheetBody] the shell's sheet host and the
-/// master/detail pane use, so exercise, station and roleplay are peer *modes*
-/// of one player rather than three separate players — and so the player never
-/// diverges from what the same target renders as elsewhere.
-///
-/// Keyed on the target: these screens resolve their entity once, in
-/// `initState`, so reusing the element across a target change would keep
-/// showing the previous one. [ContextSheetTarget] has no `==`, so every
-/// replacement is a distinct key and the subtree remounts.
-class _DrillPlayerHost extends StatelessWidget {
+/// master/detail pane use, so exercise, station, roleplay and team are peer
+/// *modes* of one player rather than four separate players — and so the player
+/// never diverges from what the same target renders as elsewhere.
+class _DrillPlayerHost extends StatefulWidget {
   const _DrillPlayerHost({required this.controller});
 
   final ContextSheetController controller;
 
   @override
+  State<_DrillPlayerHost> createState() => _DrillPlayerHostState();
+}
+
+/// Pages across [playerSiblingTargets] of whatever the controller points at.
+///
+/// Borrowed from the now-playing metaphor DESIGN-001 is built on: swipe moves to
+/// the next sibling the way it moves to the next track. Deliberately *within*
+/// kind — the picker spans kinds, so paging it flat would change the player's
+/// mode mid-gesture. Changing kind stays an explicit act.
+///
+/// The sequence **wraps**: past the last sibling comes the first, and back from
+/// the first comes the last. A `PageView` has no wrap mode, so the page count is
+/// left unbounded and the sibling is looked up modulo the sequence length, with
+/// the controller starting deep enough in that range to swipe a long way either
+/// direction. The alternative — detecting an overscroll and jumping — loses the
+/// drag's continuity at exactly the moment the user is watching it.
+///
+/// Two directions of travel have to be kept from fighting each other:
+/// - a swipe reports through `onPageChanged`, which replaces the controller's
+///   target, and
+/// - an external replace (the picker, a content tap) has to move the page.
+///
+/// [_page] is what tells them apart: it is updated *before* any programmatic
+/// jump, so the resulting `onPageChanged` is recognised as an echo and does not
+/// write back. A flag would work too, but `jumpToPage` notifies synchronously,
+/// which makes flag lifetime fiddly; comparing state is harder to get wrong.
+class _DrillPlayerHostState extends State<_DrillPlayerHost> {
+  /// How many times the sequence is laid out either side of the start, so a user
+  /// swiping one direction never reaches the end of the page range. 1000 cycles
+  /// of even a 2-target sequence is far past any real session.
+  static const int _cycles = 1000;
+
+  PageController? _pages;
+  List<ContextSheetTarget> _siblings = const [];
+
+  /// Bumped whenever [_pages] is replaced, and used as the `PageView`'s key.
+  ///
+  /// Load-bearing: handing a `Scrollable` a *new* `ScrollController` does not
+  /// restart it — `ScrollPosition.absorb` carries the old pixel offset across, so
+  /// `initialPage` is ignored. After a sequence-length change that offset means a
+  /// different sibling (old page 1500 modulo a new length of 2 is index 0), which
+  /// showed the wrong target. A new key builds a new element, hence a new
+  /// position, which does honour `initialPage`.
+  int _generation = 0;
+
+  /// The *absolute* page — not the sibling index. `_page % _siblings.length` is
+  /// the sibling it shows.
+  int _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.target.addListener(_onTargetChanged);
+    _resync(rebuildController: true);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.target.removeListener(_onTargetChanged);
+    _pages?.dispose();
+    super.dispose();
+  }
+
+  void _onTargetChanged() {
+    if (!mounted) return;
+    setState(() => _resync());
+  }
+
+  /// Installs [next] and disposes the outgoing controller *after* the frame.
+  ///
+  /// Disposing it inline looks right but is not: this runs inside `setState`, so
+  /// the currently-mounted `PageView` still holds the old controller until the
+  /// rebuild swaps it, and tearing down an attached `ScrollController`'s position
+  /// under it leaves the pager unresponsive — silently, with no exception.
+  void _swapController(PageController next) {
+    final previous = _pages;
+    _pages = next;
+    _generation++;
+    if (previous == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) => previous.dispose());
+  }
+
+  /// The absolute page showing sibling [index], nearest to [from].
+  ///
+  /// Anchored to the current page rather than restarting at the middle, so an
+  /// external replace does not throw away how far the user has already paged.
+  int _pageFor(int index, {required int from}) {
+    final count = _siblings.length;
+    if (count == 0) return 0;
+    return from - (from % count) + index;
+  }
+
+  /// Recomputes the sibling sequence for the current target and lines the pager
+  /// up with it.
+  ///
+  /// The sequence is rebuilt from scratch each time rather than cached: a target
+  /// change can also mean the plan changed underneath (a station deleted while
+  /// the player is up), and a stale sequence would page to something gone.
+  void _resync({bool rebuildController = false}) {
+    final target = widget.controller.target.value;
+    if (target == null) {
+      _siblings = const [];
+      _page = 0;
+      return;
+    }
+    final siblings = playerSiblingTargets(target);
+    final index = playerSiblingIndex(siblings, target);
+    // A different kind (or a changed plan) means a different sequence length,
+    // which the modulo depends on and PageController cannot be told about — so
+    // replace it.
+    final lengthChanged = siblings.length != _siblings.length;
+    _siblings = siblings;
+    if (rebuildController || lengthChanged || _pages == null) {
+      _page = siblings.length * (_cycles ~/ 2) + index;
+      _swapController(PageController(initialPage: _page));
+      return;
+    }
+    final pages = _pages!;
+    final wanted = _pageFor(index, from: _page);
+    if (wanted == _page) return;
+    _page = wanted;
+    if (!pages.hasClients) {
+      // Not laid out yet: the field write above is what the builder reads, so
+      // there is nothing to jump.
+      return;
+    }
+    pages.jumpToPage(wanted);
+  }
+
+  void _onPageChanged(int page) {
+    // Equal means this is the echo of a jump we just made, not a swipe.
+    if (page == _page || _siblings.isEmpty) return;
+    _page = page;
+    widget.controller.replace(_siblings[page % _siblings.length]);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<ContextSheetTarget?>(
-      valueListenable: controller.target,
-      builder: (context, target, _) {
-        if (target == null) return const SizedBox.shrink();
+    final pages = _pages;
+    if (_siblings.isEmpty || pages == null) return const SizedBox.shrink();
+    final count = _siblings.length;
+    // A lone sibling still renders through the pager rather than a special case,
+    // so there is one code path — it just has nowhere to go. Its page count is
+    // capped at 1 as well as being unscrollable, so an unbounded range of
+    // identical pages can never be built.
+    final single = count == 1;
+    return PageView.builder(
+      key: ValueKey(_generation),
+      controller: pages,
+      physics: single ? const NeverScrollableScrollPhysics() : null,
+      onPageChanged: _onPageChanged,
+      itemCount: single ? 1 : null,
+      itemBuilder: (context, page) {
+        final target = _siblings[page % count];
+        // Keyed on the target: these screens resolve their entity once, in
+        // `initState`, so reusing an element across a target change would keep
+        // showing the previous one. Targets have no `==`, so every distinct
+        // target is a distinct key — and the same target only recurs a whole
+        // cycle away, never adjacent, so no two live pages share a key.
         return KeyedSubtree(
           key: ValueKey(target),
           child: defaultContextSheetBody(context, target),

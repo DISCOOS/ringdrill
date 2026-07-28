@@ -324,6 +324,17 @@ class PlanService {
 
   RolePlay? getRolePlay(String uuid) => _repo.getRolePlay(uuid);
 
+  /// The roleplays belonging to [exerciseUuid], in their own ordinal order.
+  ///
+  /// There is no per-exercise store — roleplays live in one flat list keyed by
+  /// their parent's uuid — so every surface that shows an exercise's markører was
+  /// repeating this filter-and-sort. Shared so the player's picker and its swipe
+  /// pager cannot disagree about the order, which would make a swipe land
+  /// somewhere the picker did not list next.
+  List<RolePlay> rolePlaysOf(String exerciseUuid) =>
+      loadRolePlays().where((r) => r.exerciseUuid == exerciseUuid).toList()
+        ..sort((a, b) => a.index.compareTo(b.index));
+
   /// 1-based number of [role] among the roles placed at [stationIndex] in
   /// the same exercise, ordered by their [RolePlay.index]. Drives the
   /// `Numbering.role` badge so markers read as `1.1-1`, `1.1-2`, … per

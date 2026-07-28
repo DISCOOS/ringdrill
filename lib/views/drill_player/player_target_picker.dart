@@ -4,11 +4,11 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/drill_player/player_mode.dart';
+import 'package:ringdrill/views/drill_player/player_targets.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
@@ -50,12 +50,10 @@ Future<ContextSheetTarget?> showPlayerTargetPicker(
 }) async {
   final l10n = AppLocalizations.of(context)!;
   final plan = PlanService().activePlan;
-  final exerciseService = ExerciseService();
   // Non-null only while a session is live: the exercise the player must stay on,
-  // and then the only one listed.
-  final lockedTo = exerciseService.isStarted
-      ? exerciseService.last?.exercise.uuid
-      : null;
+  // and then the only one listed. Shared with the swipe pager, so widening one
+  // surface cannot become a way around the rule.
+  final lockedTo = lockedExerciseUuid();
   final entries = <_Entry>[
     ..._exerciseEntries(
       l10n,
@@ -210,14 +208,9 @@ List<_Entry> _roleEntries(
   final exerciseNumber = _exerciseNumber(exercise);
   final currentUuid = mode is RolePlayerMode ? mode.rolePlayUuid : null;
   final group = l10n.scriptSegment;
-  // There is no per-exercise roleplay accessor; filter the flat list, then order
-  // by the roleplay's own ordinal so the group matches the Markører list.
-  final roles =
-      service
-          .loadRolePlays()
-          .where((r) => r.exerciseUuid == exercise.uuid)
-          .toList()
-        ..sort((a, b) => a.index.compareTo(b.index));
+  // Shared accessor, so this group's order and the swipe pager's sibling
+  // sequence cannot drift — a swipe must land on the row the picker lists next.
+  final roles = service.rolePlaysOf(exercise.uuid);
   return [
     for (final role in roles)
       _Entry(

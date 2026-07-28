@@ -131,6 +131,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(StationScreen), findsOneWidget);
+    // The station that was tapped, not merely *a* station: asserting the screen
+    // alone let "every station opens the first one" through.
+    expect(
+      tester.widget<StationScreen>(find.byType(StationScreen)).stationIndex,
+      1,
+    );
     expect(
       find.byType(CoordinatorScreen),
       findsNothing,

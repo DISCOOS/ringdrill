@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-07-27
 deciders: ["kengu"]
 consulted: []
@@ -53,6 +53,7 @@ Also added: `clearSelection()`. `close()` deliberately returns without touching 
 
 * **Anywhere**: the mini bar. `showPlayerTargetPicker` lists **every** target reachable from where the player is — the plan's exercises (only the running one while live), plus the current exercise's stations, roleplays and teams — in one list grouped by kind, under the Plan tab's own segment labels with a divider between groups. The whole strip opens it, not only the badge: inside the player the bar had nothing to open, and a 36px chip is a poor tap target for the app's main navigation affordance. The badge still shows *where you are*, following the mode: `#1` / `1.2` / `1.2-1` / `1`, in four swatches.
 * **Down a level**: tapping content. A station row inside the exercise view enters station mode; a markør row inside a station enters roleplay mode. These already called `show()`, so the inline branch above is the whole mechanism.
+* **Along a kind**: a horizontal swipe, borrowed from the same now-playing metaphor — it moves to the next sibling the way a music player moves to the next track. Deliberately *within* kind, so the mode cannot change under the user's thumb, and **wrapping**, so the last sibling leads back to the first. `Dismissible` was considered and rejected: it exists to *remove* an item (`onDismissed` obliges the caller to take the widget out of the tree), so navigating with it means `confirmDismiss` → navigate → return false, which springs the card back and gives no follow-through — and ADR-0031 has already spent that gesture on swipe-to-edit for list rows. `PageView` is the idiomatic fit.
 * **Out**: X, from every mode. Identical to Android back, so no `PopScope` divergence.
 
 The picker was first built as a *within-mode* selector — siblings of the current kind only, with the parent exercise pinned on top as the one way back up. Moving between kinds then took two taps, and the pinned row existed solely to enable that. Listing every group retires the special case: the parent exercise is just a member of the exercise group. Grouping lives in `showRingdrillPicker` (ADR-0049) as a `sectionLabel` callback rather than in this caller's `itemBuilder`, because headers have to be computed against the *filtered* rows — otherwise a search strands a header above a group whose rows all filtered out.
@@ -96,6 +97,18 @@ body used to be `CoordinatorScreen`, which had been given a `PlanScope` of its
 own; that made it the one screen of the four that resolved on a bare route, and
 masked the identical gap in the other three. That local seeding is now removed,
 so all four follow the same rule.
+
+### The swipe pager
+
+`_DrillPlayerHost` is a `PageView` over `playerSiblingTargets(target)` — the ordered peers of the current target within its own kind. Three things about it are less obvious than they look:
+
+* **Wrapping needs an unbounded page count.** `PageView` has no wrap mode, so `itemCount` is left null and the sibling is looked up modulo the sequence length, with the controller starting deep in that range. Detecting an overscroll and jumping instead would break the drag's continuity at the moment the user is watching it.
+* **Two directions of travel must not fight.** A swipe reports through `onPageChanged` and writes the controller's target; an external replace (the picker, a content tap) has to move the page. The host compares the absolute page it last set against the reported one, so an echo from its own `jumpToPage` is recognised rather than written back.
+* **A replaced `ScrollController` does not restart.** `ScrollPosition.absorb` carries the old pixel offset across, so `initialPage` is ignored — and after a sequence-length change that offset resolves to a *different* sibling, which showed the wrong target while claiming to show the picked one. The pager is therefore keyed on a generation counter bumped whenever the controller is swapped, so a new element (hence a new position) honours `initialPage`. Its predecessor is disposed after the frame, not inline: it is still attached to the mounted `PageView` until the rebuild swaps it, and tearing its position down under it leaves the pager silently unresponsive.
+
+Ordering is shared with the picker (`playerSiblingTargets`, `PlanService.rolePlaysOf`) so a swipe lands on the row the picker lists next, and the running-exercise lock is shared too (`lockedExerciseUuid`) so swipe cannot become a way around it — a live exercise has exactly one sibling, so there is nowhere to swipe.
+
+A body's own horizontally scrollable content keeps its gestures: the pager is an ancestor, so a nested scrollable wins the arena. Swiping across the coordinator's round table scrolls the table rather than paging. Accepted — the swipe is an accelerator, and the picker remains the complete path.
 
 ### Entry policy
 
@@ -146,6 +159,7 @@ The team mode was added after the first three, and the sealed `PlayerMode` made 
 * 2026-07-28 — Team added as a fourth mode at the maintainer's request, reversing that exclusion. The plan-wide team overview stays outside the player. See *Teams are a mode* above.
 * 2026-07-28 — Recorded who seeds the resolve cascade, after the player shipped rendering raw tokens in three of its four modes. See *Who seeds the resolve cascade* above.
 * 2026-07-28 — The badge picker became a full navigator: every group in every mode, grouped with dividers, opened by the whole strip rather than only the badge. Retires the within-mode scoping and the pinned parent row. See *The navigation grammar* above.
+* 2026-07-28 — Accepted. Added the swipe pager: a horizontal swipe walks the current kind's siblings, wrapping. See *The swipe pager* above.
 * 2026-07-28 — The live-exercise guard moved from the bar's interactivity to the picker's contents, after it shipped making the bar inert in play mode and so unreachable to the running exercise's own targets. Badge numbers became searchable. See *The live-exercise guard, relocated* above.
 
 ## Links
