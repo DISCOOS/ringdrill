@@ -9,21 +9,34 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// - The Roster/Bemanning staffing of *other* people (DESIGN-006).
 /// - The ADR-0019 session role (coordinator / observer / roleplayer).
 ///
-/// Participants do not use the app, so only two staff roles are offered.
-/// The stored role drives [BriefAudience] as the default brief view: an
-/// Øvelsesleder sees full director content (including actor PII), a
-/// Veileder sees instructor content (PII hidden). See DESIGN-006 step 4.
+/// Participants do not use the app, so only staff roles are offered. The stored
+/// role drives [BriefAudience] as the default brief view (DESIGN-006 step 4) and,
+/// since ADR-0057, what this device may edit.
 enum AppUserRole {
-  /// Øvelsesleder — full brief including actor PII.
+  /// Øvelsesleder — plans and runs the exercise. Edits everything.
   director,
 
-  /// Veileder — brief without actor PII.
-  instructor;
+  /// Veileder — supervises during the drill. Edits teams.
+  instructor,
+
+  /// Aktør — plays one or more markører. Edits roleplays.
+  ///
+  /// The person, not the character: an `Actor` in the roster is who portrays a
+  /// `RolePlay`. Added after director and instructor, because an actor adjusting
+  /// their own marker mid-drill is the one edit that has to survive a live
+  /// exercise.
+  actor;
 
   /// Maps to the corresponding [BriefAudience] for the brief renderer.
+  ///
+  /// An actor gets the *director* view rather than a reduced one: they are staff
+  /// running the scenario from the inside and need the same detail — including
+  /// other actors' PII, since they have to find and work with them. Participants
+  /// are the audience that gets less, and they do not use the app.
   BriefAudience get briefAudience => switch (this) {
     AppUserRole.director => BriefAudience.director,
     AppUserRole.instructor => BriefAudience.instructor,
+    AppUserRole.actor => BriefAudience.director,
   };
 }
 
