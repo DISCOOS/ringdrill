@@ -48,17 +48,31 @@ Option C was rejected because it moves the discovery to after the tap: the user 
 
 An actor reads the brief as a **director**, not as a reduced audience. They are staff running the scenario from the inside and need the same detail, including other actors' PII, since they have to find and work with them. Participants are the audience that gets less, and they do not use the app.
 
+### Three questions, not one
+
+An affordance asks one of three things, and they have genuinely different answers (`EditPermission` names which):
+
+* `canEdit(role, target, {exerciseUuid})` — change something that exists.
+* `canDelete(...)` — remove it. **Director only**, for every target, and with **no live exemption**.
+* `canCreate(...)` — add a new one. Director only, *except* the staff roster, which an actor may add themselves to.
+
+Delete does not inherit edit's delegations because removing content is a command act, not authorship. An actor writes a markør's script; an instructor adjusts a team; neither thereby removes one from the plan — nor the persons and locations a scenario references, which an actor *overrides* rather than deletes. And where editing a live roleplay is the point of the exemption, deleting one the running exercise still references is unrecoverable, so the live lock is absolute for delete.
+
+Create split off for the roster: anyone working the exercise can put themselves on the staff list, while changing or removing *other people's* records stays with the director.
+
 ### The matrix
 
-`canEdit(role, target, {exerciseUuid})` in `lib/services/edit_permissions.dart`:
-
-| | plan | exercise | station | team | roleplay | actor roster |
+| | plan | exercise | station | team | roleplay | staff roster |
 |---|---|---|---|---|---|---|
-| **director** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **instructor** | | | | ✓ | | |
-| **actor** | | | | | ✓ | |
+| **director** | edit · create · delete | edit · create · delete | edit · create · delete | edit · create · delete | edit · create · delete | edit · create · delete |
+| **instructor** | | | | edit | | |
+| **actor** | | | | | edit | create |
 
 `EditTarget` is deliberately coarser than the model: permission follows the *kind of work* a role does, not the entity graph. A station's persons and locations are part of building the scenario, so they answer as `station` rather than earning entries of their own.
+
+**Reordering counts as editing.** Changing the order of exercises or posts renumbers them for every device reading the plan, so it is director-only — both the drag-handle mode and the one-shot sort actions, which commit an order just as permanently. Gated inside `ReorderableSection` itself (a required `target`) rather than at its call sites, so a new reorderable list cannot ship ungated.
+
+**Known gap: "only myself" is not expressible.** The intent for the roster is that an actor may add *and manage their own* entry. Only the add half is implemented: nothing links this device to a particular roster record, because DESIGN-011 deliberately keeps roster people separate from app users. So an actor may create an entry but may not edit or delete one, including their own. Narrowing that to self needs the account link on the ADR-0024/0025 track; DESIGN-011's `Staff` model (director/instructor/other as stored roles, markør derived from casting) is where the roster grows the other staff kinds this rule will then cover.
 
 ### The live lock
 
@@ -70,10 +84,14 @@ The lock is scoped to the exercise actually running (`ExerciseService.isStartedO
 
 ### The wrappers
 
-* `IfEditable` — shows its child only to a role that may edit. The gate for every "+" affordance. Hides rather than disables, because a create action a role will never have is noise, not information. (Contrast the drill player's picker, which keeps rows *visible but inert* to explain a **temporary** live lock — a permanent absence and a temporary refusal want different treatments.)
+* `IfCreatable` — the gate for every "+" affordance: create FABs, "+ Ny person" rows, AppBar add buttons. Hides rather than disables, because a create action a role will never have is noise, not information. (Contrast the drill player's picker, which keeps rows *visible but inert* to explain a **temporary** live lock — a permanent absence and a temporary refusal want different treatments.)
+* `IfEditable` / `IfDeletable` — the same, for a single affordance that changes or removes something that exists: an AppBar pencil, an AppBar bin. Separate widgets rather than one with a flag, so the stricter question is visible at the call site — `IfEditable(destructive: true)` next to a bin reads as a typo.
 * `EditableRow` — swipe-to-edit and long-press-to-edit in one place, since they are one affordance conceptually. Each list previously built its own `Dismissible` with its own background and `confirmDismiss`, kept consistent by hand. When the role may not edit, the row renders bare: no swipe, no long-press, no background. Not a disabled state — a swipe that visibly starts and then snaps back reads as a bug rather than as a permission.
+* `DeletableRow` — the delete twin, and deliberately **not** a mode of `EditableRow`: the two have opposite dismiss contracts. `EditableRow` returns false from `confirmDismiss` so the row springs back and a form opens; a delete row must confirm, dismiss for real, and have its caller remove the item. One widget doing both on a flag would mean silent data loss when the flag is wrong in one direction, and a row that mysteriously bounces back in the other.
 
-Both are built on `EditGate`, which listens to `appUserRole`.
+All are built on `EditGate`, which listens to `appUserRole` and asks whichever of the three questions its `permission` names.
+
+**Where a viewer's affordance is gated, the pattern is: the role *hides*, the live lock *disables*.** A role that never gets an action should not see a dead button; a temporary freeze should say why, which is what the `stopExerciseFirst` tooltip is for.
 
 ### The role becomes listenable, and readable synchronously
 
@@ -89,10 +107,12 @@ Out of Settings, into the drawer header's trailing corner (compact) and the navi
 
 ### Consequences
 
-* Good: the rules exist once, and are tested from both directions — an actor may edit roleplays *and nothing else*.
+* Good: the rules exist once, and are tested from both directions — an actor may edit roleplays *and nothing else*, and may delete nothing at all.
+* Good: the three questions make the interesting cases statable in one line each, instead of hiding in which wrapper a surface happened to use.
 * Good: an affordance cannot be added without meeting the gate, because the wrapper is how it gets on screen.
 * Good: switching role updates every affordance already visible.
-* Bad: `IfEditable` is a convention, not an enforcement. A new affordance that skips it still renders. Mitigated by the wrappers being the shorter path, not by the type system.
+* Bad: the wrappers are a convention, not an enforcement. A new affordance that skips them still renders. Mitigated by the wrappers being the shorter path, not by the type system — except for reordering, where `ReorderableSection` requires the `target` and so cannot be used ungated. That is the pattern to prefer when a shared widget owns the affordance.
+* Bad: the roster rule is broader than intended until self-identity exists (see the gap above): an actor may add anyone, not only themselves.
 * Bad: hiding rather than disabling means a role cannot discover *why* something is absent. Accepted for permanent absences; the live lock is the case where the app explains itself instead.
 * Bad: the matrix is device-local and advisory. It shapes the UI; it is not authorisation. Anyone can change their own role, and nothing on the wire depends on it — ADR-0025 owns actual authorisation, for catalog writes.
 
