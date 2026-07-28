@@ -257,11 +257,13 @@ class _TeamsViewState extends State<TeamsView> {
     final localizations = AppLocalizations.of(context)!;
     final exerciseService = ExerciseService();
     if (exerciseService.isStarted) {
-      final exerciseName = exerciseService.last?.exercise.name;
+      final runningExercise = exerciseService.last?.exercise;
+      final exerciseName = runningExercise?.name;
       if (exerciseName != null) {
         showRingdrillSnackBar(
           context,
           localizations.stopExerciseFirst(exerciseName),
+          exercise: runningExercise,
         );
       }
       return;

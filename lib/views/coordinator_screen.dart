@@ -1558,6 +1558,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       showRingdrillSnackBar(
         context,
         localizations.stopExerciseFirst(exercise.name),
+        exercise: exercise,
       );
       return;
     }
@@ -1802,6 +1803,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       showRingdrillSnackBar(
         context,
         localizations.stopExerciseFirst(exercise.name),
+        exercise: exercise,
       );
       return;
     }

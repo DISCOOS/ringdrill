@@ -480,6 +480,7 @@ class _RolePlayListViewState extends State<RolePlayListView> {
         showRingdrillSnackBar(
           context,
           localizations.stopExerciseFirst(runningExercise.name),
+          exercise: runningExercise,
         );
       }
       return;

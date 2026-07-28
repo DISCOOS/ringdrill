@@ -505,6 +505,9 @@ class _StationListViewState extends State<StationListView> {
         showRingdrillSnackBar(
           context,
           localizations.stopExerciseFirst(runningExercise.name),
+          // exercise:, so a variable this exercise overrides resolves to *its*
+          // value rather than the plan's.
+          exercise: runningExercise,
         );
       }
       return;

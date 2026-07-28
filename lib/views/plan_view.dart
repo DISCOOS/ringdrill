@@ -1274,6 +1274,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
         showRingdrillSnackBar(
           context,
           localizations.stopExerciseFirst(runningExercise.name),
+          exercise: runningExercise,
         );
       }
       return;
