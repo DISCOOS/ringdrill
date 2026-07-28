@@ -7,6 +7,32 @@ import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/drill_player/mini_round_row.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 
+/// A time [minutesFromNow] away, **clamped to the same day**.
+///
+/// The fixtures here have to relate to the real clock, because `ExerciseService`
+/// reads it to decide whether an exercise is running. Hand-rolled
+/// `now.hour * 60 + now.minute ± 5` arithmetic wrapped through the modulo instead:
+/// five minutes before 00:04 became 23:59, so the fixture "started" late yesterday
+/// while its end stayed at 01:04, and the exercise was not running. That failed the
+/// suite for the first five minutes of every day — the same shape as the hardcoded
+/// 10:00 fixture this file used to carry, which failed every afternoon.
+///
+/// Clamping instead of wrapping keeps start and end on one day. The residual
+/// degenerate case is the final minute of the day, where a "5 minutes from now"
+/// start clamps to 23:59 and stops being strictly future.
+SimpleTimeOfDay _sameDayOffset(int minutesFromNow) {
+  final now = DateTime.now();
+  final minutes = (now.hour * 60 + now.minute + minutesFromNow).clamp(0, 1439);
+  return SimpleTimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
+}
+
+/// [hours] from now, clamped to the end of the day for the same reason.
+SimpleTimeOfDay _sameDayEnd(int hours) {
+  final now = DateTime.now();
+  final minutes = (now.hour * 60 + now.minute + hours * 60).clamp(0, 1439);
+  return SimpleTimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
+}
+
 /// Starts *now*, so the exercise is genuinely live whenever the suite runs.
 ///
 /// It used to start at a hardcoded 10:00 with 3 × (5+3+2) = 30 minutes of
@@ -15,12 +41,11 @@ import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 /// while passing every morning. The other fixtures in this file were already
 /// now-relative; this one was the outlier.
 Exercise _makeExercise() {
-  final now = DateTime.now();
   return Exercise(
     uuid: 'test-uuid-mini',
     name: 'Mini Player Exercise',
-    startTime: SimpleTimeOfDay(hour: now.hour, minute: now.minute),
-    endTime: SimpleTimeOfDay(hour: (now.hour + 2) % 24, minute: now.minute),
+    startTime: _sameDayOffset(0),
+    endTime: _sameDayEnd(2),
     numberOfTeams: 2,
     numberOfRounds: 3,
     executionTime: 5,
@@ -54,16 +79,11 @@ void main() {
     (tester) async {
       // Use a fixture that is reliably in the running phase regardless of
       // wall-clock time (start 5 minutes in the past).
-      final now = DateTime.now();
-      final pastMinutes = now.hour * 60 + now.minute - 5;
       final runningExercise = Exercise(
         uuid: 'test-uuid-running-ring',
         name: 'Running Ring Exercise',
-        startTime: SimpleTimeOfDay(
-          hour: ((pastMinutes % 1440 + 1440) % 1440 ~/ 60),
-          minute: ((pastMinutes % 1440 + 1440) % 1440 % 60),
-        ),
-        endTime: SimpleTimeOfDay(hour: (now.hour + 1) % 24, minute: now.minute),
+        startTime: _sameDayOffset(-5),
+        endTime: _sameDayEnd(1),
         numberOfTeams: 2,
         numberOfRounds: 2,
         executionTime: 10,
@@ -137,19 +157,11 @@ void main() {
     (tester) async {
       // Build a fixture whose startTime is 5 minutes in the future so the
       // service always emits a pending event regardless of when the test runs.
-      final now = DateTime.now();
-      final futureMinutes = now.hour * 60 + now.minute + 5;
       final pendingExercise = Exercise(
         uuid: 'test-uuid-pending',
         name: 'Pending Exercise',
-        startTime: SimpleTimeOfDay(
-          hour: (futureMinutes ~/ 60) % 24,
-          minute: futureMinutes % 60,
-        ),
-        endTime: SimpleTimeOfDay(
-          hour: ((futureMinutes ~/ 60) + 1) % 24,
-          minute: futureMinutes % 60,
-        ),
+        startTime: _sameDayOffset(5),
+        endTime: _sameDayOffset(65),
         numberOfTeams: 2,
         numberOfRounds: 2,
         executionTime: 5,
@@ -185,16 +197,11 @@ void main() {
   ) async {
     // Build a fixture whose startTime is 5 minutes in the past so the service
     // always emits a running event regardless of when the test runs.
-    final now = DateTime.now();
-    final pastMinutes = now.hour * 60 + now.minute - 5;
     final runningExercise = Exercise(
       uuid: 'test-uuid-running',
       name: 'Running Exercise',
-      startTime: SimpleTimeOfDay(
-        hour: ((pastMinutes % 1440 + 1440) % 1440 ~/ 60),
-        minute: ((pastMinutes % 1440 + 1440) % 1440 % 60),
-      ),
-      endTime: SimpleTimeOfDay(hour: (now.hour + 1) % 24, minute: now.minute),
+      startTime: _sameDayOffset(-5),
+      endTime: _sameDayEnd(1),
       numberOfTeams: 2,
       numberOfRounds: 2,
       executionTime: 10,
@@ -222,19 +229,11 @@ void main() {
   });
 
   testWidgets('pending state shows WAIT phase label', (tester) async {
-    final now = DateTime.now();
-    final futureMinutes = now.hour * 60 + now.minute + 5;
     final pendingExercise = Exercise(
       uuid: 'test-uuid-pending-label',
       name: 'Pending Exercise',
-      startTime: SimpleTimeOfDay(
-        hour: (futureMinutes ~/ 60) % 24,
-        minute: futureMinutes % 60,
-      ),
-      endTime: SimpleTimeOfDay(
-        hour: ((futureMinutes ~/ 60) + 1) % 24,
-        minute: futureMinutes % 60,
-      ),
+      startTime: _sameDayOffset(5),
+      endTime: _sameDayOffset(65),
       numberOfTeams: 2,
       numberOfRounds: 2,
       executionTime: 5,
@@ -264,19 +263,11 @@ void main() {
   testWidgets('pending state shows pulsing ring, not spinning indicator', (
     tester,
   ) async {
-    final now = DateTime.now();
-    final futureMinutes = now.hour * 60 + now.minute + 5;
     final pendingExercise = Exercise(
       uuid: 'test-uuid-pending-ring',
       name: 'Pending Ring Exercise',
-      startTime: SimpleTimeOfDay(
-        hour: (futureMinutes ~/ 60) % 24,
-        minute: futureMinutes % 60,
-      ),
-      endTime: SimpleTimeOfDay(
-        hour: ((futureMinutes ~/ 60) + 1) % 24,
-        minute: futureMinutes % 60,
-      ),
+      startTime: _sameDayOffset(5),
+      endTime: _sameDayOffset(65),
       numberOfTeams: 2,
       numberOfRounds: 2,
       executionTime: 5,
