@@ -271,4 +271,26 @@ void main() {
       });
     });
   });
+
+  // `other` is the escape hatch for a support role the enum does not name, and it
+  // is selectable as this device's own role. It is deliberately named nowhere in the
+  // permission functions, so it gets nothing by falling through — asserted here so
+  // that stays a decision rather than an accident nobody noticed.
+  group('the other role', () {
+    test('may not edit, create or delete anything', () {
+      for (final target in EditTarget.values) {
+        expect(canEdit(StaffRole.other, target), isFalse, reason: '$target');
+        expect(canCreate(StaffRole.other, target), isFalse, reason: '$target');
+        expect(canDelete(StaffRole.other, target), isFalse, reason: '$target');
+      }
+    });
+
+    // Not even the roster, which an actor may add to: joining the staff list is
+    // still an assertion about the exercise, and a role defined by not being any of
+    // the others has no claim to make it.
+    test('may not add to the roster, unlike an actor', () {
+      expect(canCreate(StaffRole.actor, EditTarget.actor), isTrue);
+      expect(canCreate(StaffRole.other, EditTarget.actor), isFalse);
+    });
+  });
 }

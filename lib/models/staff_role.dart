@@ -52,7 +52,18 @@ enum StaffRole {
   /// at this member, so the flag and the cast are unioned rather than one
   /// overriding the other.
   @JsonValue('actor')
-  actor;
+  actor,
+
+  /// Anything the three above do not cover — a support role the enum does not name.
+  /// An escape hatch so adding a kind of helper does not need a schema change, and
+  /// selectable as this device's own role too: someone staffing an exercise without
+  /// being director, veileder or markør still has to be able to say so.
+  ///
+  /// Carries **no edit rights** (ADR-0057). The permission functions ask
+  /// `role == director` and friends, so a role they do not name gets nothing — the
+  /// right default for one whose duties are undefined by construction.
+  @JsonValue('other')
+  other;
 
   /// Maps to the corresponding [BriefAudience] for the brief renderer.
   ///
@@ -64,5 +75,9 @@ enum StaffRole {
     StaffRole.director => BriefAudience.director,
     StaffRole.instructor => BriefAudience.instructor,
     StaffRole.actor => BriefAudience.director,
+    // The conservative choice for a role whose duties are unknown: staff-level
+    // detail, but not the director view's full PII. An actor needs other actors'
+    // contact details to work with them; nothing says the same of `other`.
+    StaffRole.other => BriefAudience.instructor,
   };
 }

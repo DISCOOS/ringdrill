@@ -2048,5 +2048,9 @@
   "staffRolesRequired": "Velg minst én rolle",
   "@staffRolesRequired": {
     "description": "Validation error when creating a staff member with no organizational role selected (DESIGN-011). Only enforced on create."
+  },
+  "staffRoleOther": "Annet",
+  "@staffRoleOther": {
+    "description": "StaffRole.other label (DESIGN-011) — a support role the enum does not name. Selectable both on the roster and as this device own role. Carries no edit rights."
   }
 }

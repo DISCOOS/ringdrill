@@ -2760,4 +2760,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get staffRolesRequired => 'Velg minst én rolle';
+
+  @override
+  String get staffRoleOther => 'Annet';
 }

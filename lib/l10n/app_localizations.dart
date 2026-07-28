@@ -4735,6 +4735,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select at least one role'**
   String get staffRolesRequired;
+
+  /// StaffRole.other label (DESIGN-011) — a support role the enum does not name. Selectable both on the roster and as this device own role. Carries no edit rights.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get staffRoleOther;
 }
 
 class _AppLocalizationsDelegate

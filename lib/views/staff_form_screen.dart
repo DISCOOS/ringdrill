@@ -72,7 +72,12 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
       _nameController.text = staff.realName;
       _phoneController.text = staff.phone ?? '';
       _notesController.text = staff.notes ?? '';
-      _roles = {...staff.roles};
+      // A record written before roles existed has none. Default it to `other`
+      // rather than opening in an invalid state: the validation below applies to
+      // edits too, and an empty selection would otherwise block saving an
+      // unrelated change like a phone number. `other` is the honest answer for a
+      // member whose role was never recorded, and the user can correct it.
+      _roles = staff.roles.isEmpty ? {StaffRole.other} : {...staff.roles};
     }
   }
 
@@ -185,14 +190,13 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
     // the same validate() pass as the name field: one save path, one place errors
     // appear, and the chips cannot drift out of the form's notion of validity.
     //
-    // Enforced on create only. An existing member may have no stored role — every
-    // record written before the roles existed does — and blocking a phone-number
-    // edit behind picking one would punish the user for the schema's history.
+    // Enforced on edit as well as create. That is only fair because a role-less
+    // record arrives pre-set to `other` (see initState), so an existing member is
+    // never opened in a state that blocks saving — the rule cannot punish the user
+    // for the schema's history.
     return FormField<Set<StaffRole>>(
       initialValue: _roles,
-      validator: (_) => widget.staff == null && _roles.isEmpty
-          ? l10n.staffRolesRequired
-          : null,
+      validator: (_) => _roles.isEmpty ? l10n.staffRolesRequired : null,
       builder: (field) => _buildRolesBody(context, l10n, theme, plays, field),
     );
   }

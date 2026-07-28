@@ -14,6 +14,8 @@ IconData staffRoleIcon(StaffRole role) => switch (role) {
   StaffRole.director => Icons.manage_accounts,
   StaffRole.instructor => Icons.school,
   StaffRole.actor => Icons.face,
+  // Neutral by design: the role is defined by not being one of the others.
+  StaffRole.other => Icons.person_outline,
 };
 
 /// Director and instructor reuse the brief-audience labels they have always been
@@ -22,6 +24,7 @@ String staffRoleLabel(StaffRole role, AppLocalizations l10n) => switch (role) {
   StaffRole.director => l10n.briefAudienceDirector,
   StaffRole.instructor => l10n.briefAudienceInstructor,
   StaffRole.actor => l10n.appUserRoleActor,
+  StaffRole.other => l10n.staffRoleOther,
 };
 
 /// Picks the role this device acts as, persisting it through [setAppUserRole].

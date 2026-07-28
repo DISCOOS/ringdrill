@@ -28,4 +28,5 @@ const _$StaffRoleEnumMap = {
   StaffRole.director: 'director',
   StaffRole.instructor: 'instructor',
   StaffRole.actor: 'actor',
+  StaffRole.other: 'other',
 };

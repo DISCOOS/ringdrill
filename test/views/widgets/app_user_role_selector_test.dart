@@ -144,10 +144,7 @@ void main() {
     appUserRole.value = StaffRole.instructor;
     await tester.pumpWidget(harness(iconOnly: true));
 
-    expect(
-      find.byIcon(staffRoleIcon(StaffRole.instructor)),
-      findsOneWidget,
-    );
+    expect(find.byIcon(staffRoleIcon(StaffRole.instructor)), findsOneWidget);
     expect(
       find.byTooltip(
         '${l10n.appUserRoleSectionTitle}: ${l10n.briefAudienceInstructor}',

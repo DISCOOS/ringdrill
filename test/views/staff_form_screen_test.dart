@@ -290,4 +290,101 @@ void main() {
       );
     },
   );
+
+  // The rule applies to edits too, which is only fair because a role-less record
+  // opens pre-set to `other` — so an existing member is never presented in a state
+  // that blocks saving an unrelated change.
+  group('editing an existing member', () {
+    testWidgets('a record with no stored role opens pre-set to other', (
+      tester,
+    ) async {
+      StaffFormResult? result;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (ctx) => TextButton(
+              onPressed: () async {
+                result = await Navigator.push<StaffFormResult>(
+                  ctx,
+                  MaterialPageRoute(
+                    // No roles: every record written before they existed.
+                    builder: (_) => const StaffFormScreen(
+                      staff: Staff(uuid: 'legacy', realName: 'Ola Nordmann'),
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      // Saving straight away works: the default made it valid without the user
+      // having to answer a question about a record they did not create.
+      await tester.tap(find.text(l10n.save));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.staffRolesRequired), findsNothing);
+      expect(
+        result,
+        isA<StaffFormSave>().having((r) => r.staff.roles, 'roles', {
+          StaffRole.other,
+        }),
+      );
+    });
+
+    testWidgets('clearing every role blocks the save', (tester) async {
+      var popped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (ctx) => TextButton(
+              onPressed: () async {
+                await Navigator.push<StaffFormResult>(
+                  ctx,
+                  MaterialPageRoute(
+                    builder: (_) => const StaffFormScreen(
+                      staff: Staff(
+                        uuid: 'has-role',
+                        realName: 'Kari Nordmann',
+                        roles: {StaffRole.director},
+                      ),
+                    ),
+                  ),
+                );
+                popped = true;
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      // Untick the only role, then try to save.
+      await tester.tap(find.text(staffRoleLabel(StaffRole.director, l10n)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.save));
+      await tester.pumpAndSettle();
+
+      expect(
+        popped,
+        isFalse,
+        reason: 'the rule holds on edit, not only create',
+      );
+      expect(find.text(l10n.staffRolesRequired), findsOneWidget);
+    });
+  });
 }

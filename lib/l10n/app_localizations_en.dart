@@ -2762,4 +2762,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get staffRolesRequired => 'Select at least one role';
+
+  @override
+  String get staffRoleOther => 'Other';
 }

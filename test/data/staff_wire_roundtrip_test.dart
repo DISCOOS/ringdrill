@@ -84,17 +84,16 @@ void main() {
           'director',
           'instructor',
           'actor',
+          'other',
         ]);
         expect(
           StaffRole.values.map((r) => r.name),
           isNot(contains('participant')),
           reason: 'participants are a Team count, not staff',
         );
-        expect(
-          StaffRole.values.map((r) => r.name),
-          isNot(contains('other')),
-          reason: 'dropped so the roster roles and the device roles stay 1:1',
-        );
+        // `other` is in both halves of the 1:1: a support role on the roster and
+        // one this device can claim. It carries no edit rights, asserted in
+        // edit_permissions_test.
       },
     );
 
