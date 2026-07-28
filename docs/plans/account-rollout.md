@@ -259,8 +259,48 @@ covers the happy path on each phase.
 * Update `AGENTS.md` to point at `AuthService` as the canonical
   identity source for client code once phase 2 ships.
 
+## Staff PII leaves the device once accounts land
+
+Today the personal data of the people staffing an exercise — real names, phone
+numbers, notes — never reaches a server. `drills-upload` strips the PII folder
+(`actors/`, and `staff/` after DESIGN-011) before anything is published, and that
+strip is the whole of the current privacy story: the boundary is the **catalog**,
+and it holds because publishing is the only upload path.
+
+Account-backed sync changes the destination, not just the plumbing. When a plan
+syncs to a team or private account, the staff folder goes **with** it — that is
+the point of the feature — so personal data starts being stored server-side on
+our infrastructure. That is a different legal posture from a public catalog that
+never sees it, and it is work in its own right, not a side effect of the sync
+code:
+
+* **Privacy statement / personvernerklæring** must say what personal data is
+  stored, where it is hosted, on what legal basis, and for how long. There is no
+  such statement covering server-side personal data today, because there was
+  none to cover.
+* **Consent and transparency** — the people on a roster are usually *not* the
+  app's user. Someone else enters their name and phone number. Whatever the
+  chosen basis, they have rights over that data (access, correction, deletion)
+  and the app has to make those actionable.
+* **Retention and deletion** — deleting a plan must actually delete the staff
+  records server-side, including from backups within a stated window.
+* **Data residency** — the same EU-residency consideration already noted for the
+  mail provider applies, more strongly, to stored personal data.
+* **Sub-processors** — hosting, backups and any support tooling that can read the
+  data need listing.
+
+Practical consequence for sequencing: the `drills-upload` strip must stay in
+place for the *catalog* path even after account sync exists. The two paths need
+separate rules — "published to the catalog" and "synced to your account" must not
+collapse into one upload path that treats them alike, or the strip silently stops
+protecting anything. Worth an ADR when phase 3 or 5 gets close, amending
+[ADR-0018](../adrs/0018-roleplayer-data-model.md), whose PII boundary is written
+as though the catalog were the only destination.
+
 ## Open questions
 
+* Whether staff PII sync is opt-in per plan or implied by choosing an account
+  policy. Bears directly on what the privacy statement has to claim.
 * Mail provider choice: Resend (simpler, EU residency available) vs
   SES (cheaper at scale, more configuration). Decision lands before
   phase 1 starts.
