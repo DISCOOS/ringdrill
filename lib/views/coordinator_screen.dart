@@ -566,82 +566,95 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // presses play. Reading the service directly avoids that false
     // positive and matches the gate used for `_buildExerciseStatus`.
     final showHero = _exerciseService.isStartedOn(widget.uuid);
-    // The Stack wrapper carries a single overlay action: a small copy
-    // IconButton in the top-right corner that copies the full exercise
-    // (header, meta, station list, rotation block) to the clipboard.
-    // Placing it on the body — not on the schedule card — matches the
-    // user mental model that this action is about the exercise as a
-    // whole. The button does not scroll with the content because it
-    // lives as a sibling of the scrolling content inside the Stack, so
-    // it stays anchored to the same screen position while the
-    // coordinator scrolls through the schedule and lists below.
-    return Stack(
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            // Derived from the body's own available width — not
-            // `WindowSizeClass.of(context)` (the whole window) — so the
-            // coordinator picks its layout off its actual pane width. Inside
-            // the wide master/detail shell the coordinator lives in the
-            // detail pane, which is narrower than the window (rail + master
-            // claim the rest); reading the window there made the coordinator
-            // believe it had far more room than it did and overflow trying
-            // to render the expanded two-pane body inside a narrow pane.
-            final windowSize = WindowSizeClass.fromWidth(constraints.maxWidth);
-            // Expanded gets a dedicated two-pane body: a capped-width left
-            // column (that itself scrolls) beside a map pane that fills
-            // the remaining, full-height space — that only works with a
-            // bounded outer height, so it is NOT wrapped in the shared
-            // SingleChildScrollView the other two window sizes use, where
-            // the whole screen (status/schedule/segment/list) scrolls as
-            // one unit.
-            if (windowSize == WindowSizeClass.expanded) {
-              return _buildExpandedBody(
-                exercise,
-                event,
-                showHero: showHero,
-                localizations: localizations,
-              );
-            }
-            // The Map segment pins the top section + selector and lets the
-            // map fill the rest to the bottom (no scroll, no fixed-height
-            // gap, and the bottom-right FABs anchor to the true bottom). The
-            // stations/teams segments keep scrolling the whole column.
-            if (_view == _CoordinatorView.map) {
-              return _buildMapBody(
-                exercise,
-                event,
-                showHero: showHero,
-                localizations: localizations,
-              );
-            }
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(_kCoordinatorBodyPadding),
-              child: _buildStackedBody(
-                exercise,
-                event,
-                showHero: showHero,
-                localizations: localizations,
-              ),
-            );
-          },
-        ),
-        Positioned(
-          top: -4,
-          right: 0,
-          child: Tooltip(
-            message: localizations.exerciseCopyTooltip,
-            child: IconButton(
-              icon: const Icon(Icons.copy_all_outlined, size: 20),
-              padding: const EdgeInsets.all(16),
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-              visualDensity: VisualDensity.compact,
-              onPressed: () =>
-                  _copyExerciseToClipboard(localizations, exercise),
-            ),
+    // No Stack here any more: it existed solely to float the copy action over
+    // the body, which now sits in the description card's header
+    // (_buildCopyAction).
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Derived from the body's own available width — not
+        // `WindowSizeClass.of(context)` (the whole window) — so the
+        // coordinator picks its layout off its actual pane width. Inside
+        // the wide master/detail shell the coordinator lives in the
+        // detail pane, which is narrower than the window (rail + master
+        // claim the rest); reading the window there made the coordinator
+        // believe it had far more room than it did and overflow trying
+        // to render the expanded two-pane body inside a narrow pane.
+        final windowSize = WindowSizeClass.fromWidth(constraints.maxWidth);
+        // Expanded gets a dedicated two-pane body: a capped-width left
+        // column (that itself scrolls) beside a map pane that fills
+        // the remaining, full-height space — that only works with a
+        // bounded outer height, so it is NOT wrapped in the shared
+        // SingleChildScrollView the other two window sizes use, where
+        // the whole screen (status/schedule/segment/list) scrolls as
+        // one unit.
+        if (windowSize == WindowSizeClass.expanded) {
+          return _buildExpandedBody(
+            exercise,
+            event,
+            showHero: showHero,
+            localizations: localizations,
+          );
+        }
+        // The Map segment pins the top section + selector and lets the
+        // map fill the rest to the bottom (no scroll, no fixed-height
+        // gap, and the bottom-right FABs anchor to the true bottom). The
+        // stations/teams segments keep scrolling the whole column.
+        if (_view == _CoordinatorView.map) {
+          return _buildMapBody(
+            exercise,
+            event,
+            showHero: showHero,
+            localizations: localizations,
+          );
+        }
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(_kCoordinatorBodyPadding),
+          child: _buildStackedBody(
+            exercise,
+            event,
+            showHero: showHero,
+            localizations: localizations,
+          ),
+        );
+      },
+    );
+  }
+
+  /// The copy-exercise action, as the description card's header action.
+  ///
+  /// It used to be a `Positioned(top: -4, right: 0)` overlay floating above
+  /// every segment, which put it outside the AppBar *and* outside the card it
+  /// visually belonged to — clipping into the segment selector on narrow
+  /// windows, and sitting over the map on the Kart segment where there was no
+  /// description to copy from at all. `CollapsibleSectionCard` already reserves a
+  /// trailing slot before the collapse chevron, so the action can live in the
+  /// header of the card whose content it copies.
+  ///
+  /// Consequence worth knowing: it is now reachable from the Info segment only,
+  /// where the description is. The payload is still the whole exercise
+  /// (`formatExerciseForShare` — schedule and stations included), not just the
+  /// description text.
+  Widget _buildCopyAction(AppLocalizations localizations, Exercise exercise) {
+    final theme = Theme.of(context);
+    // Geometry copied from StationScreen's _HeaderAddAction, the other header
+    // action in the app: a compact InkWell with a small icon rather than an
+    // IconButton, whose 48px minimum tap target would make this card's header
+    // taller than every other card's. Icon-only, so the tooltip carries the
+    // label.
+    return Tooltip(
+      message: localizations.exerciseCopyTooltip,
+      child: InkWell(
+        onTap: () => _copyExerciseToClipboard(localizations, exercise),
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Icon(
+            Icons.copy_all_outlined,
+            size: 17,
+            color: theme.colorScheme.primary,
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -689,6 +702,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           exercise: exercise,
           onTapSection: (id) =>
               _editExercise(context, exercise, initialSectionId: id),
+          trailing: _buildCopyAction(AppLocalizations.of(context)!, exercise),
         ),
         const SizedBox(height: 12),
         _buildScheduleCard(exercise, event),

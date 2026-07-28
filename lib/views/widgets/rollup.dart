@@ -114,6 +114,7 @@ class RollupCard extends StatelessWidget {
     this.hint,
     this.onTapSection,
     this.emptyPlaceholder,
+    this.trailing,
   });
 
   final String title;
@@ -137,6 +138,12 @@ class RollupCard extends StatelessWidget {
   /// Null disables tap-to-edit entirely (every block renders without an
   /// `InkWell`).
   final ValueChanged<String>? onTapSection;
+
+  /// Header action shown before the collapse chevron, e.g. the exercise
+  /// viewer's copy-to-clipboard. Passed through to
+  /// [CollapsibleSectionCard.trailing], which already reserves that slot, so a
+  /// card action does not need to be floated over the body.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -165,6 +172,7 @@ class RollupCard extends StatelessWidget {
       sectionId: sectionId,
       icon: icon,
       title: title,
+      trailing: trailing,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: child,

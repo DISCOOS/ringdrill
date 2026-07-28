@@ -2642,7 +2642,7 @@ abstract class AppLocalizations {
   /// **'Exercise copied to clipboard'**
   String get exerciseCopied;
 
-  /// Tooltip on the copy IconButton overlaid at the top-right of the scrollable list on the coordinator screen.
+  /// Tooltip on the copy action in the exercise description card's header on the coordinator screen. Copies the whole exercise, not just the description.
   ///
   /// In en, this message translates to:
   /// **'Copy exercise'**

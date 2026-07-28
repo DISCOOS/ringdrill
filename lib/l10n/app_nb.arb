@@ -503,7 +503,7 @@
   },
   "exerciseCopyTooltip": "Kopier øvelse",
   "@exerciseCopyTooltip": {
-    "description": "Tooltip on the copy IconButton overlaid at the top-right of the scrollable list on the coordinator screen."
+    "description": "Tooltip on the copy action in the exercise description card's header on the coordinator screen. Copies the whole exercise, not just the description."
   },
 
   "roleplay": "{count, plural, =0{Markør} =1{Markør} other{Markører}}",

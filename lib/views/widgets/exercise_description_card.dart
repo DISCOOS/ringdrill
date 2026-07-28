@@ -20,6 +20,7 @@ class ExerciseDescriptionCard extends StatelessWidget {
     super.key,
     required this.exercise,
     this.onTapSection,
+    this.trailing,
   });
 
   final Exercise exercise;
@@ -28,6 +29,10 @@ class ExerciseDescriptionCard extends StatelessWidget {
   /// wires this to the exercise editor, opened at the matching section. Null
   /// disables tap-to-edit entirely (every block renders without an `InkWell`).
   final ValueChanged<String>? onTapSection;
+
+  /// Header action, shown before the collapse chevron — the coordinator's
+  /// copy-exercise button lives here rather than floating over the body.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +47,7 @@ class ExerciseDescriptionCard extends StatelessWidget {
         exerciseDescriptionOverrides(exercise),
       ),
       onTapSection: onTapSection,
+      trailing: trailing,
     );
   }
 }
