@@ -7,9 +7,9 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/map_settings.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -71,16 +71,14 @@ class _AnalyticsConsentSettingsState extends State<AnalyticsConsentSettings> {
 
   Future<void> _loadPreferences() async {
     // Load saved preferences from SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
     setState(() {
-      analyticsConsent = prefs.getBool(AppConfig.keyAnalyticsConsent) ?? false;
+      analyticsConsent = Prefs.getBool(AppConfig.keyAnalyticsConsent) ?? false;
     });
   }
 
   Future<void> _saveConsent(bool consent) async {
     // Save consent state to SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setBool(AppConfig.keyAnalyticsConsent, consent);
+    unawaited(Prefs.setBool(AppConfig.keyAnalyticsConsent, consent));
     await _toggleSentryAnalytics(consent);
 
     if (mounted) {
@@ -111,10 +109,8 @@ class _AnalyticsConsentSettingsState extends State<AnalyticsConsentSettings> {
   }
 
   Future<void> _toggleSentryAnalytics(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-
     // Save updated consent state
-    prefs.setBool(AppConfig.keyAnalyticsConsent, value);
+    unawaited(Prefs.setBool(AppConfig.keyAnalyticsConsent, value));
 
     if (value) {
       // Enable Sentry dynamically
@@ -207,19 +203,18 @@ class _NotificationSettingsWidgetState
 
   Future<void> _loadPreferences() async {
     // Load saved preferences from SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
     setState(() {
       isNotificationsEnabled =
-          prefs.getBool(AppConfig.keyIsNotificationsEnabled) ??
+          Prefs.getBool(AppConfig.keyIsNotificationsEnabled) ??
           true; // Default ON
       isFullScreenIntentEnabled =
-          prefs.getBool(AppConfig.keyIsNotificationFullScreenIntentEnabled) ??
+          Prefs.getBool(AppConfig.keyIsNotificationFullScreenIntentEnabled) ??
           false; // Default OFF
-      playSound = prefs.getBool(AppConfig.keyNotificationPlaySound) ?? true;
+      playSound = Prefs.getBool(AppConfig.keyNotificationPlaySound) ?? true;
       vibrateEnabled =
-          prefs.getBool(AppConfig.keyIsNotificationVibrateEnabled) ?? true;
+          Prefs.getBool(AppConfig.keyIsNotificationVibrateEnabled) ?? true;
       urgentNotificationThreshold =
-          prefs.getInt(AppConfig.keyUrgentNotificationThreshold) ?? 2;
+          Prefs.getInt(AppConfig.keyUrgentNotificationThreshold) ?? 2;
     });
   }
 
@@ -230,10 +225,8 @@ class _NotificationSettingsWidgetState
     bool? vibrate,
     int? threshold,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-
     if (enabled != null) {
-      await prefs.setBool(AppConfig.keyIsNotificationsEnabled, enabled);
+      await Prefs.setBool(AppConfig.keyIsNotificationsEnabled, enabled);
       if (enabled) {
         // Turning the toggle on is itself an explicit opt-in, so it must
         // be allowed to fire the OS permission dialog even when the user
@@ -243,44 +236,44 @@ class _NotificationSettingsWidgetState
         // never showed). Without this the toggle looked "on" in-app while
         // iOS was never asked, so RingDrill never registered and never
         // appeared under Settings > Notifications. See ADR-0038.
-        await prefs.setBool(AppConfig.keyNotificationConsentAsked, true);
+        await Prefs.setBool(AppConfig.keyNotificationConsentAsked, true);
       }
-      await NotificationService().initFromPrefs(prefs);
+      await NotificationService().initFromPrefs(Prefs.instance);
       setState(() {
         isNotificationsEnabled = enabled;
       });
     }
 
     if (fullScreen != null) {
-      await prefs.setBool(
+      await Prefs.setBool(
         AppConfig.keyIsNotificationFullScreenIntentEnabled,
         fullScreen,
       );
-      await NotificationService().initFromPrefs(prefs);
+      await NotificationService().initFromPrefs(Prefs.instance);
       setState(() {
         isFullScreenIntentEnabled = fullScreen;
       });
     }
 
     if (sound != null) {
-      await prefs.setBool(AppConfig.keyNotificationPlaySound, sound);
-      await NotificationService().initFromPrefs(prefs);
+      await Prefs.setBool(AppConfig.keyNotificationPlaySound, sound);
+      await NotificationService().initFromPrefs(Prefs.instance);
       setState(() {
         playSound = sound;
       });
     }
 
     if (vibrate != null) {
-      await prefs.setBool(AppConfig.keyIsNotificationVibrateEnabled, vibrate);
-      await NotificationService().initFromPrefs(prefs);
+      await Prefs.setBool(AppConfig.keyIsNotificationVibrateEnabled, vibrate);
+      await NotificationService().initFromPrefs(Prefs.instance);
       setState(() {
         vibrateEnabled = vibrate;
       });
     }
 
     if (threshold != null) {
-      await prefs.setInt(AppConfig.keyUrgentNotificationThreshold, threshold);
-      await NotificationService().initFromPrefs(prefs);
+      await Prefs.setInt(AppConfig.keyUrgentNotificationThreshold, threshold);
+      await NotificationService().initFromPrefs(Prefs.instance);
       setState(() {
         urgentNotificationThreshold = threshold;
       });
@@ -330,8 +323,7 @@ class _NotificationSettingsWidgetState
             leading: const Icon(Icons.notifications_off_outlined),
             title: Text(localizations.notificationsDeniedBanner),
             trailing: TextButton(
-              onPressed: () =>
-                  unawaited(Geolocator.openAppSettings()),
+              onPressed: () => unawaited(Geolocator.openAppSettings()),
               child: Text(localizations.openSettings),
             ),
           ),

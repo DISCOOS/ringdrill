@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ringdrill/utils/prefs.dart';
 
 /// First-run-only pill that sits inline beside the Øvelser FAB.
 ///
@@ -66,19 +66,17 @@ class _StartHerePillState extends State<StartHerePill> {
     super.dispose();
   }
 
-  Future<void> _loadFlag() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _seen = prefs.getBool(AppConfig.keyStartHereSeen) ?? false;
-    });
+  /// Synchronous: this flag decides whether the pill shows at all, so awaiting
+  /// it made the pill appear a frame *after* the surface had settled — the one
+  /// thing a coach-mark must not do.
+  void _loadFlag() {
+    _seen = Prefs.getBool(AppConfig.keyStartHereSeen) ?? false;
   }
 
   Future<void> _markSeen() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(AppConfig.keyStartHereSeen, true);
-    if (!mounted) return;
-    setState(() => _seen = true);
+    // Hidden immediately; the write catches up.
+    if (mounted) setState(() => _seen = true);
+    await Prefs.setBool(AppConfig.keyStartHereSeen, true);
   }
 
   @override
@@ -111,7 +109,11 @@ class _StartHerePillState extends State<StartHerePill> {
                 ),
               ),
               const SizedBox(width: 4),
-              Icon(Icons.arrow_forward_rounded, size: 16, color: cs.onPrimaryContainer),
+              Icon(
+                Icons.arrow_forward_rounded,
+                size: 16,
+                color: cs.onPrimaryContainer,
+              ),
             ],
           ),
         ),

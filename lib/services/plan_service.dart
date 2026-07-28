@@ -16,6 +16,7 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -197,7 +198,10 @@ class PlanService {
 
   Future<List<Exercise>> init() async {
     if (!_isReady) {
-      final prefs = await SharedPreferences.getInstance();
+      // PlanRepository takes the instance itself. Prefer the bound one so a
+      // normal launch does not resolve it twice.
+      final prefs =
+          Prefs.instanceOrNull ?? await SharedPreferences.getInstance();
       _repo = PlanRepository(prefs);
       await _repo.init();
       _isReady = true;

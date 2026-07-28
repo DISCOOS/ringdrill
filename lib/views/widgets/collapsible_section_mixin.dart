@@ -54,29 +54,18 @@ mixin CollapsibleSectionStateMixin<T extends StatefulWidget>
   /// animation) to it. No-op when [sectionId] is null (the section is not
   /// collapsible), leaving it expanded.
   ///
-  /// Synchronous whenever [Prefs] has a bound instance, which is the normal
-  /// case: the app binds it in `main` before `runApp`. That matters because this
-  /// runs from `initState` — an awaited read lands one frame late, so a section
-  /// stored collapsed paints expanded and then snaps shut. Reading it here means
-  /// the very first paint is already correct, and no `setState` is needed.
+  /// Synchronous, because this runs from `initState`: an awaited read lands one
+  /// frame late, so a section stored collapsed painted expanded and then snapped
+  /// shut. The app binds [Prefs] in `main` before `runApp`, so the very first
+  /// paint is already correct and no `setState` is needed.
   ///
-  /// Falls back to the async read when nothing is bound (a widget test, or an
-  /// entry point that skips `main`), which is the old behaviour — flicker
-  /// included, but never a lost preference.
+  /// A caller with no binding (a widget test) reads null and keeps the expanded
+  /// default — there is no async catch-up, deliberately: the whole point is that
+  /// this state is known before the first frame or not at all.
   void initCollapse(String? sectionId) {
     if (sectionId == null) return;
     final stored = CollapsibleSectionStore.isCollapsedNow(sectionId);
-    if (stored != null) {
-      _applyCollapsed(stored);
-      return;
-    }
-    unawaited(_initCollapseLate(sectionId));
-  }
-
-  Future<void> _initCollapseLate(String sectionId) async {
-    final stored = await CollapsibleSectionStore.isCollapsed(sectionId);
-    if (!mounted || stored == _collapsed) return;
-    setState(() => _applyCollapsed(stored));
+    if (stored != null) _applyCollapsed(stored);
   }
 
   /// Jumps to [collapsed] with no animation. Safe to call from `initState`

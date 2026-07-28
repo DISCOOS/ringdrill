@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/platform_utils.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ringdrill/utils/prefs.dart';
 
 /// Global, reactive holder for map-related preferences so that any open
 /// [MapView] reflects a change the moment the user makes it in settings,
@@ -26,15 +26,13 @@ class MapSettings {
   /// Loads persisted values. Call once during app start-up so the first
   /// frame already has the user's choice.
   Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
     showZoomControls.value =
-        prefs.getBool(AppConfig.keyShowMapZoomControls) ??
+        Prefs.getBool(AppConfig.keyShowMapZoomControls) ??
         _defaultShowZoomControls;
   }
 
   Future<void> setShowZoomControls(bool value) async {
     showZoomControls.value = value;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(AppConfig.keyShowMapZoomControls, value);
+    await Prefs.setBool(AppConfig.keyShowMapZoomControls, value);
   }
 }

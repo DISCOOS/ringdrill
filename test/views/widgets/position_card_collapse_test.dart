@@ -5,6 +5,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/views/widgets/collapse_chevron.dart';
 import 'package:ringdrill/views/widgets/station_mini_map.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
@@ -41,8 +42,14 @@ void main() {
     l = await AppLocalizations.delegate.load(const Locale('en'));
   });
 
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    // Prefs reads are synchronous now, so a stored value is only visible to a
+    // bound instance. Rebound per test, since setMockInitialValues builds a
+    // fresh one and a stale binding would serve the previous test's values.
+    Prefs.reset();
+    Prefs.bind(await SharedPreferences.getInstance());
+    addTearDown(Prefs.reset);
   });
 
   Exercise exercise() => Exercise(
@@ -59,11 +66,8 @@ void main() {
     schedule: const [],
   );
 
-  Station station() => Station(
-    index: 0,
-    name: 'Post 1',
-    position: const LatLng(58.99, 10.43),
-  );
+  Station station() =>
+      Station(index: 0, name: 'Post 1', position: const LatLng(58.99, 10.43));
 
   /// The clipped height of the map section — the [SizeTransition] wrapping
   /// the [StationMiniMap]. Zero when collapsed, the map's full height when
@@ -189,34 +193,33 @@ void main() {
     },
   );
 
-  testWidgets(
-    'the collapsed state persists through SharedPreferences across a '
-    'rebuild',
-    (tester) async {
-      await pump(tester);
-      await tester.pumpAndSettle();
+  testWidgets('the collapsed state persists through SharedPreferences across a '
+      'rebuild', (tester) async {
+    await pump(tester);
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(CollapseChevron));
-      await tester.pumpAndSettle();
-      expect(mapHeight(tester), 0);
+    await tester.tap(find.byType(CollapseChevron));
+    await tester.pumpAndSettle();
+    expect(mapHeight(tester), 0);
 
-      // Simulate a fresh mount (e.g. app restart) reading the same store.
-      await tester.pumpWidget(const SizedBox.shrink());
-      await pump(tester);
-      await tester.pumpAndSettle();
+    // Simulate a fresh mount (e.g. app restart) reading the same store.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await pump(tester);
+    await tester.pumpAndSettle();
 
-      expect(mapHeight(tester), 0);
-      expect(find.text(l.position), findsOneWidget);
-    },
-  );
+    expect(mapHeight(tester), 0);
+    expect(find.text(l.position), findsOneWidget);
+  });
 
   testWidgets(
     'fillHeight always shows the map and never a collapse chevron, even '
     'with a collapsed sectionId already persisted',
     (tester) async {
+      Prefs.reset();
       SharedPreferences.setMockInitialValues({
         AppConfig.collapsibleSectionKey('position'): true,
       });
+      Prefs.bind(await SharedPreferences.getInstance());
 
       await pump(tester, fillHeight: true);
       await tester.pumpAndSettle();

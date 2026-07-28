@@ -47,6 +47,16 @@ class Prefs {
   /// something else (`PlanRepository`, `NotificationService.initFromPrefs`).
   static SharedPreferences? get instanceOrNull => _prefs;
 
+  /// The bound instance, for the callers that hand it to something else that
+  /// takes a [SharedPreferences] (`PlanRepository`,
+  /// `NotificationService.initFromPrefs`). Asserts when unbound: those callers
+  /// run after `main` has bound one, and silently falling back would reintroduce
+  /// the async read this service exists to remove.
+  static SharedPreferences get instance {
+    assert(_prefs != null, 'Prefs.bind has not been called');
+    return _prefs!;
+  }
+
   /// True once an instance is bound — for a caller that must know the difference
   /// between "nothing stored" and "cannot answer yet".
   static bool get isBound => _prefs != null;

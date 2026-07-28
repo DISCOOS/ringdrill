@@ -73,21 +73,22 @@ void main() {
     expect(_revealHeight(tester), 0);
   });
 
-  testWidgets('unbound prefs: the preference is still restored', (
+  // No async catch-up any more, deliberately: this state is known before the
+  // first frame or not at all. A caller with no binding — a widget test, or an
+  // entry point that skips main — keeps the expanded default rather than having
+  // the card jump under it later.
+  testWidgets('unbound prefs: the default stands, with no late jump', (
     tester,
   ) async {
-    // A widget test (or any entry point that skips main) binds nothing. The
-    // preference must not be lost — it falls back to the awaited read.
-    //
-    // Deliberately no first-frame assertion here: the mock SharedPreferences
-    // resolves inside the same frame, so this path looks instant in a test and
-    // only lags against a real platform channel. That is exactly why the
-    // flicker was invisible to the suite and obvious in the app — which is what
-    // the bound-prefs case above pins down instead.
     await tester.pumpWidget(_harness());
-    await tester.pumpAndSettle();
+    expect(_revealHeight(tester), 1);
 
-    expect(_revealHeight(tester), 0);
+    await tester.pumpAndSettle();
+    expect(
+      _revealHeight(tester),
+      1,
+      reason: 'nothing may arrive after the fact and collapse it',
+    );
   });
 
   testWidgets('nothing stored: expanded on the first frame', (tester) async {

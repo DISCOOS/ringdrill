@@ -5,6 +5,7 @@ import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/external_links.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/views/migration_page.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/web/legacy_host_web.dart'
@@ -95,16 +96,15 @@ class _MigrationBannerState extends State<MigrationBanner> {
   /// timestamp so the banner stays visible until the user dismisses it
   /// again. Normal dismiss behaviour is otherwise unchanged.
   Future<void> _onForceShow() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(AppConfig.keyMigrationBannerDismissedAt);
+    await Prefs.remove(AppConfig.keyMigrationBannerDismissedAt);
     if (mounted) setState(() => _dismissed = false);
     _syncVisible();
   }
 
-  Future<void> _loadDismissState() async {
-    final prefs = await SharedPreferences.getInstance();
-    final ts = prefs.getInt(AppConfig.keyMigrationBannerDismissedAt);
-    if (!mounted) return;
+  /// Synchronous: awaiting it showed the banner for a frame before the stored
+  /// dismissal arrived, so a dismissed banner flashed back on every launch.
+  void _loadDismissState() {
+    final ts = Prefs.getInt(AppConfig.keyMigrationBannerDismissedAt);
     if (ts != null) {
       final dismissedAt = DateTime.fromMillisecondsSinceEpoch(ts);
       final now = widget.nowOverride?.call() ?? DateTime.now();
@@ -115,9 +115,8 @@ class _MigrationBannerState extends State<MigrationBanner> {
   }
 
   Future<void> _dismiss() async {
-    final prefs = await SharedPreferences.getInstance();
     final now = widget.nowOverride?.call() ?? DateTime.now();
-    await prefs.setInt(
+    await Prefs.setInt(
       AppConfig.keyMigrationBannerDismissedAt,
       now.millisecondsSinceEpoch,
     );

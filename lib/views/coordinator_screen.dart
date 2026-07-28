@@ -16,6 +16,7 @@ import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
@@ -51,7 +52,6 @@ import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'exercise_form_screen.dart';
 import 'plan_additions.dart';
@@ -237,9 +237,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // the bell is an explicit opt-in, so record consent first — that lets
     // the OS permission prompt fire on first use even for devices that
     // never saw the first-launch consent stage.
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(AppConfig.keyNotificationConsentAsked, true);
-    await service.initFromPrefs(prefs);
+    await Prefs.setBool(AppConfig.keyNotificationConsentAsked, true);
+    await service.initFromPrefs(Prefs.instance);
     if (!mounted) return;
 
     // If the prompt was just declined (or the OS refused silently), fall

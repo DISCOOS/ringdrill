@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/views/shell/migration_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -64,6 +65,11 @@ void main() {
         AppConfig.keyMigrationBannerDismissedAt:
             oneHourAgo.millisecondsSinceEpoch,
       });
+      // Prefs reads are synchronous now, so a test that seeds a real value has
+      // to bind the instance — an unbound read means "nothing stored", which
+      // would leave the banner visible and pass for the wrong reason.
+      Prefs.bind(await SharedPreferences.getInstance());
+      addTearDown(Prefs.reset);
 
       await tester.pumpWidget(
         _harness(
@@ -85,6 +91,8 @@ void main() {
         AppConfig.keyMigrationBannerDismissedAt:
             twoDaysAgo.millisecondsSinceEpoch,
       });
+      Prefs.bind(await SharedPreferences.getInstance());
+      addTearDown(Prefs.reset);
 
       await tester.pumpWidget(
         _harness(
@@ -197,6 +205,11 @@ void main() {
         AppConfig.keyMigrationBannerDismissedAt:
             oneHourAgo.millisecondsSinceEpoch,
       });
+      // Prefs reads are synchronous now, so a test that seeds a real value has
+      // to bind the instance — an unbound read means "nothing stored", which
+      // would leave the banner visible and pass for the wrong reason.
+      Prefs.bind(await SharedPreferences.getInstance());
+      addTearDown(Prefs.reset);
 
       await tester.pumpWidget(
         _harness(

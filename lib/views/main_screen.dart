@@ -44,7 +44,6 @@ import 'package:ringdrill/web/legacy_host_web.dart'
     if (dart.library.io) 'package:ringdrill/web/legacy_host_stub.dart';
 import 'package:ringdrill/web/settings_page.dart'
     if (dart.library.io) 'package:ringdrill/views/settings_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({
@@ -95,12 +94,11 @@ class _MainScreenState extends State<MainScreen>
   late final TeamsPageController _teamsPageController =
       const TeamsPageController();
   late final RosterController _rosterController = RosterController();
-  late final PlanPageController _planPageController =
-      PlanPageController(
-        stationListController: _stationListController,
-        rolePlaysController: _rolePlaysController,
-        teamsPageController: _teamsPageController,
-      );
+  late final PlanPageController _planPageController = PlanPageController(
+    stationListController: _stationListController,
+    rolePlaysController: _rolePlaysController,
+    teamsPageController: _teamsPageController,
+  );
   late final ContextSheetController _contextSheetController =
       ContextSheetController();
 
@@ -184,9 +182,7 @@ class _MainScreenState extends State<MainScreen>
     );
     // Rebuild when reorder mode toggles so the FAB (which is suppressed in
     // reorder mode) appears/disappears without waiting for another rebuild.
-    _planPageController.exerciseReorderMode.addListener(
-      _onPlanSegmentChanged,
-    );
+    _planPageController.exerciseReorderMode.addListener(_onPlanSegmentChanged);
     listen(NotificationService().events, (event) {
       if (event.action == NotificationAction.showSettings) {
         if (mounted) {
@@ -309,9 +305,7 @@ class _MainScreenState extends State<MainScreen>
       _onDetailTargetChangedForSelectionMemory,
     );
     _contextSheetController.dispose();
-    _planPageController.activeSegment.removeListener(
-      _onPlanSegmentChanged,
-    );
+    _planPageController.activeSegment.removeListener(_onPlanSegmentChanged);
     _planPageController.activeSegment.removeListener(
       _onActiveSegmentChangedForSelectionMemory,
     );
@@ -599,50 +593,50 @@ class _MainScreenState extends State<MainScreen>
                 child: DrillPlayerScope(
                   coordinator: _drillPlayer,
                   child: ContextSheet(
-                  controller: _contextSheetController,
-                  child: Scaffold(
-                    key: _scaffoldKey,
-                    extendBody: true,
-                    extendBodyBehindAppBar: true,
-                    // On the rail (master/detail) layout, forms open as a Dialog
-                    // (see openFormSurface) which handles its own keyboard inset.
-                    // Letting the background scaffold also resize for that keyboard
-                    // squeezes the fixed-height chrome (NavigationRail, plan
-                    // overview + segment switcher) and produces RenderFlex overflows.
-                    // The dialog owns the inset here, so the background must not move.
-                    resizeToAvoidBottomInset: !useRail,
-                    drawerEnableOpenDragGesture:
-                        Theme.of(context).platform != TargetPlatform.iOS,
-                    appBar: (useRail || isMapTab)
-                        ? null
-                        : _buildAppBar(
-                            context,
-                            constraints,
-                            page,
-                            hasRail: false,
-                          ),
-                    drawer: MainDrawer(
-                      localizations: localizations,
-                      onOpenSettings: () =>
-                          MainScreen.showSettings(context, true),
+                    controller: _contextSheetController,
+                    child: Scaffold(
+                      key: _scaffoldKey,
+                      extendBody: true,
+                      extendBodyBehindAppBar: true,
+                      // On the rail (master/detail) layout, forms open as a Dialog
+                      // (see openFormSurface) which handles its own keyboard inset.
+                      // Letting the background scaffold also resize for that keyboard
+                      // squeezes the fixed-height chrome (NavigationRail, plan
+                      // overview + segment switcher) and produces RenderFlex overflows.
+                      // The dialog owns the inset here, so the background must not move.
+                      resizeToAvoidBottomInset: !useRail,
+                      drawerEnableOpenDragGesture:
+                          Theme.of(context).platform != TargetPlatform.iOS,
+                      appBar: (useRail || isMapTab)
+                          ? null
+                          : _buildAppBar(
+                              context,
+                              constraints,
+                              page,
+                              hasRail: false,
+                            ),
+                      drawer: MainDrawer(
+                        localizations: localizations,
+                        onOpenSettings: () =>
+                            MainScreen.showSettings(context, true),
+                      ),
+                      // StackFit.expand is load-bearing: without it the Stack sizes
+                      // itself to the biggest non-positioned child, but the only
+                      // non-positioned child here is the Offstage shell sentinel
+                      // (which has zero size by design), so the Stack collapses to
+                      // 0x0 and the visible Positioned.fill child has nothing to
+                      // fill. Result: tabs render fine but at zero size, so the UI
+                      // looks completely empty even though no exception is thrown.
+                      body: body,
+                      floatingActionButton: useRail
+                          ? null
+                          : page.controller.buildFAB(context, constraints),
+                      bottomNavigationBar: _buildBottomChrome(
+                        context,
+                        localizations,
+                        useRail,
+                      ),
                     ),
-                    // StackFit.expand is load-bearing: without it the Stack sizes
-                    // itself to the biggest non-positioned child, but the only
-                    // non-positioned child here is the Offstage shell sentinel
-                    // (which has zero size by design), so the Stack collapses to
-                    // 0x0 and the visible Positioned.fill child has nothing to
-                    // fill. Result: tabs render fine but at zero size, so the UI
-                    // looks completely empty even though no exception is thrown.
-                    body: body,
-                    floatingActionButton: useRail
-                        ? null
-                        : page.controller.buildFAB(context, constraints),
-                    bottomNavigationBar: _buildBottomChrome(
-                      context,
-                      localizations,
-                      useRail,
-                    ),
-                  ),
                   ),
                 ),
               ),
@@ -805,21 +799,8 @@ class _MainScreenState extends State<MainScreen>
   /// first paint is already right, and it also removes an early rebuild from the
   /// startup sequence that the detail-pane auto-select shares a frame with.
   void _loadMasterCollapsed() {
-    final prefs = Prefs.instanceOrNull;
-    if (prefs != null) {
-      _masterCollapsed =
-          prefs.getBool(AppConfig.keyMasterPaneCollapsed) ?? _masterCollapsed;
-      return;
-    }
-    unawaited(_loadMasterCollapsedLate());
-  }
-
-  Future<void> _loadMasterCollapsedLate() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    final stored = prefs.getBool(AppConfig.keyMasterPaneCollapsed);
-    if (stored == null || stored == _masterCollapsed) return;
-    setState(() => _masterCollapsed = stored);
+    _masterCollapsed =
+        Prefs.getBool(AppConfig.keyMasterPaneCollapsed) ?? _masterCollapsed;
   }
 
   /// Flips the wide shell's master-pane collapse state and persists it.
@@ -828,8 +809,7 @@ class _MainScreenState extends State<MainScreen>
   Future<void> _toggleMasterCollapsed() async {
     final next = !_masterCollapsed;
     setState(() => _masterCollapsed = next);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(AppConfig.keyMasterPaneCollapsed, next);
+    await Prefs.setBool(AppConfig.keyMasterPaneCollapsed, next);
   }
 
   void _onDestinationSelected(int tab) {

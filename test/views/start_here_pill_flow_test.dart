@@ -7,6 +7,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/station_list_view.dart';
@@ -141,6 +142,15 @@ void main() {
   setUpAll(() async {
     SharedPreferences.setMockInitialValues(_basePrefs());
     await PlanService().init();
+  });
+
+  // Prefs reads are synchronous now, so a test that seeds a real value has to
+  // bind the instance — an unbound read means "nothing stored", which would show
+  // the pill and pass for the wrong reason.
+  setUp(() async {
+    Prefs.reset();
+    Prefs.bind(await SharedPreferences.getInstance());
+    addTearDown(Prefs.reset);
   });
 
   setUp(() async {

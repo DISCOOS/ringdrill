@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/collapse_chevron.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
@@ -35,10 +36,7 @@ Widget _harness(String sectionId, {String title = 'Test Section'}) =>
 /// body's full height when expanded.
 double _bodyHeight(WidgetTester tester, String bodyText) {
   final sizeTransition = find
-      .ancestor(
-        of: find.text(bodyText),
-        matching: find.byType(SizeTransition),
-      )
+      .ancestor(of: find.text(bodyText), matching: find.byType(SizeTransition))
       .first;
   return tester.getSize(sizeTransition).height;
 }
@@ -91,6 +89,10 @@ void main() {
   testWidgets(
     'collapsed state persists through SharedPreferences across a rebuild',
     (tester) async {
+      // The read is synchronous now (see Prefs): binding is what lets a *fresh*
+      // mount see what the previous one stored, which is the whole assertion.
+      Prefs.bind(await SharedPreferences.getInstance());
+      addTearDown(Prefs.reset);
       await tester.pumpWidget(_harness('persist-section'));
       await tester.pumpAndSettle();
 

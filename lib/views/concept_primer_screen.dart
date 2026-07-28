@@ -9,6 +9,7 @@ import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/locale_utils.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/widgets/onboarding/analytics_consent_stage.dart';
@@ -16,7 +17,6 @@ import 'package:ringdrill/views/widgets/onboarding/notification_consent_stage.da
 import 'package:ringdrill/views/widgets/onboarding/start_stage.dart';
 import 'package:ringdrill/views/widgets/onboarding/welcome_stage.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// Hosts the first-launch onboarding as a forward-only `PageView`.
 ///
@@ -84,8 +84,7 @@ class _ConceptPrimerScreenState extends State<ConceptPrimerScreen> {
   }
 
   Future<void> _onAnalytics(bool consented) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(AppConfig.keyAnalyticsConsent, consented);
+    await Prefs.setBool(AppConfig.keyAnalyticsConsent, consented);
     if (consented) {
       // Initialise Sentry inline so events that fire later in the
       // boot (notification permission flow, first plan load) are
@@ -98,23 +97,22 @@ class _ConceptPrimerScreenState extends State<ConceptPrimerScreen> {
   }
 
   Future<void> _onNotifications(bool consented) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(AppConfig.keyNotificationConsentAsked, true);
+    await Prefs.setBool(AppConfig.keyNotificationConsentAsked, true);
     if (consented) {
       // Re-run init with the permission request enabled. This is
       // the call that fires the OS system dialog — deliberately
       // gated behind the user's in-app Allow tap so iOS does not
       // record a permanent denial that only the OS Settings app
       // can reverse (see ADR-0038).
-      await NotificationService().initFromPrefs(prefs);
+      // Takes the instance itself, so hand it the bound one.
+      await NotificationService().initFromPrefs(Prefs.instance);
     }
     if (!mounted) return;
     _advance();
   }
 
   Future<void> _dismiss() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(AppConfig.keyOnboardingSeen, true);
+    await Prefs.setBool(AppConfig.keyOnboardingSeen, true);
     if (!mounted) return;
     // Guarantee an active plan exists before the user lands on
     // `/plan`. The Open-example path has already activated the
@@ -160,11 +158,7 @@ class _ConceptPrimerScreenState extends State<ConceptPrimerScreen> {
     var idx = 0;
 
     stages.add(
-      WelcomeStage(
-        stageIndex: idx++,
-        totalStages: _total,
-        onNext: _advance,
-      ),
+      WelcomeStage(stageIndex: idx++, totalStages: _total, onNext: _advance),
     );
 
     if (widget.isFirstLaunch) {

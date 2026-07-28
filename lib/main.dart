@@ -6,6 +6,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart' show GoRouter;
 import 'package:intl/intl_browser.dart'
     if (dart.library.io) 'package:intl/intl_standalone.dart';
+import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart'
     show onResolveFieldError;
 import 'package:ringdrill/services/exercise_service.dart';
@@ -82,11 +83,14 @@ Future<void> main() async {
     // collapsed card that opens and snaps shut, a brief rendered as the wrong
     // audience, a role-gated affordance under the wrong role. See [Prefs].
     Prefs.bind(prefs);
-    final isFirstLaunch = prefs.getBool(AppConfig.keyIsFirstLaunch) ?? true;
+    // Explicit, not incidental: the role notifier would otherwise seed itself
+    // from whichever read happened first, which may predate the bind.
+    seedAppUserRoleFromStore();
+    final isFirstLaunch = Prefs.getBool(AppConfig.keyIsFirstLaunch) ?? true;
     final isOnboardingSeen =
-        prefs.getBool(AppConfig.keyOnboardingSeen) ?? false;
+        Prefs.getBool(AppConfig.keyOnboardingSeen) ?? false;
     final analyticsConsent =
-        prefs.getBool(AppConfig.keyAnalyticsConsent) ?? false;
+        Prefs.getBool(AppConfig.keyAnalyticsConsent) ?? false;
 
     // Ensure system locale is set
     await findSystemLocale();
@@ -288,19 +292,18 @@ class _RingDrillAppState extends State<RingDrillApp> {
 
   Future<void> _startNotificationService() async {
     if (!kIsWeb) {
-      final prefs = await SharedPreferences.getInstance();
       final isNotificationsEnabled =
-          prefs.getBool(AppConfig.keyIsNotificationsEnabled) ?? true;
+          Prefs.getBool(AppConfig.keyIsNotificationsEnabled) ?? true;
       if (isNotificationsEnabled) {
         final playSound =
-            prefs.getBool(AppConfig.keyNotificationPlaySound) ?? true;
+            Prefs.getBool(AppConfig.keyNotificationPlaySound) ?? true;
         final vibrateEnabled =
-            prefs.getBool(AppConfig.keyIsNotificationVibrateEnabled) ?? true;
+            Prefs.getBool(AppConfig.keyIsNotificationVibrateEnabled) ?? true;
         final isFullScreenIntentEnabled =
-            prefs.getBool(AppConfig.keyIsNotificationFullScreenIntentEnabled) ??
+            Prefs.getBool(AppConfig.keyIsNotificationFullScreenIntentEnabled) ??
             false;
         final threshold =
-            prefs.getInt(AppConfig.keyUrgentNotificationThreshold) ?? 2;
+            Prefs.getInt(AppConfig.keyUrgentNotificationThreshold) ?? 2;
         final service = NotificationService();
 
         // First-launch users have not been through the in-app
@@ -309,7 +312,7 @@ class _RingDrillAppState extends State<RingDrillApp> {
         // ConceptPrimerScreen flow flips the flag and runs init
         // again once the user has answered the rationale.
         final consentAsked =
-            prefs.getBool(AppConfig.keyNotificationConsentAsked) ?? false;
+            Prefs.getBool(AppConfig.keyNotificationConsentAsked) ?? false;
 
         final init = await service.init(
           playSound: playSound,
@@ -366,4 +369,3 @@ class _RingDrillAppState extends State<RingDrillApp> {
     );
   }
 }
-

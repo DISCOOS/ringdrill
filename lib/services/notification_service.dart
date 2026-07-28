@@ -8,6 +8,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/locale_utils.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:universal_io/io.dart';
@@ -114,7 +115,7 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   Future<bool> initFromPrefs([SharedPreferences? prefs]) async {
-    prefs ??= await SharedPreferences.getInstance();
+    prefs ??= Prefs.instanceOrNull ?? await SharedPreferences.getInstance();
     final enabled = prefs.getBool(AppConfig.keyIsNotificationsEnabled) ?? true;
     if (enabled) {
       final playSound =

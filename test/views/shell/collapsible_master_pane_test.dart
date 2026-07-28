@@ -8,6 +8,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
 import 'package:ringdrill/views/station_screen.dart';
@@ -119,6 +120,12 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(_prefs());
     await PlanService().init();
+    // Prefs reads are synchronous now, so a stored preference is only visible to
+    // a bound instance — and rebinding per test keeps one test's values out of
+    // the next.
+    Prefs.reset();
+    Prefs.bind(await SharedPreferences.getInstance());
+    addTearDown(Prefs.reset);
   });
 
   testWidgets(
