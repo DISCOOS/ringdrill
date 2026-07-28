@@ -2766,4 +2766,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get staffPlaysLabel => 'Plays';
+
+  @override
+  String staffPlaysRow(String name, String badge, String window) {
+    return '$name at station $badge $window';
+  }
 }

@@ -3,6 +3,7 @@ import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/staff.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
@@ -230,6 +231,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
               padding: const EdgeInsets.only(top: 2),
               child: Row(
                 children: [
+                  // Locked: casting happens in the Spill segment, not here.
                   Icon(
                     Icons.lock_outline,
                     size: 14,
@@ -238,7 +240,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
                   const SizedBox(width: 6),
                   Expanded(
                     child: RingDrillText.plain(
-                      rolePlay.name,
+                      _playsRowLabel(l10n, rolePlay),
                       style: theme.textTheme.bodyMedium,
                     ),
                   ),
@@ -248,6 +250,34 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
         ],
       ],
     );
+  }
+
+  /// One row of the read-only Spiller list: the markør's name, the post it sits
+  /// at rendered in the *plan's* numbering format (dotted `1.1` or alpha `2a`, not
+  /// a fixed string), and when it runs.
+  ///
+  /// The window is the whole exercise's, not a round's: a markør occupies one post
+  /// for the duration, so a per-round span would answer a question nobody asked.
+  String _playsRowLabel(AppLocalizations l10n, RolePlay rolePlay) {
+    final service = PlanService();
+    final exercise = service.getExercise(rolePlay.exerciseUuid);
+    final plan = service.activePlan;
+    if (exercise == null || plan == null) return rolePlay.name;
+    // RolePlay.stationIndex is nullable — a markør can exist before being placed
+    // — so fall back to a bare 1-based number rather than dropping the post.
+    final stationIndex = rolePlay.stationIndex;
+    final station =
+        stationIndex != null && stationIndex < exercise.stations.length
+        ? exercise.stations[stationIndex]
+        : null;
+    final badge = station == null
+        ? '${(stationIndex ?? 0) + 1}'
+        : station.numberLabel(
+            plan.stationNumberFormat,
+            exerciseNumber: exercise.index + 1,
+          );
+    final window = '${exercise.startTime}–${exercise.endTime}';
+    return l10n.staffPlaysRow(rolePlay.name, badge, window);
   }
 
   /// The roleplays cast to this member — the derivation behind the markør chip.

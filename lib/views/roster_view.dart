@@ -298,24 +298,54 @@ class _RosterViewState extends State<RosterView> {
     // because a person *is* a markør exactly when a roleplay is cast to them
     // (DESIGN-011), which is what `castAs` already tells us. Ordered with the
     // stored roles first so the line reads the same way the editor's chips do.
-    final roleLabels = [
+    Widget chip(String label, {required bool derived}) => Chip(
+      label: Text(label, style: theme.textTheme.labelSmall),
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: EdgeInsets.zero,
+      labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+      side: derived ? null : BorderSide.none,
+      backgroundColor: derived
+          ? Colors.transparent
+          : theme.colorScheme.secondaryContainer,
+    );
+    final roleChips = [
       for (final role in StaffRole.values)
-        if (staff.roles.contains(role)) staffRoleLabel(localizations, role),
-      if (castAs.isNotEmpty) staffRoleLabel(localizations, null),
+        if (staff.roles.contains(role))
+          chip(staffRoleLabel(localizations, role), derived: false),
+      if (castAs.isNotEmpty)
+        chip(staffRoleLabel(localizations, null), derived: true),
     ];
     return Material(
       type: MaterialType.transparency,
       child: ListTile(
         leading: const Icon(Icons.face),
-        title: Text(staff.realName),
+        // Chips on the name line, right-aligned (DESIGN-011 / the staff-roster
+        // mockup): the stored roles as filled chips, the derived markør one
+        // outlined so the two read as different kinds of fact — one is asserted
+        // here, the other follows from casting elsewhere.
+        title: Row(
+          children: [
+            Expanded(child: Text(staff.realName)),
+            if (roleChips.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Flexible(
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 4,
+                  runSpacing: 2,
+                  children: roleChips,
+                ),
+              ),
+            ],
+          ],
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (staff.phone != null) Text(staff.phone!),
-            if (roleLabels.isNotEmpty)
-              Text(roleLabels.join(' · '), style: metaStyle),
-            // Which markører, separately from *that* they are one: the roles line
-            // answers "what is this person", this answers "doing what".
+            // Which markører, separately from the chip saying *that* they are one:
+            // the chip answers "what is this person", this answers "doing what".
             if (castAs.isNotEmpty)
               Text(localizations.castedAs(castAs.join(', ')), style: metaStyle),
           ],

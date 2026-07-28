@@ -4747,6 +4747,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Plays'**
   String get staffPlaysLabel;
+
+  /// A markør a staff member plays, in the editor's read-only Spiller list (DESIGN-011). Set by casting in the Spill segment, not editable here.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} at station {badge} {window}'**
+  String staffPlaysRow(String name, String badge, String window);
 }
 
 class _AppLocalizationsDelegate

@@ -3121,5 +3121,20 @@
   },
   "@staffPlaysLabel": {
     "description": "Read-only section label listing the markører a staff member plays (DESIGN-011). Set by casting, not editable here."
+  },
+  "staffPlaysRow": "{name} at station {badge} {window}",
+  "@staffPlaysRow": {
+    "description": "A markør a staff member plays, in the editor's read-only Spiller list (DESIGN-011). Set by casting in the Spill segment, not editable here.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "badge": {
+        "type": "String"
+      },
+      "window": {
+        "type": "String"
+      }
+    }
   }
 }
