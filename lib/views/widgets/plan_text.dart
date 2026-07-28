@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
 import 'package:ringdrill/services/plan_service.dart';
 
@@ -22,14 +24,37 @@ import 'package:ringdrill/services/plan_service.dart';
 ///   drill player's raw tokens (see [PlanScope.fromActivePlan]) — but a snackbar
 ///   cannot be fixed by wrapping it, since the caller does not own its subtree.
 ///   So the message is resolved *before* it is handed over.
-String resolvePlanText(Plan plan, String text, AppLocalizations l10n) =>
-    text.isEmpty ? text : BriefRenderer.resolvePlanScopeText(plan, text, l10n);
+/// Pass [exercise]/[station] when [text] belongs to one: only those two levels
+/// carry `variableOverrides` (ADR-0046), and without them a variable the exercise
+/// shadows resolves to the plan's value — no literal token to give it away.
+String resolvePlanText(
+  Plan plan,
+  String text,
+  AppLocalizations l10n, {
+  Exercise? exercise,
+  Station? station,
+}) => text.isEmpty
+    ? text
+    : BriefRenderer.resolvePlanScopeText(
+        plan,
+        text,
+        l10n,
+        exercise: exercise,
+        station: station,
+      );
 
 /// [resolvePlanText] against the active plan, or [text] unchanged when there is
 /// none. For a message about the app rather than about a particular plan.
-String resolveActivePlanText(String text, AppLocalizations l10n) {
+String resolveActivePlanText(
+  String text,
+  AppLocalizations l10n, {
+  Exercise? exercise,
+  Station? station,
+}) {
   final plan = PlanService().activePlan;
-  return plan == null ? text : resolvePlanText(plan, text, l10n);
+  return plan == null
+      ? text
+      : resolvePlanText(plan, text, l10n, exercise: exercise, station: station);
 }
 
 /// Shows [message] with its plan tokens resolved.
@@ -52,6 +77,8 @@ void showRingdrillSnackBar(
   BuildContext context,
   String message, {
   Plan? plan,
+  Exercise? exercise,
+  Station? station,
   SnackBarAction? action,
   Duration? duration,
 }) {
@@ -62,6 +89,8 @@ void showRingdrillSnackBar(
     message,
     l10n: AppLocalizations.of(context),
     plan: plan,
+    exercise: exercise,
+    station: station,
     action: action,
     duration: duration,
   );
@@ -79,14 +108,27 @@ void showRingdrillSnackBarVia(
   String message, {
   required AppLocalizations? l10n,
   Plan? plan,
+  Exercise? exercise,
+  Station? station,
   SnackBarAction? action,
   Duration? duration,
 }) {
   final resolved = l10n == null
       ? message
       : (plan == null
-            ? resolveActivePlanText(message, l10n)
-            : resolvePlanText(plan, message, l10n));
+            ? resolveActivePlanText(
+                message,
+                l10n,
+                exercise: exercise,
+                station: station,
+              )
+            : resolvePlanText(
+                plan,
+                message,
+                l10n,
+                exercise: exercise,
+                station: station,
+              ));
   messenger.showSnackBar(
     SnackBar(
       content: Text(resolved),

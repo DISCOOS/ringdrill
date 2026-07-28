@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
+import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/plan_text.dart';
@@ -149,6 +150,55 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Plain, no tokens'), findsOneWidget);
+    });
+
+    // The narrower half: only Exercise and Station carry variableOverrides
+    // (ADR-0046), so a message naming an exercise must resolve at *that* level.
+    // Resolving one level too high yields the plan's value — no literal token to
+    // give it away, which is why this is asserted rather than assumed.
+    testWidgets('an exercise-scoped message uses the exercise\'s override', (
+      tester,
+    ) async {
+      const exercise = Exercise(
+        uuid: 'ex-override',
+        name: 'Øvelse {{var.year}}',
+        startTime: SimpleTimeOfDay(hour: 8, minute: 0),
+        numberOfTeams: 1,
+        numberOfRounds: 1,
+        executionTime: 10,
+        evaluationTime: 5,
+        rotationTime: 2,
+        stations: [],
+        schedule: [],
+        endTime: SimpleTimeOfDay(hour: 8, minute: 17),
+        // Shadows the plan's 2026.
+        variableOverrides: {'year': '2027'},
+      );
+
+      await tester.pumpWidget(
+        _app(
+          child: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showRingdrillSnackBar(
+                context,
+                'Stopp ${exercise.name} først',
+                plan: _subject,
+                exercise: exercise,
+              ),
+              child: const Text('go'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('go'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Stopp Øvelse 2027 først'), findsOneWidget);
+      expect(
+        find.textContaining('2026'),
+        findsNothing,
+        reason: "the plan's value must not win over the exercise's override",
+      );
     });
 
     testWidgets('the messenger variant resolves too', (tester) async {

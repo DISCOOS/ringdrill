@@ -465,14 +465,30 @@ class BriefRenderer {
   /// — e.g. the Plan view's collapsed overview card — that show a
   /// snippet of `briefIntroMd`/`commsMd`/`beforeRoundMd` without running
   /// the full brief template through [render].
+  ///
+  /// [exercise]/[station] narrow the *variable* values to that level of
+  /// ADR-0046's chain, for text that belongs to one — an exercise's own name
+  /// resolved with no scoped subtree to read, such as a snackbar message.
+  /// Without them a variable the exercise overrides resolves to the plan's
+  /// value: not a literal token, so it looks fine, and is wrong.
+  ///
+  /// Cross-references stay at the plan level — `{{exercise.*}}`/`{{station.*}}`
+  /// facets are not added here. A surface that needs those wants
+  /// `resolveModelField`, which builds the per-item facet maps.
   static String resolvePlanScopeText(
     Plan plan,
     String content,
-    AppLocalizations l10n,
-  ) =>
+    AppLocalizations l10n, {
+    Exercise? exercise,
+    Station? station,
+  }) =>
       resolver.resolveField(
         content,
-        vars: _planVariables(plan),
+        vars: effectiveTypedPlanVariables(
+          plan,
+          exercise: exercise,
+          station: station,
+        ),
         l10n: l10n,
         refContext: _planRefContext(plan),
       ) ??
