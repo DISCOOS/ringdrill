@@ -82,6 +82,16 @@ class RingDrillText extends StatelessWidget {
   /// Also the right constructor for a surface with no scope at all to inherit
   /// (a dialog or sheet mounted on the Navigator's overlay), where [plain] would
   /// return the text verbatim.
+  ///
+  /// **Plain rendering only.** This class really has two independent axes —
+  /// rendering mode (plain / rich) and resolve target (ambient scope / named
+  /// plan) — and this constructor fixes the first while varying the second, which
+  /// is an asymmetry rather than a design: every caller so far is a list-row
+  /// *title*, and no cross-plan surface renders a plan's prose. If one appears
+  /// (a description preview in the library or a plan picker), add a `richForPlan`
+  /// beside this rather than passing markdown here, where it would show its raw
+  /// `**markup**`. The resolve step is identical; only the returned widget
+  /// differs.
   const RingDrillText.forPlan(
     this.plan,
     this.text, {
