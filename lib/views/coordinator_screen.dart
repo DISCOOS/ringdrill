@@ -44,6 +44,7 @@ import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/map_placeholder.dart';
 import 'package:ringdrill/views/widgets/notification_permission_help.dart';
+import 'package:ringdrill/views/widgets/plan_text.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
@@ -1554,8 +1555,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   Future<void> _editStation(Exercise exercise, int stationIndex) async {
     final localizations = context.l10n;
     if (_isStarted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(localizations.stopExerciseFirst(exercise.name))),
+      showRingdrillSnackBar(
+        context,
+        localizations.stopExerciseFirst(exercise.name),
       );
       return;
     }
@@ -1797,8 +1799,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   Future<void> _editTeam(Exercise exercise, int teamIndex) async {
     final localizations = context.l10n;
     if (_isStarted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(localizations.stopExerciseFirst(exercise.name))),
+      showRingdrillSnackBar(
+        context,
+        localizations.stopExerciseFirst(exercise.name),
       );
       return;
     }

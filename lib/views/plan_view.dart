@@ -38,6 +38,7 @@ import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
+import 'package:ringdrill/views/widgets/plan_text.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/resolved_markdown_text.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
@@ -1270,12 +1271,9 @@ class _ExerciseCardState extends State<ExerciseCard> {
     if (exerciseService.isStarted) {
       final runningExercise = exerciseService.last?.exercise;
       if (runningExercise != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              localizations.stopExerciseFirst(runningExercise.name),
-            ),
-          ),
+        showRingdrillSnackBar(
+          context,
+          localizations.stopExerciseFirst(runningExercise.name),
         );
       }
       return;

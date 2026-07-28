@@ -24,6 +24,7 @@ import 'package:ringdrill/views/export_plan_dialog.dart';
 import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/publish_plan_dialog.dart';
+import 'package:ringdrill/views/widgets/plan_text.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/web/trigger_download_web.dart'
     if (dart.library.io) 'package:ringdrill/web/trigger_download_stub.dart';
@@ -108,7 +109,8 @@ Future<void> refreshPlanFromCatalog(BuildContext context, Plan plan) async {
     );
     final message = _catalogRefreshMessage(localizations, outcome, plan);
     if (message != null && context.mounted) {
-      _showSnackBar(context, message);
+      // Names this plan; pass it rather than relying on it being the active one.
+      _showSnackBar(context, message, plan: plan);
     }
   } catch (e, stackTrace) {
     // Genuinely unexpected at this point — the 404 "plan removed from
@@ -764,12 +766,7 @@ BoxConstraints _constraintsFor(BuildContext context) {
   return BoxConstraints.tight(size);
 }
 
-void _showSnackBar(BuildContext context, String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      showCloseIcon: true,
-      dismissDirection: DismissDirection.endToStart,
-      content: Text(message),
-    ),
-  );
-}
+/// Delegates to [showRingdrillSnackBar] so a plan/exercise name carrying a
+/// `{{var.*}}` token is resolved rather than shown literally.
+void _showSnackBar(BuildContext context, String message, {Plan? plan}) =>
+    showRingdrillSnackBar(context, message, plan: plan);

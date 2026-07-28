@@ -8,6 +8,7 @@ import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/views/add_exercises_dialog.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/drill_format_messages.dart';
+import 'package:ringdrill/views/widgets/plan_text.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -190,12 +191,15 @@ class _OpenFileWidgetState extends State<OpenFileWidget> {
       final plan = await widget.openPlan(await _fileFuture);
       if (navigator.canPop()) navigator.pop();
       messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(localizations.openedAndActivated(plan.name)),
-          dismissDirection: DismissDirection.endToStart,
-          showCloseIcon: true,
-        ),
+      // Via the captured messenger, not `context`: the pop above deactivates
+      // this sheet's context (see the comment where `messenger` is captured).
+      // plan:, not the active plan — installFromFile has just activated it, but
+      // naming it explicitly keeps this correct regardless of ordering.
+      showRingdrillSnackBarVia(
+        messenger,
+        localizations.openedAndActivated(plan.name),
+        l10n: localizations,
+        plan: plan,
       );
       // ADR-0032 *Activation contract*: move the URL to the newly
       // active plan; installFromFile already wrote `activePlanUuid`,

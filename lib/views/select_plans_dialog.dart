@@ -4,6 +4,7 @@ import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/library_view.dart' show planSubtitle;
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
+import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 
 /// Multi-select picker for choosing which plans go into a drill-library
 /// download. Visually mirrors [PlanPageControllerBase.selectExercises]
@@ -115,7 +116,8 @@ Future<List<String>?> showSelectPlansDialog(
                               value: checked,
                               onChanged: (_) => toggle(),
                             ),
-                            title: Text(plan.name),
+                            // Cross-plan list — see library_view.
+                            title: RingDrillText.forPlan(plan, plan.name),
                             subtitle: Text(planSubtitle(localizations, plan)),
                             onOpen: toggle,
                           );

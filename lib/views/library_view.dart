@@ -22,7 +22,9 @@ import 'package:ringdrill/views/widgets/catalog_browser.dart';
 import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/picker_error_banner.dart';
+import 'package:ringdrill/views/widgets/plan_text.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -233,7 +235,10 @@ class _LibraryBodyState extends State<_LibraryBody>
                 // by the text block, not an oversized icon.
                 size: 24,
               ),
-              title: Text(plan.name),
+              // forPlan, not plain: these rows are cross-plan, so the
+              // ambient PlanScope is the *active* plan's — resolving another
+              // plan's name against it would substitute the wrong values.
+              title: RingDrillText.forPlan(loaded ?? plan, plan.name),
               subtitle: Text(planSubtitle(localizations, loaded ?? plan)),
               // ExpandableTile only wraps trailing in 4px of padding, unlike
               // the 16px its own `padding` param gives the leading side. Add
@@ -587,7 +592,9 @@ class _LibraryBodyState extends State<_LibraryBody>
       if (mounted) setState(() {});
       if (!context.mounted) return;
       final message = _refreshOutcomeMessage(localizations, outcome, plan);
-      if (message != null) _showSnackBar(context, message);
+      // plan:, not the active plan — this row may be any plan in the library, and
+      // the message interpolates *its* name.
+      if (message != null) _showSnackBar(context, message, plan: plan);
     } catch (e, stackTrace) {
       if (context.mounted) {
         _showSnackBar(context, localizations.catalogServiceUnavailable);
@@ -712,15 +719,12 @@ class _LibraryBodyState extends State<_LibraryBody>
     }
   }
 
-  void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        showCloseIcon: true,
-        dismissDirection: DismissDirection.endToStart,
-      ),
-    );
-  }
+  /// Delegates to [showRingdrillSnackBar], which resolves the plan tokens a
+  /// name-bearing message carries. [plan] matters here more than anywhere else:
+  /// this list acts on plans that are *not* the active one, so the active plan's
+  /// variables are the wrong ones to resolve against.
+  void _showSnackBar(BuildContext context, String message, {Plan? plan}) =>
+      showRingdrillSnackBar(context, message, plan: plan);
 }
 
 /// Source label · exercise count · last-updated line shown under a plan's

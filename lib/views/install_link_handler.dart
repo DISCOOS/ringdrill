@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/open_file_widget.dart';
+import 'package:ringdrill/views/widgets/plan_text.dart';
 
 /// Handles a `/i/<slug>` App Link (or a shared catalog link routed here via
 /// [SharedFileChannel.links]). Shows the same Open/Import bottom sheet a
@@ -71,12 +73,7 @@ DrillClient _buildCatalogClient() {
   );
 }
 
-void _showSnackBar(BuildContext context, String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message),
-      showCloseIcon: true,
-      dismissDirection: DismissDirection.endToStart,
-    ),
-  );
-}
+/// Delegates to [showRingdrillSnackBar] so a plan/exercise name carrying a
+/// `{{var.*}}` token is resolved rather than shown literally.
+void _showSnackBar(BuildContext context, String message, {Plan? plan}) =>
+    showRingdrillSnackBar(context, message, plan: plan);

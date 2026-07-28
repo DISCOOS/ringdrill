@@ -17,6 +17,7 @@ import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
+import 'package:ringdrill/views/widgets/plan_text.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
 class TeamsView extends StatefulWidget {
@@ -258,10 +259,9 @@ class _TeamsViewState extends State<TeamsView> {
     if (exerciseService.isStarted) {
       final exerciseName = exerciseService.last?.exercise.name;
       if (exerciseName != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(localizations.stopExerciseFirst(exerciseName)),
-          ),
+        showRingdrillSnackBar(
+          context,
+          localizations.stopExerciseFirst(exerciseName),
         );
       }
       return;

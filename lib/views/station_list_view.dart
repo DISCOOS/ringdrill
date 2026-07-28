@@ -24,6 +24,7 @@ import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
+import 'package:ringdrill/views/widgets/plan_text.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
@@ -501,12 +502,9 @@ class _StationListViewState extends State<StationListView> {
     if (exerciseService.isStarted) {
       final runningExercise = exerciseService.last?.exercise;
       if (runningExercise != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              localizations.stopExerciseFirst(runningExercise.name),
-            ),
-          ),
+        showRingdrillSnackBar(
+          context,
+          localizations.stopExerciseFirst(runningExercise.name),
         );
       }
       return;

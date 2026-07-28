@@ -15,7 +15,9 @@ import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/widgets/catalog_browser.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/picker_error_banner.dart';
+import 'package:ringdrill/views/widgets/plan_text.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> showAddExercisesDialog(BuildContext context) {
@@ -230,7 +232,8 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
                         // plan, so it uses an add glyph rather than the
                         // active/inactive radio the "Mine planer" tab shows.
                         leading: const Icon(Icons.playlist_add, size: 24),
-                        title: Text(plan.name),
+                        // Cross-plan list — see library_view.
+                        title: RingDrillText.forPlan(loaded, plan.name),
                         subtitle: Text(planSubtitle(localizations, loaded)),
                         onOpen: () => _mergeIntoActivePlan(context, loaded),
                       );
@@ -444,12 +447,7 @@ BoxConstraints _constraintsFor(BuildContext context) {
   return BoxConstraints.tight(size);
 }
 
-void _showSnackBar(BuildContext context, String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      showCloseIcon: true,
-      dismissDirection: DismissDirection.endToStart,
-      content: Text(message),
-    ),
-  );
-}
+/// Delegates to [showRingdrillSnackBar] so a plan/exercise name carrying a
+/// `{{var.*}}` token is resolved rather than shown literally.
+void _showSnackBar(BuildContext context, String message, {Plan? plan}) =>
+    showRingdrillSnackBar(context, message, plan: plan);
