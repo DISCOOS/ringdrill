@@ -148,8 +148,12 @@ Future<void> _openPlayer(
     await tester.pumpAndSettle();
     return;
   }
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 400));
+  // Several bounded pumps: the route transition has to finish before the pager
+  // is built at all (see _DrillPlayerHostState.build), and pumpAndSettle is out
+  // once a session is live.
+  for (var i = 0; i < 4; i++) {
+    await tester.pump(const Duration(milliseconds: 300));
+  }
 }
 
 /// A fling on the player body. Negative dx pages forward (content moves left),

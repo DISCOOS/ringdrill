@@ -136,7 +136,7 @@ Future<void> _tapRowWhileLive(WidgetTester tester) async {
   // Several bounded pumps: the player's body is a PageView, so the route
   // transition and the pager's first layout take more than one frame — and a
   // live exercise animates the mini player forever, so pumpAndSettle is out.
-  for (var i = 0; i < 4; i++) {
+  for (var i = 0; i < 6; i++) {
     await tester.pump(const Duration(milliseconds: 300));
   }
 }

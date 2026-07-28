@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 
 /// Shared `leading` control for every detail screen's AppBar (and the wide
 /// empty-pane placeholder).
@@ -38,8 +39,17 @@ class MasterDetailLeading extends StatelessWidget {
         ),
       );
     }
+    // Inside the fullscreen player the affordance is a chevron-down, not an X:
+    // it dismisses back to the mini bar without stopping anything, which is what
+    // a downward chevron says and what an X does not — DESIGN-001 specified the
+    // chevron from the start, and the X was drift.
+    //
+    // `isInline` is the test because that is exactly what it means: a host
+    // rendering the target itself, which today is only the player. No extra
+    // plumbing, and it cannot get out of step with which surface is the player.
+    final inPlayer = ContextSheet.maybeOf(context)?.isInline ?? false;
     return IconButton(
-      icon: const Icon(Icons.close),
+      icon: Icon(inPlayer ? Icons.keyboard_arrow_down : Icons.close),
       onPressed: onClose,
       tooltip: localizations.briefClose,
     );

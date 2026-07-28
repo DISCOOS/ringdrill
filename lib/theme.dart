@@ -207,6 +207,37 @@ TextTheme _tightenedTextTheme(TextTheme base) {
   );
 }
 
+/// The page background for the fullscreen drill player, a subtle step off the
+/// ordinary scaffold colour.
+///
+/// Borrowed from the same now-playing metaphor the player itself is (DESIGN-001):
+/// a music app shifts the player's background off its browse tabs so "I am in the
+/// player" reads without a label. Deliberately one small step — the player hosts
+/// the same screens the shell does, so a strong colour change would read as a
+/// different app rather than a different mode.
+///
+/// Direction follows the theme rather than being hardcoded: darker than the
+/// scaffold in light mode, lighter in dark mode. Both are the direction that
+/// moves *away* from the surrounding surface, which is what makes the step
+/// legible either way.
+Color playerSurfaceColor(ThemeData theme) {
+  final tint = theme.brightness == Brightness.dark
+      ? Colors.white
+      : Colors.black;
+  return Color.alphaBlend(
+    tint.withValues(alpha: 0.05),
+    theme.scaffoldBackgroundColor,
+  );
+}
+
+/// [theme] with its page background shifted to [playerSurfaceColor].
+///
+/// Applied once, around the player's body, rather than by each hosted screen:
+/// those same screens also render in the shell and in sheets, where they must
+/// keep the ordinary background.
+ThemeData playerTheme(ThemeData theme) =>
+    theme.copyWith(scaffoldBackgroundColor: playerSurfaceColor(theme));
+
 final ThemeData ringDrillTheme = ThemeData(
   brightness: Brightness.light,
   scaffoldBackgroundColor: RingDrillColors.lightScaffold,

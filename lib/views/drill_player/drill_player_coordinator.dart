@@ -153,6 +153,11 @@ class _DrillPlayerHostState extends State<_DrillPlayerHost> {
   /// the sibling it shows.
   int _page = 0;
 
+  /// False until the route's entry transition has finished — see [build].
+  bool _entered = false;
+
+  Animation<double>? _routeAnimation;
+
   @override
   void initState() {
     super.initState();
@@ -161,7 +166,27 @@ class _DrillPlayerHostState extends State<_DrillPlayerHost> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final animation = ModalRoute.of(context)?.animation;
+    if (identical(animation, _routeAnimation)) return;
+    _routeAnimation?.removeStatusListener(_onRouteAnimation);
+    _routeAnimation = animation;
+    if (animation == null || animation.isCompleted) {
+      _entered = true;
+      return;
+    }
+    animation.addStatusListener(_onRouteAnimation);
+  }
+
+  void _onRouteAnimation(AnimationStatus status) {
+    if (!status.isCompleted || _entered || !mounted) return;
+    setState(() => _entered = true);
+  }
+
+  @override
   void dispose() {
+    _routeAnimation?.removeStatusListener(_onRouteAnimation);
     widget.controller.target.removeListener(_onTargetChanged);
     _pages?.dispose();
     super.dispose();
@@ -245,6 +270,19 @@ class _DrillPlayerHostState extends State<_DrillPlayerHost> {
     final pages = _pages;
     if (_siblings.isEmpty || pages == null) return const SizedBox.shrink();
     final count = _siblings.length;
+    // While the sheet is still sliding up, render the target on its own. A
+    // PageView laid out mid-transition settles its horizontal offset over the
+    // following frames, which reads as the player sliding in *from the side* and
+    // delays its first paint — the sheet's own bottom-up entry is what should be
+    // visible. Measured: with the pager deferred the body slides 342 → 106 → 0
+    // vertically with no horizontal motion at all.
+    if (!_entered) {
+      final target = _siblings[_page % count];
+      return KeyedSubtree(
+        key: ValueKey(target),
+        child: defaultContextSheetBody(context, target),
+      );
+    }
     // A lone sibling still renders through the pager rather than a special case,
     // so there is one code path — it just has nowhere to go. Its page count is
     // capped at 1 as well as being unscrollable, so an unbounded range of

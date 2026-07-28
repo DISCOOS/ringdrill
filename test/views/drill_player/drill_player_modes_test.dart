@@ -199,8 +199,10 @@ void main() {
     expect(find.byType(CoordinatorScreen), findsNothing);
   });
 
-  // X always closes the player, from every mode — there is no target history
-  // to unwind.
+  // The chevron always closes the player, from every mode — there is no target
+  // history to unwind. A chevron-down rather than an X because it dismisses back
+  // to the mini bar without stopping anything (DESIGN-001), which is what the
+  // downward direction says.
   testWidgets('the close affordance dismisses the player from station mode', (
     tester,
   ) async {
@@ -216,7 +218,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(StationScreen), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.close).first);
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_down).first);
     await tester.pumpAndSettle();
 
     expect(find.byType(StationScreen), findsNothing);

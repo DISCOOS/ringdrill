@@ -20,6 +20,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 
 /// Opens a fullscreen, non-dismissible DrillPlayer sheet over [context].
@@ -38,7 +39,8 @@ Future<T?> showDrillPlayerSheet<T>({
     isScrollControlled: true,
     enableDrag: false,
     isDismissible: false,
-    backgroundColor: Theme.of(context).colorScheme.surface,
+    // Matches the body's own shifted background so there is no seam behind it.
+    backgroundColor: playerSurfaceColor(Theme.of(context)),
     // Square corners — no rounded-top edge leaking through.
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
     constraints: BoxConstraints(
@@ -128,7 +130,16 @@ class _DrillPlayerSheetBodyState extends State<_DrillPlayerSheetBody> {
       // This sheet is a modal route, so MainScreen's PlanScope does not reach
       // it — and without any scope at all RingDrillText renders every token
       // verbatim, not just `{{var.*}}`. See PlanScope.fromActivePlan.
-      child: PlanScope.fromActivePlan(child: widget.builder(context)),
+      child: PlanScope.fromActivePlan(
+        // Shifts the page background for every screen the player hosts, so being
+        // in the player reads without a label (DESIGN-001's now-playing
+        // metaphor). Applied here, not in the screens: they also render in the
+        // shell, where the ordinary background is correct.
+        child: Theme(
+          data: playerTheme(Theme.of(context)),
+          child: widget.builder(context),
+        ),
+      ),
     );
   }
 }
