@@ -185,10 +185,20 @@ staffing the exercise**, and was renamed accordingly.
 **The role enum is `StaffRole` and it is authoritative for both axes.** DESIGN-011
 first had markør derived from casting only; that was reversed on 2026-07-28 because
 a member's role is mandatory on create and a markør-only person had nothing to
-select. `StaffRole` is now exactly `{director, instructor, actor}` and doubles as
-the device's own role — the former `AppUserRole` is gone, so "what this person is on
-the roster" and "what this device may edit" (ADR-0057) cannot disagree. `other` was
-dropped to keep that 1:1.
+select. `StaffRole` is now `{director, instructor, actor, other}` and doubles as the
+device's own role — the former `AppUserRole` is gone, so "what this person is on the
+roster" and "what this device may edit" (ADR-0057) cannot disagree.
+
+`other` is the escape hatch, selectable on both sides, and carries **no** edit
+rights: the permission functions name it nowhere, so it falls through to nothing.
+That is the right default for a role defined by not being any of the others, and it
+is asserted rather than left to chance. Its brief audience is the *instructor* view,
+not the director one — an actor needs other actors' contact details to work with
+them, and nothing says the same of an unspecified support role.
+
+A role is **mandatory**: required to create a member, enforced on edit too, and a
+record written before roles existed opens pre-set to `other`, so the rule never
+blocks saving an unrelated change like a phone number.
 
 Casting still *implies* the actor role: `Staff.effectiveRoles(isCast:)` unions the
 stored set with actor-by-casting, so a record written before the flag existed, or a

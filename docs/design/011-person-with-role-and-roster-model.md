@@ -61,7 +61,13 @@ A Staff person carries a set of roles. With participants excluded (decision 1), 
 > express the plan. The derivation survives as a **fallback** —
 > `Staff.effectiveRoles(isCast:)` unions the stored set with actor-by-casting, so a
 > record written before this, or a cast made without ticking the box, still reads as
-> an actor. `other` was dropped to keep the 1:1. Consequence: the role → audience
+> an actor. `other` is **kept** and is selectable on both sides of the 1:1 — a
+> support role on the roster, and one this device can claim — but carries **no edit
+> rights** (ADR-0057 names it nowhere, so it falls through to nothing, which is the
+> right default for a role defined by not being any of the others). A role is also
+> **mandatory**: creating a member requires one, editing enforces it too, and a
+> record written before roles existed opens pre-set to `other` so the rule never
+> blocks saving an unrelated change. Consequence: the role → audience
 > mapping helper deferred below needs no separate existence, since `briefAudience`
 > now hangs off the enum itself.
 
@@ -71,7 +77,7 @@ A Staff person carries a set of roles. With participants excluded (decision 1), 
 Sketch (additive, `@Default` empty so legacy records are valid):
 
 ```
-enum StaffRole { director, instructor, actor }   // no `other`, no participant; 1:1 with the device role
+enum StaffRole { director, instructor, actor, other }   // no participant; 1:1 with the device role
 Staff( … existing Actor fields …, @Default({}) Set<StaffRole> roles )   // JSON still under actors/
 ```
 
