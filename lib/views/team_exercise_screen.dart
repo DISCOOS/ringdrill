@@ -7,6 +7,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
+import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -17,6 +18,7 @@ import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/team_form_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
@@ -89,18 +91,21 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
             secondaryOverrides: _exerciseOverrides,
           ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.edit),
-              padding: const EdgeInsets.all(8),
-              onPressed: _exerciseService.isStarted ? null : _editTeam,
-              tooltip: _exerciseService.isStarted
-                  ? localizations.stopExerciseFirst(
-                      substitutePlanVariables(
-                        widget.exercise.name,
-                        _exerciseOverrides,
-                      ),
-                    )
-                  : localizations.editTeam,
+            IfEditable(
+              target: EditTarget.team,
+              child: IconButton(
+                icon: const Icon(Icons.edit),
+                padding: const EdgeInsets.all(8),
+                onPressed: _exerciseService.isStarted ? null : _editTeam,
+                tooltip: _exerciseService.isStarted
+                    ? localizations.stopExerciseFirst(
+                        substitutePlanVariables(
+                          widget.exercise.name,
+                          _exerciseOverrides,
+                        ),
+                      )
+                    : localizations.editTeam,
+              ),
             ),
           ],
           actionsPadding: const EdgeInsets.only(right: 16),

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/team.dart';
+import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/theme.dart' show kDrillAccentFontSize;
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
@@ -70,11 +72,18 @@ class _TeamScreenState extends State<TeamScreen>
         toolbarHeight: 72,
         title: SheetTitle(primary: teamLabel),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            padding: const EdgeInsets.all(8),
-            onPressed: _editTeam,
-            tooltip: localizations.editTeam,
+          // A team is the instructor's to edit as well as the director's
+          // (ADR-0057). No exerciseUuid: this overview spans every exercise the
+          // team is in, so there is no single one to lock on — _editTeam's own
+          // isStarted guard covers the run.
+          IfEditable(
+            target: EditTarget.team,
+            child: IconButton(
+              icon: const Icon(Icons.edit),
+              padding: const EdgeInsets.all(8),
+              onPressed: _editTeam,
+              tooltip: localizations.editTeam,
+            ),
           ),
         ],
         actionsPadding: const EdgeInsets.only(right: 16),

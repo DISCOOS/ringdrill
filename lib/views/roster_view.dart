@@ -43,7 +43,10 @@ class RosterController extends ScreenController {
     final label = AppLocalizations.of(context)!.newActor;
     // Gated on the role (ADR-0057): a create action a role will never have is
     // noise, so it is absent rather than disabled.
-    return IfEditable(
+    // Adding yourself to the staff roster is not the same authority as editing
+    // it (ADR-0057): an actor may put themselves on the list. Narrowing that to
+    // *only* themselves needs the account link — see canCreate.
+    return IfCreatable(
       target: EditTarget.actor,
       child: _buildCreateFab(context, label),
     );
@@ -232,40 +235,26 @@ class _RosterViewState extends State<RosterView> {
           final actor = _actors[index];
           final roles = _rolesFor(actor.uuid);
           final tile = _buildActorTile(context, localizations, actor, roles);
-          // Gated on the role (ADR-0057): the roster is director-only. Gated
-          // rather than swapped for EditableRow, because this swipe *deletes*
-          // rather than opening an editor — a non-director gets the bare row,
-          // with no swipe to discover.
-          return EditGate(
+          // Deleting an actor is director-only (ADR-0057) — an actor authors a
+          // markør's script but does not remove people from the roster. Note
+          // canDelete, not canEdit: a DeletableRow asks the stricter question.
+          return DeletableRow(
             target: EditTarget.actor,
-            builder: (context, allowed) {
-              if (!allowed) return tile;
-              return Dismissible(
-                key: ValueKey(actor.uuid),
-                direction: DismissDirection.endToStart,
-                confirmDismiss: (_) async {
-                  if (_rolesFor(actor.uuid).isNotEmpty) {
-                    await _tryDelete(actor);
-                    return false;
-                  }
-                  return true;
-                },
-                onDismissed: (_) async {
-                  await _service.deleteActor(actor.uuid);
-                  _reload();
-                },
-                background: Container(
-                  color: Theme.of(context).colorScheme.error,
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 16),
-                  child: Icon(
-                    Icons.delete,
-                    color: Theme.of(context).colorScheme.onError,
-                  ),
-                ),
-                child: tile,
-              );
+            dismissKey: ValueKey(actor.uuid),
+            // Still cast in a markør? Explain instead of deleting, and keep the
+            // row.
+            confirmDelete: () async {
+              if (_rolesFor(actor.uuid).isNotEmpty) {
+                await _tryDelete(actor);
+                return false;
+              }
+              return true;
             },
+            onDelete: () async {
+              await _service.deleteActor(actor.uuid);
+              _reload();
+            },
+            builder: (context, _) => tile,
           );
         },
       );

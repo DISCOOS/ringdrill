@@ -431,63 +431,91 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               tooltip: localizations.showNotification,
             ),
 
-          // Edit + delete admin actions (both disabled during a run). On a
-          // medium/expanded window there is room to show them as standalone
-          // icons; on a compact window a long exercise title would
-          // ellipsize, so they collapse into an overflow menu instead.
-          if (WindowSizeClass.of(context).hasMasterDetail) ...[
-            IconButton(
-              icon: const Icon(Icons.edit),
-              padding: const EdgeInsets.all(8.0),
-              tooltip: localizations.editExercise,
-              onPressed: _isStarted
-                  ? null
-                  : () => _editExercise(context, exercise),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              padding: const EdgeInsets.all(8.0),
-              tooltip: localizations.deleteExercise,
-              onPressed: _isStarted
-                  ? null
-                  : () => _deleteExercise(context, exercise),
-            ),
-          ] else
-            PopupMenuButton<_AppBarMenuAction>(
-              tooltip: localizations.moreActions,
-              enabled: !_isStarted,
-              position: PopupMenuPosition.under,
-              onSelected: (action) {
-                switch (action) {
-                  case _AppBarMenuAction.edit:
-                    _editExercise(context, exercise);
-                    break;
-                  case _AppBarMenuAction.delete:
-                    _deleteExercise(context, exercise);
-                    break;
+          // Edit + delete admin actions, director-only (ADR-0057) and both
+          // disabled during a run. On a medium/expanded window there is room to
+          // show them as standalone icons; on a compact window a long exercise
+          // title would ellipsize, so they collapse into an overflow menu
+          // instead.
+          //
+          // Both forms are gated, and the overflow menu needs it *per entry* —
+          // gating only the icons would have left the compact layout wide open,
+          // which is exactly the shape of hole this pass exists to close. Two
+          // nested gates rather than one because edit and delete are different
+          // questions (canEdit vs canDelete); that they currently answer alike
+          // for an exercise is a coincidence of the matrix, not something to
+          // build on.
+          EditGate(
+            target: EditTarget.exercise,
+            builder: (context, mayEdit) => EditGate(
+              target: EditTarget.exercise,
+              permission: EditPermission.delete,
+              builder: (context, mayDelete) {
+                if (!mayEdit && !mayDelete) return const SizedBox.shrink();
+                if (WindowSizeClass.of(context).hasMasterDetail) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (mayEdit)
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          padding: const EdgeInsets.all(8.0),
+                          tooltip: localizations.editExercise,
+                          onPressed: _isStarted
+                              ? null
+                              : () => _editExercise(context, exercise),
+                        ),
+                      if (mayDelete)
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          padding: const EdgeInsets.all(8.0),
+                          tooltip: localizations.deleteExercise,
+                          onPressed: _isStarted
+                              ? null
+                              : () => _deleteExercise(context, exercise),
+                        ),
+                    ],
+                  );
                 }
+                return PopupMenuButton<_AppBarMenuAction>(
+                  tooltip: localizations.moreActions,
+                  enabled: !_isStarted,
+                  position: PopupMenuPosition.under,
+                  onSelected: (action) {
+                    switch (action) {
+                      case _AppBarMenuAction.edit:
+                        _editExercise(context, exercise);
+                        break;
+                      case _AppBarMenuAction.delete:
+                        _deleteExercise(context, exercise);
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    if (mayEdit)
+                      PopupMenuItem<_AppBarMenuAction>(
+                        value: _AppBarMenuAction.edit,
+                        child: ListTile(
+                          leading: const Icon(Icons.edit),
+                          title: Text(localizations.editExercise),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                    if (mayDelete)
+                      PopupMenuItem<_AppBarMenuAction>(
+                        value: _AppBarMenuAction.delete,
+                        child: ListTile(
+                          leading: const Icon(Icons.delete),
+                          title: Text(localizations.deleteExercise),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                  ],
+                );
               },
-              itemBuilder: (context) => [
-                PopupMenuItem<_AppBarMenuAction>(
-                  value: _AppBarMenuAction.edit,
-                  child: ListTile(
-                    leading: const Icon(Icons.edit),
-                    title: Text(localizations.editExercise),
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                  ),
-                ),
-                PopupMenuItem<_AppBarMenuAction>(
-                  value: _AppBarMenuAction.delete,
-                  child: ListTile(
-                    leading: const Icon(Icons.delete),
-                    title: Text(localizations.deleteExercise),
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                  ),
-                ),
-              ],
             ),
+          ),
         ]),
         actionsPadding: EdgeInsets.only(right: 16.0),
       ),
@@ -1495,6 +1523,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         items: stations,
         keyOf: (s) => ValueKey('coordinator-station-${s.index}'),
         orderLabel: context.l10n.exerciseSortBy,
+        target: EditTarget.station,
+        exerciseUuid: exercise.uuid,
         enabled: !_isStarted,
         onCommitReorder: (newOrder) {
           // Show the new order immediately (synchronous), then persist async.

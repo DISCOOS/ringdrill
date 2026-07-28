@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/face_badge_icon.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 
@@ -303,10 +305,18 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
                 // The pencil is its own IconButton (not the row's onTap) so
                 // editing a *different* actor never accidentally selects it —
                 // tapping the row body still selects; only the pencil edits.
-                trailing: IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  tooltip: localizations.editCast,
-                  onPressed: () => _editActor(actor),
+                //
+                // Gated separately from the sheet itself (ADR-0057): *casting* is
+                // work an actor does, but this pencil edits the person record
+                // behind the row — roster work, director-only. Selecting stays
+                // available to whoever may cast.
+                trailing: IfEditable(
+                  target: EditTarget.actor,
+                  child: IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    tooltip: localizations.editCast,
+                    onPressed: () => _editActor(actor),
+                  ),
                 ),
                 onTap: () => _select(actor.uuid),
               );
@@ -317,13 +327,18 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
         const Divider(height: 1),
         // Footer actions at the bottom (like "Velg person"), with semantic
         // face-badge icons rather than a bare +/−.
-        ListTile(
-          leading: AddFaceIcon(color: theme.colorScheme.primary),
-          title: Text(
-            localizations.newActor,
-            style: TextStyle(color: theme.colorScheme.primary),
+        // Creating follows canCreate, not canEdit: an actor casting a markør may
+        // add the person they are, while the pencil above stays director-only.
+        IfCreatable(
+          target: EditTarget.actor,
+          child: ListTile(
+            leading: AddFaceIcon(color: theme.colorScheme.primary),
+            title: Text(
+              localizations.newActor,
+              style: TextStyle(color: theme.colorScheme.primary),
+            ),
+            onTap: _createAndSelect,
           ),
-          onTap: _createAndSelect,
         ),
         if (hasCurrentActor)
           ListTile(

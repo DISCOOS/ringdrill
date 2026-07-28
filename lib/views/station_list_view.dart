@@ -299,6 +299,8 @@ class _StationListViewState extends State<StationListView> {
           keyOf: (row) =>
               ValueKey('station-row-${row.$2.uuid}-${row.$3.index}'),
           orderLabel: localizations.exerciseSortBy,
+          target: EditTarget.station,
+          exerciseUuid: filterExercise.uuid,
           onCommitReorder: (newOrder) {
             final exerciseUuid = filterExercise.uuid;
             setState(() => _stagedRows = newOrder);

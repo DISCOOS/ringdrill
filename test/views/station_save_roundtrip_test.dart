@@ -33,7 +33,9 @@ void main() {
     required String from,
     required String to,
   }) async {
-    await tester.tap(find.byTooltip(l10n.editExercise));
+    // editStation, not editExercise: the station viewer's pencil opens the
+    // *station* form and was mislabelled.
+    await tester.tap(find.byTooltip(l10n.editStation));
     await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextFormField, from), to);
     await tester.tap(find.text(l10n.save));

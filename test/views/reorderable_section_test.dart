@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
 
 // ---------------------------------------------------------------------------
@@ -53,6 +54,10 @@ class _HarnessState extends State<_Harness> {
       items: _items,
       keyOf: (item) => ValueKey(item),
       orderLabel: l10n.exerciseSortBy,
+      // These tests are about the reorder mechanics, not the role gate (see
+      // reorder_gate_wiring_test) — exercise is what plan_view reorders, and
+      // the default role is director.
+      target: EditTarget.exercise,
       enabled: widget.enabled,
       reorderMode: widget.externalNotifier,
       sortActions: widget.sortActions,

@@ -13,6 +13,7 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart'
     show ActionChipFormatter, formatUtm;
+import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -37,6 +38,7 @@ import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/cast_pill.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/face_badge_icon.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
@@ -350,18 +352,37 @@ class _RolePlayScreenState extends State<RolePlayScreen>
               secondaryOverrides: _effectiveVariables(exercise),
             ),
             actions: [
-              IconButton(
-                icon: const Icon(Icons.edit),
-                tooltip: l10n.roleSection,
-                onPressed: () => _openRolePlayForm(subject),
+              // A markør's script is the actor's to write (ADR-0057), so this
+              // pencil is one of the few edit affordances an actor keeps — and
+              // it stays live-editable, which is the whole point of the
+              // roleplay exemption.
+              IfEditable(
+                target: EditTarget.rolePlay,
+                child: IconButton(
+                  icon: const Icon(Icons.edit),
+                  tooltip: l10n.roleSection,
+                  onPressed: () => _openRolePlayForm(subject),
+                ),
               ),
               // The Spill title is short, so — unlike the exercise viewer's
               // cramped compact bar — there is room for a standalone delete icon
               // next to edit instead of an overflow menu.
-              IconButton(
-                icon: const Icon(Icons.delete),
-                tooltip: l10n.deleteRolePlay,
-                onPressed: () => _confirmDeleteFromViewer(rolePlay),
+              //
+              // Deleting is *not* the actor's to do, and unlike the pencil above
+              // it has no live exemption: removing a markør the running exercise
+              // still references is unrecoverable. Hence IfDeletable for the
+              // role and the disable for the run.
+              IfDeletable(
+                target: EditTarget.rolePlay,
+                child: IconButton(
+                  icon: const Icon(Icons.delete),
+                  tooltip: _isStarted
+                      ? l10n.stopExerciseFirst(exercise.name)
+                      : l10n.deleteRolePlay,
+                  onPressed: _isStarted
+                      ? null
+                      : () => _confirmDeleteFromViewer(rolePlay),
+                ),
               ),
             ],
             actionsPadding: const EdgeInsets.only(right: 16),

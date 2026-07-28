@@ -210,12 +210,16 @@ class _LibraryBodyState extends State<_LibraryBody>
         final trailingChildren = <Widget>[
           if (isActive) Chip(label: Text(localizations.libraryActive)),
         ];
-        // Gated on the role (ADR-0057): the library is director-only. Gated
-        // rather than swapped for EditableRow, because this swipe *deletes* a
-        // plan rather than opening an editor.
-        return EditGate(
+        // Deleting a plan is director-only (ADR-0057), and DeletableRow asks
+        // canDelete rather than canEdit — the stricter question. The long-press
+        // menu below rides the same gate because it *contains* the delete entry.
+        return DeletableRow(
           target: EditTarget.plan,
-          builder: (context, allowed) {
+          dismissKey: ValueKey(plan.uuid),
+          confirmDelete: () => _confirmDelete(context, plan),
+          onDelete: () => _deletePlan(plan),
+          onLongPress: () => _showPlanActions(context, plan),
+          builder: (context, onLongPress) {
             final tile = ExpandableTile(
               // Radio icon, not the picker's Switch: this list is
               // single-select (which plan is active), not multi-select.
@@ -245,25 +249,11 @@ class _LibraryBodyState extends State<_LibraryBody>
                     ),
               onOpen: () => _activate(context, plan.uuid, closeOnSuccess: true),
               // Plan actions include destructive ones, so the long-press follows
-              // the same gate as the swipe.
-              onLongPress: allowed
-                  ? () => _showPlanActions(context, plan)
-                  : null,
+              // the same gate as the swipe — DeletableRow passes null when the
+              // role may not delete.
+              onLongPress: onLongPress,
             );
-            if (!allowed) return tile;
-            return Dismissible(
-              key: ValueKey(plan.uuid),
-              direction: DismissDirection.endToStart,
-              background: Container(
-                color: Colors.red,
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: const Icon(Icons.delete, color: Colors.white),
-              ),
-              confirmDismiss: (_) => _confirmDelete(context, plan),
-              onDismissed: (_) => _deletePlan(plan),
-              child: tile,
-            );
+            return tile;
           },
         );
       },

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 
 /// Form for creating or editing an [Actor] record.
 ///
@@ -88,10 +90,13 @@ class _ActorFormScreenState extends State<ActorFormScreen> {
         title: Text(title),
         actions: [
           if (!isNew)
-            IconButton(
-              icon: const Icon(Icons.delete),
-              tooltip: localizations.deleteActor,
-              onPressed: _confirmDelete,
+            IfDeletable(
+              target: EditTarget.actor,
+              child: IconButton(
+                icon: const Icon(Icons.delete),
+                tooltip: localizations.deleteActor,
+                onPressed: _confirmDelete,
+              ),
             ),
           ElevatedButton(onPressed: _save, child: Text(localizations.save)),
         ],

@@ -12,6 +12,7 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
+import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
@@ -37,6 +38,7 @@ import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/cast_pill.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
 import 'package:ringdrill/views/widgets/map_placeholder.dart';
@@ -265,21 +267,25 @@ class _StationScreenState extends State<StationScreen>
                 secondaryOverrides: _overridesFor(exercise),
               ),
               actions: [
-                // Edit Exercise Button
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  padding: const EdgeInsets.all(8.0),
-                  onPressed: _isStarted
-                      ? null
-                      : () => _editStation(context, exercise),
-                  tooltip: _isStarted
-                      ? localizations.stopExerciseFirst(
-                          substitutePlanVariables(
-                            exercise.name,
-                            _overridesFor(exercise),
-                          ),
-                        )
-                      : localizations.editExercise,
+                // Edit Station Button — director-only (ADR-0057); the run
+                // disables rather than hides it, so the tooltip can say why.
+                IfEditable(
+                  target: EditTarget.station,
+                  child: IconButton(
+                    icon: const Icon(Icons.edit),
+                    padding: const EdgeInsets.all(8.0),
+                    onPressed: _isStarted
+                        ? null
+                        : () => _editStation(context, exercise),
+                    tooltip: _isStarted
+                        ? localizations.stopExerciseFirst(
+                            substitutePlanVariables(
+                              exercise.name,
+                              _overridesFor(exercise),
+                            ),
+                          )
+                        : localizations.editStation,
+                  ),
                 ),
               ],
               actionsPadding: EdgeInsets.only(right: 16.0),

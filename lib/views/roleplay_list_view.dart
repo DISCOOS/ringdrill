@@ -611,7 +611,7 @@ class RolePlaysCreateFab extends StatelessWidget {
       // Gated on the role (ADR-0057): an actor may create markører, and no
       // exerciseUuid is passed because this FAB is not tied to one — it asks
       // which exercise as part of the form.
-      child: IfEditable(
+      child: IfCreatable(
         target: EditTarget.rolePlay,
         child: WindowSizeClass.of(context) == WindowSizeClass.compact
             ? FloatingActionButton(

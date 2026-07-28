@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/services/edit_permissions.dart';
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 
 /// A sort-action descriptor: a flat [TextButton] label and the callback to
 /// fire when the user taps it. Sort actions are one-shot (they apply once and
@@ -48,6 +50,8 @@ class ReorderableSection<T> extends StatefulWidget {
     required this.itemBuilder,
     required this.onCommitReorder,
     required this.orderLabel,
+    required this.target,
+    this.exerciseUuid,
     this.sortActions = const [],
     this.enabled = true,
     this.reorderMode,
@@ -93,6 +97,20 @@ class ReorderableSection<T> extends StatefulWidget {
   /// When false the reorder toggle is hidden (e.g. while an exercise is
   /// running). Sort actions remain visible. Defaults to true.
   final bool enabled;
+
+  /// What is being reordered, for the role gate (ADR-0057). Changing the order
+  /// of exercises or posts is an edit — it changes what every other device shows
+  /// — so it is director-only, and both the drag toggle and the one-shot sort
+  /// actions are gated on it.
+  ///
+  /// Required rather than defaulted, and asked here rather than at each call
+  /// site, so a new reorderable list cannot ship without answering the question.
+  final EditTarget target;
+
+  /// Scopes the live lock, when the reordered thing belongs to an exercise. The
+  /// hosts also pass [enabled] false while a drill runs; this makes the rule hold
+  /// even where they forget.
+  final String? exerciseUuid;
 
   /// Optional host-owned reorder-mode flag. If non-null, this widget listens
   /// to it and uses it as the source of truth for reorder mode instead of an
@@ -191,13 +209,36 @@ class _ReorderableSectionState<T> extends State<ReorderableSection<T>> {
 
   @override
   Widget build(BuildContext context) {
+    return EditGate(
+      target: widget.target,
+      exerciseUuid: widget.exerciseUuid,
+      builder: _buildGated,
+    );
+  }
+
+  Widget _buildGated(BuildContext context, bool allowed) {
     return ValueListenableBuilder<bool>(
       valueListenable: _notifier,
-      builder: (context, reordering, _) {
+      builder: (context, reorderingNow, _) {
         final l10n = AppLocalizations.of(context)!;
+        // A role change mid-reorder drops out of the mode rather than leaving
+        // drag handles on a list this role may no longer touch. Deferred: the
+        // notifier cannot be written during build.
+        if (reorderingNow && !allowed) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _exitReorderMode();
+          });
+        }
+        final reordering = reorderingNow && allowed;
         final items = reordering ? (_draft ?? widget.items) : widget.items;
 
-        final header = _buildHeader(context, l10n, reordering, items.length);
+        final header = _buildHeader(
+          context,
+          l10n,
+          reordering,
+          items.length,
+          allowed,
+        );
 
         if (widget.sliver) {
           final listSliver = reordering
@@ -242,9 +283,14 @@ class _ReorderableSectionState<T> extends State<ReorderableSection<T>> {
     AppLocalizations l10n,
     bool reordering,
     int itemCount,
+    bool allowed,
   ) {
     if (reordering) return _buildDoneBar(context, l10n);
     if (itemCount < 2) return const SizedBox.shrink();
+    // Everything this strip offers — the sort actions as much as the drag
+    // toggle — reorders the list, so a role that may not edit gets no strip at
+    // all rather than a header with dead buttons.
+    if (!allowed) return const SizedBox.shrink();
     // Nothing actionable to anchor: the reorder toggle is hidden (e.g. an
     // exercise is running) and there are no one-shot sort actions either,
     // so the bare orderLabel ("Rekkefølge") would sit above the list with

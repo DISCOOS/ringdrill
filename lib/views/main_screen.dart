@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/services/catalog_refresh_indicator_registry.dart';
+import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
@@ -37,6 +38,7 @@ import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/stations_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
@@ -760,16 +762,26 @@ class _MainScreenState extends State<MainScreen>
     final controller = page.controller;
     if (controller is! PlanPageControllerBase) return titleChild;
     final localizations = AppLocalizations.of(context)!;
-    return Tooltip(
-      message: localizations.editPlan,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(4),
-        onTap: () => _openPlanForm(context),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: titleChild,
-        ),
-      ),
+    // The title is the plan's quick-rename entry point, so it is an edit
+    // affordance and gated like one (ADR-0057). A role that may not edit gets the
+    // bare title: no tooltip promising an action, and no InkWell whose ripple
+    // would imply one.
+    return EditGate(
+      target: EditTarget.plan,
+      builder: (context, allowed) {
+        if (!allowed) return titleChild;
+        return Tooltip(
+          message: localizations.editPlan,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(4),
+            onTap: () => _openPlanForm(context),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: titleChild,
+            ),
+          ),
+        );
+      },
     );
   }
 

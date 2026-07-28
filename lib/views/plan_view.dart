@@ -295,6 +295,8 @@ class _PlanViewState extends State<PlanView> {
             items: _exercises,
             keyOf: (e) => ValueKey(e.uuid),
             orderLabel: l10n.exerciseSortBy,
+            // Reordering exercises renumbers them for everyone (ADR-0057).
+            target: EditTarget.exercise,
             sortActions: [
               (
                 label: l10n.exerciseSortByStartTimeShort,
@@ -346,11 +348,18 @@ class _PlanViewState extends State<PlanView> {
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
-            child: _PlanOverview(
-              expanded: _overviewExpanded,
-              onToggleExpanded: () =>
-                  setState(() => _overviewExpanded = !_overviewExpanded),
-              onEdit: () => _openPlanForm(context, l10n),
+            // The overview itself is read-only content everyone sees; only its
+            // edit entry point is gated (ADR-0057). A null onEdit makes the card
+            // untappable and drops the empty-state "Rediger plan" row, which is
+            // nothing but an edit CTA.
+            child: EditGate(
+              target: EditTarget.plan,
+              builder: (context, allowed) => _PlanOverview(
+                expanded: _overviewExpanded,
+                onToggleExpanded: () =>
+                    setState(() => _overviewExpanded = !_overviewExpanded),
+                onEdit: allowed ? () => _openPlanForm(context, l10n) : null,
+              ),
             ),
           ),
           SliverPersistentHeader(
@@ -676,7 +685,10 @@ class _PlanOverview extends StatelessWidget {
   /// Opens the [PlanFormScreen] so the active plan's description and brief
   /// markdown sections can be edited from the overview. The AppBar title still
   /// owns the quick-rename action; this is the deeper edit entry point.
-  final VoidCallback onEdit;
+  ///
+  /// Null when this role may not edit the plan: the card stays, its tap does
+  /// not, and the empty-state edit row is not rendered at all.
+  final VoidCallback? onEdit;
 
   static const int _collapsedLines = 3;
 
@@ -708,6 +720,7 @@ class _PlanOverview extends StatelessWidget {
         comms != null ||
         beforeRound != null;
     if (!hasContent) {
+      if (onEdit == null) return const SizedBox.shrink();
       final scheme = Theme.of(context).colorScheme;
       final textTheme = Theme.of(context).textTheme;
       return Padding(
@@ -1407,7 +1420,7 @@ abstract class PlanPageControllerBase extends ScreenController {
     }
     return switch (activeSegment.value) {
       // Gated on the role (ADR-0057): exercises are director-only.
-      PlanSegment.exercises => IfEditable(
+      PlanSegment.exercises => IfCreatable(
         target: EditTarget.exercise,
         child: _buildExercisesFAB(context),
       ),
