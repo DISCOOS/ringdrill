@@ -15,7 +15,13 @@ String scheduleWindowSummary(
   SimpleTimeOfDay start,
   SimpleTimeOfDay end,
 ) {
-  final durationMinutes = end.inMinutes - start.inMinutes;
+  // Modulo, not a bare subtraction: these are clock faces, so a window running
+  // past midnight (23:00 -> 01:00) gave 60 - 1380 = -1320 minutes and rendered a
+  // negative duration on every surface that shows this summary — the Post viewer's
+  // Tidsplan card, the Spill viewer's "Når aktiv" card and both team schedules.
+  // Same root cause as an exercise started after midnight waiting a day; see
+  // Exercise.windowAt.
+  final durationMinutes = (end.inMinutes - start.inMinutes + 1440) % 1440;
   final hours = durationMinutes ~/ 60;
   final rest = durationMinutes % 60;
   final durationText = hours == 0
