@@ -1,9 +1,11 @@
 import 'package:flutter/widgets.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
+import 'package:ringdrill/views/widgets/plan_text.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 
 /// Matches an (ADR-0050) `ringdrill://chip` action-chip link —
@@ -56,17 +58,47 @@ class RingDrillText extends StatelessWidget {
     this.maxLines,
     this.overflow,
     this.textAlign,
-  }) : _rich = false;
+  }) : _rich = false,
+       plan = null;
 
   /// Markdown rendering (copy chips) — description bodies and scenario prose.
   const RingDrillText.rich(this.text, {super.key, this.overrides = const {}})
     : _rich = true,
+      plan = null,
       style = null,
       maxLines = null,
       overflow = null,
       textAlign = null;
 
+  /// Plain rendering resolved against **[plan]'s own** scope, ignoring whatever
+  /// [PlanScope] the tree offers.
+  ///
+  /// For a surface that shows text belonging to a plan other than the active one
+  /// — the library list, the plan pickers — where the ambient scope is the *wrong*
+  /// plan's. Resolving those against it would substitute one plan's variable
+  /// values into another plan's name: worse than the literal token, because it
+  /// looks correct.
+  ///
+  /// Also the right constructor for a surface with no scope at all to inherit
+  /// (a dialog or sheet mounted on the Navigator's overlay), where [plain] would
+  /// return the text verbatim.
+  const RingDrillText.forPlan(
+    this.plan,
+    this.text, {
+    super.key,
+    this.overrides = const {},
+    this.style,
+    this.maxLines,
+    this.overflow,
+    this.textAlign,
+  }) : _rich = false;
+
   final String text;
+
+  /// Non-null only for [RingDrillText.forPlan] — the plan whose variables and
+  /// facets resolve [text], instead of the ancestor [PlanScope].
+  final Plan? plan;
+
   final Map<String, String> overrides;
   final TextStyle? style;
   final int? maxLines;
@@ -82,7 +114,13 @@ class RingDrillText extends StatelessWidget {
     // degrade to the plain string substitution without.
     final l10n = AppLocalizations.of(context);
     final String resolved;
-    if (scope == null) {
+    final forPlan = plan;
+    if (forPlan != null) {
+      // Named plan wins over the ambient scope: see RingDrillText.forPlan.
+      resolved = l10n == null
+          ? substitutePlanVariables(text, effectivePlanVariables(forPlan))
+          : resolvePlanText(forPlan, text, l10n);
+    } else if (scope == null) {
       resolved = text;
     } else if (l10n == null) {
       resolved = substitutePlanVariables(text, {
