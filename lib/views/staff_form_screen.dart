@@ -110,7 +110,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
         actions: [
           if (!isNew)
             IfDeletable(
-              target: EditTarget.actor,
+              target: EditTarget.staff,
               child: IconButton(
                 icon: const Icon(Icons.delete),
                 tooltip: localizations.deleteStaff,

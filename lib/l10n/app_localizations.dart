@@ -4741,6 +4741,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Other'**
   String get staffRoleOther;
+
+  /// Swipe-to-edit label on a staff row (ADR-0031), matching editStation/editTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit member'**
+  String get editStaff;
 }
 
 class _AppLocalizationsDelegate

@@ -2765,4 +2765,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get staffRoleOther => 'Other';
+
+  @override
+  String get editStaff => 'Edit member';
 }

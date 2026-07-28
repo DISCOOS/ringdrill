@@ -346,7 +346,7 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
                 // behind the row — roster work, director-only. Selecting stays
                 // available to whoever may cast.
                 trailing: IfEditable(
-                  target: EditTarget.actor,
+                  target: EditTarget.staff,
                   child: IconButton(
                     icon: const Icon(Icons.edit_outlined),
                     tooltip: localizations.editCast,
@@ -365,7 +365,7 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
         // Creating follows canCreate, not canEdit: an actor casting a markør may
         // add the person they are, while the pencil above stays director-only.
         IfCreatable(
-          target: EditTarget.actor,
+          target: EditTarget.staff,
           child: ListTile(
             leading: AddFaceIcon(color: theme.colorScheme.primary),
             title: Text(

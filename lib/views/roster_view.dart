@@ -13,6 +13,7 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
+import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
 // ---------------------------------------------------------------------------
@@ -22,9 +23,9 @@ import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 class RosterController extends ScreenController {
   final _reloadTick = ValueNotifier<int>(0);
 
-  /// Listenable that fires whenever the controller saves or deletes an actor
+  /// Listenable that fires whenever the controller saves or deletes a member
   /// so that [RosterView] can call setState without waiting for a
-  /// [PlanService] event (actor CRUD does not emit one).
+  /// [PlanService] event (staff CRUD does not emit one).
   Listenable get reloadSignal => _reloadTick;
 
   void dispose() {
@@ -48,7 +49,7 @@ class RosterController extends ScreenController {
     // it (ADR-0057): an actor may put themselves on the list. Narrowing that to
     // *only* themselves needs the account link — see canCreate.
     return IfCreatable(
-      target: EditTarget.actor,
+      target: EditTarget.staff,
       child: _buildCreateFab(context, label),
     );
   }
@@ -94,9 +95,9 @@ class RosterController extends ScreenController {
 /// that sheet remains as the inline quick-cast affordance. This view is the
 /// primary home for [Staff] records on the dedicated Roster tab.
 ///
-/// Reads and writes go exclusively through [PlanService] actor CRUD
+/// Reads and writes go exclusively through [PlanService] staff CRUD
 /// ([PlanService.loadStaff], [PlanService.saveStaff],
-/// [PlanService.deleteStaff]) — no actor data is pushed to any
+/// [PlanService.deleteStaff]) — no staff data is pushed to any
 /// publish / wire path.
 class RosterView extends StatefulWidget {
   const RosterView({
@@ -122,7 +123,7 @@ class _RosterViewState extends State<RosterView> {
   final _service = PlanService();
   StreamSubscription? _subscription;
 
-  List<Staff> _actors = [];
+  List<Staff> _staff = [];
   List<RolePlay> _rolePlays = [];
 
   RosterController get _controller => widget.controller;
@@ -156,21 +157,21 @@ class _RosterViewState extends State<RosterView> {
   void _reload() {
     if (!mounted) return;
     setState(() {
-      _actors = _service.loadStaff();
+      _staff = _service.loadStaff();
       _rolePlays = _service.loadRolePlays();
     });
   }
 
-  List<String> _rolesFor(String staffUuid) => _rolePlays
+  List<String> _castAsFor(String staffUuid) => _rolePlays
       .where((rp) => rp.staffUuid == staffUuid)
       .map((rp) => rp.name)
       .toList();
 
-  Future<void> _openEdit(Staff actor) async {
+  Future<void> _openEdit(Staff member) async {
     final localizations = AppLocalizations.of(context)!;
     final result = await openFormSurface<StaffFormResult>(
       context,
-      builder: (_) => StaffFormScreen(staff: actor),
+      builder: (_) => StaffFormScreen(staff: member),
     );
     if (result == null || !mounted) return;
     switch (result) {
@@ -186,16 +187,16 @@ class _RosterViewState extends State<RosterView> {
     _reload();
   }
 
-  Future<void> _tryDelete(Staff actor) async {
+  Future<void> _tryDelete(Staff member) async {
     final localizations = AppLocalizations.of(context)!;
-    final roles = _rolesFor(actor.uuid);
-    if (roles.isNotEmpty) {
+    final castAs = _castAsFor(member.uuid);
+    if (castAs.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(localizations.castDeleteBlocked(roles.length))),
+        SnackBar(content: Text(localizations.castDeleteBlocked(castAs.length))),
       );
       return;
     }
-    await _service.deleteStaff(actor.uuid);
+    await _service.deleteStaff(member.uuid);
     _reload();
   }
 
@@ -204,7 +205,7 @@ class _RosterViewState extends State<RosterView> {
     final localizations = AppLocalizations.of(context)!;
 
     final Widget content;
-    if (_actors.isEmpty) {
+    if (_staff.isEmpty) {
       // Same teaching affordance as the empty Plan segments so the
       // Roster tab reads with the same visual language (icon disc +
       // title + body) instead of a bare centered string. The cast
@@ -234,31 +235,28 @@ class _RosterViewState extends State<RosterView> {
         // AlwaysScrollableScrollPhysics: lets a short list still overscroll
         // enough for the pull-to-refresh RefreshIndicator below to trigger.
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: _actors.length,
+        itemCount: _staff.length,
         itemBuilder: (context, index) {
-          final actor = _actors[index];
-          final roles = _rolesFor(actor.uuid);
-          final tile = _buildStaffTile(context, localizations, actor, roles);
-          // Deleting an actor is director-only (ADR-0057) — an actor authors a
-          // markør's script but does not remove people from the roster. Note
-          // canDelete, not canEdit: a DeletableRow asks the stricter question.
-          return DeletableRow(
-            target: EditTarget.actor,
-            dismissKey: ValueKey(actor.uuid),
-            // Still cast in a markør? Explain instead of deleting, and keep the
-            // row.
-            confirmDelete: () async {
-              if (_rolesFor(actor.uuid).isNotEmpty) {
-                await _tryDelete(actor);
-                return false;
-              }
-              return true;
-            },
-            onDelete: () async {
-              await _service.deleteStaff(actor.uuid);
-              _reload();
-            },
-            builder: (context, _) => tile,
+          final member = _staff[index];
+          final castAs = _castAsFor(member.uuid);
+          // Swipe and long-press are one affordance (ADR-0031) and gated on the
+          // role (ADR-0057) — the same shape as the exercise, post, roleplay and
+          // team lists. This list used to swipe-to-*delete* instead, the only one
+          // in the app that did: the same gesture meant "edit" everywhere else and
+          // "destroy" here. Delete now lives where the other lists put it, on the
+          // editor's bin, which also keeps the still-cast guard on one path.
+          return EditableRow(
+            target: EditTarget.staff,
+            dismissKey: ValueKey('staff-row-${member.uuid}'),
+            label: localizations.editStaff,
+            onEdit: () => _openEdit(member),
+            builder: (context, onLongPress) => ExpandableTile(
+              onLongPress: onLongPress,
+              leading: const Icon(Icons.face),
+              title: _buildTitle(context, localizations, member, castAs),
+              subtitle: _buildSubtitle(context, localizations, member, castAs),
+              onOpen: () => _openEdit(member),
+            ),
           );
         },
       );
@@ -283,21 +281,15 @@ class _RosterViewState extends State<RosterView> {
   ///
   /// Own Material (transparent) so the tile's ink/splash paints above the
   /// shell's surface-toned ColoredBox instead of being hidden by it.
-  Widget _buildStaffTile(
+  /// The name line, with role chips right-aligned — the layout every other list
+  /// uses for its trailing metadata.
+  Widget _buildTitle(
     BuildContext context,
     AppLocalizations localizations,
-    Staff staff,
+    Staff member,
     List<String> castAs,
   ) {
     final theme = Theme.of(context);
-    // ADR-0037: themed bodySmall instead of a hardcoded 12.
-    final metaStyle = theme.textTheme.bodySmall?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-    );
-    // The stored organizational roles, then the derived markør one — derived
-    // because a person *is* a markør exactly when a roleplay is cast to them
-    // (DESIGN-011), which is what `castAs` already tells us. Ordered with the
-    // stored roles first so the line reads the same way the editor's chips do.
     Widget chip(String label, {required bool derived}) => Chip(
       label: Text(label, style: theme.textTheme.labelSmall),
       visualDensity: VisualDensity.compact,
@@ -310,53 +302,51 @@ class _RosterViewState extends State<RosterView> {
           : theme.colorScheme.secondaryContainer,
     );
     // Stored roles plus actor-by-casting, unioned and deduped, so a member who is
-    // cast but was never ticked as an actor still reads as one — and never shows
-    // the same role twice. Outlined when only *implied* by casting: that one is not
+    // cast but never ticked as an actor still reads as one — and never shows the
+    // same role twice. Outlined when only *implied* by casting: that one is not
     // asserted on the record and cannot be edited here.
-    final effective = staff.effectiveRoles(isCast: castAs.isNotEmpty);
-    final roleChips = [
-      for (final role in effective)
+    final chips = [
+      for (final role in member.effectiveRoles(isCast: castAs.isNotEmpty))
         chip(
           staffRoleLabel(role, localizations),
-          derived: !staff.roles.contains(role),
+          derived: !member.roles.contains(role),
         ),
     ];
-    return Material(
-      type: MaterialType.transparency,
-      child: ListTile(
-        leading: const Icon(Icons.face),
-        // Chips on the name line, right-aligned (DESIGN-011 / the staff-roster
-        // mockup): the stored roles as filled chips, the derived markør one
-        // outlined so the two read as different kinds of fact — one is asserted
-        // here, the other follows from casting elsewhere.
-        title: Row(
-          children: [
-            Expanded(child: Text(staff.realName)),
-            if (roleChips.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              Flexible(
-                child: Wrap(
-                  alignment: WrapAlignment.end,
-                  spacing: 4,
-                  runSpacing: 2,
-                  children: roleChips,
-                ),
-              ),
-            ],
-          ],
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            member.realName,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (staff.phone != null) Text(staff.phone!),
-            // Which markører, separately from the chip saying *that* they are one:
-            // the chip answers "what is this person", this answers "doing what".
-            if (castAs.isNotEmpty)
-              Text(localizations.castedAs(castAs.join(', ')), style: metaStyle),
-          ],
-        ),
-        onTap: () => _openEdit(staff),
-      ),
+        if (chips.isNotEmpty) ...[
+          const SizedBox(width: 8),
+          Flexible(
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 4,
+              runSpacing: 2,
+              children: chips,
+            ),
+          ),
+        ],
+      ],
     );
+  }
+
+  Widget? _buildSubtitle(
+    BuildContext context,
+    AppLocalizations localizations,
+    Staff member,
+    List<String> castAs,
+  ) {
+    final parts = <String>[
+      if (member.phone != null) member.phone!,
+      // Which markører, separately from the chip saying *that* they are one.
+      if (castAs.isNotEmpty) localizations.castedAs(castAs.join(', ')),
+    ];
+    if (parts.isEmpty) return null;
+    return Text(parts.join(' · '));
   }
 }

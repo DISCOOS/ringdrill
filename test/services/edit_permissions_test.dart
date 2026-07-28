@@ -115,7 +115,7 @@ void main() {
     // rendering for the drill in progress.
     test('plan-level targets are not locked by a running exercise', () {
       expect(canEdit(StaffRole.director, EditTarget.plan), isTrue);
-      expect(canEdit(StaffRole.director, EditTarget.actor), isTrue);
+      expect(canEdit(StaffRole.director, EditTarget.staff), isTrue);
     });
   });
 
@@ -124,8 +124,8 @@ void main() {
   // records stays with the director.
   group('canCreate', () {
     test('an actor may add to the roster, and nothing else', () {
-      expect(canCreate(StaffRole.actor, EditTarget.actor), isTrue);
-      for (final target in except({EditTarget.actor})) {
+      expect(canCreate(StaffRole.actor, EditTarget.staff), isTrue);
+      for (final target in except({EditTarget.staff})) {
         expect(
           canCreate(StaffRole.actor, target),
           isFalse,
@@ -137,9 +137,9 @@ void main() {
     // The three questions diverge on the roster, which is what forced canCreate
     // into existence: add yes, change no, remove no.
     test('an actor adding is not an actor editing or deleting', () {
-      expect(canCreate(StaffRole.actor, EditTarget.actor), isTrue);
-      expect(canEdit(StaffRole.actor, EditTarget.actor), isFalse);
-      expect(canDelete(StaffRole.actor, EditTarget.actor), isFalse);
+      expect(canCreate(StaffRole.actor, EditTarget.staff), isTrue);
+      expect(canEdit(StaffRole.actor, EditTarget.staff), isFalse);
+      expect(canDelete(StaffRole.actor, EditTarget.staff), isFalse);
     });
 
     test('a director creates everything', () {
@@ -179,7 +179,7 @@ void main() {
       expect(
         canCreate(
           StaffRole.actor,
-          EditTarget.actor,
+          EditTarget.staff,
           exerciseUuid: _exerciseUuid,
         ),
         isTrue,
@@ -289,8 +289,8 @@ void main() {
     // still an assertion about the exercise, and a role defined by not being any of
     // the others has no claim to make it.
     test('may not add to the roster, unlike an actor', () {
-      expect(canCreate(StaffRole.actor, EditTarget.actor), isTrue);
-      expect(canCreate(StaffRole.other, EditTarget.actor), isFalse);
+      expect(canCreate(StaffRole.actor, EditTarget.staff), isTrue);
+      expect(canCreate(StaffRole.other, EditTarget.staff), isFalse);
     });
   });
 }

@@ -2763,4 +2763,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get staffRoleOther => 'Annet';
+
+  @override
+  String get editStaff => 'Rediger medlem';
 }

@@ -23,8 +23,8 @@ enum EditTarget {
   /// A markør — the character, its script and its casting.
   rolePlay,
 
-  /// The roster of actors who portray markører.
-  actor,
+  /// The staff roster — the real people working the exercise.
+  staff,
 }
 
 /// Which of the three permission questions an affordance asks (ADR-0057).
@@ -73,7 +73,7 @@ bool canEdit(
     case EditTarget.plan:
     case EditTarget.exercise:
     case EditTarget.station:
-    case EditTarget.actor:
+    case EditTarget.staff:
       if (live) return false;
       return role == StaffRole.director;
   }
@@ -102,10 +102,10 @@ bool canCreate(
   String? exerciseUuid,
   ExerciseService? exerciseService,
 }) {
-  if (target == EditTarget.actor) {
-    // Adding a person to the staff roster. An instructor supervises teams and
-    // has no roster of their own to join yet (DESIGN-011 adds director and
-    // instructor as staff roles; until then the roster holds markører only).
+  if (target == EditTarget.staff) {
+    // Adding a person to the staff roster. An instructor supervises teams rather
+    // than staffing the exercise, and `other` is defined by not being any of the
+    // named roles, so neither has a claim to make.
     return role == StaffRole.director || role == StaffRole.actor;
   }
   final live =

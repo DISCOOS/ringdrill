@@ -3128,5 +3128,9 @@
   "staffRoleOther": "Other",
   "@staffRoleOther": {
     "description": "StaffRole.other label (DESIGN-011) — a support role the enum does not name. Selectable both on the roster and as this device own role. Carries no edit rights."
+  },
+  "editStaff": "Edit member",
+  "@editStaff": {
+    "description": "Swipe-to-edit label on a staff row (ADR-0031), matching editStation/editTeam."
   }
 }

@@ -94,7 +94,8 @@ void main() {
   testWidgets('actor phone appears in the list', (tester) async {
     await tester.pumpWidget(_buildView());
     await tester.pump();
-    expect(find.text('99887766'), findsOneWidget);
+    // One composed subtitle line now (phone · cast), as in the peer lists.
+    expect(find.textContaining('99887766'), findsOneWidget);
   });
 
   testWidgets('tapping an actor row opens StaffFormScreen in edit mode', (
@@ -134,18 +135,56 @@ void main() {
     expect(find.text(l10n.newStaff), findsWidgets);
   });
 
-  testWidgets('swiping a cast actor shows castDeleteBlocked SnackBar', (
+  // The swipe means *edit* here now, as it does in every other list. This list
+  // used to be the only one where the same gesture destroyed a record instead of
+  // opening it. Delete moved to the editor's bin, which is also where the
+  // still-cast guard now lives — asserted below.
+  testWidgets('swiping a row opens the editor rather than deleting', (
     tester,
   ) async {
     await tester.pumpWidget(_buildView());
     await tester.pumpAndSettle();
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-    // Swipe the actor row end-to-start past the dismiss threshold.
-    // Default test screen is 800 px wide; threshold is 40 % (320 px).
+    // Default test screen is 800 px wide; the dismiss threshold is 40 % (320 px).
     await tester.drag(find.text('Per Hansen'), const Offset(-400, 0));
     await tester.pumpAndSettle();
 
+    expect(find.byType(StaffFormScreen), findsOneWidget);
+    expect(
+      find.text(l10n.castDeleteBlocked(1)),
+      findsNothing,
+      reason: 'a swipe no longer attempts a delete, so nothing is blocked',
+    );
+  });
+
+  testWidgets('long-pressing a row opens the editor', (tester) async {
+    await tester.pumpWidget(_buildView());
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.text('Per Hansen'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(StaffFormScreen), findsOneWidget);
+  });
+
+  // The guard survived the move: deleting a member who still portrays a markør is
+  // refused and explained, now from the editor's bin instead of the swipe.
+  testWidgets('deleting a cast member from the editor is blocked', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildView());
+    await tester.pumpAndSettle();
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+    await tester.tap(find.text('Per Hansen'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip(l10n.deleteStaff));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.delete));
+    await tester.pumpAndSettle();
+
     expect(find.text(l10n.castDeleteBlocked(1)), findsOneWidget);
   });
 
@@ -159,7 +198,10 @@ void main() {
 
       // Initial state from _buildPrefs: _castRole carries staffUuid =
       // _actorUuid, so the Roster row's subtitle shows castedAs("Markør 1").
-      expect(find.text(l10n.castedAs(_castRole.name)), findsOneWidget);
+      expect(
+        find.textContaining(l10n.castedAs(_castRole.name)),
+        findsOneWidget,
+      );
 
       // Uncast: persist the role with staffUuid: null. Before this fix
       // saveRolePlay was silent and the Roster's "Cast as …" line stayed
@@ -171,7 +213,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.castedAs(_castRole.name)), findsNothing);
+      expect(find.textContaining(l10n.castedAs(_castRole.name)), findsNothing);
 
       // Re-cast restores the original fixture state and the subtitle line
       // reappears, so the test leaves no residual mutation for the rest of
@@ -179,7 +221,10 @@ void main() {
       await PlanService().saveRolePlay(l10n, _castRole);
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.castedAs(_castRole.name)), findsOneWidget);
+      expect(
+        find.textContaining(l10n.castedAs(_castRole.name)),
+        findsOneWidget,
+      );
     },
   );
 }
