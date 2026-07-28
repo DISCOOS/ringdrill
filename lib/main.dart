@@ -14,7 +14,7 @@ import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/app_config.dart';
-import 'package:ringdrill/utils/ui_prefs.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/utils/app_flags.dart';
 import 'package:ringdrill/utils/locale_utils.dart';
 import 'package:ringdrill/utils/pwa_update_policy.dart';
@@ -77,10 +77,11 @@ Future<void> main() async {
 
     // Load user consent for analytics from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
-    // Bind it for synchronous reads: UI state that must be correct on the first
-    // frame (collapsed sections, the wide master pane) cannot afford an awaited
-    // read in initState — that lands a frame late and shows as a flicker.
-    UiPrefs.bind(prefs);
+    // Bind it once, here: every read after this point is synchronous. An awaited
+    // read in initState lands a frame late, and those frames are visible — a
+    // collapsed card that opens and snaps shut, a brief rendered as the wrong
+    // audience, a role-gated affordance under the wrong role. See [Prefs].
+    Prefs.bind(prefs);
     final isFirstLaunch = prefs.getBool(AppConfig.keyIsFirstLaunch) ?? true;
     final isOnboardingSeen =
         prefs.getBool(AppConfig.keyOnboardingSeen) ?? false;

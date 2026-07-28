@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/utils/app_config.dart';
-import 'package:ringdrill/utils/ui_prefs.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,9 +22,9 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    UiPrefs.reset();
+    Prefs.reset();
     appUserRole.value = AppUserRole.director;
-    addTearDown(UiPrefs.reset);
+    addTearDown(Prefs.reset);
   });
 
   Widget harness({bool iconOnly = false}) => MaterialApp(
@@ -65,7 +65,7 @@ void main() {
   });
 
   testWidgets('picking a role publishes and persists it', (tester) async {
-    UiPrefs.bind(await SharedPreferences.getInstance());
+    Prefs.bind(await SharedPreferences.getInstance());
     await tester.pumpWidget(harness());
 
     await tester.tap(find.byType(TextButton));
@@ -75,7 +75,7 @@ void main() {
 
     expect(appUserRole.value, AppUserRole.actor);
     expect(
-      UiPrefs.instanceOrNull!.getString(AppConfig.keyAppUserRole),
+      Prefs.instanceOrNull!.getString(AppConfig.keyAppUserRole),
       AppUserRole.actor.name,
     );
     // And the button reflects it without being rebuilt by its host.

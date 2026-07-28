@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/app_config.dart';
-import 'package:ringdrill/utils/ui_prefs.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// .getInstance()` from `initState`, which lands a frame late: the card painted
 /// expanded and then snapped shut. Only `getInstance()` is asynchronous — the
 /// getters read an in-memory map — so binding the instance once in `main`
-/// (`UiPrefs`) makes the read synchronous and the first frame correct.
+/// (`Prefs`) makes the read synchronous and the first frame correct.
 const _sectionId = 'sync-load-section';
 
 Widget _harness() => MaterialApp(
@@ -50,14 +50,14 @@ void main() {
     });
     // Each test decides whether an instance is bound; a binding left over from
     // a previous test would serve that test's values.
-    UiPrefs.reset();
-    addTearDown(UiPrefs.reset);
+    Prefs.reset();
+    addTearDown(Prefs.reset);
   });
 
   testWidgets('bound prefs: collapsed on the first frame, with no flicker', (
     tester,
   ) async {
-    UiPrefs.bind(await SharedPreferences.getInstance());
+    Prefs.bind(await SharedPreferences.getInstance());
 
     await tester.pumpWidget(_harness());
     // Exactly one frame — no settle, no timer drain. This is the frame the user
@@ -92,7 +92,7 @@ void main() {
 
   testWidgets('nothing stored: expanded on the first frame', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    UiPrefs.bind(await SharedPreferences.getInstance());
+    Prefs.bind(await SharedPreferences.getInstance());
 
     await tester.pumpWidget(_harness());
 

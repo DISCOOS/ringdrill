@@ -97,13 +97,26 @@ class _StationScreenState extends State<StationScreen>
   // DESIGN-010 stage 3b: the Station description card renders per the settings
   // role (director sees the gated directorNotesMd section too), not an
   // in-sheet toggle. Defaults to director (participants do not use the
-  // app) until the async load resolves, mirroring BriefScreen's own
-  // `_loadStoredRole` default/override pattern.
+  // app) until [_bindRole] seeds the stored value, which is synchronous.
   AppUserRole _role = AppUserRole.director;
 
-  Future<void> _loadStoredRole() async {
-    final role = await loadStoredAppUserRole();
-    if (mounted) setState(() => _role = role);
+  /// Seeded synchronously and kept current: the role decides what this surface
+  /// offers (ADR-0057), so it has to be right on the first frame *and* follow a
+  /// change made from the drawer while this screen is open. It used to be awaited
+  /// once, which was both a frame late and permanently stale.
+  void _bindRole() {
+    _role = loadStoredAppUserRole();
+    appUserRole.addListener(_onRoleChanged);
+  }
+
+  void _onRoleChanged() {
+    if (mounted) setState(() => _role = appUserRole.value);
+  }
+
+  @override
+  void dispose() {
+    appUserRole.removeListener(_onRoleChanged);
+    super.dispose();
   }
 
   /// The effective plan-variable map (ADR-0046) at [exercise]'s scope,
@@ -122,7 +135,7 @@ class _StationScreenState extends State<StationScreen>
     super.initState();
 
     load();
-    _loadStoredRole();
+    _bindRole();
 
     // Listen to ExerciseService state changes
     listen(_exerciseService.events, (event) {

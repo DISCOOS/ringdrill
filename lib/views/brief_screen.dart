@@ -15,7 +15,6 @@ import 'package:ringdrill/views/widgets/brief_theme.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 // Web implementation provides a real window.print(); the stub is a no-op.
 // Pattern: unqualified = web, if(dart.library.io) = native stub.
 import 'package:ringdrill/web/brief_print_web.dart'
@@ -94,29 +93,28 @@ class _BriefScreenState extends State<BriefScreen> {
   void initState() {
     super.initState();
     // Default to director (Øvelsesleder) — participants do not use the app.
-    // If the device user has stored their staff role, that overrides this
-    // default once the async load completes. A caller-supplied initialAudience
-    // takes precedence over both (e.g. when an external entry-point links to a
-    // specific audience).
+    // The device user's stored staff role overrides that default, applied
+    // synchronously so the document is never rendered as the wrong audience
+    // first. A caller-supplied initialAudience takes precedence over both (e.g.
+    // when an external entry-point links to a specific audience).
     _audience = widget.initialAudience ?? BriefAudience.director;
     if (widget.initialAudience == null) {
-      _loadStoredRole();
+      _applyStoredRole();
     }
   }
 
-  /// Reads the stored [AppUserRole] preference and updates [_audience] if set.
-  /// The initial default (director) stays in effect until this resolves, so
-  /// there is at most one extra render when the stored role differs.
-  Future<void> _loadStoredRole() async {
-    final prefs = await SharedPreferences.getInstance();
-    final roleStr = prefs.getString(AppConfig.keyAppUserRole);
-    if (roleStr == null || !mounted) return;
-    final role = AppUserRole.values.where((r) => r.name == roleStr).firstOrNull;
+  /// Applies the stored [AppUserRole] to [_audience].
+  ///
+  /// Synchronous now: it used to await `getInstance()`, so the brief rendered once
+  /// as director and then re-rendered when the stored role arrived — a visible
+  /// double render of a whole document, and the wrong content in between for an
+  /// instructor. [Prefs] holds the instance `main` already awaited, and
+  /// [readAppUserRoleNow] returns null only when nothing is bound, in which case
+  /// the director default stands as before.
+  void _applyStoredRole() {
+    final role = readAppUserRoleNow();
     if (role == null) return;
-    setState(() {
-      _audience = role.briefAudience;
-      _renderFuture = _buildRenderFuture(AppLocalizations.of(context)!);
-    });
+    _audience = role.briefAudience;
   }
 
   @override

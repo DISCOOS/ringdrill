@@ -56,11 +56,7 @@ class _StationListViewState extends State<StationListView> {
   Map<String, String> _overridesFor(Exercise exercise, Station station) {
     final plan = _planService.activePlan;
     if (plan == null) return const {};
-    return effectivePlanVariables(
-      plan,
-      exercise: exercise,
-      station: station,
-    );
+    return effectivePlanVariables(plan, exercise: exercise, station: station);
   }
 
   // Identifies the open row by its owning exercise + station, not by the
@@ -85,19 +81,26 @@ class _StationListViewState extends State<StationListView> {
   // DESIGN-010 stage 3b: the Station description card renders per the settings
   // role (director sees the gated directorNotesMd section too), not an
   // in-sheet toggle. Defaults to director (participants do not use the
-  // app) until the async load resolves, mirroring BriefScreen's own
-  // `_loadStoredRole` default/override pattern.
+  // app) until [_bindRole] seeds the stored value, which is synchronous.
   AppUserRole _role = AppUserRole.director;
 
-  Future<void> _loadStoredRole() async {
-    final role = await loadStoredAppUserRole();
-    if (mounted) setState(() => _role = role);
+  /// Seeded synchronously and kept current: the role decides what this surface
+  /// offers (ADR-0057), so it has to be right on the first frame *and* follow a
+  /// change made from the drawer while this screen is open. It used to be awaited
+  /// once, which was both a frame late and permanently stale.
+  void _bindRole() {
+    _role = loadStoredAppUserRole();
+    appUserRole.addListener(_onRoleChanged);
+  }
+
+  void _onRoleChanged() {
+    if (mounted) setState(() => _role = appUserRole.value);
   }
 
   @override
   void initState() {
     super.initState();
-    _loadStoredRole();
+    _bindRole();
     // Drop `done` events so a stopped exercise's stations stop being
     // highlighted with the live-accent treatment on the badge and tile.
     _liveEvent = _filterLive(ExerciseService().last);
@@ -134,6 +137,7 @@ class _StationListViewState extends State<StationListView> {
 
   @override
   void dispose() {
+    appUserRole.removeListener(_onRoleChanged);
     _controller.filterExerciseUuid.removeListener(_onFilterChanged);
     _subscription?.cancel();
     _exerciseSubscription?.cancel();
@@ -541,10 +545,7 @@ class _StationListViewState extends State<StationListView> {
     );
     if (!mounted || result == null) return;
 
-    await applyVariableAdditionsToActivePlan(
-      _planService,
-      result.additions,
-    );
+    await applyVariableAdditionsToActivePlan(_planService, result.additions);
     // A marker authored/edited inline from the Persons section's "Legg til
     // markør" / "Spilles av {navn}" row (DESIGN-009 prompt 4j) — held in
     // the post editor's own working copy, written back here alongside the
@@ -584,9 +585,7 @@ class StationFilterBanner extends StatelessWidget {
     return ValueListenableBuilder<String?>(
       valueListenable: controller.filterExerciseUuid,
       builder: (context, uuid, _) {
-        final exercise = uuid == null
-            ? null
-            : PlanService().getExercise(uuid);
+        final exercise = uuid == null ? null : PlanService().getExercise(uuid);
         if (exercise == null) return const SizedBox.shrink();
         final localizations = AppLocalizations.of(context)!;
         final theme = Theme.of(context);

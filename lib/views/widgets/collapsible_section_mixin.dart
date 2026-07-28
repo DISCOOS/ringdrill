@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:ringdrill/utils/ui_prefs.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_store.dart';
 
 /// Shared expand/collapse mechanism for the section cards — the persisted
@@ -54,7 +54,7 @@ mixin CollapsibleSectionStateMixin<T extends StatefulWidget>
   /// animation) to it. No-op when [sectionId] is null (the section is not
   /// collapsible), leaving it expanded.
   ///
-  /// Synchronous whenever [UiPrefs] has a bound instance, which is the normal
+  /// Synchronous whenever [Prefs] has a bound instance, which is the normal
   /// case: the app binds it in `main` before `runApp`. That matters because this
   /// runs from `initState` — an awaited read lands one frame late, so a section
   /// stored collapsed paints expanded and then snaps shut. Reading it here means

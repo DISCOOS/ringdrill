@@ -3,13 +3,17 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 
-/// The role's own icon. Reuses the vocabulary the app already reads by: the
-/// script segment's masks for an actor, a mortarboard for the supervising
-/// instructor.
+/// The role's own icon, reusing the vocabulary the app already reads by.
+///
+/// The actor is a **face**: `Icons.face` is this app's established
+/// one-concrete-actor sign, carried by `FaceBadgeIcon` and the cast pill wherever
+/// a marker's portrayer is shown. `Icons.theater_comedy` — the Spill segment's
+/// masks — stands for the collection of roles, so it would read as the segment
+/// rather than as the person holding the device.
 IconData appUserRoleIcon(AppUserRole role) => switch (role) {
   AppUserRole.director => Icons.manage_accounts,
   AppUserRole.instructor => Icons.school,
-  AppUserRole.actor => Icons.theater_comedy,
+  AppUserRole.actor => Icons.face,
 };
 
 /// Director and instructor reuse the brief-audience labels they have always been

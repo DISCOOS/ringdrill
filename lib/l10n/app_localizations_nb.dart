@@ -1924,7 +1924,7 @@ class AppLocalizationsNb extends AppLocalizations {
       'Denne posten er ikke tilgjengelig lenger. Posten, eller øvelsen den hører til, kan ha blitt slettet.';
 
   @override
-  String get appUserRoleActor => 'Aktør';
+  String get appUserRoleActor => 'Markør';
 
   @override
   String get appUserRoleSectionTitle => 'Min rolle';

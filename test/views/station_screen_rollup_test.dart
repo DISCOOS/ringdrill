@@ -10,6 +10,7 @@ import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/widgets/station_scenario_map.dart';
@@ -82,6 +83,12 @@ Exercise _exercise() => Exercise(
 Future<void> _seedAndInit({String? role}) async {
   SharedPreferences.setMockInitialValues({AppConfig.keyAppUserRole: ?role});
   final prefs = await SharedPreferences.getInstance();
+  // The role is read synchronously now (see Prefs), so a test that seeds one has
+  // to bind the instance — unbound reads mean "nothing stored", which would leave
+  // the director default in force and quietly pass the director-only assertion.
+  Prefs.reset();
+  Prefs.bind(prefs);
+  addTearDown(Prefs.reset);
   final repo = PlanRepository(prefs);
   await repo.savePlanShell(_shell());
   await repo.setActivePlanUuid(_planUuid);

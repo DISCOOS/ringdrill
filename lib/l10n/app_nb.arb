@@ -894,9 +894,9 @@
     "description": "Empty detail pane text shown on the teams tab."
   },
 
-  "appUserRoleActor": "Aktør",
+  "appUserRoleActor": "Markør",
   "@appUserRoleActor": {
-    "description": "Etikett for AppUserRole.actor — personen som spiller en markør (ADR-0057). Skilt fra markøren selv, som er en RolePlay."
+    "description": "Etikett for AppUserRole.actor — personen som spiller en markør (ADR-0057). Samme ord som rollen de spiller, slik feltbruken er; RolePlay-entiteten er selve rollen."
   },
   "appUserRoleSectionTitle": "Min rolle",
   "@appUserRoleSectionTitle": {

@@ -1,5 +1,5 @@
 import 'package:ringdrill/utils/app_config.dart';
-import 'package:ringdrill/utils/ui_prefs.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Persisted open/closed state for a `CollapsibleSectionCard` (or the
@@ -10,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class CollapsibleSectionStore {
   const CollapsibleSectionStore._();
 
-  /// The stored state read synchronously, or null when [UiPrefs] has no bound
+  /// The stored state read synchronously, or null when [Prefs] has no bound
   /// instance yet.
   ///
   /// Prefer this over [isCollapsed]: an awaited read costs a frame, and that
@@ -18,23 +18,18 @@ class CollapsibleSectionStore {
   /// "cannot answer yet", never "not collapsed"; the caller keeps its own
   /// default and catches up via [isCollapsed].
   static bool? isCollapsedNow(String sectionId) {
-    final prefs = UiPrefs.instanceOrNull;
-    if (prefs == null) return null;
-    return prefs.getBool(AppConfig.collapsibleSectionKey(sectionId)) ?? false;
+    if (!Prefs.isBound) return null;
+    return Prefs.getBool(AppConfig.collapsibleSectionKey(sectionId)) ?? false;
   }
 
   /// Fallback for when no instance is bound — a widget test, or an entry point
   /// that does not go through `main()`. Deliberately does not bind what it
-  /// resolves; see [UiPrefs].
+  /// resolves; see [Prefs].
   static Future<bool> isCollapsed(String sectionId) async {
-    final prefs =
-        UiPrefs.instanceOrNull ?? await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(AppConfig.collapsibleSectionKey(sectionId)) ?? false;
   }
 
-  static Future<void> setCollapsed(String sectionId, bool collapsed) async {
-    final prefs =
-        UiPrefs.instanceOrNull ?? await SharedPreferences.getInstance();
-    await prefs.setBool(AppConfig.collapsibleSectionKey(sectionId), collapsed);
-  }
+  static Future<void> setCollapsed(String sectionId, bool collapsed) =>
+      Prefs.setBool(AppConfig.collapsibleSectionKey(sectionId), collapsed);
 }

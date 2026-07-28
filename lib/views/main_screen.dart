@@ -12,7 +12,7 @@ import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
-import 'package:ringdrill/utils/ui_prefs.dart';
+import 'package:ringdrill/utils/prefs.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/drill_player/drill_player_coordinator.dart';
@@ -797,7 +797,7 @@ class _MainScreenState extends State<MainScreen>
   /// Reads the stored master-pane-collapsed preference. The `false`
   /// (expanded) default stays in effect until this resolves, mirroring
   /// `BriefScreen._loadStoredRole`.
-  /// Reads the persisted collapse preference synchronously when [UiPrefs] has a
+  /// Reads the persisted collapse preference synchronously when [Prefs] has a
   /// bound instance — the normal case, since `main` binds it before `runApp`.
   ///
   /// Called from `initState`, so an awaited read lands a frame late and the pane
@@ -805,7 +805,7 @@ class _MainScreenState extends State<MainScreen>
   /// first paint is already right, and it also removes an early rebuild from the
   /// startup sequence that the detail-pane auto-select shares a frame with.
   void _loadMasterCollapsed() {
-    final prefs = UiPrefs.instanceOrNull;
+    final prefs = Prefs.instanceOrNull;
     if (prefs != null) {
       _masterCollapsed =
           prefs.getBool(AppConfig.keyMasterPaneCollapsed) ?? _masterCollapsed;

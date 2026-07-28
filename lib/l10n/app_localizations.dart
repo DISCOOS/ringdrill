@@ -3248,7 +3248,7 @@ abstract class AppLocalizations {
   /// **'This station is no longer available. It, or its exercise, may have been deleted.'**
   String get detailGoneStation;
 
-  /// Label for AppUserRole.actor — the person who portrays a marker (ADR-0057). Distinct from the marker itself, which is a RolePlay.
+  /// Label for AppUserRole.actor — the person who portrays a marker (ADR-0057). Norwegian uses the same word for both (markør), matching field practice; the RolePlay entity is the role itself.
   ///
   /// In en, this message translates to:
   /// **'Actor'**
