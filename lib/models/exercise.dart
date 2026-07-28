@@ -54,7 +54,68 @@ sealed class Exercise with _$Exercise {
       _$ExerciseFromJson(json);
 }
 
+/// An exercise's scheduled window resolved onto real dates.
+typedef ExerciseWindow = ({DateTime start, DateTime end});
+
+/// [time] on the calendar day of [day].
+DateTime _onDayOf(DateTime day, SimpleTimeOfDay time) =>
+    DateTime(day.year, day.month, day.day, time.hour, time.minute);
+
 extension ExerciseX on Exercise {
+  /// [startTime]/[endTime] resolved to real instants around [reference].
+  ///
+  /// A [SimpleTimeOfDay] is a clock face with no date, so a window that crosses
+  /// midnight ("23:00–01:00") is ambiguous until anchored. Anchoring naively on
+  /// *today* produced two visible bugs:
+  ///
+  /// - Starting a 23:00 exercise at 00:30 waited 22.5 hours instead of resuming 90
+  ///   minutes in. The old code pushed the *end* to tomorrow and left the start on
+  ///   today, so "now" fell before a window it was actually inside.
+  /// - The plan list read "20:15 - 01:15 | 19 timer": the duration was computed
+  ///   across one calendar day, giving 24h minus the real 5h.
+  ///
+  /// The rule here is that [reference] should land *inside* the window when any
+  /// candidate day contains it, and otherwise the window is the next upcoming one.
+  /// Only the previous day is considered — an exercise is a few hours long, so a
+  /// reference more than a day out is genuinely "not started yet" rather than a
+  /// stale anchor.
+  ExerciseWindow windowAt(DateTime reference) {
+    // Plain DateTime arithmetic, not the time_utils helpers: those import
+    // package:flutter, and the CLI reaches the models (AGENTS.md). Importing them
+    // here would also close a cycle — time_utils imports this file.
+    var start = _onDayOf(reference, startTime);
+    var end = _onDayOf(reference, endTime);
+    // Same clock face for both, or an end before the start, means the window runs
+    // past midnight.
+    if (!end.isAfter(start)) end = end.add(const Duration(days: 1));
+    if (reference.isBefore(start)) {
+      final previous = (
+        start: start.subtract(const Duration(days: 1)),
+        end: end.subtract(const Duration(days: 1)),
+      );
+      // Yesterday's occurrence is still running: the case that made a post-midnight
+      // start wait for the following evening.
+      if (!reference.isBefore(previous.start) &&
+          reference.isBefore(previous.end)) {
+        return previous;
+      }
+    }
+    return (start: start, end: end);
+  }
+
+  /// How long the exercise runs, midnight crossings included.
+  ///
+  /// Date-independent: [windowAt] resolves both ends onto the same anchor, so the
+  /// difference is the real length whatever day it is asked on.
+  Duration get scheduledDuration {
+    // Anchored on the start itself, so the answer does not depend on the day it is
+    // asked: the window resolver only ever needs the two clock faces plus a date to
+    // hang them on.
+    final anchor = _onDayOf(DateTime.now(), startTime);
+    final window = windowAt(anchor);
+    return window.end.difference(window.start);
+  }
+
   List<StationLocation> getLocations([bool withExersiceName = true]) {
     int i = 0;
     final markers = <StationLocation>[];

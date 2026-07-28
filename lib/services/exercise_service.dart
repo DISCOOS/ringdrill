@@ -214,20 +214,18 @@ class ExerciseService {
         // Total duration of a single round
         final roundTime = executionTime + evaluationTime + rotationTime;
         final totalTime = totalRounds * roundTime;
-        final st = _exercise!.startTime.toMaterial();
-        final et = _exercise!.endTime.toMaterial();
-
         // Anchored to `_startedOn` (fixed for the life of this run), not
         // `now` — see the field doc for why re-deriving these from a
         // moving "now" on every tick is the bug this anchor fixes.
-        final endTime = et.isBefore(st)
-            ? et.toDateTime(_startedOn).add(const Duration(days: 1))
-            : et.toDateTime(_startedOn);
-
-        // Calculate start date and time
-        final startTime = endTime.isBefore(_startedOn!)
-            ? st.toDateTime(_startedOn).add(const Duration(days: 1))
-            : st.toDateTime(_startedOn);
+        //
+        // The rollover moved into `windowAt`, which anchors the pair so the anchor
+        // lands *inside* the window when a candidate day contains it. The old code
+        // rolled the *end* forward instead: starting a 23:00 exercise at 00:30 left
+        // the start on today, 22.5 hours ahead, so the drill waited for that evening
+        // rather than resuming 90 minutes in.
+        final window = _exercise!.windowAt(_startedOn!);
+        final startTime = window.start;
+        final endTime = window.end;
 
         final startTimeDelta = currentTimeOfDay
             .toDateTime(now)
