@@ -41,9 +41,9 @@ _Plan _$PlanFromJson(Map<String, dynamic> json) => _Plan(
           ?.map((e) => RolePlay.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
-  actors:
-      (json['actors'] as List<dynamic>?)
-          ?.map((e) => Actor.fromJson(e as Map<String, dynamic>))
+  staff:
+      (json['staff'] as List<dynamic>?)
+          ?.map((e) => Staff.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
   tags:
@@ -71,7 +71,7 @@ Map<String, dynamic> _$PlanToJson(_Plan instance) => <String, dynamic>{
   'sessions': instance.sessions,
   'exercises': instance.exercises,
   'rolePlays': instance.rolePlays,
-  'actors': instance.actors,
+  'staff': instance.staff,
   'tags': instance.tags,
   'variables': instance.variables,
 };

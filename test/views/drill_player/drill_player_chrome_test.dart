@@ -55,7 +55,7 @@ Plan _shell() {
     sessions: const [],
     exercises: const [],
     rolePlays: const [],
-    actors: const [],
+    staff: const [],
   );
 }
 

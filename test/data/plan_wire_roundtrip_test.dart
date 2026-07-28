@@ -29,7 +29,7 @@ void main() {
       sessions: const [],
       exercises: const [],
       rolePlays: const [],
-      actors: const [],
+      staff: const [],
     );
   }
 

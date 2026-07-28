@@ -41,7 +41,7 @@ Plan _plan(String uuid, String name, {int exerciseCount = 0}) {
         ),
     ],
     rolePlays: const [],
-    actors: const [],
+    staff: const [],
   );
 }
 

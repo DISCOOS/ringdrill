@@ -29,7 +29,7 @@ void main() {
     sessions: const [],
     exercises: exercises,
     rolePlays: const [],
-    actors: const [],
+    staff: const [],
   );
 
   Exercise exercise(String uuid, String name, {int index = 0}) => Exercise(

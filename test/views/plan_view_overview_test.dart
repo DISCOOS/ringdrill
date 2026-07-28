@@ -42,7 +42,7 @@ Plan _basePlan({
     sessions: const [],
     exercises: const [],
     rolePlays: const [],
-    actors: const [],
+    staff: const [],
     variables: variables,
     briefIntroMd: briefIntroMd,
   );

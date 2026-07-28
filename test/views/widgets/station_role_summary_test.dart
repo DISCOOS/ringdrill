@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
@@ -21,7 +21,7 @@ const _planUuid = 'prog-srs';
 const _exerciseUuid = 'ex-srs';
 
 const _actorAUuid = 'actor-srs-a';
-final _actorA = Actor(uuid: _actorAUuid, realName: 'Kari Nordmann');
+final _actorA = Staff(uuid: _actorAUuid, realName: 'Kari Nordmann');
 
 // Role at station 0 with age, no actor
 const _roleWithAge = RolePlay(
@@ -40,7 +40,7 @@ const _roleCast = RolePlay(
   exerciseUuid: _exerciseUuid,
   stationIndex: 0,
   name: 'Anna Hansen',
-  actorUuid: _actorAUuid,
+  staffUuid: _actorAUuid,
 );
 
 // Role at station 1 — used to verify filtering (should not appear for station 0)

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
@@ -34,7 +34,7 @@ sealed class Plan with _$Plan {
     // @Default([]) so 1.0 archives without these keys deserialize to empty
     // lists rather than failing (ADR-0018 backward-compat requirement).
     @Default([]) List<RolePlay> rolePlays,
-    @Default([]) List<Actor> actors,
+    @Default([]) List<Staff> staff,
     // @Default([]) so 1.0/1.1/1.2 archives without the key deserialize to
     // an empty list rather than failing (ADR-0043; same pattern as ADR-0018).
     @Default(<String>[]) List<String> tags,
@@ -203,7 +203,17 @@ extension PlanX on Plan {
   ///
   /// Removed on purpose:
   /// - `uuid`, `contentHash`, `source` — identity/bookkeeping, not content.
-  /// - `actors` — local PII, excluded entirely per ADR-0018.
+  /// - `staff` — local PII, excluded entirely per ADR-0018 (the folder and
+  ///   field were `actors` before DESIGN-011; the denylist entry has to be
+  ///   renamed *with* the field, or a rename silently starts publishing PII).
+  ///
+  /// The denylist is the risk here: anything added to `Plan` in future is
+  /// published by default. That is tolerable while the catalog carries whole
+  /// plans, but the anticipated direction is a catalog of **templates** — a
+  /// drill file without the data that implements a particular run — which is an
+  /// allowlist question, not a denylist one. Adding an instance-only field then
+  /// would leak it into the catalog with no code change and nothing failing.
+  /// See docs/drill-file-format.md.
   /// - `metadata` — carries `languageCode` (user-chosen content, ADR-0007
   ///   addendum) alongside `created`/`updated`/`version`/`schema`, which
   ///   drift without the plan's content changing. Only `languageCode` is
@@ -247,7 +257,7 @@ extension PlanX on Plan {
       ..remove('uuid')
       ..remove('contentHash')
       ..remove('source')
-      ..remove('actors')
+      ..remove('staff')
       ..remove('metadata')
       ..remove('exercises')
       ..remove('teams')

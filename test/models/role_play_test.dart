@@ -19,7 +19,7 @@ void main() {
         background: 'Erfaren turgåer',
         behavior: 'Forvirret, underavkjølt',
         stationIndex: 2,
-        actorUuid: 'actor-1',
+        staffUuid: 'actor-1',
       );
       final json = rp.toJson();
       expect(json.containsKey('behavior'), isFalse);
@@ -30,7 +30,7 @@ void main() {
       expect(decoded.age, rp.age);
       expect(decoded.description, rp.description);
       expect(decoded.stationIndex, rp.stationIndex);
-      expect(decoded.actorUuid, rp.actorUuid);
+      expect(decoded.staffUuid, rp.staffUuid);
       expect(decoded.behavior, isNull); // behavior is not in JSON
       expect(decoded.background, isNull); // background is not in JSON
     },
@@ -47,7 +47,7 @@ void main() {
     final decoded = RolePlay.fromJson(json);
     expect(decoded, rp);
     expect(decoded.age, isNull);
-    expect(decoded.actorUuid, isNull);
+    expect(decoded.staffUuid, isNull);
     expect(decoded.position, isNull);
   });
 

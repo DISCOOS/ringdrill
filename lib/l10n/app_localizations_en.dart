@@ -1621,9 +1621,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get castRoster => 'Cast roster';
 
   @override
-  String get newActor => 'New actor';
-
-  @override
   String castedAs(String names) {
     return 'Cast as: $names';
   }
@@ -1644,14 +1641,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get noActorsInRoster => 'No actors yet. Tap + New actor to add one.';
-
-  @override
-  String get emptyRosterTitle => 'No actors yet';
+  String get emptyRosterTitle => 'No staff yet';
 
   @override
   String get emptyRosterBody =>
-      'Actors are the people who play out roles in your exercises. Add your first actor here, then cast them in roles from the Script tab in the Plan.';
+      'Add exercise directors, instructors and markers here.';
 
   @override
   String get noActivePlanHint =>
@@ -1724,9 +1718,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actorNotes => 'Notes';
-
-  @override
-  String get deleteActor => 'Delete actor';
 
   @override
   String confirmDeleteActor(String name) {
@@ -1945,10 +1936,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailEmptyTeam => 'Select a team';
 
   @override
-  String get rosterTab => 'Roster';
+  String get rosterTab => 'Staff';
 
   @override
-  String get detailEmptyRoster => 'Select an actor to see details';
+  String get detailEmptyRoster => 'Select a member to see details';
 
   @override
   String get editPlan => 'Edit plan';
@@ -2748,4 +2739,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editPlacement => 'Edit placement';
+
+  @override
+  String get newStaff => 'New member';
+
+  @override
+  String get deleteStaff => 'Delete member';
+
+  @override
+  String get noStaffInRoster => 'No staff yet. Tap + New member to add one.';
+
+  @override
+  String get staffRoleDirector => 'Exercise director';
+
+  @override
+  String get staffRoleInstructor => 'Instructor';
+
+  @override
+  String get staffRoleOther => 'Other';
+
+  @override
+  String get staffRoleMarkor => 'Marker';
+
+  @override
+  String get staffRolesLabel => 'Roles';
+
+  @override
+  String get staffPlaysLabel => 'Plays';
 }

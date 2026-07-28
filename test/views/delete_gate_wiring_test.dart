@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/data/plan_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
@@ -41,7 +41,7 @@ Plan _shell() {
     teams: const [],
     sessions: const [],
     exercises: const [],
-    actors: const [Actor(uuid: _actorUuid, realName: 'Nina Actor')],
+    staff: const [Staff(uuid: _actorUuid, realName: 'Nina Staff')],
   );
 }
 
@@ -72,7 +72,7 @@ RolePlay _rolePlay() => const RolePlay(
   exerciseUuid: _exerciseUuid,
   stationIndex: 0,
   name: 'Hilde',
-  actorUuid: _actorUuid,
+  staffUuid: _actorUuid,
   position: LatLng(59.92, 10.76),
 );
 
@@ -87,7 +87,7 @@ Future<void> _seed() async {
   await repo.savePlanShell(_shell());
   await repo.setActivePlanUuid(_planUuid);
   await repo.saveExercise(_exercise());
-  await repo.saveActor(const Actor(uuid: _actorUuid, realName: 'Nina Actor'));
+  await repo.saveStaff(const Staff(uuid: _actorUuid, realName: 'Nina Staff'));
   await repo.saveRolePlay(_rolePlay());
   await PlanService().init();
 }

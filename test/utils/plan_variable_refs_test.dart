@@ -21,7 +21,7 @@ Plan _emptyPlan() {
     sessions: const [],
     exercises: const [],
     rolePlays: const [],
-    actors: const [],
+    staff: const [],
   );
 }
 

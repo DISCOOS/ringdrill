@@ -8,7 +8,7 @@ import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/drill_library.dart';
 import 'package:ringdrill/data/plan_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/plan.dart';
@@ -133,7 +133,7 @@ class PlanEvent {
   final Exercise? exercise;
   final Team? team;
   final RolePlay? rolePlay;
-  final Actor? actor;
+  final Staff? actor;
   final PlanEventType type;
 
   PlanEvent(
@@ -161,10 +161,10 @@ class PlanEvent {
   factory PlanEvent.rolePlayDeleted(Plan plan, RolePlay rolePlay) =>
       PlanEvent(PlanEventType.rolePlayDeleted, plan, rolePlay: rolePlay);
 
-  factory PlanEvent.actorSaved(Plan plan, Actor actor) =>
+  factory PlanEvent.actorSaved(Plan plan, Staff actor) =>
       PlanEvent(PlanEventType.actorSaved, plan, actor: actor);
 
-  factory PlanEvent.actorDeleted(Plan plan, Actor actor) =>
+  factory PlanEvent.actorDeleted(Plan plan, Staff actor) =>
       PlanEvent(PlanEventType.actorDeleted, plan, actor: actor);
 
   factory PlanEvent.opened(Plan plan, DrillFile file) =>
@@ -243,7 +243,7 @@ class PlanService {
       sessions: const [],
       exercises: const [],
       rolePlays: const [],
-      actors: const [],
+      staff: const [],
     );
     final plan = emptyPlan.copyWith(
       contentHash: emptyPlan.computeContentHash(),
@@ -411,26 +411,26 @@ class PlanService {
     return deleted;
   }
 
-  List<Actor> loadActors() {
+  List<Staff> loadStaff() {
     if (activePlanUuid == null) return const [];
-    return _repo.loadActors();
+    return _repo.loadStaff();
   }
 
-  Actor? getActor(String uuid) => _repo.getActor(uuid);
+  Staff? getStaff(String uuid) => _repo.getStaff(uuid);
 
   /// See [saveRolePlay] for the rationale behind requiring localizations
   /// and ensuring an active plan before write.
-  Future<void> saveActor(AppLocalizations localizations, Actor actor) async {
+  Future<void> saveStaff(AppLocalizations localizations, Staff actor) async {
     await _ensureActivePlan(localizations.defaultPlanName);
-    await _repo.saveActor(actor);
+    await _repo.saveStaff(actor);
     final plan = activePlan;
     if (plan != null) {
       _controller.add(PlanEvent.actorSaved(plan, actor));
     }
   }
 
-  Future<Actor?> deleteActor(String uuid) async {
-    final deleted = await _repo.deleteActor(uuid);
+  Future<Staff?> deleteStaff(String uuid) async {
+    final deleted = await _repo.deleteStaff(uuid);
     final plan = activePlan;
     if (deleted != null && plan != null) {
       _controller.add(PlanEvent.actorDeleted(plan, deleted));
@@ -693,7 +693,7 @@ class PlanService {
       // Keep the local cast roster when re-opening a plan we already have.
       // A catalog download has actors/ stripped server-side (ADR-0018), so
       // without this the existing actors would be wiped on every reinstall.
-      actors: _mergeLocalActors(incoming.uuid, incoming.actors),
+      staff: _mergeLocalStaff(incoming.uuid, incoming.staff),
     );
     await _repo.savePlan(installed);
     if (activate) {
@@ -1099,7 +1099,7 @@ class PlanService {
       sessions: current?.sessions ?? const [],
       exercises: exercises,
       rolePlays: loadRolePlays(),
-      actors: loadActors(),
+      staff: loadStaff(),
     );
   }
 
@@ -1137,7 +1137,7 @@ class PlanService {
       // The remote copy never carries actors (stripped server-side per
       // ADR-0018). Merge in the locally-stored cast so a refresh does not
       // silently destroy the user's roster and break role↔actor links.
-      actors: _mergeLocalActors(local.uuid, remote.actors),
+      staff: _mergeLocalStaff(local.uuid, remote.staff),
     );
     await _repo.savePlan(merged);
     _controller.add(PlanEvent(PlanEventType.planRefreshed, merged));
@@ -1154,8 +1154,8 @@ class PlanService {
   /// [incoming]) are retained. A first install has no existing actors, so it
   /// returns [incoming] unchanged. A genuine peer-to-peer `.drill` that
   /// legitimately carries actors still imports them.
-  List<Actor> _mergeLocalActors(String planUuid, List<Actor> incoming) {
-    final existing = _repo.loadActors(planUuid);
+  List<Staff> _mergeLocalStaff(String planUuid, List<Staff> incoming) {
+    final existing = _repo.loadStaff(planUuid);
     if (existing.isEmpty) return incoming;
     final incomingUuids = {for (final a in incoming) a.uuid};
     return [

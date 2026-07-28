@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
@@ -258,12 +258,12 @@ void main() {
         final service = PlanService();
         await service.saveExercise(l10n, _ex('ex-1'));
 
-        const actor = Actor(
+        const actor = Staff(
           uuid: 'actor-1',
           realName: 'Kari Nordmann',
           phone: '12345678',
         );
-        await service.saveActor(l10n, actor);
+        await service.saveStaff(l10n, actor);
 
         const rp = RolePlay(
           uuid: 'rp-1',
@@ -271,7 +271,7 @@ void main() {
           exerciseUuid: 'ex-1',
           name: 'Turgåer',
           stationIndex: 0,
-          actorUuid: 'actor-1',
+          staffUuid: 'actor-1',
         );
         await service.saveRolePlay(l10n, rp);
         expect(service.getRolePlay('rp-1'), isNotNull);
@@ -282,8 +282,8 @@ void main() {
         expect(removed?.uuid, 'rp-1');
         expect(service.getRolePlay('rp-1'), isNull);
         // …but the actor it was cast from stays in the roster, just uncast.
-        expect(service.getActor('actor-1'), isNotNull);
-        expect(service.loadActors().map((a) => a.uuid), contains('actor-1'));
+        expect(service.getStaff('actor-1'), isNotNull);
+        expect(service.loadStaff().map((a) => a.uuid), contains('actor-1'));
       },
     );
   });
@@ -322,29 +322,29 @@ void main() {
       expect(types, contains(PlanEventType.rolePlayDeleted));
     });
 
-    test('saveActor emits actorSaved', () async {
+    test('saveStaff emits actorSaved', () async {
       final service = PlanService();
       final types = await capture(
         service,
-        () => service.saveActor(
+        () => service.saveStaff(
           l10n,
-          const Actor(uuid: 'actor-1', realName: 'Kari'),
+          const Staff(uuid: 'actor-1', realName: 'Kari'),
         ),
       );
 
       expect(types, contains(PlanEventType.actorSaved));
     });
 
-    test('deleteActor emits actorDeleted', () async {
+    test('deleteStaff emits actorDeleted', () async {
       final service = PlanService();
-      await service.saveActor(
+      await service.saveStaff(
         l10n,
-        const Actor(uuid: 'actor-1', realName: 'Kari'),
+        const Staff(uuid: 'actor-1', realName: 'Kari'),
       );
 
       final types = await capture(
         service,
-        () => service.deleteActor('actor-1'),
+        () => service.deleteStaff('actor-1'),
       );
 
       expect(types, contains(PlanEventType.actorDeleted));

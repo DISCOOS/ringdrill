@@ -57,7 +57,7 @@ void main() {
       sessions: const [],
       exercises: [exercise],
       rolePlays: const [],
-      actors: const [],
+      staff: const [],
     );
     return baseline.copyWith(contentHash: baseline.computeContentHash());
   }

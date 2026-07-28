@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
@@ -22,8 +22,8 @@ Finder _pencilFor(String realName) => find.descendant(
 const _planUuid = 'prog-1';
 const _exerciseUuid = 'ex-1';
 
-const _actorUncast = Actor(uuid: 'actor-a', realName: 'Anna Skov');
-const _actorCast = Actor(uuid: 'actor-b', realName: 'Bjørn Lie');
+const _actorUncast = Staff(uuid: 'actor-a', realName: 'Anna Skov');
+const _actorCast = Staff(uuid: 'actor-b', realName: 'Bjørn Lie');
 
 const _roleA = RolePlay(
   uuid: 'role-a',
@@ -36,7 +36,7 @@ const _roleB = RolePlay(
   index: 1,
   exerciseUuid: _exerciseUuid,
   name: 'Pasient B',
-  actorUuid: 'actor-b', // cast to _actorCast
+  staffUuid: 'actor-b', // cast to _actorCast
 );
 
 /// Seeds SharedPreferences with a plan, two roles, and two actors,
@@ -90,7 +90,7 @@ void main() {
     expect(find.text(_actorUncast.realName), findsOneWidget);
     expect(find.text(_actorCast.realName), findsOneWidget);
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    expect(find.text(l10n.newActor), findsOneWidget);
+    expect(find.text(l10n.newStaff), findsOneWidget);
     expect(find.text(l10n.clearCast), findsNothing);
   });
 
@@ -106,10 +106,10 @@ void main() {
     // the actor rows come before "Ny markør", which comes before "Fjern markør".
     expect(
       tester.getTopLeft(find.text(_actorUncast.realName)).dy,
-      lessThan(tester.getTopLeft(find.text(l10n.newActor)).dy),
+      lessThan(tester.getTopLeft(find.text(l10n.newStaff)).dy),
     );
     expect(
-      tester.getTopLeft(find.text(l10n.newActor)).dy,
+      tester.getTopLeft(find.text(l10n.newStaff)).dy,
       lessThan(tester.getTopLeft(find.text(l10n.clearCast)).dy),
     );
 
@@ -150,9 +150,9 @@ void main() {
     // picker), so seed enough actors to cross the threshold.
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     for (var i = 0; i < 6; i++) {
-      await PlanService().saveActor(
+      await PlanService().saveStaff(
         l10n,
-        Actor(uuid: 'extra-$i', realName: 'Extra $i'),
+        Staff(uuid: 'extra-$i', realName: 'Extra $i'),
       );
     }
     await tester.pumpWidget(_buildPicker(_roleA));
@@ -196,8 +196,8 @@ void main() {
     expect(
       result,
       isA<CastPickerSelect>().having(
-        (result) => result.actorUuid,
-        'actorUuid',
+        (result) => result.staffUuid,
+        'staffUuid',
         _actorUncast.uuid,
       ),
     );
@@ -269,8 +269,8 @@ void main() {
     expect(
       result,
       isA<CastPickerSelect>().having(
-        (result) => result.actorUuid,
-        'actorUuid',
+        (result) => result.staffUuid,
+        'staffUuid',
         _actorUncast.uuid,
       ),
     );
@@ -348,7 +348,7 @@ void main() {
     });
 
     testWidgets(
-      'the pencil opens ActorFormScreen for that row\'s own actor and '
+      'the pencil opens StaffFormScreen for that row\'s own actor and '
       'saving updates the name in place without closing the sheet',
       (tester) async {
         await tester.pumpWidget(_buildPicker(_roleA));

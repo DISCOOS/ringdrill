@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:nanoid/nanoid.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
@@ -83,7 +83,7 @@ class PlanRepository {
           sessions: const [],
           exercises: const [],
           rolePlays: const [],
-          actors: const [],
+          staff: const [],
         ),
       );
       await _prefs.setString(AppConfig.keyActivePlan, planUuid);
@@ -117,7 +117,7 @@ class PlanRepository {
       teams: loadTeams(uuid),
       sessions: loadSessions(uuid),
       rolePlays: loadRolePlays(uuid),
-      actors: loadActors(uuid),
+      staff: loadStaff(uuid),
     );
   }
 
@@ -127,7 +127,7 @@ class PlanRepository {
       teams: const [],
       sessions: const [],
       rolePlays: const [],
-      actors: const [],
+      staff: const [],
     );
     await _prefs.setString(_planKey(plan.uuid), jsonEncode(shell.toJson()));
     await _writePlanBrief(plan);
@@ -141,7 +141,7 @@ class PlanRepository {
       teams: plan.teams,
       sessions: plan.sessions,
       rolePlays: plan.rolePlays,
-      actors: plan.actors,
+      staff: plan.staff,
     );
   }
 
@@ -399,7 +399,7 @@ class PlanRepository {
     required List<Team> teams,
     required List<Session> sessions,
     required List<RolePlay> rolePlays,
-    required List<Actor> actors,
+    required List<Staff> staff,
   }) async {
     final keys = _prefs
         .getKeys()
@@ -444,12 +444,12 @@ class PlanRepository {
       );
       await _writeRolePlayBrief(planUuid, rolePlay);
     }
-    for (final actor in actors) {
+    for (final actor in staff) {
       await _prefs.setString(
-        _actorKey(planUuid, actor.uuid),
+        _staffKey(planUuid, actor.uuid),
         jsonEncode(actor.toJson()),
       );
-      // Actor.notes is excluded from JSON (ADR-0022) — store separately.
+      // Staff.notes is excluded from JSON (ADR-0022) — store separately.
       final notesKey = _actorNotesKey(planUuid, actor.uuid);
       if (actor.notes != null) {
         await _prefs.setString(notesKey, actor.notes!);
@@ -527,17 +527,17 @@ class PlanRepository {
     return deleted;
   }
 
-  List<Actor> loadActors([String? planUuid]) {
+  List<Staff> loadStaff([String? planUuid]) {
     final uuid = _requirePlanUuid(planUuid);
-    final items = <Actor>[];
+    final items = <Staff>[];
     for (final key in _prefs.getKeys().where(
       (k) => k.startsWith('pa:$uuid:'),
     )) {
       final value = _prefs.getString(key);
       if (value == null) continue;
-      var parsed = _tryParseEntry(key, value, Actor.fromJson);
+      var parsed = _tryParseEntry(key, value, Staff.fromJson);
       if (parsed == null) continue;
-      // Actor.notes is excluded from JSON (ADR-0022); restore from separate key.
+      // Staff.notes is excluded from JSON (ADR-0022); restore from separate key.
       final notes = _prefs.getString(_actorNotesKey(uuid, parsed.uuid));
       if (notes != null) parsed = parsed.copyWith(notes: notes);
       items.add(parsed);
@@ -546,26 +546,26 @@ class PlanRepository {
     return items;
   }
 
-  Actor? getActor(String uuid, [String? planUuid]) {
+  Staff? getStaff(String uuid, [String? planUuid]) {
     final planId = _requirePlanUuid(planUuid);
-    final key = _actorKey(planId, uuid);
+    final key = _staffKey(planId, uuid);
     final jsonString = _prefs.getString(key);
     if (jsonString == null) return null;
-    var actor = _tryParseEntry(key, jsonString, Actor.fromJson);
+    var actor = _tryParseEntry(key, jsonString, Staff.fromJson);
     if (actor == null) return null;
-    // Actor.notes is excluded from JSON (ADR-0022); restore from separate key.
+    // Staff.notes is excluded from JSON (ADR-0022); restore from separate key.
     final notes = _prefs.getString(_actorNotesKey(planId, uuid));
     if (notes != null) actor = actor.copyWith(notes: notes);
     return actor;
   }
 
-  Future<void> saveActor(Actor actor, [String? planUuid]) async {
+  Future<void> saveStaff(Staff actor, [String? planUuid]) async {
     final planId = _requirePlanUuid(planUuid);
     await _prefs.setString(
-      _actorKey(planId, actor.uuid),
+      _staffKey(planId, actor.uuid),
       jsonEncode(actor.toJson()),
     );
-    // Actor.notes is excluded from JSON (ADR-0022) — store separately.
+    // Staff.notes is excluded from JSON (ADR-0022) — store separately.
     final notesKey = _actorNotesKey(planId, actor.uuid);
     if (actor.notes != null) {
       await _prefs.setString(notesKey, actor.notes!);
@@ -575,11 +575,11 @@ class PlanRepository {
     await _touchPlan(planId);
   }
 
-  Future<Actor?> deleteActor(String uuid, [String? planUuid]) async {
+  Future<Staff?> deleteStaff(String uuid, [String? planUuid]) async {
     final planId = _requirePlanUuid(planUuid);
-    final deleted = getActor(uuid, planId);
+    final deleted = getStaff(uuid, planId);
     if (deleted != null) {
-      await _prefs.remove(_actorKey(planId, uuid));
+      await _prefs.remove(_staffKey(planId, uuid));
       await _prefs.remove(_actorNotesKey(planId, uuid));
       await _touchPlan(planId);
     }
@@ -591,8 +591,8 @@ class PlanRepository {
   String _teamKey(String planUuid, String uuid) => 'pt:$planUuid:$uuid';
   String _sessionKey(String planUuid, String uuid) => 'ps:$planUuid:$uuid';
   String _rolePlayKey(String planUuid, String uuid) => 'pr:$planUuid:$uuid';
-  String _actorKey(String planUuid, String uuid) => 'pa:$planUuid:$uuid';
-  // Actor.notes is excluded from JSON manifests (ADR-0022); stored under pan:.
+  String _staffKey(String planUuid, String uuid) => 'pa:$planUuid:$uuid';
+  // Staff.notes is excluded from JSON manifests (ADR-0022); stored under pan:.
   String _actorNotesKey(String planUuid, String uuid) => 'pan:$planUuid:$uuid';
 
   // Brief markdown sidecars (ADR-0022). The *Md/brief fields on Plan,
@@ -601,7 +601,7 @@ class PlanRepository {
   // store is SharedPreferences JSON, so without a parallel sidecar here those
   // fields are silently dropped on every save (and read back as null). Each
   // key holds a small JSON blob of just the markdown fields, mirroring the
-  // pan: precedent for Actor.notes.
+  // pan: precedent for Staff.notes.
   String _planBriefKey(String uuid) => 'pgm:$uuid';
   String _exerciseBriefKey(String planUuid, String uuid) =>
       'pem:$planUuid:$uuid';

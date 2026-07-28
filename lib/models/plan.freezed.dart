@@ -17,7 +17,7 @@ mixin _$Plan {
 
  String get uuid; String get name; String get description; ExerciseNumberFormat get exerciseNumberFormat; StationNumberFormat get stationNumberFormat; PlanMetadata get metadata; PlanSource get source; String? get contentHash; List<Team> get teams; List<Session> get sessions; List<Exercise> get exercises;// @Default([]) so 1.0 archives without these keys deserialize to empty
 // lists rather than failing (ADR-0018 backward-compat requirement).
- List<RolePlay> get rolePlays; List<Actor> get actors;// @Default([]) so 1.0/1.1/1.2 archives without the key deserialize to
+ List<RolePlay> get rolePlays; List<Staff> get staff;// @Default([]) so 1.0/1.1/1.2 archives without the key deserialize to
 // an empty list rather than failing (ADR-0043; same pattern as ADR-0018).
  List<String> get tags;// @Default([]) so 1.0/1.1/1.2 archives without the key deserialize to
 // an empty registry (ADR-0046, additive field, no schema bump).
@@ -44,16 +44,16 @@ $PlanCopyWith<Plan> get copyWith => _$PlanCopyWithImpl<Plan>(this as Plan, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Plan&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.exerciseNumberFormat, exerciseNumberFormat) || other.exerciseNumberFormat == exerciseNumberFormat)&&(identical(other.stationNumberFormat, stationNumberFormat) || other.stationNumberFormat == stationNumberFormat)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&(identical(other.source, source) || other.source == source)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&const DeepCollectionEquality().equals(other.teams, teams)&&const DeepCollectionEquality().equals(other.sessions, sessions)&&const DeepCollectionEquality().equals(other.exercises, exercises)&&const DeepCollectionEquality().equals(other.rolePlays, rolePlays)&&const DeepCollectionEquality().equals(other.actors, actors)&&const DeepCollectionEquality().equals(other.tags, tags)&&const DeepCollectionEquality().equals(other.variables, variables)&&(identical(other.briefIntroMd, briefIntroMd) || other.briefIntroMd == briefIntroMd)&&(identical(other.commsMd, commsMd) || other.commsMd == commsMd)&&(identical(other.beforeRoundMd, beforeRoundMd) || other.beforeRoundMd == beforeRoundMd));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Plan&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.exerciseNumberFormat, exerciseNumberFormat) || other.exerciseNumberFormat == exerciseNumberFormat)&&(identical(other.stationNumberFormat, stationNumberFormat) || other.stationNumberFormat == stationNumberFormat)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&(identical(other.source, source) || other.source == source)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&const DeepCollectionEquality().equals(other.teams, teams)&&const DeepCollectionEquality().equals(other.sessions, sessions)&&const DeepCollectionEquality().equals(other.exercises, exercises)&&const DeepCollectionEquality().equals(other.rolePlays, rolePlays)&&const DeepCollectionEquality().equals(other.staff, staff)&&const DeepCollectionEquality().equals(other.tags, tags)&&const DeepCollectionEquality().equals(other.variables, variables)&&(identical(other.briefIntroMd, briefIntroMd) || other.briefIntroMd == briefIntroMd)&&(identical(other.commsMd, commsMd) || other.commsMd == commsMd)&&(identical(other.beforeRoundMd, beforeRoundMd) || other.beforeRoundMd == beforeRoundMd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,uuid,name,description,exerciseNumberFormat,stationNumberFormat,metadata,source,contentHash,const DeepCollectionEquality().hash(teams),const DeepCollectionEquality().hash(sessions),const DeepCollectionEquality().hash(exercises),const DeepCollectionEquality().hash(rolePlays),const DeepCollectionEquality().hash(actors),const DeepCollectionEquality().hash(tags),const DeepCollectionEquality().hash(variables),briefIntroMd,commsMd,beforeRoundMd);
+int get hashCode => Object.hash(runtimeType,uuid,name,description,exerciseNumberFormat,stationNumberFormat,metadata,source,contentHash,const DeepCollectionEquality().hash(teams),const DeepCollectionEquality().hash(sessions),const DeepCollectionEquality().hash(exercises),const DeepCollectionEquality().hash(rolePlays),const DeepCollectionEquality().hash(staff),const DeepCollectionEquality().hash(tags),const DeepCollectionEquality().hash(variables),briefIntroMd,commsMd,beforeRoundMd);
 
 @override
 String toString() {
-  return 'Plan(uuid: $uuid, name: $name, description: $description, exerciseNumberFormat: $exerciseNumberFormat, stationNumberFormat: $stationNumberFormat, metadata: $metadata, source: $source, contentHash: $contentHash, teams: $teams, sessions: $sessions, exercises: $exercises, rolePlays: $rolePlays, actors: $actors, tags: $tags, variables: $variables, briefIntroMd: $briefIntroMd, commsMd: $commsMd, beforeRoundMd: $beforeRoundMd)';
+  return 'Plan(uuid: $uuid, name: $name, description: $description, exerciseNumberFormat: $exerciseNumberFormat, stationNumberFormat: $stationNumberFormat, metadata: $metadata, source: $source, contentHash: $contentHash, teams: $teams, sessions: $sessions, exercises: $exercises, rolePlays: $rolePlays, staff: $staff, tags: $tags, variables: $variables, briefIntroMd: $briefIntroMd, commsMd: $commsMd, beforeRoundMd: $beforeRoundMd)';
 }
 
 
@@ -64,7 +64,7 @@ abstract mixin class $PlanCopyWith<$Res>  {
   factory $PlanCopyWith(Plan value, $Res Function(Plan) _then) = _$PlanCopyWithImpl;
 @useResult
 $Res call({
- String uuid, String name, String description, ExerciseNumberFormat exerciseNumberFormat, StationNumberFormat stationNumberFormat, PlanMetadata metadata, PlanSource source, String? contentHash, List<Team> teams, List<Session> sessions, List<Exercise> exercises, List<RolePlay> rolePlays, List<Actor> actors, List<String> tags, List<DrillVariable> variables,@JsonKey(includeFromJson: false, includeToJson: false) String? briefIntroMd,@JsonKey(includeFromJson: false, includeToJson: false) String? commsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? beforeRoundMd
+ String uuid, String name, String description, ExerciseNumberFormat exerciseNumberFormat, StationNumberFormat stationNumberFormat, PlanMetadata metadata, PlanSource source, String? contentHash, List<Team> teams, List<Session> sessions, List<Exercise> exercises, List<RolePlay> rolePlays, List<Staff> staff, List<String> tags, List<DrillVariable> variables,@JsonKey(includeFromJson: false, includeToJson: false) String? briefIntroMd,@JsonKey(includeFromJson: false, includeToJson: false) String? commsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? beforeRoundMd
 });
 
 
@@ -81,7 +81,7 @@ class _$PlanCopyWithImpl<$Res>
 
 /// Create a copy of Plan
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? uuid = null,Object? name = null,Object? description = null,Object? exerciseNumberFormat = null,Object? stationNumberFormat = null,Object? metadata = null,Object? source = null,Object? contentHash = freezed,Object? teams = null,Object? sessions = null,Object? exercises = null,Object? rolePlays = null,Object? actors = null,Object? tags = null,Object? variables = null,Object? briefIntroMd = freezed,Object? commsMd = freezed,Object? beforeRoundMd = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? uuid = null,Object? name = null,Object? description = null,Object? exerciseNumberFormat = null,Object? stationNumberFormat = null,Object? metadata = null,Object? source = null,Object? contentHash = freezed,Object? teams = null,Object? sessions = null,Object? exercises = null,Object? rolePlays = null,Object? staff = null,Object? tags = null,Object? variables = null,Object? briefIntroMd = freezed,Object? commsMd = freezed,Object? beforeRoundMd = freezed,}) {
   return _then(_self.copyWith(
 uuid: null == uuid ? _self.uuid : uuid // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -95,8 +95,8 @@ as String?,teams: null == teams ? _self.teams : teams // ignore: cast_nullable_t
 as List<Team>,sessions: null == sessions ? _self.sessions : sessions // ignore: cast_nullable_to_non_nullable
 as List<Session>,exercises: null == exercises ? _self.exercises : exercises // ignore: cast_nullable_to_non_nullable
 as List<Exercise>,rolePlays: null == rolePlays ? _self.rolePlays : rolePlays // ignore: cast_nullable_to_non_nullable
-as List<RolePlay>,actors: null == actors ? _self.actors : actors // ignore: cast_nullable_to_non_nullable
-as List<Actor>,tags: null == tags ? _self.tags : tags // ignore: cast_nullable_to_non_nullable
+as List<RolePlay>,staff: null == staff ? _self.staff : staff // ignore: cast_nullable_to_non_nullable
+as List<Staff>,tags: null == tags ? _self.tags : tags // ignore: cast_nullable_to_non_nullable
 as List<String>,variables: null == variables ? _self.variables : variables // ignore: cast_nullable_to_non_nullable
 as List<DrillVariable>,briefIntroMd: freezed == briefIntroMd ? _self.briefIntroMd : briefIntroMd // ignore: cast_nullable_to_non_nullable
 as String?,commsMd: freezed == commsMd ? _self.commsMd : commsMd // ignore: cast_nullable_to_non_nullable
@@ -201,10 +201,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ExerciseNumberFormat exerciseNumberFormat,  StationNumberFormat stationNumberFormat,  PlanMetadata metadata,  PlanSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises,  List<RolePlay> rolePlays,  List<Actor> actors,  List<String> tags,  List<DrillVariable> variables, @JsonKey(includeFromJson: false, includeToJson: false)  String? briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? commsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? beforeRoundMd)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ExerciseNumberFormat exerciseNumberFormat,  StationNumberFormat stationNumberFormat,  PlanMetadata metadata,  PlanSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises,  List<RolePlay> rolePlays,  List<Staff> staff,  List<String> tags,  List<DrillVariable> variables, @JsonKey(includeFromJson: false, includeToJson: false)  String? briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? commsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? beforeRoundMd)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Plan() when $default != null:
-return $default(_that.uuid,_that.name,_that.description,_that.exerciseNumberFormat,_that.stationNumberFormat,_that.metadata,_that.source,_that.contentHash,_that.teams,_that.sessions,_that.exercises,_that.rolePlays,_that.actors,_that.tags,_that.variables,_that.briefIntroMd,_that.commsMd,_that.beforeRoundMd);case _:
+return $default(_that.uuid,_that.name,_that.description,_that.exerciseNumberFormat,_that.stationNumberFormat,_that.metadata,_that.source,_that.contentHash,_that.teams,_that.sessions,_that.exercises,_that.rolePlays,_that.staff,_that.tags,_that.variables,_that.briefIntroMd,_that.commsMd,_that.beforeRoundMd);case _:
   return orElse();
 
 }
@@ -222,10 +222,10 @@ return $default(_that.uuid,_that.name,_that.description,_that.exerciseNumberForm
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ExerciseNumberFormat exerciseNumberFormat,  StationNumberFormat stationNumberFormat,  PlanMetadata metadata,  PlanSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises,  List<RolePlay> rolePlays,  List<Actor> actors,  List<String> tags,  List<DrillVariable> variables, @JsonKey(includeFromJson: false, includeToJson: false)  String? briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? commsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? beforeRoundMd)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ExerciseNumberFormat exerciseNumberFormat,  StationNumberFormat stationNumberFormat,  PlanMetadata metadata,  PlanSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises,  List<RolePlay> rolePlays,  List<Staff> staff,  List<String> tags,  List<DrillVariable> variables, @JsonKey(includeFromJson: false, includeToJson: false)  String? briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? commsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? beforeRoundMd)  $default,) {final _that = this;
 switch (_that) {
 case _Plan():
-return $default(_that.uuid,_that.name,_that.description,_that.exerciseNumberFormat,_that.stationNumberFormat,_that.metadata,_that.source,_that.contentHash,_that.teams,_that.sessions,_that.exercises,_that.rolePlays,_that.actors,_that.tags,_that.variables,_that.briefIntroMd,_that.commsMd,_that.beforeRoundMd);}
+return $default(_that.uuid,_that.name,_that.description,_that.exerciseNumberFormat,_that.stationNumberFormat,_that.metadata,_that.source,_that.contentHash,_that.teams,_that.sessions,_that.exercises,_that.rolePlays,_that.staff,_that.tags,_that.variables,_that.briefIntroMd,_that.commsMd,_that.beforeRoundMd);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -239,10 +239,10 @@ return $default(_that.uuid,_that.name,_that.description,_that.exerciseNumberForm
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String name,  String description,  ExerciseNumberFormat exerciseNumberFormat,  StationNumberFormat stationNumberFormat,  PlanMetadata metadata,  PlanSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises,  List<RolePlay> rolePlays,  List<Actor> actors,  List<String> tags,  List<DrillVariable> variables, @JsonKey(includeFromJson: false, includeToJson: false)  String? briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? commsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? beforeRoundMd)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String name,  String description,  ExerciseNumberFormat exerciseNumberFormat,  StationNumberFormat stationNumberFormat,  PlanMetadata metadata,  PlanSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises,  List<RolePlay> rolePlays,  List<Staff> staff,  List<String> tags,  List<DrillVariable> variables, @JsonKey(includeFromJson: false, includeToJson: false)  String? briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? commsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? beforeRoundMd)?  $default,) {final _that = this;
 switch (_that) {
 case _Plan() when $default != null:
-return $default(_that.uuid,_that.name,_that.description,_that.exerciseNumberFormat,_that.stationNumberFormat,_that.metadata,_that.source,_that.contentHash,_that.teams,_that.sessions,_that.exercises,_that.rolePlays,_that.actors,_that.tags,_that.variables,_that.briefIntroMd,_that.commsMd,_that.beforeRoundMd);case _:
+return $default(_that.uuid,_that.name,_that.description,_that.exerciseNumberFormat,_that.stationNumberFormat,_that.metadata,_that.source,_that.contentHash,_that.teams,_that.sessions,_that.exercises,_that.rolePlays,_that.staff,_that.tags,_that.variables,_that.briefIntroMd,_that.commsMd,_that.beforeRoundMd);case _:
   return null;
 
 }
@@ -254,7 +254,7 @@ return $default(_that.uuid,_that.name,_that.description,_that.exerciseNumberForm
 @JsonSerializable()
 
 class _Plan implements Plan {
-  const _Plan({required this.uuid, required this.name, required this.description, this.exerciseNumberFormat = ExerciseNumberFormat.hash, this.stationNumberFormat = StationNumberFormat.dotted, required this.metadata, this.source = const PlanSource.local(), this.contentHash, required final  List<Team> teams, required final  List<Session> sessions, required final  List<Exercise> exercises, final  List<RolePlay> rolePlays = const [], final  List<Actor> actors = const [], final  List<String> tags = const <String>[], final  List<DrillVariable> variables = const <DrillVariable>[], @JsonKey(includeFromJson: false, includeToJson: false) this.briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false) this.commsMd, @JsonKey(includeFromJson: false, includeToJson: false) this.beforeRoundMd}): _teams = teams,_sessions = sessions,_exercises = exercises,_rolePlays = rolePlays,_actors = actors,_tags = tags,_variables = variables;
+  const _Plan({required this.uuid, required this.name, required this.description, this.exerciseNumberFormat = ExerciseNumberFormat.hash, this.stationNumberFormat = StationNumberFormat.dotted, required this.metadata, this.source = const PlanSource.local(), this.contentHash, required final  List<Team> teams, required final  List<Session> sessions, required final  List<Exercise> exercises, final  List<RolePlay> rolePlays = const [], final  List<Staff> staff = const [], final  List<String> tags = const <String>[], final  List<DrillVariable> variables = const <DrillVariable>[], @JsonKey(includeFromJson: false, includeToJson: false) this.briefIntroMd, @JsonKey(includeFromJson: false, includeToJson: false) this.commsMd, @JsonKey(includeFromJson: false, includeToJson: false) this.beforeRoundMd}): _teams = teams,_sessions = sessions,_exercises = exercises,_rolePlays = rolePlays,_staff = staff,_tags = tags,_variables = variables;
   factory _Plan.fromJson(Map<String, dynamic> json) => _$PlanFromJson(json);
 
 @override final  String uuid;
@@ -297,11 +297,11 @@ class _Plan implements Plan {
   return EqualUnmodifiableListView(_rolePlays);
 }
 
- final  List<Actor> _actors;
-@override@JsonKey() List<Actor> get actors {
-  if (_actors is EqualUnmodifiableListView) return _actors;
+ final  List<Staff> _staff;
+@override@JsonKey() List<Staff> get staff {
+  if (_staff is EqualUnmodifiableListView) return _staff;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_actors);
+  return EqualUnmodifiableListView(_staff);
 }
 
 // @Default([]) so 1.0/1.1/1.2 archives without the key deserialize to
@@ -353,16 +353,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Plan&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.exerciseNumberFormat, exerciseNumberFormat) || other.exerciseNumberFormat == exerciseNumberFormat)&&(identical(other.stationNumberFormat, stationNumberFormat) || other.stationNumberFormat == stationNumberFormat)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&(identical(other.source, source) || other.source == source)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&const DeepCollectionEquality().equals(other._teams, _teams)&&const DeepCollectionEquality().equals(other._sessions, _sessions)&&const DeepCollectionEquality().equals(other._exercises, _exercises)&&const DeepCollectionEquality().equals(other._rolePlays, _rolePlays)&&const DeepCollectionEquality().equals(other._actors, _actors)&&const DeepCollectionEquality().equals(other._tags, _tags)&&const DeepCollectionEquality().equals(other._variables, _variables)&&(identical(other.briefIntroMd, briefIntroMd) || other.briefIntroMd == briefIntroMd)&&(identical(other.commsMd, commsMd) || other.commsMd == commsMd)&&(identical(other.beforeRoundMd, beforeRoundMd) || other.beforeRoundMd == beforeRoundMd));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Plan&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.exerciseNumberFormat, exerciseNumberFormat) || other.exerciseNumberFormat == exerciseNumberFormat)&&(identical(other.stationNumberFormat, stationNumberFormat) || other.stationNumberFormat == stationNumberFormat)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&(identical(other.source, source) || other.source == source)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&const DeepCollectionEquality().equals(other._teams, _teams)&&const DeepCollectionEquality().equals(other._sessions, _sessions)&&const DeepCollectionEquality().equals(other._exercises, _exercises)&&const DeepCollectionEquality().equals(other._rolePlays, _rolePlays)&&const DeepCollectionEquality().equals(other._staff, _staff)&&const DeepCollectionEquality().equals(other._tags, _tags)&&const DeepCollectionEquality().equals(other._variables, _variables)&&(identical(other.briefIntroMd, briefIntroMd) || other.briefIntroMd == briefIntroMd)&&(identical(other.commsMd, commsMd) || other.commsMd == commsMd)&&(identical(other.beforeRoundMd, beforeRoundMd) || other.beforeRoundMd == beforeRoundMd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,uuid,name,description,exerciseNumberFormat,stationNumberFormat,metadata,source,contentHash,const DeepCollectionEquality().hash(_teams),const DeepCollectionEquality().hash(_sessions),const DeepCollectionEquality().hash(_exercises),const DeepCollectionEquality().hash(_rolePlays),const DeepCollectionEquality().hash(_actors),const DeepCollectionEquality().hash(_tags),const DeepCollectionEquality().hash(_variables),briefIntroMd,commsMd,beforeRoundMd);
+int get hashCode => Object.hash(runtimeType,uuid,name,description,exerciseNumberFormat,stationNumberFormat,metadata,source,contentHash,const DeepCollectionEquality().hash(_teams),const DeepCollectionEquality().hash(_sessions),const DeepCollectionEquality().hash(_exercises),const DeepCollectionEquality().hash(_rolePlays),const DeepCollectionEquality().hash(_staff),const DeepCollectionEquality().hash(_tags),const DeepCollectionEquality().hash(_variables),briefIntroMd,commsMd,beforeRoundMd);
 
 @override
 String toString() {
-  return 'Plan(uuid: $uuid, name: $name, description: $description, exerciseNumberFormat: $exerciseNumberFormat, stationNumberFormat: $stationNumberFormat, metadata: $metadata, source: $source, contentHash: $contentHash, teams: $teams, sessions: $sessions, exercises: $exercises, rolePlays: $rolePlays, actors: $actors, tags: $tags, variables: $variables, briefIntroMd: $briefIntroMd, commsMd: $commsMd, beforeRoundMd: $beforeRoundMd)';
+  return 'Plan(uuid: $uuid, name: $name, description: $description, exerciseNumberFormat: $exerciseNumberFormat, stationNumberFormat: $stationNumberFormat, metadata: $metadata, source: $source, contentHash: $contentHash, teams: $teams, sessions: $sessions, exercises: $exercises, rolePlays: $rolePlays, staff: $staff, tags: $tags, variables: $variables, briefIntroMd: $briefIntroMd, commsMd: $commsMd, beforeRoundMd: $beforeRoundMd)';
 }
 
 
@@ -373,7 +373,7 @@ abstract mixin class _$PlanCopyWith<$Res> implements $PlanCopyWith<$Res> {
   factory _$PlanCopyWith(_Plan value, $Res Function(_Plan) _then) = __$PlanCopyWithImpl;
 @override @useResult
 $Res call({
- String uuid, String name, String description, ExerciseNumberFormat exerciseNumberFormat, StationNumberFormat stationNumberFormat, PlanMetadata metadata, PlanSource source, String? contentHash, List<Team> teams, List<Session> sessions, List<Exercise> exercises, List<RolePlay> rolePlays, List<Actor> actors, List<String> tags, List<DrillVariable> variables,@JsonKey(includeFromJson: false, includeToJson: false) String? briefIntroMd,@JsonKey(includeFromJson: false, includeToJson: false) String? commsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? beforeRoundMd
+ String uuid, String name, String description, ExerciseNumberFormat exerciseNumberFormat, StationNumberFormat stationNumberFormat, PlanMetadata metadata, PlanSource source, String? contentHash, List<Team> teams, List<Session> sessions, List<Exercise> exercises, List<RolePlay> rolePlays, List<Staff> staff, List<String> tags, List<DrillVariable> variables,@JsonKey(includeFromJson: false, includeToJson: false) String? briefIntroMd,@JsonKey(includeFromJson: false, includeToJson: false) String? commsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? beforeRoundMd
 });
 
 
@@ -390,7 +390,7 @@ class __$PlanCopyWithImpl<$Res>
 
 /// Create a copy of Plan
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? uuid = null,Object? name = null,Object? description = null,Object? exerciseNumberFormat = null,Object? stationNumberFormat = null,Object? metadata = null,Object? source = null,Object? contentHash = freezed,Object? teams = null,Object? sessions = null,Object? exercises = null,Object? rolePlays = null,Object? actors = null,Object? tags = null,Object? variables = null,Object? briefIntroMd = freezed,Object? commsMd = freezed,Object? beforeRoundMd = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? uuid = null,Object? name = null,Object? description = null,Object? exerciseNumberFormat = null,Object? stationNumberFormat = null,Object? metadata = null,Object? source = null,Object? contentHash = freezed,Object? teams = null,Object? sessions = null,Object? exercises = null,Object? rolePlays = null,Object? staff = null,Object? tags = null,Object? variables = null,Object? briefIntroMd = freezed,Object? commsMd = freezed,Object? beforeRoundMd = freezed,}) {
   return _then(_Plan(
 uuid: null == uuid ? _self.uuid : uuid // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -404,8 +404,8 @@ as String?,teams: null == teams ? _self._teams : teams // ignore: cast_nullable_
 as List<Team>,sessions: null == sessions ? _self._sessions : sessions // ignore: cast_nullable_to_non_nullable
 as List<Session>,exercises: null == exercises ? _self._exercises : exercises // ignore: cast_nullable_to_non_nullable
 as List<Exercise>,rolePlays: null == rolePlays ? _self._rolePlays : rolePlays // ignore: cast_nullable_to_non_nullable
-as List<RolePlay>,actors: null == actors ? _self._actors : actors // ignore: cast_nullable_to_non_nullable
-as List<Actor>,tags: null == tags ? _self._tags : tags // ignore: cast_nullable_to_non_nullable
+as List<RolePlay>,staff: null == staff ? _self._staff : staff // ignore: cast_nullable_to_non_nullable
+as List<Staff>,tags: null == tags ? _self._tags : tags // ignore: cast_nullable_to_non_nullable
 as List<String>,variables: null == variables ? _self._variables : variables // ignore: cast_nullable_to_non_nullable
 as List<DrillVariable>,briefIntroMd: freezed == briefIntroMd ? _self.briefIntroMd : briefIntroMd // ignore: cast_nullable_to_non_nullable
 as String?,commsMd: freezed == commsMd ? _self.commsMd : commsMd // ignore: cast_nullable_to_non_nullable

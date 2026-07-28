@@ -166,7 +166,7 @@ Plan _buildPlan({
     sessions: const [],
     exercises: [ex1, ex2],
     rolePlays: rolePlays,
-    actors: const [],
+    staff: const [],
     briefIntroMd: briefIntro,
   );
 }

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/role_play.dart';
@@ -247,8 +247,8 @@ class _RolePlayListViewState extends State<RolePlayListView> {
     bool selected = false,
   }) {
     final expanded = _expandedRowIndex == rowIndex;
-    final actor = rolePlay.actorUuid != null
-        ? _service.getActor(rolePlay.actorUuid!)
+    final actor = rolePlay.staffUuid != null
+        ? _service.getStaff(rolePlay.staffUuid!)
         : null;
     final station = _stationFor(exercise, rolePlay);
 
@@ -344,7 +344,7 @@ class _RolePlayListViewState extends State<RolePlayListView> {
     BuildContext context,
     AppLocalizations localizations,
     RolePlay rolePlay,
-    Actor? actor,
+    Staff? actor,
   ) {
     final scheme = Theme.of(context).colorScheme;
     return IconButton(
@@ -364,7 +364,7 @@ class _RolePlayListViewState extends State<RolePlayListView> {
     AppLocalizations l10n,
     Exercise exercise,
     RolePlay rolePlay,
-    Actor? actor,
+    Staff? actor,
     int exerciseNumber,
   ) {
     final station = _stationFor(exercise, rolePlay);
@@ -419,7 +419,7 @@ class _RolePlayListViewState extends State<RolePlayListView> {
     BuildContext context,
     AppLocalizations l10n,
     RolePlay rolePlay,
-    Actor? actor,
+    Staff? actor,
   ) {
     if (actor == null) {
       // Uncast — the same tappable cast pill the Post surfaces use.

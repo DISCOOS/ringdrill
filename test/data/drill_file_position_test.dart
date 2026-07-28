@@ -26,7 +26,7 @@ void main() {
     sessions: const [],
     exercises: const [],
     rolePlays: const [],
-    actors: const [],
+    staff: const [],
   );
 
   final start = SimpleTimeOfDay(hour: 9, minute: 0);

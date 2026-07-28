@@ -2,16 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
-import 'package:ringdrill/views/actor_form_screen.dart';
+import 'package:ringdrill/views/staff_form_screen.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/edit_affordance.dart';
+import 'package:ringdrill/views/widgets/staff_role_label.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
 // ---------------------------------------------------------------------------
@@ -40,7 +41,7 @@ class RosterController extends ScreenController {
 
   @override
   Widget? buildFAB(BuildContext context, BoxConstraints constraints) {
-    final label = AppLocalizations.of(context)!.newActor;
+    final label = AppLocalizations.of(context)!.newStaff;
     // Gated on the role (ADR-0057): a create action a role will never have is
     // noise, so it is absent rather than disabled.
     // Adding yourself to the staff roster is not the same authority as editing
@@ -71,13 +72,13 @@ class RosterController extends ScreenController {
 
   Future<void> _openCreate(BuildContext context) async {
     final localizations = AppLocalizations.of(context)!;
-    final result = await openFormSurface<ActorFormResult>(
+    final result = await openFormSurface<StaffFormResult>(
       context,
-      builder: (_) => const ActorFormScreen(),
+      builder: (_) => const StaffFormScreen(),
     );
     if (result == null || !context.mounted) return;
-    if (result case ActorFormSave(:final actor)) {
-      await PlanService().saveActor(localizations, actor);
+    if (result case StaffFormSave(:final staff)) {
+      await PlanService().saveStaff(localizations, staff);
       if (context.mounted) _reloadTick.value++;
     }
   }
@@ -87,15 +88,15 @@ class RosterController extends ScreenController {
 // View
 // ---------------------------------------------------------------------------
 
-/// Flat registry of every [Actor] in the active plan.
+/// Flat registry of every [Staff] in the active plan.
 ///
 /// Promoted from the cast-roster sheet that lives in the Spill segment —
 /// that sheet remains as the inline quick-cast affordance. This view is the
-/// primary home for [Actor] records on the dedicated Roster tab.
+/// primary home for [Staff] records on the dedicated Roster tab.
 ///
 /// Reads and writes go exclusively through [PlanService] actor CRUD
-/// ([PlanService.loadActors], [PlanService.saveActor],
-/// [PlanService.deleteActor]) — no actor data is pushed to any
+/// ([PlanService.loadStaff], [PlanService.saveStaff],
+/// [PlanService.deleteStaff]) — no actor data is pushed to any
 /// publish / wire path.
 class RosterView extends StatefulWidget {
   const RosterView({
@@ -121,7 +122,7 @@ class _RosterViewState extends State<RosterView> {
   final _service = PlanService();
   StreamSubscription? _subscription;
 
-  List<Actor> _actors = [];
+  List<Staff> _actors = [];
   List<RolePlay> _rolePlays = [];
 
   RosterController get _controller => widget.controller;
@@ -155,34 +156,37 @@ class _RosterViewState extends State<RosterView> {
   void _reload() {
     if (!mounted) return;
     setState(() {
-      _actors = _service.loadActors();
+      _actors = _service.loadStaff();
       _rolePlays = _service.loadRolePlays();
     });
   }
 
-  List<String> _rolesFor(String actorUuid) => _rolePlays
-      .where((rp) => rp.actorUuid == actorUuid)
+  List<String> _rolesFor(String staffUuid) => _rolePlays
+      .where((rp) => rp.staffUuid == staffUuid)
       .map((rp) => rp.name)
       .toList();
 
-  Future<void> _openEdit(Actor actor) async {
+  Future<void> _openEdit(Staff actor) async {
     final localizations = AppLocalizations.of(context)!;
-    final result = await openFormSurface<ActorFormResult>(
+    final result = await openFormSurface<StaffFormResult>(
       context,
-      builder: (_) => ActorFormScreen(actor: actor),
+      builder: (_) => StaffFormScreen(staff: actor),
     );
     if (result == null || !mounted) return;
     switch (result) {
-      case ActorFormSave(:final actor):
-        await _service.saveActor(localizations, actor);
-      case ActorFormDelete(:final actor):
-        await _tryDelete(actor);
+      // `staff` is the *edited* record the form returned. The enclosing method's
+      // parameter is the pre-edit one — this used to rely on the pattern shadowing
+      // it, so read the binding explicitly.
+      case StaffFormSave(:final staff):
+        await _service.saveStaff(localizations, staff);
+      case StaffFormDelete(:final staff):
+        await _tryDelete(staff);
     }
     if (!mounted) return;
     _reload();
   }
 
-  Future<void> _tryDelete(Actor actor) async {
+  Future<void> _tryDelete(Staff actor) async {
     final localizations = AppLocalizations.of(context)!;
     final roles = _rolesFor(actor.uuid);
     if (roles.isNotEmpty) {
@@ -191,7 +195,7 @@ class _RosterViewState extends State<RosterView> {
       );
       return;
     }
-    await _service.deleteActor(actor.uuid);
+    await _service.deleteStaff(actor.uuid);
     _reload();
   }
 
@@ -234,7 +238,7 @@ class _RosterViewState extends State<RosterView> {
         itemBuilder: (context, index) {
           final actor = _actors[index];
           final roles = _rolesFor(actor.uuid);
-          final tile = _buildActorTile(context, localizations, actor, roles);
+          final tile = _buildStaffTile(context, localizations, actor, roles);
           // Deleting an actor is director-only (ADR-0057) — an actor authors a
           // markør's script but does not remove people from the roster. Note
           // canDelete, not canEdit: a DeletableRow asks the stricter question.
@@ -251,7 +255,7 @@ class _RosterViewState extends State<RosterView> {
               return true;
             },
             onDelete: () async {
-              await _service.deleteActor(actor.uuid);
+              await _service.deleteStaff(actor.uuid);
               _reload();
             },
             builder: (context, _) => tile,
@@ -279,32 +283,44 @@ class _RosterViewState extends State<RosterView> {
   ///
   /// Own Material (transparent) so the tile's ink/splash paints above the
   /// shell's surface-toned ColoredBox instead of being hidden by it.
-  Widget _buildActorTile(
+  Widget _buildStaffTile(
     BuildContext context,
     AppLocalizations localizations,
-    Actor actor,
-    List<String> roles,
+    Staff staff,
+    List<String> castAs,
   ) {
+    final theme = Theme.of(context);
+    // ADR-0037: themed bodySmall instead of a hardcoded 12.
+    final metaStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    // The stored organizational roles, then the derived markør one — derived
+    // because a person *is* a markør exactly when a roleplay is cast to them
+    // (DESIGN-011), which is what `castAs` already tells us. Ordered with the
+    // stored roles first so the line reads the same way the editor's chips do.
+    final roleLabels = [
+      for (final role in StaffRole.values)
+        if (staff.roles.contains(role)) staffRoleLabel(localizations, role),
+      if (castAs.isNotEmpty) staffRoleLabel(localizations, null),
+    ];
     return Material(
       type: MaterialType.transparency,
       child: ListTile(
         leading: const Icon(Icons.face),
-        title: Text(actor.realName),
+        title: Text(staff.realName),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (actor.phone != null) Text(actor.phone!),
-            if (roles.isNotEmpty)
-              Text(
-                localizations.castedAs(roles.join(', ')),
-                // ADR-0037: themed bodySmall instead of a hardcoded 12.
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
+            if (staff.phone != null) Text(staff.phone!),
+            if (roleLabels.isNotEmpty)
+              Text(roleLabels.join(' · '), style: metaStyle),
+            // Which markører, separately from *that* they are one: the roles line
+            // answers "what is this person", this answers "doing what".
+            if (castAs.isNotEmpty)
+              Text(localizations.castedAs(castAs.join(', ')), style: metaStyle),
           ],
         ),
-        onTap: () => _openEdit(actor),
+        onTap: () => _openEdit(staff),
       ),
     );
   }

@@ -5,7 +5,7 @@ enum CastPillVariant {
   /// No [RolePlay] exists for this person yet — the pill creates one.
   add,
 
-  /// A [RolePlay] exists but has no cast [Actor] — the pill opens the cast
+  /// A [RolePlay] exists but has no cast [Staff] — the pill opens the cast
   /// picker.
   uncast,
 

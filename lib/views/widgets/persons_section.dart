@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
@@ -91,11 +91,11 @@ class PersonsSection extends StatefulWidget {
   /// person with no enacting marker yet.
   final ValueChanged<Person> onAddRolePlay;
 
-  /// The cast [Actor] for an enacting [RolePlay], if any — the caller knows
+  /// The cast [Staff] for an enacting [RolePlay], if any — the caller knows
   /// the plan's actors, which this presentation-only section does not.
   /// Used so the "Spilles av …" line names the actor who plays the role,
   /// not the roleplay's own (person-mirroring) name.
-  final Actor? Function(RolePlay rolePlay)? actorFor;
+  final Staff? Function(RolePlay rolePlay)? actorFor;
 
   @override
   State<PersonsSection> createState() => _PersonsSectionState();
@@ -261,7 +261,7 @@ class _PersonCard extends StatelessWidget {
   final ValueChanged<RolePlay> onOpenRolePlay;
   final VoidCallback onAddRolePlay;
   final List<String> Function(String slug) usagesFor;
-  final Actor? Function(RolePlay rolePlay)? actorFor;
+  final Staff? Function(RolePlay rolePlay)? actorFor;
 
   /// The swipe-to-dismiss guard: a person still referenced (ADR-0047,
   /// DESIGN-009 prompt 5) is blocked with a dialog listing the usages;

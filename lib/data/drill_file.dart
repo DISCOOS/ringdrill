@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as path;
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
@@ -113,8 +113,8 @@ class DrillFile {
     final rolePlayJsons = <String, Map<String, dynamic>>{};
     final rolePlayMdFields = <String, Map<String, String>>{};
     final actorJsons = <String, Map<String, dynamic>>{};
-    final actorNotesFields = <String, String>{};
-    final actors = <Actor>[];
+    final staffNotesFields = <String, String>{};
+    final actors = <Staff>[];
     // Plan-level markdown fields (plan/intro.md, plan/comms.md,
     // plan/before-round.md).
     String? planBriefIntroMd;
@@ -263,7 +263,10 @@ class DrillFile {
           } else if (folder == 'roleplays') {
             final uuid = file.substring(0, file.length - 5); // strip .json
             rolePlayJsons[uuid] = json;
-          } else if (folder == 'actors') {
+            // Both names: DESIGN-011 writes 'staff/', but a .drill exported
+            // before the rename carries 'actors/' and is shared peer-to-peer
+            // (USB, AirDrop, email), so it can be imported at any time.
+          } else if (folder == 'staff' || folder == 'actors') {
             final uuid = file.substring(0, file.length - 5);
             actorJsons[uuid] = json;
           }
@@ -288,8 +291,9 @@ class DrillFile {
           exerciseMdFields.putIfAbsent(uuid, () => {})[field] = mdContent;
         } else if (folder == 'roleplays') {
           rolePlayMdFields.putIfAbsent(uuid, () => {})[field] = mdContent;
-        } else if (folder == 'actors' && field == 'notes.md') {
-          actorNotesFields[uuid] = mdContent;
+        } else if ((folder == 'staff' || folder == 'actors') &&
+            field == 'notes.md') {
+          staffNotesFields[uuid] = mdContent;
         }
         continue;
       }
@@ -405,28 +409,28 @@ class DrillFile {
       rolePlays.add(rp);
     }
 
-    // Build Actor entities with legacy-inline fallback + .md precedence.
+    // Build Staff entities with legacy-inline fallback + .md precedence.
     for (final entry in actorJsons.entries) {
       final uuid = entry.key;
       final json = entry.value;
 
       final legacyNotes = json['notes'] as String?;
 
-      late final Actor actorBase;
+      late final Staff actorBase;
       try {
-        actorBase = Actor.fromJson(json);
+        actorBase = Staff.fromJson(json);
       } catch (e) {
         throw DrillFormatException(
           DrillFormatReason.corruptManifest,
-          'Invalid .drill archive: entry "actors/$uuid.json" '
+          'Invalid .drill archive: entry "staff/$uuid.json" '
           'could not be parsed.',
           cause: e,
         );
       }
       var actor = actorBase;
 
-      final notes = actorNotesFields.containsKey(uuid)
-          ? actorNotesFields[uuid]
+      final notes = staffNotesFields.containsKey(uuid)
+          ? staffNotesFields[uuid]
           : legacyNotes;
 
       if (notes != null) {
@@ -479,7 +483,7 @@ class DrillFile {
       metadata: effectiveMetadata,
       exercises: exercises,
       rolePlays: rolePlays,
-      actors: actors,
+      staff: actors,
     );
 
     if (planBriefIntroMd != null ||
@@ -643,19 +647,19 @@ class DrillFile {
       _writeMd(archive, path.join(rpBase, 'props.md'), rolePlay.propsMd);
     }
 
-    // Serialize actors into folder 'actors'
-    for (var actor in plan.actors) {
+    // Serialize staff into folder 'staff' (DESIGN-011; was 'actors').
+    for (var actor in plan.staff) {
       final json = utf8.encode(jsonEncode(actor.toJson()));
       archive.addFile(
         ArchiveFile(
-          path.join('actors', '${actor.uuid}.json'),
+          path.join('staff', '${actor.uuid}.json'),
           json.length,
           json,
         ),
       );
       _writeMd(
         archive,
-        path.join('actors', actor.uuid, 'notes.md'),
+        path.join('staff', actor.uuid, 'notes.md'),
         actor.notes,
       );
     }
@@ -669,7 +673,7 @@ class DrillFile {
               sessions: [],
               exercises: [],
               rolePlays: [],
-              actors: [],
+              staff: [],
             )
             .toJson(),
       ),

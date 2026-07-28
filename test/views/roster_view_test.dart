@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/plan_service.dart';
-import 'package:ringdrill/views/actor_form_screen.dart';
+import 'package:ringdrill/views/staff_form_screen.dart';
 import 'package:ringdrill/views/roster_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,7 +23,7 @@ final _castRole = RolePlay(
   index: 0,
   exerciseUuid: 'ex-r1',
   name: 'Markør 1',
-  actorUuid: _actorUuid,
+  staffUuid: _actorUuid,
 );
 
 Map<String, Object> _buildPrefs() => {
@@ -97,7 +97,7 @@ void main() {
     expect(find.text('99887766'), findsOneWidget);
   });
 
-  testWidgets('tapping an actor row opens ActorFormScreen in edit mode', (
+  testWidgets('tapping an actor row opens StaffFormScreen in edit mode', (
     tester,
   ) async {
     await tester.pumpWidget(_buildView());
@@ -106,7 +106,7 @@ void main() {
     await tester.tap(find.text('Per Hansen'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(ActorFormScreen), findsOneWidget);
+    expect(find.byType(StaffFormScreen), findsOneWidget);
     // In edit mode the AppBar title shows the actor's real name.
     expect(find.text('Per Hansen'), findsWidgets);
   });
@@ -116,10 +116,10 @@ void main() {
     await tester.pump();
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     expect(find.byType(FloatingActionButton), findsOneWidget);
-    expect(find.text(l10n.newActor), findsOneWidget);
+    expect(find.text(l10n.newStaff), findsOneWidget);
   });
 
-  testWidgets('tapping FAB opens ActorFormScreen in create mode', (
+  testWidgets('tapping FAB opens StaffFormScreen in create mode', (
     tester,
   ) async {
     await tester.pumpWidget(_buildView());
@@ -129,9 +129,9 @@ void main() {
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
 
-    expect(find.byType(ActorFormScreen), findsOneWidget);
+    expect(find.byType(StaffFormScreen), findsOneWidget);
     // In create mode the AppBar title shows "New actor" (at minimum once).
-    expect(find.text(l10n.newActor), findsWidgets);
+    expect(find.text(l10n.newStaff), findsWidgets);
   });
 
   testWidgets('swiping a cast actor shows castDeleteBlocked SnackBar', (
@@ -157,17 +157,17 @@ void main() {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
 
-      // Initial state from _buildPrefs: _castRole carries actorUuid =
+      // Initial state from _buildPrefs: _castRole carries staffUuid =
       // _actorUuid, so the Roster row's subtitle shows castedAs("Markør 1").
       expect(find.text(l10n.castedAs(_castRole.name)), findsOneWidget);
 
-      // Uncast: persist the role with actorUuid: null. Before this fix
+      // Uncast: persist the role with staffUuid: null. Before this fix
       // saveRolePlay was silent and the Roster's "Cast as …" line stayed
       // stale; with the rolePlaySaved event the view reloads and the line
       // disappears.
       await PlanService().saveRolePlay(
         l10n,
-        _castRole.copyWith(actorUuid: null),
+        _castRole.copyWith(staffUuid: null),
       );
       await tester.pumpAndSettle();
 

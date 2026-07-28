@@ -187,31 +187,38 @@
   "@openInvalidDrill": {
     "description": "Shown when a chosen file is not a .drill archive at all (renamed file, wrong type, etc.).",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "openEmptyDrill": "\"{name}\" is empty or has no content.",
   "@openEmptyDrill": {
     "description": "Shown when the chosen .drill file has no bytes or no entries.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "openCorruptDrill": "\"{name}\" is damaged or incomplete.",
   "@openCorruptDrill": {
     "description": "Shown when a .drill archive is structurally valid ZIP but the plan manifest is broken.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "openUnsupportedSchema": "\"{name}\" uses a newer format. Update RingDrill to open it.",
   "@openUnsupportedSchema": {
     "description": "Shown when the .drill archive declares a schema this build does not understand.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
-
   "exportedPlan": "Exported Plan",
   "@exportedPlan": {
     "description": "Label"
@@ -336,8 +343,12 @@
   "@exercisesShownOfTotal": {
     "description": "Banner shown above the stations map when one or more exercises have been hidden via the visibility filter. Mirrors the selectedOfTotal pattern used in import/export.",
     "placeholders": {
-      "shown": { "type": "int" },
-      "total": { "type": "int" }
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "importSuccess": "Plan \"{name}\" imported successfully!",
@@ -404,7 +415,9 @@
   "@showingStationsIn": {
     "description": "Banner shown above the bottom-nav when the Stations list tab is filtered to a single exercise.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "noStationsInExercise": "No stations in this exercise.",
@@ -643,14 +656,18 @@
   "@exerciseAutoStoppedBody": {
     "description": "Body of the persistent notification shown after an exercise auto-stops.",
     "placeholders": {
-      "exercise": { "type": "String" }
+      "exercise": {
+        "type": "String"
+      }
     }
   },
   "exerciseAutoStoppedSnack": "{exercise} stopped automatically",
   "@exerciseAutoStoppedSnack": {
     "description": "SnackBar message shown when an exercise auto-stops.",
     "placeholders": {
-      "exercise": { "type": "String" }
+      "exercise": {
+        "type": "String"
+      }
     }
   },
   "dismiss": "Dismiss",
@@ -922,7 +939,9 @@
   "@setPositionFor": {
     "description": "Banner heading shown while picking a position for a station from the map",
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "positionSaved": "Position saved",
@@ -1029,14 +1048,18 @@
   "@phaseEndsAt": {
     "description": "Caption under the remaining time, showing wall-clock time when current phase ends",
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "remainingInPhase": "Remaining in {phase}",
   "@remainingInPhase": {
     "description": "Subtitle under the prominent remaining-time number in the Phase Now hero cell. {phase} is the current phase name (e.g. Drill, Eval, Roll).",
     "placeholders": {
-      "phase": { "type": "String" }
+      "phase": {
+        "type": "String"
+      }
     }
   },
   "wait": "Wait",
@@ -1095,16 +1118,24 @@
   "@roundOfTotal": {
     "description": "Round counter on the coordinator mini-player, e.g. 1 of 6.",
     "placeholders": {
-      "current": { "type": "int" },
-      "total": { "type": "int" }
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "hoursMinutesShort": "{hours} h {minutes} min",
   "@hoursMinutesShort": {
     "description": "Compact hours and minutes duration, e.g. 2 h 30 min.",
     "placeholders": {
-      "hours": { "type": "int" },
-      "minutes": { "type": "int" }
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "statusUntilStart": "To start",
@@ -1119,8 +1150,12 @@
   "@statusRoundOfTotal": {
     "description": "Round counter in the player status card's meta cell, e.g. Round 1 of 6.",
     "placeholders": {
-      "current": { "type": "int" },
-      "total": { "type": "int" }
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "statusNow": "Now",
@@ -1147,16 +1182,24 @@
   "@statusPreStartSubline": {
     "description": "Subline in the player status card's pre-start state: scheduled start time and round count (Post/Lag/Coordinator).",
     "placeholders": {
-      "startTime": { "type": "String" },
-      "rounds": { "type": "int" }
+      "startTime": {
+        "type": "String"
+      },
+      "rounds": {
+        "type": "int"
+      }
     }
   },
   "statusPreStartSublineMarker": "active from {activeFrom} · at {postBadge}",
   "@statusPreStartSublineMarker": {
     "description": "Subline in the Spill (marker) player's status card pre-start state: when the marker becomes active and which post it's at.",
     "placeholders": {
-      "activeFrom": { "type": "String" },
-      "postBadge": { "type": "String" }
+      "activeFrom": {
+        "type": "String"
+      },
+      "postBadge": {
+        "type": "String"
+      }
     }
   },
   "clockLabel": "Now",
@@ -1286,8 +1329,12 @@
   "selectedOfTotal": "{selected} of {total} selected",
   "@selectedOfTotal": {
     "placeholders": {
-      "selected": { "type": "int" },
-      "total": { "type": "int" }
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "publishActivePlan": "Publish",
@@ -1320,19 +1367,25 @@
   "catalogRefreshUpToDate": "{name} is already up to date",
   "@catalogRefreshUpToDate": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "catalogRefreshUpdated": "Updated {name} from the catalog",
   "@catalogRefreshUpdated": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "catalogRefreshReverted": "Discarded local changes to {name}",
   "@catalogRefreshReverted": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "catalogRefreshCancelled": "Catalog update cancelled",
@@ -1342,7 +1395,9 @@
   "@catalogRefreshRemoved": {
     "description": "Shown when a catalog refresh finds the plan's slug no longer exists on the server (HTTP 404) — distinct from catalogServiceUnavailable, which means the catalog service itself could not be reached.",
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "catalogDiffAdded": "Added",
@@ -1352,22 +1407,34 @@
   "catalogDiffReorderedFromTo": "Moved {from} → {to}",
   "@catalogDiffReorderedFromTo": {
     "placeholders": {
-      "from": {"type": "String"},
-      "to": {"type": "String"}
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
     }
   },
   "catalogDiffFieldChanged": "{field} changed: {from} → {to}",
   "@catalogDiffFieldChanged": {
     "placeholders": {
-      "field": {"type": "String"},
-      "from": {"type": "String"},
-      "to": {"type": "String"}
+      "field": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
     }
   },
   "catalogDiffFieldChangedGeneric": "{field} changed",
   "@catalogDiffFieldChangedGeneric": {
     "placeholders": {
-      "field": {"type": "String"}
+      "field": {
+        "type": "String"
+      }
     }
   },
   "catalogDiffLocal": "Your version",
@@ -1455,7 +1522,6 @@
   "@exerciseCopyTooltip": {
     "description": "Tooltip on the copy action in the exercise description card's header on the coordinator screen. Copies the whole exercise, not just the description."
   },
-
   "roleplay": "{count, plural, =0{Roleplay} =1{Roleplay} other{Roleplays}}",
   "@roleplay": {
     "description": "Roleplay count noun for the Plan tab overview summary line.",
@@ -1505,47 +1571,47 @@
   "@castRoster": {
     "description": "AppBar tooltip / sheet title for the full list of Actor records in the plan."
   },
-  "newActor": "New actor",
-  "@newActor": {
-    "description": "Sticky top row in the cast picker and FAB label in the cast roster sheet."
-  },
   "castedAs": "Cast as: {names}",
   "@castedAs": {
     "description": "Footer shown on an actor row in the cast roster sheet listing roles they are cast to.",
     "placeholders": {
-      "names": { "type": "String" }
+      "names": {
+        "type": "String"
+      }
     }
   },
   "alreadyCastAs": "Already cast as {name}",
   "@alreadyCastAs": {
     "description": "Annotation shown in the cast picker when the actor is already cast to another role in the same exercise.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "roleSubtitleStation": "Station: {name}",
   "@roleSubtitleStation": {
     "description": "Collapsed-tile subtitle when the role has a stationIndex set. Displays the station name.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "roleSubtitleExercise": "Exercise: {name}",
   "@roleSubtitleExercise": {
     "description": "Collapsed-tile subtitle fallback when stationIndex is null. Displays the exercise name.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
-  "noActorsInRoster": "No actors yet. Tap + New actor to add one.",
-  "@noActorsInRoster": {
-    "description": "Empty state shown in the cast roster sheet when no Actor records exist in the plan."
-  },
-  "emptyRosterTitle": "No actors yet",
+  "emptyRosterTitle": "No staff yet",
   "@emptyRosterTitle": {
     "description": "Teaching empty-state title shown on the Roster tab when the active plan has no Actor records."
   },
-  "emptyRosterBody": "Actors are the people who play out roles in your exercises. Add your first actor here, then cast them in roles from the Script tab in the Plan.",
+  "emptyRosterBody": "Add exercise directors, instructors and markers here.",
   "@emptyRosterBody": {
     "description": "Teaching empty-state body shown on the Roster tab when the active plan has no Actor records."
   },
@@ -1593,14 +1659,18 @@
   "@showingRolesIn": {
     "description": "Banner shown above the bottom-nav when the RolePlays tab is filtered to a single exercise.",
     "placeholders": {
-      "exercise": { "type": "String" }
+      "exercise": {
+        "type": "String"
+      }
     }
   },
   "castDeleteBlocked": "Cast in {count} role(s). Clear before deleting.",
   "@castDeleteBlocked": {
     "description": "Error shown when the user tries to delete an actor who is still cast in one or more roles.",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "confirmReduceRoles": "(placeholder)",
@@ -1643,18 +1713,15 @@
   "@actorNotes": {
     "description": "Field label for private notes about the actor in ActorFormScreen."
   },
-  "deleteActor": "Delete actor",
-  "@deleteActor": {
-    "description": "Button and dialog title for deleting an Actor record from ActorFormScreen."
-  },
   "confirmDeleteActor": "This will delete {name} from the actor roster. Continue?",
   "@confirmDeleteActor": {
     "description": "Confirmation message shown before deleting an Actor record from ActorFormScreen.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
-
   "deleteRolePlay": "Delete role",
   "@deleteRolePlay": {
     "description": "Button and dialog title for deleting a RolePlay (spill) from RolePlayFormScreen."
@@ -1663,18 +1730,23 @@
   "@confirmDeleteRolePlay": {
     "description": "Confirmation message before deleting a RolePlay that has no cast actor.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "confirmDeleteRolePlayWithActor": "Delete the role \"{name}\"? The actor {actor} is unassigned from it, but kept in the roster.",
   "@confirmDeleteRolePlayWithActor": {
     "description": "Confirmation message before deleting a RolePlay whose actor is cast; names the actor that gets unassigned.",
     "placeholders": {
-      "name": { "type": "String" },
-      "actor": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "actor": {
+        "type": "String"
+      }
     }
   },
-
   "addRolePlay": "Add role",
   "@addRolePlay": {
     "description": "Button label in the Markører section on StationScreen to create a new RolePlay at this post."
@@ -1715,19 +1787,19 @@
   "@roleProps": {
     "description": "DESIGN-010 stage 3b: the Spill viewer's Markørordre card third section — RolePlay.propsMd, not previously shown on this screen."
   },
-
   "castedByLine": "Played by {name}",
   "@castedByLine": {
     "description": "Subtitle on a role row when an actor is cast. Used on the Station-screen Markørordre section and browse summaries.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "noCastLine": "No actor",
   "@noCastLine": {
     "description": "Subtitle on a role row when no actor is cast. Styled italic + subdued."
   },
-
   "briefScreenTitle": "Brief",
   "@briefScreenTitle": {
     "description": "AppBar title for the BriefScreen."
@@ -1768,7 +1840,9 @@
   "@briefRenderError": {
     "description": "Error message shown when the brief renderer throws.",
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "briefTemplateMissing": "The brief template could not be loaded. Restart the app and try again.",
@@ -1823,8 +1897,12 @@
   "@briefSearchMatchCount": {
     "description": "Position indicator in the brief search bar, e.g. '3 of 12'.",
     "placeholders": {
-      "current": {"type": "int"},
-      "total": {"type": "int"}
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "briefSearchNextMatch": "Next match",
@@ -1843,14 +1921,18 @@
   "@briefUnknownVariable": {
     "description": "Rendered in place of {{var.<name>}} in a brief when <name> is not a declared plan variable (DESIGN-008/ADR-0046).",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "briefUnknownReference": "‹missing reference: {name}›",
   "@briefUnknownReference": {
     "description": "Rendered in place of {{station.loc.<slug>}} or {{station.person.<slug>}} in a brief when <slug> does not name a location/person on the station (DESIGN-009/ADR-0047). {name} is the full reference, e.g. 'station.loc.lkp'.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "briefCopyMarkdown": "Copy as markdown",
@@ -1881,15 +1963,21 @@
   "@drillPlayerRoundOf": {
     "description": "Round indicator in the DrillMiniPlayer, e.g. 'Round 1 / 4'.",
     "placeholders": {
-      "current": { "type": "int" },
-      "total": { "type": "int" }
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "drillPlayerStartingInWithCountdown": "Starts in {time}",
   "@drillPlayerStartingInWithCountdown": {
     "description": "Countdown shown on the DrillPlayer mini-bar while an exercise is started but has not yet reached its scheduled start time. The {time} placeholder is mm:ss.",
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "detailEmptyExercise": "Select an exercise",
@@ -1916,7 +2004,6 @@
   "@detailGoneStation": {
     "description": "Shown in the station viewer when neither the station nor its parent exercise can be resolved — deleted from another pane, a stale deep link, or a station index that no longer exists. The viewer stays open with a close action rather than dismissing itself."
   },
-
   "appUserRoleActor": "Actor",
   "@appUserRoleActor": {
     "description": "Label for AppUserRole.actor — the person who portrays a marker (ADR-0057). Norwegian uses the same word for both (markør), matching field practice; the RolePlay entity is the role itself."
@@ -1925,7 +2012,6 @@
   "@appUserRoleSectionTitle": {
     "description": "Settings section heading for the staff-role selector (DESIGN-006 step 4)."
   },
-
   "newRole": "New role",
   "@newRole": {
     "description": "FAB label on the Markører segment that creates a new RolePlay."
@@ -1942,16 +2028,14 @@
   "@detailEmptyTeam": {
     "description": "Empty detail pane text shown on the teams tab."
   },
-
-  "rosterTab": "Roster",
+  "rosterTab": "Staff",
   "@rosterTab": {
     "description": "Bottom-nav label for the Roster (Bemanning) tab introduced in DESIGN-006 stage 4."
   },
-  "detailEmptyRoster": "Select an actor to see details",
+  "detailEmptyRoster": "Select a member to see details",
   "@detailEmptyRoster": {
     "description": "Empty detail pane text shown on the Roster tab in the wide layout."
   },
-
   "editPlan": "Edit plan",
   "@editPlan": {
     "description": "AppBar title for PlanFormScreen when editing the active plan."
@@ -2052,7 +2136,6 @@
   "@briefSectionStationDirectorNotes": {
     "description": "Optional section label for Station.directorNotesMd. Booklet label: \"Notater\". Hidden from participant audiences."
   },
-
   "stationNumberFormatLabel": "Station numbering",
   "@stationNumberFormatLabel": {
     "description": "Label for the station number format picker in PlanFormScreen."
@@ -2065,7 +2148,6 @@
   "@stationNumberFormatAlpha": {
     "description": "Option label for StationNumberFormat.alpha in the station number format picker."
   },
-
   "planLanguageLabel": "Lang",
   "@planLanguageLabel": {
     "description": "Label for the plan-content language picker in PlanFormScreen. Kept short since the picker sits beside the plan-name field. Distinct from the app's own UI language."
@@ -2078,7 +2160,6 @@
   "@pleaseSelectALanguage": {
     "description": "Validation message shown when the plan-language picker is submitted without a language chosen."
   },
-
   "formSectionAddAction": "Add section",
   "@formSectionAddAction": {
     "description": "DESIGN-008 SectionNavigatedForm entry that reveals the unused optional sections, in the compact switcher and the wide rail."
@@ -2123,7 +2204,6 @@
   "@rollupEmptyPreview": {
     "description": "Placeholder in the base section's preview (DESIGN-010, revised 2026-07-10) when none of the entity's sections have content to show yet."
   },
-
   "exerciseDescriptionCardTitle": "Exercise Description",
   "@exerciseDescriptionCardTitle": {
     "description": "Title of the exercise-description rollup card in the coordinator's Info segment — the exercise's own markdown sections (method, order format, comms, learning goals, training focus, execution tips). Mirrors postDescriptionCardTitle for a station."
@@ -2148,7 +2228,6 @@
   "@roleActiveScheduleCardTitle": {
     "description": "DESIGN-010 stage 3b: the Spill viewer's schedule card title — the round(s) this roleplay's station is staffed by a team."
   },
-
   "tokenMenuEmpty": "No matches",
   "@tokenMenuEmpty": {
     "description": "Empty-state text in the DESIGN-008 Stage 4 token insertion menu (the `/` command menu and `{{` autocomplete) when no variable or plan field matches the typed filter."
@@ -2161,24 +2240,29 @@
   "@tokenMenuCreateVariable": {
     "description": "Entry in the token insertion menu offered when the typed filter matches no declared variable, wired to an onCreateVariable callback (dormant until DESIGN-008 Stage 5 supplies it).",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "tokenMenuCreateLocation": "Create location “{label}”",
   "@tokenMenuCreateLocation": {
     "description": "Entry in the token insertion menu offered when the typed filter matches no station location, wired to an onCreateLocation callback (ADR-0047, DESIGN-009 follow-up 4).",
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
   "tokenMenuCreatePerson": "Create person “{label}”",
   "@tokenMenuCreatePerson": {
     "description": "Entry in the token insertion menu offered when the typed filter matches no station person, wired to an onCreatePerson callback (ADR-0047, DESIGN-009 follow-up 4).",
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
-
   "variablesSectionTitle": "Variables",
   "@variablesSectionTitle": {
     "description": "DESIGN-008 Stage 5 section label for the plan-variable declaration section (Plan editor, section-navigated shell)."
@@ -2239,7 +2323,9 @@
   "@variablesSectionRenameConfirmMessage": {
     "description": "Confirmation dialog body before a plan-wide rename rewrite (ADR-0046).",
     "placeholders": {
-      "count": { "type": "num" }
+      "count": {
+        "type": "num"
+      }
     }
   },
   "variablesSectionDeleteBlockedTitle": "Can’t delete this variable",
@@ -2250,7 +2336,9 @@
   "@variablesSectionDeleteBlockedMessage": {
     "description": "Body text introducing the usage list in the delete-blocked dialog.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "variableOverridesSectionLocalValueLabel": "Local value",
@@ -2313,7 +2401,9 @@
   "@variableSaveBlockedInvalidValue": {
     "description": "Snackbar shown when saving a form is blocked because one or more typed variable values (defaults or overrides) do not read as their declared type — the same blocking rule as an unknown token (DESIGN-008 follow-up 11). {names} is a comma-separated list of variable names.",
     "placeholders": {
-      "names": { "type": "String" }
+      "names": {
+        "type": "String"
+      }
     }
   },
   "variableDurationHourUnit": "h",
@@ -2328,7 +2418,6 @@
   "@variableLocationCoordinateHint": {
     "description": "Hint of the location-typed variable's coordinate text field — it accepts a decimal lat,lng pair or a UTM string, typed or pasted."
   },
-
   "locationKindLkpLabel": "Last known position (LKP)",
   "@locationKindLkpLabel": {
     "description": "LocationKind.lkp label, shown in the kind picker and on the map (ADR-0047/DESIGN-009)."
@@ -2457,7 +2546,6 @@
   "@locationKindOtherDescription": {
     "description": "LocationKind.other helper description, shown under the label in the kind picker."
   },
-
   "locationsSectionTitle": "Locations",
   "@locationsSectionTitle": {
     "description": "DESIGN-009 first-class station-editor section label for the station's Location list (section-navigated shell)."
@@ -2474,7 +2562,9 @@
   "@locationsSectionDeleteConfirmMessage": {
     "description": "confirmDestructive message before a swipe-to-dismiss delete of a location (ADR-0031). Plain delete -- the reference guard (blocked-while-referenced) is a future action, ADR-0047.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "locationsSectionLabelLabel": "Name",
@@ -2505,7 +2595,9 @@
   "@locationsSectionShowAllKinds": {
     "description": "Expansion link below the collapsed LocationKind category grid in the Location form (DESIGN-009 follow-up 3b). {count} is LocationKind.values.length, not hard-coded.",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "locationsSectionShowFewerKinds": "Show less",
@@ -2536,7 +2628,9 @@
   "@personsSectionEnactedByAction": {
     "description": "Inline row on a person's card in the Persons section (DESIGN-009 prompt 4j) naming the RolePlay that enacts them. Tapping opens that roleplay in the RolePlay editor. {name} is the roleplay's own display name.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "personsSectionAddMarkerAction": "Add role",
@@ -2551,7 +2645,9 @@
   "@personsSectionDeleteConfirmMessage": {
     "description": "confirmDestructive message before a swipe-to-dismiss delete of a person (ADR-0031). Plain delete -- the reference guard (blocked-while-referenced, including a locSlug pointing at it) is a future action, ADR-0047.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "personsSectionLocationLabel": "Location",
@@ -2622,14 +2718,18 @@
   "@rolePlayCustomizedFrom": {
     "description": "Identity card's collapsed-header third line, shown instead of the description when the roleplay's displayed name itself is an override (DESIGN-009 prompt 4j, superseding 4i's \"Portraying {name}\"), so the reader still knows which Person is actually being portrayed. {name} is that Person's own name.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "rolePlayAgeYears": "{age, plural, =1{1 year} other{{age} years}}",
   "@rolePlayAgeYears": {
     "description": "Age with its unit, used in the identity card's collapsed-header meta line (DESIGN-009 prompt 4i), e.g. \"34 years · Woman\".",
     "placeholders": {
-      "age": { "type": "int" }
+      "age": {
+        "type": "int"
+      }
     }
   },
   "rolePlayPositionOwnLabel": "Own position",
@@ -2648,27 +2748,34 @@
   "@genderOtherLabel": {
     "description": "GenderSegmentedControl option label for the stable code \"other\"."
   },
-
   "planSaveBlockedUndeclaredVariable": "Can’t save: {sections} contains an unknown variable",
   "@planSaveBlockedUndeclaredVariable": {
     "description": "Snackbar shown when Save is blocked because a Plan-scope markdown section contains {{var.<name>}} for an undeclared name. {sections} is a comma-joined list of the offending section labels.",
     "placeholders": {
-      "sections": { "type": "String" }
+      "sections": {
+        "type": "String"
+      }
     }
   },
   "saveBlockedUnresolvedReference": "Can’t save: {sections} references an unknown location or person: {references}",
   "@saveBlockedUnresolvedReference": {
     "description": "Snackbar shown when Save is blocked because a station or roleplay field contains a {{station.loc.<slug>}}/{{station.person.<slug>}} token whose slug does not resolve against the (linked) station's own locations/persons (DESIGN-009 prompt 5). {sections} is a comma-joined list of the offending field/section labels, {references} a comma-joined list of the broken reference tokens (e.g. station.loc.ghost).",
     "placeholders": {
-      "sections": { "type": "String" },
-      "references": { "type": "String" }
+      "sections": {
+        "type": "String"
+      },
+      "references": {
+        "type": "String"
+      }
     }
   },
   "stationReferenceGuardTitle": "Can’t delete “{name}”",
   "@stationReferenceGuardTitle": {
     "description": "Title of the dialog shown when deleting a station-owned Location/Person is blocked because it is still referenced (DESIGN-009 prompt 5). {name} is the location's label or person's name.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "stationReferenceGuardMessage": "Still referenced:",
@@ -2679,32 +2786,41 @@
   "@stationReferenceUsageInField": {
     "description": "One delete-guard usage line (DESIGN-009 prompt 5): the location/person is referenced by this station's own field. {field} is the field/section label (e.g. \"Situation\").",
     "placeholders": {
-      "field": { "type": "String" }
+      "field": {
+        "type": "String"
+      }
     }
   },
   "stationReferenceUsageInRoleplayField": "In {roleplay}’s {field}",
   "@stationReferenceUsageInRoleplayField": {
     "description": "One delete-guard usage line (DESIGN-009 prompt 5): the location/person is referenced by a linked roleplay's field. {roleplay} is the roleplay's name, {field} the field label.",
     "placeholders": {
-      "roleplay": { "type": "String" },
-      "field": { "type": "String" }
+      "roleplay": {
+        "type": "String"
+      },
+      "field": {
+        "type": "String"
+      }
     }
   },
   "stationReferenceUsageIsPersonHome": "Is {person}’s location",
   "@stationReferenceUsageIsPersonHome": {
     "description": "One delete-guard usage line (DESIGN-009 prompt 5): the location is set as a person's home (Person.locSlug). {person} is that person's name.",
     "placeholders": {
-      "person": { "type": "String" }
+      "person": {
+        "type": "String"
+      }
     }
   },
   "stationReferenceUsagePortrayedBy": "Portrayed by {roleplay}",
   "@stationReferenceUsagePortrayedBy": {
     "description": "One delete-guard usage line (DESIGN-009 prompt 5): the person is portrayed by a roleplay (RolePlay.personRef). {roleplay} is that roleplay's name.",
     "placeholders": {
-      "roleplay": { "type": "String" }
+      "roleplay": {
+        "type": "String"
+      }
     }
   },
-
   "exerciseReorderMode": "Reorder",
   "@exerciseReorderMode": {
     "description": "List-header toggle that enters exercise reorder mode (drag handles appear, drag-to-reorder becomes active)."
@@ -2766,7 +2882,6 @@
   "@startHereCue": {
     "description": "First-run-only inline pill label beside the first Plan FAB, nudging the user to create their first exercise."
   },
-
   "migrationBannerHeading": "The web app is moving to web.ringdrill.app.",
   "@migrationBannerHeading": {
     "description": "Bold heading on the in-app migration banner shown when the PWA runs on the legacy apex origin."
@@ -2970,5 +3085,41 @@
   "editPlacement": "Edit placement",
   "@editPlacement": {
     "description": "Edit where something is placed"
+  },
+  "newStaff": "New member",
+  "@newStaff": {
+    "description": "Sticky top row in the cast picker and FAB label in the cast roster sheet."
+  },
+  "deleteStaff": "Delete member",
+  "@deleteStaff": {
+    "description": "Button and dialog title for deleting an Actor record from ActorFormScreen."
+  },
+  "noStaffInRoster": "No staff yet. Tap + New member to add one.",
+  "@noStaffInRoster": {
+    "description": "Empty state shown in the cast roster sheet when no Actor records exist in the plan."
+  },
+  "staffRoleDirector": "Exercise director",
+  "staffRoleInstructor": "Instructor",
+  "staffRoleOther": "Other",
+  "staffRoleMarkor": "Marker",
+  "staffRolesLabel": "Roles",
+  "staffPlaysLabel": "Plays",
+  "@staffRoleDirector": {
+    "description": "StaffRole.director label (DESIGN-011) — a staff member who runs the exercise."
+  },
+  "@staffRoleInstructor": {
+    "description": "StaffRole.instructor label (DESIGN-011) — a staff member who supervises a team."
+  },
+  "@staffRoleOther": {
+    "description": "StaffRole.other label (DESIGN-011) — escape hatch for a role the enum does not name."
+  },
+  "@staffRoleMarkor": {
+    "description": "The derived markør role (DESIGN-011) — held by anyone cast to a roleplay. Not stored; computed from casting."
+  },
+  "@staffRolesLabel": {
+    "description": "Section label above the role multi-select in the staff editor (DESIGN-011)."
+  },
+  "@staffPlaysLabel": {
+    "description": "Read-only section label listing the markører a staff member plays (DESIGN-011). Set by casting, not editable here."
   }
 }

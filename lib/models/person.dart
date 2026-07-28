@@ -5,7 +5,7 @@ part 'person.g.dart';
 
 /// A fictional scenario person (missing person, witness, reporter,
 /// next-of-kin), owned by a [Station]. No PII: the real human who might
-/// enact it, if any, is a separate `Actor` (ADR-0018); this is
+/// enact it, if any, is a separate `Staff` (ADR-0018); this is
 /// publishable scenario data (ADR-0047).
 ///
 /// [slug] is the stable reference used by `{{station.person.<slug>}}`

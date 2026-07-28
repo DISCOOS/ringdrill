@@ -660,9 +660,9 @@ class _StationScreenState extends State<StationScreen>
               r.personRef == person.slug,
         )
         .firstOrNull;
-    final castActor = rolePlay?.actorUuid == null
+    final castActor = rolePlay?.staffUuid == null
         ? null
-        : _planService.getActor(rolePlay!.actorUuid!);
+        : _planService.getStaff(rolePlay!.staffUuid!);
 
     // Effective identity (DESIGN-012): the actor's own non-empty
     // override wins over the linked person's planned value, so the post's own

@@ -73,7 +73,7 @@ Plan _plan({
     sessions: const [],
     exercises: exercises,
     rolePlays: const [],
-    actors: const [],
+    staff: const [],
   );
 }
 

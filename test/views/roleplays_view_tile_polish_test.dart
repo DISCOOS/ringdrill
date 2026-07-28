@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/role_play.dart';
@@ -34,7 +34,7 @@ const _entryLoc = Location(
 );
 const _rolePosition = LatLng(59.92, 10.76);
 
-const _actor = Actor(
+const _actor = Staff(
   uuid: 'actor-role-tile-polish',
   realName: 'Kari Nordmann',
   phone: '99887766',
@@ -59,7 +59,7 @@ RolePlay _rolePlay() => const RolePlay(
   name: 'Vitne',
   stationIndex: 0,
   position: _rolePosition,
-  actorUuid: 'actor-role-tile-polish',
+  staffUuid: 'actor-role-tile-polish',
   description: 'UTM: {{station.position}} STED: {{station.loc.entry.place}}',
 );
 
@@ -82,7 +82,7 @@ void main() {
   setUp(() async {
     await initActivePlan('Role tile polish plan');
     await PlanService().saveExercise(l10n, _exercise());
-    await PlanService().saveActor(l10n, _actor);
+    await PlanService().saveStaff(l10n, _actor);
     await PlanService().saveRolePlay(l10n, _rolePlay());
   });
 

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
@@ -16,7 +16,7 @@ void main() {
     sessions: const [],
     exercises: const [],
     rolePlays: const [],
-    actors: const [],
+    staff: const [],
   );
 
   const rp1 = RolePlay(
@@ -31,13 +31,13 @@ void main() {
     exerciseUuid: 'ex-1',
     name: 'Ola Nordmann',
   );
-  const actor1 = Actor(uuid: 'actor-1', realName: 'Kari');
+  const actor1 = Staff(uuid: 'actor-1', realName: 'Kari');
 
   test('content hash is stable across actor mutations', () {
     final prog = base().copyWith(rolePlays: [rp1]);
-    final withActor = prog.copyWith(actors: [actor1]);
+    final withActor = prog.copyWith(staff: [actor1]);
     final differentActor = prog.copyWith(
-      actors: [actor1.copyWith(phone: '+47999')],
+      staff: [actor1.copyWith(phone: '+47999')],
     );
     expect(prog.computeContentHash(), withActor.computeContentHash());
     expect(prog.computeContentHash(), differentActor.computeContentHash());

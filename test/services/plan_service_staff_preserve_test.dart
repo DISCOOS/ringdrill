@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
@@ -27,7 +27,7 @@ void main() {
 
   Plan buildPlan(
     String planUuid, {
-    required List<Actor> actors,
+    required List<Staff> staff,
     required List<RolePlay> rolePlays,
   }) {
     final now = DateTime.utc(2026, 6, 2);
@@ -64,7 +64,7 @@ void main() {
       sessions: const [],
       exercises: [exercise],
       rolePlays: rolePlays,
-      actors: actors,
+      staff: staff,
     );
     return base.copyWith(contentHash: base.computeContentHash());
   }
@@ -81,7 +81,7 @@ void main() {
   test('silent catalog refresh preserves locally-stored actors', () async {
     final service = PlanService();
     const planUuid = 'plan-cast';
-    const actor = Actor(
+    const actor = Staff(
       uuid: 'actor-1',
       realName: 'Kari Nordmann',
       phone: '12345678',
@@ -92,12 +92,12 @@ void main() {
       exerciseUuid: 'exercise-1',
       name: 'Turgaaer',
       stationIndex: 0,
-      actorUuid: 'actor-1',
+      staffUuid: 'actor-1',
     );
 
     final local = buildPlan(
       planUuid,
-      actors: const [actor],
+      staff: const [actor],
       rolePlays: const [rolePlay],
     );
     await service.replacePlan(local);
@@ -106,15 +106,15 @@ void main() {
     // local copy has no divergence from the installed snapshot (so the
     // refresh takes the silent path, not the conflict dialog).
     final stored = service.loadPlan(planUuid)!;
-    expect(stored.actors.map((a) => a.uuid), contains('actor-1'));
-    expect(stored.rolePlays.single.actorUuid, 'actor-1');
+    expect(stored.staff.map((a) => a.uuid), contains('actor-1'));
+    expect(stored.rolePlays.single.staffUuid, 'actor-1');
     expect(stored.computeContentHash(), stored.contentHash);
 
     // Remote mirrors the same plan but with actors stripped server-side. The
     // roleplay still references actor-1.
     final remote = buildPlan(
       planUuid,
-      actors: const [],
+      staff: const [],
       rolePlays: const [rolePlay],
     );
     final remoteBytes = DrillFile.fromPlan(remote, '$slug.drill').content;
@@ -166,13 +166,13 @@ void main() {
 
     final refreshed = service.loadPlan(planUuid)!;
     expect(
-      refreshed.actors.map((a) => a.uuid),
+      refreshed.staff.map((a) => a.uuid),
       contains('actor-1'),
       reason: 'local cast roster must survive a catalog refresh',
     );
-    expect(refreshed.actors.single.realName, 'Kari Nordmann');
+    expect(refreshed.staff.single.realName, 'Kari Nordmann');
     expect(
-      refreshed.rolePlays.single.actorUuid,
+      refreshed.rolePlays.single.staffUuid,
       'actor-1',
       reason: 'cast assignment must still resolve after refresh',
     );

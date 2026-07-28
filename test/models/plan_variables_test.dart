@@ -21,7 +21,7 @@ void main() {
     sessions: const [],
     exercises: const [],
     rolePlays: const [],
-    actors: const [],
+    staff: const [],
   );
 
   Map<String, dynamic> minimalJson() => {
@@ -99,7 +99,7 @@ void main() {
           ),
         ],
         rolePlays: const [],
-        actors: const [],
+        staff: const [],
       );
 
       final drillFile = DrillFile.fromPlan(plan, 'legacy');

@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/data/plan_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
@@ -59,7 +59,7 @@ Plan _shell() {
     teams: const [],
     sessions: const [],
     exercises: const [],
-    actors: const [Actor(uuid: _actorUuid, realName: 'Nina Actor')],
+    staff: const [Staff(uuid: _actorUuid, realName: 'Nina Staff')],
   );
 }
 
@@ -102,7 +102,7 @@ RolePlay _rolePlay() => const RolePlay(
   name: 'Hilde',
   gender: 'man',
   personRef: 'hilde',
-  actorUuid: _actorUuid,
+  staffUuid: _actorUuid,
   position: LatLng(59.92, 10.76),
   // `{{roleplay.age}}` deliberately not used here: RoleplayScope exposes
   // the roleplay's own bare fields (ADR-0048), not the effective/merged
@@ -125,10 +125,10 @@ Future<void> _seedAndInit() async {
   await repo.savePlanShell(_shell());
   await repo.setActivePlanUuid(_planUuid);
   await repo.saveExercise(_exercise());
-  // Actor storage is a separate sidecar keyspace (`pa:<plan>:<actor>`) —
-  // Plan.actors on the shell alone is not what PlanService.getActor
+  // Staff storage is a separate sidecar keyspace (`pa:<plan>:<actor>`) —
+  // Plan.staff on the shell alone is not what PlanService.getStaff
   // reads.
-  await repo.saveActor(const Actor(uuid: _actorUuid, realName: 'Nina Actor'));
+  await repo.saveStaff(const Staff(uuid: _actorUuid, realName: 'Nina Staff'));
   await repo.saveRolePlay(_rolePlay());
   await PlanService().init();
 }
@@ -166,7 +166,7 @@ void main() {
         findsOneWidget,
       );
       // Cast actor footer.
-      expect(find.text(l10n.castedByLine('Nina Actor')), findsOneWidget);
+      expect(find.text(l10n.castedByLine('Nina Staff')), findsOneWidget);
     },
   );
 
@@ -228,7 +228,7 @@ void main() {
       expect(find.textContaining(expectedCoordinate), findsWidgets);
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      final footerText = find.text(l10n.castedByLine('Nina Actor'));
+      final footerText = find.text(l10n.castedByLine('Nina Staff'));
       // The footer uses the same CastPill chip as the collapsed tile's face
       // chip and roleplays_view's cast row — its `.cast` variant always
       // paints a colored (primaryContainer) background.
@@ -261,7 +261,7 @@ void main() {
       // folded body, so it stays visible while the mixed-case footer inside is
       // clipped away.
       expect(
-        find.text(l10n.castedByLine('Nina Actor').toUpperCase()),
+        find.text(l10n.castedByLine('Nina Staff').toUpperCase()),
         findsOneWidget,
       );
 
@@ -274,7 +274,7 @@ void main() {
         find.text('Skadd venstre ankel, kan ikke gå selv.'),
         findsOneWidget,
       );
-      expect(find.text(l10n.castedByLine('Nina Actor')), findsOneWidget);
+      expect(find.text(l10n.castedByLine('Nina Staff')), findsOneWidget);
     },
   );
 
@@ -345,17 +345,17 @@ void main() {
       await tester.pumpAndSettle();
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(find.text(l10n.castedByLine('Nina Actor')), findsOneWidget);
+      expect(find.text(l10n.castedByLine('Nina Staff')), findsOneWidget);
 
       // Rename the SAME actor, as the roster editor would — no roleplay save.
-      await PlanService().saveActor(
+      await PlanService().saveStaff(
         l10n,
-        const Actor(uuid: _actorUuid, realName: 'Nina Renamed'),
+        const Staff(uuid: _actorUuid, realName: 'Nina Renamed'),
       );
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.castedByLine('Nina Renamed')), findsOneWidget);
-      expect(find.text(l10n.castedByLine('Nina Actor')), findsNothing);
+      expect(find.text(l10n.castedByLine('Nina Staff')), findsNothing);
     },
   );
 
@@ -405,21 +405,21 @@ void main() {
     await tester.pumpAndSettle();
 
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    expect(find.text(l10n.castedByLine('Nina Actor')), findsOneWidget);
+    expect(find.text(l10n.castedByLine('Nina Staff')), findsOneWidget);
 
     // Cast a different actor through the service, as the roster would.
     final service = PlanService();
-    await service.saveActor(
+    await service.saveStaff(
       l10n,
-      const Actor(uuid: 'actor-2', realName: 'Ola Actor'),
+      const Staff(uuid: 'actor-2', realName: 'Ola Staff'),
     );
     await service.saveRolePlay(
       l10n,
-      _rolePlay().copyWith(actorUuid: 'actor-2'),
+      _rolePlay().copyWith(staffUuid: 'actor-2'),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text(l10n.castedByLine('Ola Actor')), findsOneWidget);
-    expect(find.text(l10n.castedByLine('Nina Actor')), findsNothing);
+    expect(find.text(l10n.castedByLine('Ola Staff')), findsOneWidget);
+    expect(find.text(l10n.castedByLine('Nina Staff')), findsNothing);
   });
 }

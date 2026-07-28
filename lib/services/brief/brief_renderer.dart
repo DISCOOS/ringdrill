@@ -14,7 +14,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:meta/meta.dart';
 import 'package:mustache_template/mustache_template.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
@@ -104,7 +104,7 @@ class BriefRenderer {
 
     final exercises = exercise != null ? [exercise] : plan.exercises;
 
-    final actorMap = {for (final a in plan.actors) a.uuid: a};
+    final actorMap = {for (final a in plan.staff) a.uuid: a};
     final rolePlaysByExercise = <String, List<RolePlay>>{};
     for (final rp in plan.rolePlays) {
       rolePlaysByExercise.putIfAbsent(rp.exerciseUuid, () => []).add(rp);
@@ -170,7 +170,7 @@ class BriefRenderer {
     required Plan plan,
     required Exercise exercise,
     required BriefAudience audience,
-    required Map<String, Actor> actorMap,
+    required Map<String, Staff> actorMap,
     required List<RolePlay> rolePlays,
     required AppLocalizations l10n,
     required Map<String, dynamic> planRefContext,
@@ -269,7 +269,7 @@ class BriefRenderer {
     required int exerciseNumber,
     required Station station,
     required BriefAudience audience,
-    required Map<String, Actor> actorMap,
+    required Map<String, Staff> actorMap,
     required List<RolePlay> rolePlays,
     required String? effectiveCommsMd,
     required AppLocalizations l10n,
@@ -327,8 +327,8 @@ class BriefRenderer {
 
     final roleplayContexts = rolePlays.map((rp) {
       Map<String, dynamic>? actorContext;
-      if (audience.includesActorPii && rp.actorUuid != null) {
-        final actor = actorMap[rp.actorUuid];
+      if (audience.includesActorPii && rp.staffUuid != null) {
+        final actor = actorMap[rp.staffUuid];
         if (actor != null) {
           // Fold the parentheses into the phone chip (like the UTM chip) so
           // "(", pill and ")" stay together and the copied value is the bare

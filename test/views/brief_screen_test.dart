@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -26,7 +26,7 @@ const _planUuid = 'prog-bs';
 const _exerciseUuid = 'ex-3';
 const _actorUuid = 'actor-12';
 
-final _actor = Actor(
+final _actor = Staff(
   uuid: _actorUuid,
   realName: 'Kari Hansen',
   phone: '99887766',
@@ -41,7 +41,7 @@ const _rolePlay = RolePlay(
   description: '160 cm, grått hår, blå anorakk',
   behavior: 'Du spiller en dement dame i god fysisk form.',
   stationIndex: 0,
-  actorUuid: _actorUuid,
+  staffUuid: _actorUuid,
 );
 
 Exercise _exercise() => Exercise(

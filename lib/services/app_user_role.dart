@@ -22,7 +22,7 @@ enum AppUserRole {
 
   /// Aktør — plays one or more markører. Edits roleplays.
   ///
-  /// The person, not the character: an `Actor` in the roster is who portrays a
+  /// The person, not the character: an `Staff` in the roster is who portrays a
   /// `RolePlay`. Added after director and instructor, because an actor adjusting
   /// their own marker mid-drill is the one edit that has to survive a live
   /// exercise.

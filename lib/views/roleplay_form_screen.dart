@@ -40,7 +40,7 @@ import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 enum _MdSection { background, behavior, props }
 
 /// [RolePlayFormScreen]'s result — a sealed save/delete, mirroring
-/// [ActorFormResult]. Null (cancel) is neither.
+/// [StaffFormResult]. Null (cancel) is neither.
 sealed class RolePlayFormResult {
   const RolePlayFormResult();
 }
@@ -75,9 +75,9 @@ Future<bool> confirmDeleteRolePlay(
   RolePlay rolePlay,
 ) async {
   final l = AppLocalizations.of(context)!;
-  final actor = rolePlay.actorUuid == null
+  final actor = rolePlay.staffUuid == null
       ? null
-      : PlanService().getActor(rolePlay.actorUuid!);
+      : PlanService().getStaff(rolePlay.staffUuid!);
   final name = rolePlay.name.trim().isEmpty
       ? l.roleSection
       : rolePlay.name.trim();
@@ -98,7 +98,7 @@ final _variableSlugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 /// Edit form for a single [RolePlay].
 ///
 /// Edits the publishable Role fields only: name, age, description,
-/// background, behavior, stationIndex, and position. The actorUuid
+/// background, behavior, stationIndex, and position. The staffUuid
 /// (cast assignment) is intentionally absent — casting is managed
 /// from the RolePlays list via the cast picker.
 ///

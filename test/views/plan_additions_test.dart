@@ -37,7 +37,7 @@ void main() {
       sessions: const [],
       exercises: const [],
       rolePlays: const [],
-      actors: const [],
+      staff: const [],
       variables: const [DrillVariable(name: 'existing', value: 'x')],
     );
 

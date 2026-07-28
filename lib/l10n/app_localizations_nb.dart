@@ -1617,9 +1617,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get castRoster => 'Markører';
 
   @override
-  String get newActor => 'Ny markør';
-
-  @override
   String castedAs(String names) {
     return 'Markør for: $names';
   }
@@ -1640,15 +1637,11 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get noActorsInRoster =>
-      'Ingen markører ennå. Trykk + Ny markør for å legge til.';
-
-  @override
-  String get emptyRosterTitle => 'Ingen markører ennå';
+  String get emptyRosterTitle => 'Ingen i staben ennå';
 
   @override
   String get emptyRosterBody =>
-      'Markører er personene som spiller ut roller i øvelsene dine. Legg til din første markør her, så kan du besette roller i Spill-fanen i øvingsplanen.';
+      'Legg til øvelsesledere, veiledere og markører her.';
 
   @override
   String get noActivePlanHint =>
@@ -1721,9 +1714,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get actorNotes => 'Notater';
-
-  @override
-  String get deleteActor => 'Slett markør';
 
   @override
   String confirmDeleteActor(String name) {
@@ -1942,10 +1932,10 @@ class AppLocalizationsNb extends AppLocalizations {
   String get detailEmptyTeam => 'Velg et lag';
 
   @override
-  String get rosterTab => 'Bemanning';
+  String get rosterTab => 'Stab';
 
   @override
-  String get detailEmptyRoster => 'Velg en markør for å se detaljer';
+  String get detailEmptyRoster => 'Velg et medlem for å se detaljer';
 
   @override
   String get editPlan => 'Endre plan';
@@ -2746,4 +2736,32 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get editPlacement => 'Endre plassering';
+
+  @override
+  String get newStaff => 'Nytt medlem';
+
+  @override
+  String get deleteStaff => 'Slett medlem';
+
+  @override
+  String get noStaffInRoster =>
+      'Ingen i staben ennå. Trykk + Nytt medlem for å legge til.';
+
+  @override
+  String get staffRoleDirector => 'Øvelsesleder';
+
+  @override
+  String get staffRoleInstructor => 'Veileder';
+
+  @override
+  String get staffRoleOther => 'Annet';
+
+  @override
+  String get staffRoleMarkor => 'Markør';
+
+  @override
+  String get staffRolesLabel => 'Roller';
+
+  @override
+  String get staffPlaysLabel => 'Spiller';
 }

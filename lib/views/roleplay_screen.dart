@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/numbering.dart';
@@ -59,7 +59,7 @@ import 'package:ringdrill/views/widgets/station_scope.dart';
 /// Read-only view of a single [RolePlay]. Shows the publishable scenario
 /// fields (name, age, description, background, behavior, station, position).
 ///
-/// The Cast section (Actor assignment) is intentionally absent here because
+/// The Cast section (Staff assignment) is intentionally absent here because
 /// this view represents the publishable role, not the local cast record.
 /// Casting is managed from the RolePlays list via the cast picker.
 ///
@@ -132,7 +132,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
   ///
   /// Narrower than "any plan event", but deliberately wider than
   /// CoordinatorScreen's exercise-only test: this viewer also renders its own
-  /// roleplay and — via the cast footer, which reads the Actor fresh from
+  /// roleplay and — via the cast footer, which reads the Staff fresh from
   /// PlanService — the actor playing it. `rolePlaySaved` and `actorSaved` carry
   /// no exercise at all, so an exercise-keyed filter would leave a re-cast or a
   /// renamed marker showing stale text.
@@ -146,8 +146,8 @@ class _RolePlayScreenState extends State<RolePlayScreen>
       final rolePlay = value.rolePlay;
       return event.exercise?.uuid == rolePlay.exerciseUuid ||
           event.rolePlay?.uuid == rolePlay.uuid ||
-          (rolePlay.actorUuid != null &&
-              event.actor?.uuid == rolePlay.actorUuid);
+          (rolePlay.staffUuid != null &&
+              event.actor?.uuid == rolePlay.staffUuid);
     }
     return true;
   }
@@ -517,9 +517,9 @@ class _RolePlayScreenState extends State<RolePlayScreen>
         rolePlay: rolePlay,
         person: _personFor(station, rolePlay),
         location: _personLocation(station, rolePlay),
-        actor: rolePlay.actorUuid == null
+        actor: rolePlay.staffUuid == null
             ? null
-            : _planService.getActor(rolePlay.actorUuid!),
+            : _planService.getStaff(rolePlay.staffUuid!),
         overrides: roleOverrides,
         onEditCast: () => _openCastPicker(rolePlay),
         onEditSection: (id) => _openRolePlayForm(subject, initialSectionId: id),
@@ -920,7 +920,7 @@ class _RolePlayCard extends StatelessWidget {
 
   final RolePlay rolePlay;
   final Person? person;
-  final Actor? actor;
+  final Staff? actor;
 
   /// Opens the marker (cast) picker — the always-visible quick action in the
   /// card header, wired by [RolePlayScreen] to `_openCastPicker`.

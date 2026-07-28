@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
-import 'package:ringdrill/views/actor_form_screen.dart';
+import 'package:ringdrill/models/staff.dart';
+import 'package:ringdrill/views/staff_form_screen.dart';
 
-Widget _buildForm({Actor? actor}) {
+Widget _buildForm({Staff? actor}) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: ActorFormScreen(actor: actor),
+    home: StaffFormScreen(staff: actor),
   );
 }
 
-const _existingActor = Actor(
+const _existingActor = Staff(
   uuid: 'actor-1',
   realName: 'Kari Nordmann',
   phone: '12345678',
@@ -40,7 +40,7 @@ void main() {
   testWidgets('save pops with new actor containing entered name', (
     tester,
   ) async {
-    ActorFormResult? result;
+    StaffFormResult? result;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -48,9 +48,9 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              result = await Navigator.push<ActorFormResult>(
+              result = await Navigator.push<StaffFormResult>(
                 ctx,
-                MaterialPageRoute(builder: (_) => const ActorFormScreen()),
+                MaterialPageRoute(builder: (_) => const StaffFormScreen()),
               );
             },
             child: const Text('Open'),
@@ -77,14 +77,14 @@ void main() {
 
     expect(
       result,
-      isA<ActorFormSave>()
-          .having((result) => result.actor.realName, 'realName', 'Ole Hansen')
-          .having((result) => result.actor.uuid, 'uuid', isNotNull),
+      isA<StaffFormSave>()
+          .having((result) => result.staff.realName, 'realName', 'Ole Hansen')
+          .having((result) => result.staff.uuid, 'uuid', isNotNull),
     );
   });
 
   testWidgets('save pops with updated actor preserving uuid', (tester) async {
-    ActorFormResult? result;
+    StaffFormResult? result;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -92,10 +92,10 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              result = await Navigator.push<ActorFormResult>(
+              result = await Navigator.push<StaffFormResult>(
                 ctx,
                 MaterialPageRoute(
-                  builder: (_) => ActorFormScreen(actor: _existingActor),
+                  builder: (_) => StaffFormScreen(staff: _existingActor),
                 ),
               );
             },
@@ -117,9 +117,9 @@ void main() {
 
     expect(
       result,
-      isA<ActorFormSave>()
-          .having((result) => result.actor.realName, 'realName', 'Kari Hansen')
-          .having((result) => result.actor.uuid, 'uuid', _existingActor.uuid),
+      isA<StaffFormSave>()
+          .having((result) => result.staff.realName, 'realName', 'Kari Hansen')
+          .having((result) => result.staff.uuid, 'uuid', _existingActor.uuid),
     );
   });
 
@@ -128,11 +128,11 @@ void main() {
     await tester.pump();
 
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    expect(find.byTooltip(l10n.deleteActor), findsNothing);
+    expect(find.byTooltip(l10n.deleteStaff), findsNothing);
   });
 
   testWidgets('delete confirmation can be cancelled', (tester) async {
-    ActorFormResult? result;
+    StaffFormResult? result;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -140,10 +140,10 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              result = await Navigator.push<ActorFormResult>(
+              result = await Navigator.push<StaffFormResult>(
                 ctx,
                 MaterialPageRoute(
-                  builder: (_) => ActorFormScreen(actor: _existingActor),
+                  builder: (_) => StaffFormScreen(staff: _existingActor),
                 ),
               );
             },
@@ -157,7 +157,7 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip(l10n.deleteActor));
+    await tester.tap(find.byTooltip(l10n.deleteStaff));
     await tester.pumpAndSettle();
 
     expect(
@@ -169,11 +169,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(result, isNull);
-    expect(find.byType(ActorFormScreen), findsOneWidget);
+    expect(find.byType(StaffFormScreen), findsOneWidget);
   });
 
   testWidgets('delete confirmation pops with delete result', (tester) async {
-    ActorFormResult? result;
+    StaffFormResult? result;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -181,10 +181,10 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              result = await Navigator.push<ActorFormResult>(
+              result = await Navigator.push<StaffFormResult>(
                 ctx,
                 MaterialPageRoute(
-                  builder: (_) => ActorFormScreen(actor: _existingActor),
+                  builder: (_) => StaffFormScreen(staff: _existingActor),
                 ),
               );
             },
@@ -198,15 +198,15 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip(l10n.deleteActor));
+    await tester.tap(find.byTooltip(l10n.deleteStaff));
     await tester.pumpAndSettle();
     await tester.tap(find.text(l10n.delete));
     await tester.pumpAndSettle();
 
     expect(
       result,
-      isA<ActorFormDelete>().having(
-        (result) => result.actor.uuid,
+      isA<StaffFormDelete>().having(
+        (result) => result.staff.uuid,
         'uuid',
         _existingActor.uuid,
       ),

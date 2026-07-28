@@ -40,7 +40,7 @@ enum EditPermission { create, edit, delete }
 /// Three rules, and the exceptions are the point:
 /// - **Director** edits everything. It is the planning role.
 /// - **Instructor** edits teams — the thing they supervise during a drill.
-/// - **Actor** edits roleplays — their own marker's script and casting.
+/// - **Staff** edits roleplays — their own marker's script and casting.
 ///
 /// [exerciseUuid] scopes the live check. While an exercise is running, its
 /// structure is frozen for everyone including the director: changing rounds or

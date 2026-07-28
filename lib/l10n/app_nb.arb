@@ -91,8 +91,8 @@
   "delete": "SLETT",
   "deleteExercise": "Slett øvelse",
   "appName": "RingDrill",
-  "appDescription": "RingDrill gjør det enkelt å planlegge og administrere postbaserte ringøvelser – som ofte brukes i taktiske, nød- eller operative treningsscenarioer." ,
-  "developedBy":  "Utviklet av",
+  "appDescription": "RingDrill gjør det enkelt å planlegge og administrere postbaserte ringøvelser – som ofte brukes i taktiske, nød- eller operative treningsscenarioer.",
+  "developedBy": "Utviklet av",
   "website": "Nettside",
   "privacyPolicy": "Personvernerklæring",
   "termsOfService": "Brukervilkår",
@@ -160,13 +160,17 @@
   "exerciseAutoStoppedBody": "Sluttiden for {exercise} er passert.",
   "@exerciseAutoStoppedBody": {
     "placeholders": {
-      "exercise": { "type": "String" }
+      "exercise": {
+        "type": "String"
+      }
     }
   },
   "exerciseAutoStoppedSnack": "{exercise} avsluttet automatisk",
   "@exerciseAutoStoppedSnack": {
     "placeholders": {
-      "exercise": { "type": "String" }
+      "exercise": {
+        "type": "String"
+      }
     }
   },
   "dismiss": "Lukk",
@@ -230,7 +234,9 @@
   "setPositionFor": "Sett posisjon for {name}",
   "@setPositionFor": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "positionSaved": "Posisjon lagret",
@@ -367,8 +373,12 @@
   "selectedOfTotal": "{selected} av {total} valgt",
   "@selectedOfTotal": {
     "placeholders": {
-      "selected": { "type": "int" },
-      "total": { "type": "int" }
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "publishActivePlan": "Publiser",
@@ -392,19 +402,25 @@
   "catalogRefreshUpToDate": "{name} er allerede oppdatert",
   "@catalogRefreshUpToDate": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "catalogRefreshUpdated": "Oppdaterte {name} fra katalogen",
   "@catalogRefreshUpdated": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "catalogRefreshReverted": "Forkastet lokale endringer i {name}",
   "@catalogRefreshReverted": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "catalogRefreshCancelled": "Katalogoppdatering avbrutt",
@@ -414,7 +430,9 @@
   "@catalogRefreshRemoved": {
     "description": "Vist når en katalogoppdatering finner at planens slug ikke lenger finnes på serveren (HTTP 404) — forskjellig fra catalogServiceUnavailable, som betyr at selve katalogtjenesten ikke kunne nås.",
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "catalogDiffAdded": "Lagt til",
@@ -424,22 +442,34 @@
   "catalogDiffReorderedFromTo": "Flyttet {from} → {to}",
   "@catalogDiffReorderedFromTo": {
     "placeholders": {
-      "from": {"type": "String"},
-      "to": {"type": "String"}
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
     }
   },
   "catalogDiffFieldChanged": "{field} endret: {from} → {to}",
   "@catalogDiffFieldChanged": {
     "placeholders": {
-      "field": {"type": "String"},
-      "from": {"type": "String"},
-      "to": {"type": "String"}
+      "field": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
     }
   },
   "catalogDiffFieldChangedGeneric": "{field} endret",
   "@catalogDiffFieldChangedGeneric": {
     "placeholders": {
-      "field": {"type": "String"}
+      "field": {
+        "type": "String"
+      }
     }
   },
   "catalogDiffLocal": "Din versjon",
@@ -505,7 +535,6 @@
   "@exerciseCopyTooltip": {
     "description": "Tooltip on the copy action in the exercise description card's header on the coordinator screen. Copies the whole exercise, not just the description."
   },
-
   "roleplay": "{count, plural, =0{Markør} =1{Markør} other{Markører}}",
   "@roleplay": {
     "description": "Roleplay count noun for the Plan tab overview summary line.",
@@ -555,47 +584,47 @@
   "@castRoster": {
     "description": "AppBar tooltip / sheet title for the full list of Actor records in the plan."
   },
-  "newActor": "Ny markør",
-  "@newActor": {
-    "description": "Sticky top row in the cast picker and FAB label in the cast roster sheet."
-  },
   "castedAs": "Markør for: {names}",
   "@castedAs": {
     "description": "Footer shown on an actor row in the cast roster sheet listing roles they are cast to.",
     "placeholders": {
-      "names": { "type": "String" }
+      "names": {
+        "type": "String"
+      }
     }
   },
   "alreadyCastAs": "Allerede markør for {name}",
   "@alreadyCastAs": {
     "description": "Annotation shown in the cast picker when the actor is already cast to another role in the same exercise.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "roleSubtitleStation": "Post: {name}",
   "@roleSubtitleStation": {
     "description": "Undertittel på sammenfoldet flis når rollen har stationIndex satt. Viser postnavnet.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "roleSubtitleExercise": "Øvelse: {name}",
   "@roleSubtitleExercise": {
     "description": "Undertittel-fallback på sammenfoldet flis når stationIndex er null. Viser øvelsesnavnet.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
-  "noActorsInRoster": "Ingen markører ennå. Trykk + Ny markør for å legge til.",
-  "@noActorsInRoster": {
-    "description": "Tom tilstand vist i rollebesetting-arket når det ikke finnes noen Actor-poster i planen."
-  },
-  "emptyRosterTitle": "Ingen markører ennå",
+  "emptyRosterTitle": "Ingen i staben ennå",
   "@emptyRosterTitle": {
     "description": "Lærende tom-tilstand-tittel vist i Bemanning-fanen når den aktive planen ikke har noen markører."
   },
-  "emptyRosterBody": "Markører er personene som spiller ut roller i øvelsene dine. Legg til din første markør her, så kan du besette roller i Spill-fanen i øvingsplanen.",
+  "emptyRosterBody": "Legg til øvelsesledere, veiledere og markører her.",
   "@emptyRosterBody": {
     "description": "Lærende tom-tilstand-tekst vist i Bemanning-fanen når den aktive planen ikke har noen markører."
   },
@@ -637,14 +666,18 @@
   "@showingRolesIn": {
     "description": "Banner when the RolePlays tab is filtered to a single exercise.",
     "placeholders": {
-      "exercise": { "type": "String" }
+      "exercise": {
+        "type": "String"
+      }
     }
   },
   "castDeleteBlocked": "Markør i {count} rolle(r). Fjern først.",
   "@castDeleteBlocked": {
     "description": "Error shown when trying to delete a cast actor.",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "confirmReduceRoles": "(placeholder)",
@@ -687,18 +720,15 @@
   "@actorNotes": {
     "description": "Feltetikett for private notater om markøren i ActorFormScreen."
   },
-  "deleteActor": "Slett markør",
-  "@deleteActor": {
-    "description": "Button and dialog title for deleting an Actor record from ActorFormScreen."
-  },
   "confirmDeleteActor": "Dette sletter {name} fra markørlisten. Fortsette?",
   "@confirmDeleteActor": {
     "description": "Confirmation message shown before deleting an Actor record from ActorFormScreen.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
-
   "deleteRolePlay": "Slett spill",
   "@deleteRolePlay": {
     "description": "Button and dialog title for deleting a RolePlay (spill) from RolePlayFormScreen."
@@ -707,18 +737,23 @@
   "@confirmDeleteRolePlay": {
     "description": "Confirmation message before deleting a RolePlay that has no cast actor.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "confirmDeleteRolePlayWithActor": "Vil du slette spillet «{name}»? Markøren {actor} frigjøres fra spillet, men beholdes i markørlista.",
   "@confirmDeleteRolePlayWithActor": {
     "description": "Confirmation message before deleting a RolePlay whose actor is cast; names the actor that gets unassigned.",
     "placeholders": {
-      "name": { "type": "String" },
-      "actor": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "actor": {
+        "type": "String"
+      }
     }
   },
-
   "addRolePlay": "Legg til markørordre",
   "@addRolePlay": {
     "description": "Knappetikett i Markørordre-seksjonen på StationScreen."
@@ -759,19 +794,19 @@
   "@roleProps": {
     "description": "DESIGN-010 stage 3b: Spill-viewerens Markørordre-kort tredje seksjon — RolePlay.propsMd, ikke tidligere vist på denne skjermen."
   },
-
   "castedByLine": "Spilles av {name}",
   "@castedByLine": {
     "description": "Undertittel på en rolleradex når en markør er tildelt.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "noCastLine": "Ingen markør",
   "@noCastLine": {
     "description": "Undertittel på en rolleradex når ingen markør er tildelt. Stiles kursiv + dempet."
   },
-
   "briefScreenTitle": "Brief",
   "briefAudienceParticipant": "Deltaker",
   "briefAudienceInstructor": "Veileder",
@@ -784,7 +819,9 @@
   "briefRenderError": "Kunne ikke lage brief: {error}",
   "@briefRenderError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "briefTemplateMissing": "Brief-malen kunne ikke lastes. Start appen på nytt og prøv igjen.",
@@ -815,8 +852,12 @@
   "@briefSearchMatchCount": {
     "description": "Position indicator in the brief search bar, e.g. '3 av 12'.",
     "placeholders": {
-      "current": {"type": "int"},
-      "total": {"type": "int"}
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "briefSearchNextMatch": "Neste treff",
@@ -835,14 +876,18 @@
   "@briefUnknownVariable": {
     "description": "Rendered in place of {{var.<name>}} in a brief when <name> is not a declared plan variable (DESIGN-008/ADR-0046).",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "briefUnknownReference": "‹mangler referanse: {name}›",
   "@briefUnknownReference": {
     "description": "Rendered in place of {{station.loc.<slug>}} or {{station.person.<slug>}} in a brief when <slug> does not name a location/person on the station (DESIGN-009/ADR-0047). {name} is the full reference, e.g. 'station.loc.lkp'.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "briefCopyMarkdown": "Kopier som markdown",
@@ -893,7 +938,6 @@
   "@detailEmptyTeam": {
     "description": "Empty detail pane text shown on the teams tab."
   },
-
   "appUserRoleActor": "Markør",
   "@appUserRoleActor": {
     "description": "Etikett for AppUserRole.actor — personen som spiller en markør (ADR-0057). Samme ord som rollen de spiller, slik feltbruken er; RolePlay-entiteten er selve rollen."
@@ -902,7 +946,6 @@
   "@appUserRoleSectionTitle": {
     "description": "Innstillinger-seksjonstittel for stabsfunksjonsvelgeren (DESIGN-006 steg 4)."
   },
-
   "newRole": "Ny rolle",
   "@newRole": {
     "description": "FAB-etikett i Markører-segmentet for å opprette en ny markørordre."
@@ -915,16 +958,14 @@
   "@pickExerciseForRole": {
     "description": "Tittel på øvelsesvelger-arket som åpnes før man oppretter en ny markørordre fra Markører-segmentet."
   },
-
-  "rosterTab": "Bemanning",
+  "rosterTab": "Stab",
   "@rosterTab": {
     "description": "Bunnnavigeringsmerke for Roster-fanen (Bemanning) introdusert i DESIGN-006 steg 4."
   },
-  "detailEmptyRoster": "Velg en markør for å se detaljer",
+  "detailEmptyRoster": "Velg et medlem for å se detaljer",
   "@detailEmptyRoster": {
     "description": "Tom detaljrute vist i Roster-fanen i bred layout."
   },
-
   "editPlan": "Endre plan",
   "@editPlan": {
     "description": "AppBar-tittel i PlanFormScreen ved redigering av aktiv plan."
@@ -1025,7 +1066,6 @@
   "@briefSectionStationDirectorNotes": {
     "description": "Etikett for valgfri seksjon for Station.directorNotesMd. Skjules fra deltakere."
   },
-
   "stationNumberFormatLabel": "Postnummerering",
   "@stationNumberFormatLabel": {
     "description": "Etikett for valg av postnummerformat i PlanFormScreen."
@@ -1038,7 +1078,6 @@
   "@stationNumberFormatAlpha": {
     "description": "Alternativetikett for StationNumberFormat.alpha i postnummerformat-velgeren."
   },
-
   "planLanguageLabel": "Språk",
   "planLanguageChooseHint": "Velg",
   "@planLanguageChooseHint": {
@@ -1048,7 +1087,6 @@
   "@pleaseSelectALanguage": {
     "description": "Valideringsmelding vist når språkvelgeren sendes inn uten at et språk er valgt."
   },
-
   "formSectionAddAction": "Legg til seksjon",
   "@formSectionAddAction": {
     "description": "DESIGN-008 SectionNavigatedForm-oppføring som viser de ubrukte valgfrie seksjonene, i den kompakte seksjonsbytteren og i bred-rail."
@@ -1093,7 +1131,6 @@
   "@rollupEmptyPreview": {
     "description": "Plassholder i base-seksjonens forhåndsvisning (DESIGN-010, revidert 2026-07-10) når ingen av enhetens seksjoner har innhold å vise ennå."
   },
-
   "exerciseDescriptionCardTitle": "Øvingsbeskrivelse",
   "postDescriptionCardTitle": "Postbeskrivelse",
   "@postDescriptionCardTitle": {
@@ -1115,7 +1152,6 @@
   "@roleActiveScheduleCardTitle": {
     "description": "DESIGN-010 stage 3b: Spill-viewerens tidsplankort-tittel — runden(e) denne markørens post er bemannet av et lag."
   },
-
   "tokenMenuEmpty": "Ingen treff",
   "@tokenMenuEmpty": {
     "description": "Tom-tilstand-tekst i DESIGN-008 Stage 4 sin token-innsettingsmeny (/-kommandomenyen og {{-autofullføringen) når ingen variabel eller planfelt matcher det innskrevne filteret."
@@ -1128,24 +1164,29 @@
   "@tokenMenuCreateVariable": {
     "description": "Oppføring i token-innsettingsmenyen som vises når det innskrevne filteret ikke matcher noen deklarert variabel, koblet til en onCreateVariable-callback (sovende til DESIGN-008 Stage 5 tilfører den).",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "tokenMenuCreateLocation": "Opprett lokasjon «{label}»",
   "@tokenMenuCreateLocation": {
     "description": "Oppføring i token-innsettingsmenyen som vises når det innskrevne filteret ikke matcher noen stasjonslokasjon, koblet til en onCreateLocation-callback (ADR-0047, DESIGN-009 oppfølging 4).",
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
   "tokenMenuCreatePerson": "Opprett person «{label}»",
   "@tokenMenuCreatePerson": {
     "description": "Oppføring i token-innsettingsmenyen som vises når det innskrevne filteret ikke matcher noen stasjonsperson, koblet til en onCreatePerson-callback (ADR-0047, DESIGN-009 oppfølging 4).",
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
-
   "variablesSectionTitle": "Variabler",
   "@variablesSectionTitle": {
     "description": "DESIGN-008 Stage 5 seksjonsetikett for variabel-deklareringsseksjonen (Plan-editoren, seksjonsnavigert skall)."
@@ -1206,7 +1247,9 @@
   "@variablesSectionRenameConfirmMessage": {
     "description": "Bekreftelsesdialog-tekst før en planomfattende gi-nytt-navn-omskriving (ADR-0046).",
     "placeholders": {
-      "count": { "type": "num" }
+      "count": {
+        "type": "num"
+      }
     }
   },
   "variablesSectionDeleteBlockedTitle": "Kan ikke slette denne variabelen",
@@ -1217,7 +1260,9 @@
   "@variablesSectionDeleteBlockedMessage": {
     "description": "Brødtekst som introduserer bruksstedslisten i slett-blokkert-dialogen.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "variableOverridesSectionLocalValueLabel": "Lokal verdi",
@@ -1280,7 +1325,9 @@
   "@variableSaveBlockedInvalidValue": {
     "description": "Snackbar vist når lagring blokkeres fordi én eller flere typede variabelverdier (standardverdier eller overstyringer) ikke kan leses som sin deklarerte type — samme blokkeringsregel som et ukjent token (DESIGN-008 oppfølging 11). {names} er en kommaseparert liste av variabelnavn.",
     "placeholders": {
-      "names": { "type": "String" }
+      "names": {
+        "type": "String"
+      }
     }
   },
   "variableDurationHourUnit": "t",
@@ -1295,7 +1342,6 @@
   "@variableLocationCoordinateHint": {
     "description": "Hint på koordinat-tekstfeltet til en lokasjon-typet variabel — det godtar et desimalt lat,lng-par eller en UTM-streng, skrevet eller limt inn."
   },
-
   "locationKindLkpLabel": "Sist kjent posisjon (LKP)",
   "@locationKindLkpLabel": {
     "description": "Etikett for LocationKind.lkp, vist i type-velgeren og på kartet (ADR-0047/DESIGN-009)."
@@ -1424,7 +1470,6 @@
   "@locationKindOtherDescription": {
     "description": "Hjelpetekst for LocationKind.other, vist under etiketten i type-velgeren."
   },
-
   "locationsSectionTitle": "Lokasjoner",
   "@locationsSectionTitle": {
     "description": "DESIGN-009 seksjonsetikett for postens Location-liste (seksjonsnavigert skall)."
@@ -1441,7 +1486,9 @@
   "@locationsSectionDeleteConfirmMessage": {
     "description": "confirmDestructive-melding før en sveip-for-å-slette av en lokasjon (ADR-0031). Enkel sletting -- referansesperren (blokkert mens den refereres) er en fremtidig handling, ADR-0047.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "locationsSectionLabelLabel": "Navn",
@@ -1472,7 +1519,9 @@
   "@locationsSectionShowAllKinds": {
     "description": "Utvidelseslenke under det sammenslåtte LocationKind-kategorirutenettet i lokasjonsskjemaet (DESIGN-009 oppfølging 3b). {count} er LocationKind.values.length, ikke hardkodet.",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "locationsSectionShowFewerKinds": "Vis mindre",
@@ -1503,7 +1552,9 @@
   "@personsSectionEnactedByAction": {
     "description": "Innebygd rad på personens kort i Personer-seksjonen (DESIGN-009 prompt 4j) som navngir markørordren som spiller personen. Trykk åpner den markørordren i redigeringen. {name} er markørordrens eget visningsnavn.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "personsSectionAddMarkerAction": "Legg til spill",
@@ -1518,7 +1569,9 @@
   "@personsSectionDeleteConfirmMessage": {
     "description": "confirmDestructive-melding før en sveip-for-å-slette av en person (ADR-0031). Enkel sletting -- referansesperren (blokkert mens den refereres, inkludert en locSlug som peker på den) er en fremtidig handling, ADR-0047.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "personsSectionLocationLabel": "Lokasjon",
@@ -1589,14 +1642,18 @@
   "@rolePlayCustomizedFrom": {
     "description": "Identitetskortets tredje linje i sammenslått tilstand, vist i stedet for signalement når rollefigurens viste navn selv er en tilpasning (DESIGN-009 prompt 4j, avløser 4is «Portretterer {name}»), slik at leseren fremdeles vet hvem som faktisk portretteres. {name} er den personens eget navn.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "rolePlayAgeYears": "{age, plural, =1{1 år} other{{age} år}}",
   "@rolePlayAgeYears": {
     "description": "Alder med enhet, brukt i identitetskortets sammenslåtte meta-linje (DESIGN-009 prompt 4i), f.eks. «34 år · Kvinne».",
     "placeholders": {
-      "age": { "type": "int" }
+      "age": {
+        "type": "int"
+      }
     }
   },
   "rolePlayPositionOwnLabel": "Egen posisjon",
@@ -1615,27 +1672,34 @@
   "@genderOtherLabel": {
     "description": "GenderSegmentedControl-alternativ for den stabile koden «other»."
   },
-
   "planSaveBlockedUndeclaredVariable": "Kan ikke lagre: {sections} inneholder en ukjent variabel",
   "@planSaveBlockedUndeclaredVariable": {
     "description": "Snackbar vist når Lagre blokkeres fordi en Plan-scopet markdown-seksjon inneholder {{var.<navn>}} for et udeklarert navn. {sections} er en kommaseparert liste over de aktuelle seksjonsetikettene.",
     "placeholders": {
-      "sections": { "type": "String" }
+      "sections": {
+        "type": "String"
+      }
     }
   },
   "saveBlockedUnresolvedReference": "Kan ikke lagre: {sections} refererer til en ukjent lokasjon eller person: {references}",
   "@saveBlockedUnresolvedReference": {
     "description": "Snackbar vist når Lagre blokkeres fordi et post- eller markørordre-felt inneholder et {{station.loc.<slug>}}/{{station.person.<slug>}}-token hvis referanse ikke finnes blant (den lenkede) postens egne lokasjoner/personer (DESIGN-009 prompt 5). {sections} er en kommaseparert liste over de aktuelle felt-/seksjonsetikettene, {references} en kommaseparert liste over de brutte referansene (f.eks. station.loc.ghost).",
     "placeholders": {
-      "sections": { "type": "String" },
-      "references": { "type": "String" }
+      "sections": {
+        "type": "String"
+      },
+      "references": {
+        "type": "String"
+      }
     }
   },
   "stationReferenceGuardTitle": "Kan ikke slette «{name}»",
   "@stationReferenceGuardTitle": {
     "description": "Tittel på dialogen vist når sletting av en post-eid Location/Person blokkeres fordi den fremdeles er referert (DESIGN-009 prompt 5). {name} er lokasjonens etikett eller personens navn.",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "stationReferenceGuardMessage": "Fremdeles referert fra:",
@@ -1646,32 +1710,41 @@
   "@stationReferenceUsageInField": {
     "description": "En slette-vern-punktlinje (DESIGN-009 prompt 5): lokasjonen/personen er referert fra postens eget felt. {field} er felt-/seksjonsetiketten (f.eks. «Situasjon»).",
     "placeholders": {
-      "field": { "type": "String" }
+      "field": {
+        "type": "String"
+      }
     }
   },
   "stationReferenceUsageInRoleplayField": "I {roleplay}s {field}",
   "@stationReferenceUsageInRoleplayField": {
     "description": "En slette-vern-punktlinje (DESIGN-009 prompt 5): lokasjonen/personen er referert fra en lenket markørordres felt. {roleplay} er markørordrens navn, {field} feltetiketten.",
     "placeholders": {
-      "roleplay": { "type": "String" },
-      "field": { "type": "String" }
+      "roleplay": {
+        "type": "String"
+      },
+      "field": {
+        "type": "String"
+      }
     }
   },
   "stationReferenceUsageIsPersonHome": "Er {person}s lokasjon",
   "@stationReferenceUsageIsPersonHome": {
     "description": "En slette-vern-punktlinje (DESIGN-009 prompt 5): lokasjonen er satt som en persons hjem (Person.locSlug). {person} er personens navn.",
     "placeholders": {
-      "person": { "type": "String" }
+      "person": {
+        "type": "String"
+      }
     }
   },
   "stationReferenceUsagePortrayedBy": "Spilles av {roleplay}",
   "@stationReferenceUsagePortrayedBy": {
     "description": "En slette-vern-punktlinje (DESIGN-009 prompt 5): personen spilles av en markørordre (RolePlay.personRef). {roleplay} er markørordrens navn.",
     "placeholders": {
-      "roleplay": { "type": "String" }
+      "roleplay": {
+        "type": "String"
+      }
     }
   },
-
   "exerciseReorderMode": "Ordne",
   "@exerciseReorderMode": {
     "description": "Listehodet-veksler som aktiverer omsorteringsmodus (dragepunkter vises, dra-for-å-sortere blir tilgjengelig)."
@@ -1733,7 +1806,6 @@
   "@startHereCue": {
     "description": "Engangs inline-pill-merkelapp ved siden av første Plan-FAB, som nudger brukeren til å opprette sin første øvelse."
   },
-
   "migrationBannerHeading": "Web-appen flytter til web.ringdrill.app.",
   "@migrationBannerHeading": {
     "description": "Fet overskrift på migrasjonsvarsel-banneret som vises når PWA kjører på det gamle apex-domenet."
@@ -1937,6 +2009,41 @@
   "editPlacement": "Endre plassering",
   "@editPlacement": {
     "description": "Endre hvor noe er plassert"
+  },
+  "newStaff": "Nytt medlem",
+  "@newStaff": {
+    "description": "Sticky top row in the cast picker and FAB label in the cast roster sheet."
+  },
+  "deleteStaff": "Slett medlem",
+  "@deleteStaff": {
+    "description": "Button and dialog title for deleting an Actor record from ActorFormScreen."
+  },
+  "noStaffInRoster": "Ingen i staben ennå. Trykk + Nytt medlem for å legge til.",
+  "@noStaffInRoster": {
+    "description": "Tom tilstand vist i rollebesetting-arket når det ikke finnes noen Actor-poster i planen."
+  },
+  "staffRoleDirector": "Øvelsesleder",
+  "staffRoleInstructor": "Veileder",
+  "staffRoleOther": "Annet",
+  "staffRoleMarkor": "Markør",
+  "staffRolesLabel": "Roller",
+  "staffPlaysLabel": "Spiller",
+  "@staffRoleDirector": {
+    "description": "StaffRole.director label (DESIGN-011) — a staff member who runs the exercise."
+  },
+  "@staffRoleInstructor": {
+    "description": "StaffRole.instructor label (DESIGN-011) — a staff member who supervises a team."
+  },
+  "@staffRoleOther": {
+    "description": "StaffRole.other label (DESIGN-011) — escape hatch for a role the enum does not name."
+  },
+  "@staffRoleMarkor": {
+    "description": "The derived markør role (DESIGN-011) — held by anyone cast to a roleplay. Not stored; computed from casting."
+  },
+  "@staffRolesLabel": {
+    "description": "Section label above the role multi-select in the staff editor (DESIGN-011)."
+  },
+  "@staffPlaysLabel": {
+    "description": "Read-only section label listing the markører a staff member plays (DESIGN-011). Set by casting, not editable here."
   }
-
 }

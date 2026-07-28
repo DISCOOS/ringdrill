@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/plan_service.dart';
@@ -58,7 +58,7 @@ class StationRoleSummary extends StatelessWidget {
         )
         .toList();
     if (roles.isEmpty) return const SizedBox.shrink();
-    final actors = {for (final a in service.loadActors()) a.uuid: a};
+    final actors = {for (final a in service.loadStaff()) a.uuid: a};
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,7 +85,7 @@ class StationRoleSummary extends StatelessWidget {
         ...roles.map(
           (r) => _RoleSummaryRow(
             role: r,
-            actor: actors[r.actorUuid],
+            actor: actors[r.staffUuid],
             onTapMarker: onTapMarker,
           ),
         ),
@@ -102,7 +102,7 @@ class _RoleSummaryRow extends StatelessWidget {
   });
 
   final RolePlay role;
-  final Actor? actor;
+  final Staff? actor;
   final void Function(RolePlay role)? onTapMarker;
 
   @override

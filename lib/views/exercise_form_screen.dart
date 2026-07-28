@@ -32,7 +32,7 @@ enum _ExerciseSection {
 }
 
 /// [ExerciseFormScreen]'s result — a sealed save/delete, mirroring
-/// [ActorFormResult]/`RolePlayFormResult`. Null (cancel) is neither.
+/// [StaffFormResult]/`RolePlayFormResult`. Null (cancel) is neither.
 sealed class ExerciseFormResult {
   const ExerciseFormResult();
 }

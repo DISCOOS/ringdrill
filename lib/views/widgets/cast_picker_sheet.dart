@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/plan_service.dart';
-import 'package:ringdrill/views/actor_form_screen.dart';
+import 'package:ringdrill/views/staff_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/edit_affordance.dart';
@@ -26,12 +26,12 @@ Future<void> openCastPickerAndApply(
   final result = await showCastPickerSheet(context, rolePlay: rolePlay);
   if (result == null) return;
   final updated = switch (result) {
-    CastPickerSelect(:final actorUuid) =>
-      actorUuid == rolePlay.actorUuid
+    CastPickerSelect(:final staffUuid) =>
+      staffUuid == rolePlay.staffUuid
           ? null
-          : rolePlay.copyWith(actorUuid: actorUuid),
+          : rolePlay.copyWith(staffUuid: staffUuid),
     CastPickerClear() =>
-      rolePlay.actorUuid == null ? null : rolePlay.copyWith(actorUuid: null),
+      rolePlay.staffUuid == null ? null : rolePlay.copyWith(staffUuid: null),
   };
   if (updated == null) return;
   await PlanService().saveRolePlay(localizations, updated);
@@ -70,16 +70,16 @@ Future<CastPickerResult?> showCastPickerSheet(
 }
 
 /// The one marker-management surface (DESIGN-010 browser tile polish):
-/// assigns an [Actor] to a [RolePlay], and does everything else a marker
+/// assigns an [Staff] to a [RolePlay], and does everything else a marker
 /// needs too, so neither tile carries its own separate `⋮` context menu.
 ///
-/// Shows a searchable list of all [Actor] records. If the actor is already
+/// Shows a searchable list of all [Staff] records. If the actor is already
 /// cast to another role in the same exercise an [alreadyCastAs] annotation
 /// appears below their name (still selectable). A sticky "New actor" row at
-/// the top lets the user create an actor inline via [ActorFormScreen]
+/// the top lets the user create an actor inline via [StaffFormScreen]
 /// (add); a sticky "Clear" row unlinks the current actor (remove); tapping
 /// a row selects that actor (change) — the currently cast one shows a
-/// check; and each row's pencil opens [ActorFormScreen] for *that* actor
+/// check; and each row's pencil opens [StaffFormScreen] for *that* actor
 /// (edit), independent of which one is currently cast to this role.
 ///
 /// Returns [CastPickerSelect] when an actor is selected, [CastPickerClear]
@@ -112,9 +112,9 @@ sealed class CastPickerResult {
 }
 
 final class CastPickerSelect extends CastPickerResult {
-  const CastPickerSelect(this.actorUuid);
+  const CastPickerSelect(this.staffUuid);
 
-  final String actorUuid;
+  final String staffUuid;
 }
 
 final class CastPickerClear extends CastPickerResult {
@@ -125,7 +125,7 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
   final _service = PlanService();
   final _searchController = TextEditingController();
 
-  List<Actor> _actors = [];
+  List<Staff> _actors = [];
   List<RolePlay> _rolePlays = [];
   String _query = '';
 
@@ -137,7 +137,7 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
 
   void _reload() {
     setState(() {
-      _actors = _service.loadActors();
+      _actors = _service.loadStaff();
       _rolePlays = _service.loadRolePlays();
     });
   }
@@ -150,9 +150,9 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
 
   /// Returns the name of a role (in the same exercise) that this actor is
   /// already cast to, or null if they are uncast / cast only in other exercises.
-  String? _crossCastName(String actorUuid) {
+  String? _crossCastName(String staffUuid) {
     for (final rp in _rolePlays) {
-      if (rp.actorUuid == actorUuid &&
+      if (rp.staffUuid == staffUuid &&
           rp.exerciseUuid == widget.rolePlay.exerciseUuid &&
           rp.uuid != widget.rolePlay.uuid) {
         return rp.name;
@@ -161,7 +161,7 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
     return null;
   }
 
-  List<Actor> get _filtered {
+  List<Staff> get _filtered {
     if (_query.isEmpty) return _actors;
     final q = _query.toLowerCase();
     return _actors.where((a) => a.realName.toLowerCase().contains(q)).toList();
@@ -169,15 +169,15 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
 
   Future<void> _createAndSelect() async {
     final localizations = AppLocalizations.of(context)!;
-    final result = await openFormSurface<ActorFormResult>(
+    final result = await openFormSurface<StaffFormResult>(
       context,
-      builder: (_) => const ActorFormScreen(),
+      builder: (_) => const StaffFormScreen(),
     );
     if (result == null || !mounted) return;
-    if (result case ActorFormSave(:final actor)) {
-      await _service.saveActor(localizations, actor);
+    if (result case StaffFormSave(:final staff)) {
+      await _service.saveStaff(localizations, staff);
       if (!mounted) return;
-      Navigator.of(context).pop(CastPickerSelect(actor.uuid));
+      Navigator.of(context).pop(CastPickerSelect(staff.uuid));
     }
   }
 
@@ -189,19 +189,20 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
   /// blocked (matching the previous overflow-menu behaviour) when the
   /// actor is still cast to any role — including this one, so clearing the
   /// cast first is required before an actor can be deleted from here.
-  Future<void> _editActor(Actor actor) async {
+  Future<void> _editActor(Staff actor) async {
     final localizations = AppLocalizations.of(context)!;
-    final result = await openFormSurface<ActorFormResult>(
+    final result = await openFormSurface<StaffFormResult>(
       context,
-      builder: (_) => ActorFormScreen(actor: actor),
+      builder: (_) => StaffFormScreen(staff: actor),
     );
     if (result == null || !mounted) return;
     switch (result) {
-      case ActorFormSave(:final actor):
-        await _service.saveActor(localizations, actor);
-      case ActorFormDelete(:final actor):
+      // `staff` is the edited record, not the method's pre-edit parameter.
+      case StaffFormSave(:final staff):
+        await _service.saveStaff(localizations, staff);
+      case StaffFormDelete(:final staff):
         final roles = _service.loadRolePlays().where(
-          (rolePlay) => rolePlay.actorUuid == actor.uuid,
+          (rolePlay) => rolePlay.staffUuid == staff.uuid,
         );
         if (roles.isNotEmpty) {
           if (!mounted) return;
@@ -212,13 +213,13 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
           );
           return;
         }
-        await _service.deleteActor(actor.uuid);
+        await _service.deleteStaff(actor.uuid);
     }
     if (mounted) _reload();
   }
 
-  void _select(String actorUuid) {
-    Navigator.of(context).pop(CastPickerSelect(actorUuid));
+  void _select(String staffUuid) {
+    Navigator.of(context).pop(CastPickerSelect(staffUuid));
   }
 
   void _clear() {
@@ -230,7 +231,7 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
     final localizations = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final filtered = _filtered;
-    final hasCurrentActor = widget.rolePlay.actorUuid != null;
+    final hasCurrentActor = widget.rolePlay.staffUuid != null;
     // Search only once the list is long enough to need it — the same threshold
     // the shared `showRingdrillPicker` uses, instead of always showing it.
     final showSearch = _actors.length >= 8;
@@ -277,7 +278,7 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
             ),
           ),
 
-        // Actor list.
+        // Staff list.
         Flexible(
           child: ListView.builder(
             shrinkWrap: true,
@@ -285,7 +286,7 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
             itemBuilder: (context, index) {
               final actor = filtered[index];
               final crossCast = _crossCastName(actor.uuid);
-              final isSelected = actor.uuid == widget.rolePlay.actorUuid;
+              final isSelected = actor.uuid == widget.rolePlay.staffUuid;
               return ListTile(
                 selected: isSelected,
                 // Selection is shown by a leading check + the row tint, not a
@@ -334,7 +335,7 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
           child: ListTile(
             leading: AddFaceIcon(color: theme.colorScheme.primary),
             title: Text(
-              localizations.newActor,
+              localizations.newStaff,
               style: TextStyle(color: theme.colorScheme.primary),
             ),
             onTap: _createAndSelect,

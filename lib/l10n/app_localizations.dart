@@ -2714,12 +2714,6 @@ abstract class AppLocalizations {
   /// **'Cast roster'**
   String get castRoster;
 
-  /// Sticky top row in the cast picker and FAB label in the cast roster sheet.
-  ///
-  /// In en, this message translates to:
-  /// **'New actor'**
-  String get newActor;
-
   /// Footer shown on an actor row in the cast roster sheet listing roles they are cast to.
   ///
   /// In en, this message translates to:
@@ -2744,22 +2738,16 @@ abstract class AppLocalizations {
   /// **'Exercise: {name}'**
   String roleSubtitleExercise(String name);
 
-  /// Empty state shown in the cast roster sheet when no Actor records exist in the plan.
-  ///
-  /// In en, this message translates to:
-  /// **'No actors yet. Tap + New actor to add one.'**
-  String get noActorsInRoster;
-
   /// Teaching empty-state title shown on the Roster tab when the active plan has no Actor records.
   ///
   /// In en, this message translates to:
-  /// **'No actors yet'**
+  /// **'No staff yet'**
   String get emptyRosterTitle;
 
   /// Teaching empty-state body shown on the Roster tab when the active plan has no Actor records.
   ///
   /// In en, this message translates to:
-  /// **'Actors are the people who play out roles in your exercises. Add your first actor here, then cast them in roles from the Script tab in the Plan.'**
+  /// **'Add exercise directors, instructors and markers here.'**
   String get emptyRosterBody;
 
   /// Shown as the Markører tab body and as tooltip on the disabled cast-roster AppBar action when activePlanUuid is null.
@@ -2893,12 +2881,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notes'**
   String get actorNotes;
-
-  /// Button and dialog title for deleting an Actor record from ActorFormScreen.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete actor'**
-  String get deleteActor;
 
   /// Confirmation message shown before deleting an Actor record from ActorFormScreen.
   ///
@@ -3287,13 +3269,13 @@ abstract class AppLocalizations {
   /// Bottom-nav label for the Roster (Bemanning) tab introduced in DESIGN-006 stage 4.
   ///
   /// In en, this message translates to:
-  /// **'Roster'**
+  /// **'Staff'**
   String get rosterTab;
 
   /// Empty detail pane text shown on the Roster tab in the wide layout.
   ///
   /// In en, this message translates to:
-  /// **'Select an actor to see details'**
+  /// **'Select a member to see details'**
   String get detailEmptyRoster;
 
   /// AppBar title for PlanFormScreen when editing the active plan.
@@ -4711,6 +4693,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit placement'**
   String get editPlacement;
+
+  /// Sticky top row in the cast picker and FAB label in the cast roster sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'New member'**
+  String get newStaff;
+
+  /// Button and dialog title for deleting an Actor record from ActorFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete member'**
+  String get deleteStaff;
+
+  /// Empty state shown in the cast roster sheet when no Actor records exist in the plan.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff yet. Tap + New member to add one.'**
+  String get noStaffInRoster;
+
+  /// StaffRole.director label (DESIGN-011) — a staff member who runs the exercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise director'**
+  String get staffRoleDirector;
+
+  /// StaffRole.instructor label (DESIGN-011) — a staff member who supervises a team.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructor'**
+  String get staffRoleInstructor;
+
+  /// StaffRole.other label (DESIGN-011) — escape hatch for a role the enum does not name.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get staffRoleOther;
+
+  /// The derived markør role (DESIGN-011) — held by anyone cast to a roleplay. Not stored; computed from casting.
+  ///
+  /// In en, this message translates to:
+  /// **'Marker'**
+  String get staffRoleMarkor;
+
+  /// Section label above the role multi-select in the staff editor (DESIGN-011).
+  ///
+  /// In en, this message translates to:
+  /// **'Roles'**
+  String get staffRolesLabel;
+
+  /// Read-only section label listing the markører a staff member plays (DESIGN-011). Set by casting, not editable here.
+  ///
+  /// In en, this message translates to:
+  /// **'Plays'**
+  String get staffPlaysLabel;
 }
 
 class _AppLocalizationsDelegate

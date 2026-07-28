@@ -135,7 +135,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.pickerSelectRolePlayTitle), findsOneWidget);
-      expect(find.text(l10n.newActor), findsOneWidget);
+      expect(find.text(l10n.newStaff), findsOneWidget);
     },
   );
 

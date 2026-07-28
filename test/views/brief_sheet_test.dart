@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
@@ -23,7 +23,7 @@ const _planUuid = 'prog-sheet';
 const _exerciseUuid = 'ex-sheet';
 const _actorUuid = 'actor-sheet';
 
-final _actor = Actor(uuid: _actorUuid, realName: 'Sheet Actor', phone: null);
+final _actor = Staff(uuid: _actorUuid, realName: 'Sheet Staff', phone: null);
 
 const _rolePlay = RolePlay(
   uuid: 'rp-sheet',
@@ -34,7 +34,7 @@ const _rolePlay = RolePlay(
   description: 'Tall',
   behavior: 'Calm',
   stationIndex: 0,
-  actorUuid: _actorUuid,
+  staffUuid: _actorUuid,
 );
 
 Exercise _exercise() => Exercise(

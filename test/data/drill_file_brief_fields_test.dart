@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/data/drill_file.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
@@ -24,7 +24,7 @@ Plan _emptyPlan() {
     sessions: const [],
     exercises: const [],
     rolePlays: const [],
-    actors: const [],
+    staff: const [],
   );
 }
 
@@ -75,7 +75,7 @@ const _rolePlay = RolePlay(
   propsMd: 'props content',
 );
 
-const _actor = Actor(uuid: 'actor-1', realName: 'Kari', notes: 'PII notes');
+const _actor = Staff(uuid: 'actor-1', realName: 'Kari', notes: 'PII notes');
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -90,7 +90,7 @@ void main() {
         beforeRoundMd: 'before-round',
         exercises: [_exercise()],
         rolePlays: [_rolePlay],
-        actors: [_actor],
+        staff: [_actor],
       );
 
       final drillFile = DrillFile.fromPlan(plan, 'test');
@@ -429,7 +429,7 @@ void main() {
         commsMd: 'comms',
         exercises: [_exercise()],
         rolePlays: [_rolePlay],
-        actors: [_actor],
+        staff: [_actor],
       );
 
       final hashBefore = plan.computeContentHash();
@@ -445,11 +445,11 @@ void main() {
     });
 
     test('actor.notes still excluded from content hash', () {
-      const actorA = Actor(uuid: 'a-1', realName: 'Alice', notes: 'note A');
-      const actorB = Actor(uuid: 'a-1', realName: 'Alice', notes: 'note B');
+      const actorA = Staff(uuid: 'a-1', realName: 'Alice', notes: 'note A');
+      const actorB = Staff(uuid: 'a-1', realName: 'Alice', notes: 'note B');
 
-      final planA = _emptyPlan().copyWith(actors: [actorA]);
-      final planB = _emptyPlan().copyWith(actors: [actorB]);
+      final planA = _emptyPlan().copyWith(staff: [actorA]);
+      final planB = _emptyPlan().copyWith(staff: [actorB]);
 
       expect(
         planA.computeContentHash(),

@@ -20,7 +20,7 @@ sealed class RolePlay with _$RolePlay {
     @JsonKey(includeFromJson: false, includeToJson: false) String? behavior,
     int? stationIndex,
     @NullableLatLngJsonConverter() LatLng? position,
-    String? actorUuid,
+    String? staffUuid,
 
     /// Slug of a [Person] on this roleplay's station (ADR-0047,
     /// DESIGN-009). Nullable on the wire: "mandatory" is an editor-level

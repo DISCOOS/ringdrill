@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
@@ -42,7 +42,7 @@ const _kari = Person(slug: 'kari', name: 'Kari Fiskeløs', age: 71);
 
 // Hilde's marker is cast to a staff member; the enacted-by line names the
 // cast actor (not the roleplay's person-mirroring name).
-const _actorForHilde = Actor(uuid: 'actor-hilde', realName: 'Ola Nordmann');
+const _actorForHilde = Staff(uuid: 'actor-hilde', realName: 'Ola Nordmann');
 
 const _roleForHilde = RolePlay(
   uuid: 'role-hilde',
@@ -51,7 +51,7 @@ const _roleForHilde = RolePlay(
   stationIndex: 0,
   name: 'Hilde',
   personRef: 'hilde',
-  actorUuid: 'actor-hilde',
+  staffUuid: 'actor-hilde',
 );
 
 const _lkp = Location(slug: 'lkp', label: 'LKP', kind: LocationKind.lkp);

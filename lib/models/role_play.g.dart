@@ -18,7 +18,7 @@ _RolePlay _$RolePlayFromJson(Map<String, dynamic> json) => _RolePlay(
   position: const NullableLatLngJsonConverter().fromJson(
     json['position'] as Map<String, dynamic>?,
   ),
-  actorUuid: json['actorUuid'] as String?,
+  staffUuid: json['staffUuid'] as String?,
   personRef: json['personRef'] as String?,
 );
 
@@ -32,6 +32,6 @@ Map<String, dynamic> _$RolePlayToJson(_RolePlay instance) => <String, dynamic>{
   'description': instance.description,
   'stationIndex': instance.stationIndex,
   'position': const NullableLatLngJsonConverter().toJson(instance.position),
-  'actorUuid': instance.actorUuid,
+  'staffUuid': instance.staffUuid,
   'personRef': instance.personRef,
 };

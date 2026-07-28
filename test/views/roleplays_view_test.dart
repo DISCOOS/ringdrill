@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
@@ -21,7 +21,7 @@ const _exerciseUuid = 'ex-rv';
 // Role A: cast to actor with phone + notes
 const _roleAUuid = 'role-a';
 const _actorAUuid = 'actor-a';
-final _actorA = Actor(
+final _actorA = Staff(
   uuid: _actorAUuid,
   realName: 'Kari Nordmann',
   phone: '99887766',
@@ -33,20 +33,20 @@ final _roleA = RolePlay(
   exerciseUuid: _exerciseUuid,
   name: 'Anna Hansen',
   age: 45,
-  actorUuid: _actorAUuid,
+  staffUuid: _actorAUuid,
   stationIndex: 0,
 );
 
 // Role B: cast to actor without phone
 const _roleBUuid = 'role-b';
 const _actorBUuid = 'actor-b';
-final _actorB = Actor(uuid: _actorBUuid, realName: 'Ola Nordmann');
+final _actorB = Staff(uuid: _actorBUuid, realName: 'Ola Nordmann');
 final _roleB = RolePlay(
   uuid: _roleBUuid,
   index: 1,
   exerciseUuid: _exerciseUuid,
   name: 'Vitne X',
-  actorUuid: _actorBUuid,
+  staffUuid: _actorBUuid,
   stationIndex: 0,
 );
 
@@ -96,8 +96,8 @@ Map<String, Object> _buildPrefs() {
     // Two roles seeded together
     'pr:$_planUuid:$_roleAUuid': jsonEncode(_roleA.toJson()),
     'pr:$_planUuid:$_roleBUuid': jsonEncode(_roleB.toJson()),
-    // Two actors: A has phone+notes, B has neither.
-    // Actor.notes is excluded from JSON (ADR-0022); stored under pan: prefix.
+    // Two staff: A has phone+notes, B has neither.
+    // Staff.notes is excluded from JSON (ADR-0022); stored under pan: prefix.
     'pa:$_planUuid:$_actorAUuid': jsonEncode(_actorA.toJson()),
     'pan:$_planUuid:$_actorAUuid': _actorA.notes!,
     'pa:$_planUuid:$_actorBUuid': jsonEncode(_actorB.toJson()),
@@ -243,7 +243,7 @@ void main() {
       await _expandTileAt(tester, 1);
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      // Actor name is present
+      // Staff name is present
       expect(find.text(l10n.castedByLine(_actorB.realName)), findsOneWidget);
       // The phone number of actor A must not appear in role B's section
       expect(find.text(_actorA.phone!), findsNothing);

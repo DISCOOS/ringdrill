@@ -1,27 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/services/edit_permissions.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/widgets/edit_affordance.dart';
+import 'package:ringdrill/views/widgets/ringdrill_text.dart';
+import 'package:ringdrill/views/widgets/staff_role_label.dart';
 
-/// Form for creating or editing an [Actor] record.
+/// Form for creating or editing an [Staff] record.
 ///
 /// Accepts an existing [actor] (edit mode) or null (create mode).
-/// Pops with [ActorFormSave] on save, [ActorFormDelete] on delete, or null on
+/// Pops with [StaffFormSave] on save, [StaffFormDelete] on delete, or null on
 /// cancel.
 ///
 /// When [modal] is true the caller provided a bottom-sheet context and the
 /// save button text is "Add" rather than "Save". The widget is stateless
 /// with respect to persistence — the caller persists via [PlanService].
-class ActorFormScreen extends StatefulWidget {
-  const ActorFormScreen({super.key, this.actor, this.modal = false});
+class StaffFormScreen extends StatefulWidget {
+  const StaffFormScreen({super.key, this.staff, this.modal = false});
 
-  /// Existing actor to edit; null to create a new one.
-  final Actor? actor;
+  /// Existing member to edit; null to create a new one.
+  final Staff? staff;
 
   /// When true, the form is shown inside a bottom sheet (cast roster FAB /
   /// cast picker inline). Changes button label from "Save" to the locale's
@@ -29,27 +33,31 @@ class ActorFormScreen extends StatefulWidget {
   final bool modal;
 
   @override
-  State<ActorFormScreen> createState() => _ActorFormScreenState();
+  State<StaffFormScreen> createState() => _StaffFormScreenState();
 }
 
-sealed class ActorFormResult {
-  const ActorFormResult();
+sealed class StaffFormResult {
+  const StaffFormResult();
 }
 
-final class ActorFormSave extends ActorFormResult {
-  const ActorFormSave(this.actor);
+final class StaffFormSave extends StaffFormResult {
+  const StaffFormSave(this.staff);
 
-  final Actor actor;
+  final Staff staff;
 }
 
-final class ActorFormDelete extends ActorFormResult {
-  const ActorFormDelete(this.actor);
+final class StaffFormDelete extends StaffFormResult {
+  const StaffFormDelete(this.staff);
 
-  final Actor actor;
+  final Staff staff;
 }
 
-class _ActorFormScreenState extends State<ActorFormScreen> {
+class _StaffFormScreenState extends State<StaffFormScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  /// The stored organizational roles. Markør is *not* here: it is derived from
+  /// casting (DESIGN-011) and shown read-only below.
+  Set<StaffRole> _roles = <StaffRole>{};
 
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -58,11 +66,12 @@ class _ActorFormScreenState extends State<ActorFormScreen> {
   @override
   void initState() {
     super.initState();
-    final actor = widget.actor;
-    if (actor != null) {
-      _nameController.text = actor.realName;
-      _phoneController.text = actor.phone ?? '';
-      _notesController.text = actor.notes ?? '';
+    final staff = widget.staff;
+    if (staff != null) {
+      _nameController.text = staff.realName;
+      _phoneController.text = staff.phone ?? '';
+      _notesController.text = staff.notes ?? '';
+      _roles = {...staff.roles};
     }
   }
 
@@ -77,8 +86,8 @@ class _ActorFormScreenState extends State<ActorFormScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final isNew = widget.actor == null;
-    final title = isNew ? localizations.newActor : widget.actor!.realName;
+    final isNew = widget.staff == null;
+    final title = isNew ? localizations.newStaff : widget.staff!.realName;
 
     return Scaffold(
       appBar: AppBar(
@@ -94,7 +103,7 @@ class _ActorFormScreenState extends State<ActorFormScreen> {
               target: EditTarget.actor,
               child: IconButton(
                 icon: const Icon(Icons.delete),
-                tooltip: localizations.deleteActor,
+                tooltip: localizations.deleteStaff,
                 onPressed: _confirmDelete,
               ),
             ),
@@ -148,6 +157,9 @@ class _ActorFormScreenState extends State<ActorFormScreen> {
                       alignLabelWithHint: true,
                     ),
                   ),
+                  const SizedBox(height: 20),
+
+                  _buildRoles(context, localizations),
                 ],
               ),
             ),
@@ -157,13 +169,106 @@ class _ActorFormScreenState extends State<ActorFormScreen> {
     );
   }
 
+  /// The stored roles as a filter-chip multi-select, plus the derived markør
+  /// role as a read-only chip.
+  ///
+  /// Markør is deliberately not selectable: a person *is* one precisely when a
+  /// roleplay is cast to them, so it is computed from the cast rather than stored
+  /// (DESIGN-011 decision 2). A stored flag could disagree with the actual
+  /// casting, with no way to tell which was right. Editing it happens in the
+  /// Spill segment, by casting.
+  Widget _buildRoles(BuildContext context, AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final plays = _playedRolePlays();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.staffRolesLabel,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final role in StaffRole.values)
+              FilterChip(
+                label: Text(staffRoleLabel(l10n, role)),
+                selected: _roles.contains(role),
+                onSelected: (selected) => setState(() {
+                  if (selected) {
+                    _roles.add(role);
+                  } else {
+                    _roles.remove(role);
+                  }
+                }),
+              ),
+            // Derived, so it renders as a plain (non-interactive) chip whether or
+            // not it applies — absent would read as "not a markør yet", which is
+            // the same thing but harder to explain.
+            if (plays.isNotEmpty)
+              Chip(
+                avatar: const Icon(Icons.face, size: 18),
+                label: Text(staffRoleLabel(l10n, null)),
+              ),
+          ],
+        ),
+        if (plays.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text(
+            l10n.staffPlaysLabel,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          for (final rolePlay in plays)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.lock_outline,
+                    size: 14,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: RingDrillText.plain(
+                      rolePlay.name,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+
+  /// The roleplays cast to this member — the derivation behind the markør chip.
+  /// Empty for a new member, which has no uuid to be cast to yet.
+  List<RolePlay> _playedRolePlays() {
+    final uuid = widget.staff?.uuid;
+    if (uuid == null) return const [];
+    return PlanService()
+        .loadRolePlays()
+        .where((r) => r.staffUuid == uuid)
+        .toList();
+  }
+
   void _save() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    final existing = widget.actor;
+    final existing = widget.staff;
     final saved = existing == null
-        ? Actor(
+        ? Staff(
             uuid: nanoid(10),
+            roles: _roles,
             realName: _nameController.text.trim(),
             phone: _phoneController.text.trim().isEmpty
                 ? null
@@ -173,6 +278,7 @@ class _ActorFormScreenState extends State<ActorFormScreen> {
                 : _notesController.text.trim(),
           )
         : existing.copyWith(
+            roles: _roles,
             realName: _nameController.text.trim(),
             phone: _phoneController.text.trim().isEmpty
                 ? null
@@ -182,22 +288,22 @@ class _ActorFormScreenState extends State<ActorFormScreen> {
                 : _notesController.text.trim(),
           );
 
-    Navigator.of(context).pop(ActorFormSave(saved));
+    Navigator.of(context).pop(StaffFormSave(saved));
   }
 
   Future<void> _confirmDelete() async {
-    final actor = widget.actor;
+    final actor = widget.staff;
     if (actor == null) return;
 
     final localizations = context.l10n;
     final confirmed = await confirmDestructive(
       context,
-      title: localizations.deleteActor,
+      title: localizations.deleteStaff,
       message: localizations.confirmDeleteActor(actor.realName),
       confirmLabel: localizations.delete,
     );
     if (confirmed && mounted) {
-      Navigator.of(context).pop(ActorFormDelete(actor));
+      Navigator.of(context).pop(StaffFormDelete(actor));
     }
   }
 }

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/data/drill_file.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 
@@ -18,7 +18,7 @@ Plan _emptyPlan() {
     sessions: const [],
     exercises: const [],
     rolePlays: const [],
-    actors: const [],
+    staff: const [],
   );
 }
 
@@ -108,16 +108,16 @@ void main() {
       index: 1,
       exerciseUuid: 'ex-1',
       name: 'Ola Nordmann',
-      actorUuid: 'actor-1',
+      staffUuid: 'actor-1',
     );
-    const actor1 = Actor(
+    const actor1 = Staff(
       uuid: 'actor-1',
       realName: 'Kari Nordmann',
       phone: '+4791234567',
       notes: 'Keep in character',
     );
 
-    final plan = _emptyPlan().copyWith(rolePlays: [rp1, rp2], actors: [actor1]);
+    final plan = _emptyPlan().copyWith(rolePlays: [rp1, rp2], staff: [actor1]);
 
     final drillFile = DrillFile.fromPlan(plan, 'test');
     final decoded = drillFile.plan();
@@ -133,12 +133,12 @@ void main() {
     expect(decodedRp1.background, 'Fell down stairs');
 
     final decodedRp2 = decoded.rolePlays.firstWhere((r) => r.uuid == 'rp-2');
-    expect(decodedRp2.actorUuid, 'actor-1');
+    expect(decodedRp2.staffUuid, 'actor-1');
 
-    expect(decoded.actors.length, 1);
-    expect(decoded.actors.first.uuid, 'actor-1');
-    expect(decoded.actors.first.realName, 'Kari Nordmann');
-    expect(decoded.actors.first.notes, 'Keep in character');
+    expect(decoded.staff.length, 1);
+    expect(decoded.staff.first.uuid, 'actor-1');
+    expect(decoded.staff.first.realName, 'Kari Nordmann');
+    expect(decoded.staff.first.notes, 'Keep in character');
 
     expect(decoded.metadata.schema, '1.2');
   });
@@ -154,7 +154,7 @@ void main() {
 
     final decoded = drillFile.plan();
     expect(decoded.rolePlays, isEmpty);
-    expect(decoded.actors, isEmpty);
+    expect(decoded.staff, isEmpty);
     // schema is always stamped by fromPlan
     expect(decoded.metadata.schema, '1.2');
   });
@@ -171,7 +171,7 @@ void main() {
       sessions: const [],
       exercises: const [],
       rolePlays: const [],
-      actors: const [],
+      staff: const [],
     );
     final archive = Archive();
     final encoder = ZipEncoder();
@@ -211,7 +211,7 @@ void main() {
 
     final decoded = drillFile.plan();
     expect(decoded.rolePlays, isEmpty);
-    expect(decoded.actors, isEmpty);
+    expect(decoded.staff, isEmpty);
     expect(decoded.metadata.schema, isNull);
   });
 
@@ -224,12 +224,12 @@ void main() {
       behavior: 'Act confused',
       background: 'Previous injury',
     );
-    const actor = Actor(
+    const actor = Staff(
       uuid: 'actor-1',
       realName: 'Kari',
       notes: 'Stay in character',
     );
-    final plan = _emptyPlan().copyWith(rolePlays: [rp], actors: [actor]);
+    final plan = _emptyPlan().copyWith(rolePlays: [rp], staff: [actor]);
 
     final drillFile = DrillFile.fromPlan(plan, 'test');
     final archive = ZipDecoder().decodeBytes(drillFile.content);
@@ -242,7 +242,8 @@ void main() {
     // .md files are present with correct content
     expect(byName['roleplays/rp-1/behavior.md'], 'Act confused');
     expect(byName['roleplays/rp-1/background.md'], 'Previous injury');
-    expect(byName['actors/actor-1/notes.md'], 'Stay in character');
+    // staff/, not actors/ — DESIGN-011 renamed the folder.
+    expect(byName['staff/actor-1/notes.md'], 'Stay in character');
 
     // JSON manifests do not carry the markdown keys
     final rpJson =
@@ -250,9 +251,9 @@ void main() {
     expect(rpJson.containsKey('behavior'), isFalse);
     expect(rpJson.containsKey('background'), isFalse);
 
-    final actorJson =
-        jsonDecode(byName['actors/actor-1.json']!) as Map<String, dynamic>;
-    expect(actorJson.containsKey('notes'), isFalse);
+    final staffJson =
+        jsonDecode(byName['staff/actor-1.json']!) as Map<String, dynamic>;
+    expect(staffJson.containsKey('notes'), isFalse);
   });
 
   test('reads back 1.1 archive with inline markdown fields', () {
@@ -267,7 +268,7 @@ void main() {
     expect(rp.behavior, 'Confused');
     expect(rp.background, 'Head trauma');
 
-    final actor = decoded.actors.firstWhere((a) => a.uuid == 'actor-1');
+    final actor = decoded.staff.firstWhere((a) => a.uuid == 'actor-1');
     expect(actor.notes, 'PII notes');
   });
 
@@ -416,12 +417,12 @@ void main() {
       behavior: 'Act confused',
       background: 'Previous injury',
     );
-    const actor = Actor(
+    const actor = Staff(
       uuid: 'actor-1',
       realName: 'Kari',
       notes: 'Stay in character',
     );
-    final plan = _emptyPlan().copyWith(rolePlays: [rp], actors: [actor]);
+    final plan = _emptyPlan().copyWith(rolePlays: [rp], staff: [actor]);
 
     final hashBefore = plan.computeContentHash();
     final drillFile = DrillFile.fromPlan(plan, 'test');

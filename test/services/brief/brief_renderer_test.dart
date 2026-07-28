@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations_en.dart';
 import 'package:ringdrill/l10n/app_localizations_nb.dart';
-import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/plan.dart';
@@ -32,7 +32,7 @@ Plan _emptyPlan() {
     sessions: const [],
     exercises: const [],
     rolePlays: const [],
-    actors: const [],
+    staff: const [],
   );
 }
 
@@ -102,10 +102,10 @@ const _rolePlay = RolePlay(
       '- Du går videre hvis du ikke blir snakket til etter 30 sekunder.\n',
   stationIndex: 0,
   position: LatLng(58.99, 10.43),
-  actorUuid: 'actor-12',
+  staffUuid: 'actor-12',
 );
 
-const _actor = Actor(
+const _actor = Staff(
   uuid: 'actor-12',
   realName: 'Kari Hansen',
   phone: '99887766',
@@ -114,7 +114,7 @@ const _actor = Actor(
 Plan _designPlan() => _emptyPlan().copyWith(
   exercises: [_designExercise()],
   rolePlays: [_rolePlay],
-  actors: [_actor],
+  staff: [_actor],
 );
 
 final _l10n = AppLocalizationsNb();
@@ -188,7 +188,7 @@ void main() {
       // Roleplay name
       expect(normalized, contains('#### Markørspill (Anne Glemsk)'));
 
-      // Actor PII (director only)
+      // Staff PII (director only)
       expect(normalized, contains('**Markør:** Kari Hansen `(99887766)`'));
 
       // Situation with resolved UTM cross-reference — {{station.position}} is substituted
@@ -228,7 +228,7 @@ void main() {
         l10n: _l10n,
       );
 
-      // Actor PII must be absent
+      // Staff PII must be absent
       expect(result, isNot(contains('Kari Hansen')));
       expect(result, isNot(contains('99887766')));
       expect(result, isNot(contains('**Markør:**')));
@@ -254,7 +254,7 @@ void main() {
       // Director notes must be present
       expect(result, contains('Notater til instruktør/øvingsledelse'));
 
-      // Actor PII must be absent
+      // Staff PII must be absent
       expect(result, isNot(contains('Kari Hansen')));
       expect(result, isNot(contains('99887766')));
     });
