@@ -8,6 +8,14 @@ informed: []
 
 # ADR-0018: Introduce RolePlay and Actor entities, persist schema 1.1 in metadata
 
+> **Amended by [DESIGN-011](../design/011-person-with-role-and-roster-model.md)
+> (2026-07-28).** `Actor` is now **`Staff`**, the archive folder `actors/` is
+> **`staff/`**, and `RolePlay.actorUuid` is **`staffUuid`**. `Staff` gained a
+> `roles` set (`StaffRole.director/instructor/other`; markør stays *derived* from
+> casting). A clean rename with no wire alias — nothing was published — though
+> import still accepts `actors/`, and the server strips **both** folder names. The
+> PII boundary itself is unchanged; only its name. See "Amendment" at the end.
+
 ## Context and problem statement
 
 RingDrill exercises in the SAR domain rely on *markører* (role-players) who portray missing persons, casualties or witnesses at one or more stations. Today the data model has no place for them. Authors keep that information in chat threads or paper notes, so it never travels with the `.drill` file. Catalog-shared exercises cannot include their cast, and the app has nowhere to manage one.
@@ -98,7 +106,8 @@ required List<Actor> actors,
   teams/<uuid>.json
   sessions/<uuid>.json
   roleplays/<uuid>.json      NEW. Publishable.
-  actors/<uuid>.json         NEW. PII. Never published.
+  staff/<uuid>.json          NEW. PII. Never published.
+                             (was actors/ — DESIGN-011. Still read on import.)
 ```
 
 `DrillFile.fromProgram` writes both folders. `DrillFile.program()` reads them. Older clients silently ignore both, since the reader matches known prefixes only.
@@ -158,6 +167,55 @@ No client-side enforcement in this ADR. Older clients drop the field on deserial
 
 * Good: Zero coordination overhead.
 * Bad: Wastes the natural moment to start persisting a schema. The next versioning need would introduce both the marker and its own change at once.
+
+## Amendment (DESIGN-011, 2026-07-28)
+
+`Actor` generalized from "the human cast to a marker" to **any real person
+staffing the exercise**, and was renamed accordingly.
+
+| Before | After |
+|---|---|
+| `Actor` | `Staff` |
+| `actors/` (archive folder) | `staff/` |
+| `RolePlay.actorUuid` | `RolePlay.staffUuid` |
+| `Plan.actors` | `Plan.staff` |
+| — | `Staff.roles`: `Set<StaffRole>` |
+
+**Markør is not in the enum.** A person is a markør precisely when some
+`RolePlay.staffUuid` points at them, so it is derived from the cast. A stored flag
+could disagree with the actual casting with no way to tell which was right.
+`StaffRole` therefore holds only the *organizational* roles — director, instructor,
+other. "Deltaker" is absent for a different reason: participants are a `Team`
+count, not rostered people.
+
+**No wire alias, two deliberate exceptions.** Nothing had been published, so this
+is a straight rename and the schema marker does not move. But:
+
+* **Import still accepts `actors/`.** A `.drill` exported before the rename is on
+  someone's disk, and these files travel peer-to-peer by design (USB, AirDrop,
+  email), so they can be imported at any point in the future. Nothing writes the
+  old folder.
+* **The server strips both names, permanently.** `drills-upload` runs on its own
+  deploy cadence, independent of the app that writes the archive. Stripping only
+  one name would open a window — a new app uploading `staff/` to a function that
+  strips `actors/` publishes the PII — so both are stripped regardless of deploy
+  order. That commit ships *before* any app build writing the new folder.
+
+**Local data was allowed to break.** The `pa:` SharedPreferences prefix keeps its
+name (opaque, internal, renaming it buys nothing), but `Plan`'s JSON key moved from
+`actors` to `staff` with no read fallback, so staff in plans stored before this
+change are dropped. Accepted deliberately: usage is low enough that re-entering
+them is cheaper than carrying compatibility code.
+
+**One trap worth recording.** `Plan.computeContentHash`'s canonical map is a
+**denylist** — it starts from `toJson()` and removes what must not be published,
+including the PII key. A rename that moved the field without moving the denylist
+entry would have started publishing real names and phone numbers with no error and
+nothing failing. Both moved in the same commit, and
+`test/data/staff_wire_roundtrip_test.dart` now fails if `program.json` stops
+clearing staff. The anticipated shift to a catalog of *templates* makes this an
+allowlist question — see [docs/drill-file-format.md](../drill-file-format.md).
+
 
 ## Links
 
