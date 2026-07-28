@@ -7,9 +7,11 @@ import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/staff_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
+import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
 import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/face_badge_icon.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:ringdrill/views/widgets/staff_role_filter.dart';
 
 /// Opens the marker sheet for [rolePlay] and applies whatever the user chose
 /// (select/clear) via [PlanService.saveRolePlay] — the one apply step
@@ -129,6 +131,11 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
   List<RolePlay> _rolePlays = [];
   String _query = '';
 
+  /// Pre-filtered to actors: this sheet exists to cast a markør, so the people who
+  /// play them are what it should open on. Deselectable, and the filter shows every
+  /// member when empty — a director who also plays a markør has to be reachable.
+  Set<StaffRole> _roleFilter = {StaffRole.actor};
+
   @override
   void initState() {
     super.initState();
@@ -161,10 +168,16 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
     return null;
   }
 
+  /// Whether any roleplay is cast to [staff] — the actor role's derived half, so
+  /// the filter does not hide a member who is cast but never tagged.
+  bool _isCast(Staff staff) =>
+      _rolePlays.any((rp) => rp.staffUuid == staff.uuid);
+
   List<Staff> get _filtered {
-    if (_query.isEmpty) return _actors;
+    var list = filterStaffByRole(_actors, _roleFilter, isCast: _isCast);
+    if (_query.isEmpty) return list;
     final q = _query.toLowerCase();
-    return _actors.where((a) => a.realName.toLowerCase().contains(q)).toList();
+    return list.where((a) => a.realName.toLowerCase().contains(q)).toList();
   }
 
   Future<void> _createAndSelect() async {
@@ -277,6 +290,10 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
               onChanged: (v) => setState(() => _query = v),
             ),
           ),
+        StaffRoleFilter(
+          selected: _roleFilter,
+          onChanged: (roles) => setState(() => _roleFilter = roles),
+        ),
 
         // Staff list.
         Flexible(
@@ -294,7 +311,24 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
                 leading: isSelected
                     ? Icon(Icons.check, color: theme.colorScheme.primary)
                     : const Icon(Icons.face),
-                title: Text(actor.realName),
+                title: Row(
+                  children: [
+                    Expanded(child: Text(actor.realName)),
+                    // What this member is, so picking someone to cast does not
+                    // require opening their record to find out.
+                    for (final role in actor.effectiveRoles(
+                      isCast: _isCast(actor),
+                    ))
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Icon(
+                          staffRoleIcon(role),
+                          size: 15,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
+                ),
                 subtitle: crossCast != null
                     ? Text(
                         localizations.alreadyCastAs(crossCast),

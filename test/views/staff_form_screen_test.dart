@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/views/staff_form_screen.dart';
+import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
 
 Widget _buildForm({Staff? actor}) {
   return MaterialApp(
@@ -71,6 +72,11 @@ void main() {
           .first,
       'Ole Hansen',
     );
+
+    // A role is mandatory when creating (DESIGN-011, revised): saving without one
+    // is blocked, so pick it before saving. Asserted on its own below.
+    await tester.tap(find.text(staffRoleLabel(StaffRole.actor, l10n)));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text(l10n.save));
     await tester.pumpAndSettle();
@@ -212,4 +218,76 @@ void main() {
       ),
     );
   });
+
+  // The rule: a new member must say what they are. Enforced through the form's
+  // own validate() pass, so it behaves like the required name field rather than a
+  // separate check that could be bypassed by another save path.
+  testWidgets(
+    'creating without a role is blocked, and picking one unblocks it',
+    (tester) async {
+      StaffFormResult? result;
+      var popped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (ctx) => TextButton(
+              onPressed: () async {
+                result = await Navigator.push<StaffFormResult>(
+                  ctx,
+                  MaterialPageRoute(builder: (_) => const StaffFormScreen()),
+                );
+                popped = true;
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find
+            .byWidgetPredicate(
+              (w) => w is EditableText && w.controller.text == '',
+            )
+            .first,
+        'Ole Hansen',
+      );
+
+      await tester.tap(find.text(l10n.save));
+      await tester.pumpAndSettle();
+
+      expect(
+        popped,
+        isFalse,
+        reason: 'save must not pop while no role is selected',
+      );
+      expect(find.text(l10n.staffRolesRequired), findsOneWidget);
+
+      await tester.tap(find.text(staffRoleLabel(StaffRole.director, l10n)));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(l10n.staffRolesRequired),
+        findsNothing,
+        reason: 'the error clears on selection, not only on the next save',
+      );
+
+      await tester.tap(find.text(l10n.save));
+      await tester.pumpAndSettle();
+
+      expect(popped, isTrue);
+      expect(
+        result,
+        isA<StaffFormSave>().having((r) => r.staff.roles, 'roles', {
+          StaffRole.director,
+        }),
+      );
+    },
+  );
 }

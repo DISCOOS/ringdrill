@@ -22,8 +22,18 @@ Finder _pencilFor(String realName) => find.descendant(
 const _planUuid = 'prog-1';
 const _exerciseUuid = 'ex-1';
 
-const _actorUncast = Staff(uuid: 'actor-a', realName: 'Anna Skov');
-const _actorCast = Staff(uuid: 'actor-b', realName: 'Bjørn Lie');
+// Tagged as actors: the sheet now opens filtered to StaffRole.actor, so a member
+// with no role and no casting is correctly hidden. These stand for markører.
+const _actorUncast = Staff(
+  uuid: 'actor-a',
+  realName: 'Anna Skov',
+  roles: {StaffRole.actor},
+);
+const _actorCast = Staff(
+  uuid: 'actor-b',
+  realName: 'Bjørn Lie',
+  roles: {StaffRole.actor},
+);
 
 const _roleA = RolePlay(
   uuid: 'role-a',
@@ -152,7 +162,11 @@ void main() {
     for (var i = 0; i < 6; i++) {
       await PlanService().saveStaff(
         l10n,
-        Staff(uuid: 'extra-$i', realName: 'Extra $i'),
+        Staff(
+          uuid: 'extra-$i',
+          realName: 'Extra $i',
+          roles: const {StaffRole.actor},
+        ),
       );
     }
     await tester.pumpWidget(_buildPicker(_roleA));

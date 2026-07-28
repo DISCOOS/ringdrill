@@ -375,7 +375,7 @@ class _RolePlayListViewState extends State<RolePlayListView> {
         exercise: exercise,
         rolePlay: rolePlay,
         station: station,
-        role: AppUserRole.director,
+        role: StaffRole.director,
       ),
       if (rolePlay.position != null)
         // Builder: roleContextMarkers resolves scoped fields, so it needs a

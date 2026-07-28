@@ -38,7 +38,7 @@ void main() {
     test('a director edits everything', () {
       for (final target in EditTarget.values) {
         expect(
-          canEdit(AppUserRole.director, target, exerciseUuid: _exerciseUuid),
+          canEdit(StaffRole.director, target, exerciseUuid: _exerciseUuid),
           isTrue,
           reason: '$target',
         );
@@ -46,10 +46,10 @@ void main() {
     });
 
     test('an instructor edits teams, and only teams', () {
-      expect(canEdit(AppUserRole.instructor, EditTarget.team), isTrue);
+      expect(canEdit(StaffRole.instructor, EditTarget.team), isTrue);
       for (final target in except({EditTarget.team})) {
         expect(
-          canEdit(AppUserRole.instructor, target),
+          canEdit(StaffRole.instructor, target),
           isFalse,
           reason: '$target',
         );
@@ -57,9 +57,9 @@ void main() {
     });
 
     test('an actor edits roleplays, and only roleplays', () {
-      expect(canEdit(AppUserRole.actor, EditTarget.rolePlay), isTrue);
+      expect(canEdit(StaffRole.actor, EditTarget.rolePlay), isTrue);
       for (final target in except({EditTarget.rolePlay})) {
-        expect(canEdit(AppUserRole.actor, target), isFalse, reason: '$target');
+        expect(canEdit(StaffRole.actor, target), isFalse, reason: '$target');
       }
     });
   });
@@ -70,7 +70,7 @@ void main() {
     test('its structure is frozen, for the director too', () {
       for (final target in except({EditTarget.rolePlay})) {
         expect(
-          canEdit(AppUserRole.director, target, exerciseUuid: _exerciseUuid),
+          canEdit(StaffRole.director, target, exerciseUuid: _exerciseUuid),
           isFalse,
           reason: '$target must not be edited under a running drill',
         );
@@ -80,7 +80,7 @@ void main() {
     // The deliberate exception: a marker's behaviour is what gets adjusted
     // mid-scenario, so it is the one thing the live lock lets through.
     test('roleplays stay editable', () {
-      for (final role in [AppUserRole.director, AppUserRole.actor]) {
+      for (final role in [StaffRole.director, StaffRole.actor]) {
         expect(
           canEdit(role, EditTarget.rolePlay, exerciseUuid: _exerciseUuid),
           isTrue,
@@ -90,7 +90,7 @@ void main() {
       // Still not for an instructor: the live lock is not a promotion.
       expect(
         canEdit(
-          AppUserRole.instructor,
+          StaffRole.instructor,
           EditTarget.rolePlay,
           exerciseUuid: _exerciseUuid,
         ),
@@ -101,7 +101,7 @@ void main() {
     test('a different exercise is unaffected', () {
       expect(
         canEdit(
-          AppUserRole.director,
+          StaffRole.director,
           EditTarget.station,
           exerciseUuid: 'some-other-exercise',
         ),
@@ -114,8 +114,8 @@ void main() {
     // already director-only, and editing them changes nothing another device is
     // rendering for the drill in progress.
     test('plan-level targets are not locked by a running exercise', () {
-      expect(canEdit(AppUserRole.director, EditTarget.plan), isTrue);
-      expect(canEdit(AppUserRole.director, EditTarget.actor), isTrue);
+      expect(canEdit(StaffRole.director, EditTarget.plan), isTrue);
+      expect(canEdit(StaffRole.director, EditTarget.actor), isTrue);
     });
   });
 
@@ -124,10 +124,10 @@ void main() {
   // records stays with the director.
   group('canCreate', () {
     test('an actor may add to the roster, and nothing else', () {
-      expect(canCreate(AppUserRole.actor, EditTarget.actor), isTrue);
+      expect(canCreate(StaffRole.actor, EditTarget.actor), isTrue);
       for (final target in except({EditTarget.actor})) {
         expect(
-          canCreate(AppUserRole.actor, target),
+          canCreate(StaffRole.actor, target),
           isFalse,
           reason: 'creating structure is the director\'s: $target',
         );
@@ -137,15 +137,15 @@ void main() {
     // The three questions diverge on the roster, which is what forced canCreate
     // into existence: add yes, change no, remove no.
     test('an actor adding is not an actor editing or deleting', () {
-      expect(canCreate(AppUserRole.actor, EditTarget.actor), isTrue);
-      expect(canEdit(AppUserRole.actor, EditTarget.actor), isFalse);
-      expect(canDelete(AppUserRole.actor, EditTarget.actor), isFalse);
+      expect(canCreate(StaffRole.actor, EditTarget.actor), isTrue);
+      expect(canEdit(StaffRole.actor, EditTarget.actor), isFalse);
+      expect(canDelete(StaffRole.actor, EditTarget.actor), isFalse);
     });
 
     test('a director creates everything', () {
       for (final target in EditTarget.values) {
         expect(
-          canCreate(AppUserRole.director, target),
+          canCreate(StaffRole.director, target),
           isTrue,
           reason: '$target',
         );
@@ -157,7 +157,7 @@ void main() {
     test('an instructor creates nothing yet', () {
       for (final target in EditTarget.values) {
         expect(
-          canCreate(AppUserRole.instructor, target),
+          canCreate(StaffRole.instructor, target),
           isFalse,
           reason: '$target',
         );
@@ -168,7 +168,7 @@ void main() {
       ExerciseService().start(_exercise());
       expect(
         canCreate(
-          AppUserRole.director,
+          StaffRole.director,
           EditTarget.station,
           exerciseUuid: _exerciseUuid,
         ),
@@ -178,7 +178,7 @@ void main() {
       // stand-in mid-drill stays possible — the case this exists for.
       expect(
         canCreate(
-          AppUserRole.actor,
+          StaffRole.actor,
           EditTarget.actor,
           exerciseUuid: _exerciseUuid,
         ),
@@ -195,17 +195,17 @@ void main() {
     test('only a director deletes, for every target', () {
       for (final target in EditTarget.values) {
         expect(
-          canDelete(AppUserRole.director, target),
+          canDelete(StaffRole.director, target),
           isTrue,
           reason: '$target',
         );
         expect(
-          canDelete(AppUserRole.actor, target),
+          canDelete(StaffRole.actor, target),
           isFalse,
           reason: 'an actor writes scripts, does not delete: $target',
         );
         expect(
-          canDelete(AppUserRole.instructor, target),
+          canDelete(StaffRole.instructor, target),
           isFalse,
           reason: 'an instructor adjusts teams, does not remove them: $target',
         );
@@ -215,18 +215,18 @@ void main() {
     // The divergence that makes canDelete a separate function rather than an
     // alias: an actor may *edit* a roleplay, and must still not delete it.
     test('diverges from canEdit exactly where the delegations were', () {
-      expect(canEdit(AppUserRole.actor, EditTarget.rolePlay), isTrue);
-      expect(canDelete(AppUserRole.actor, EditTarget.rolePlay), isFalse);
+      expect(canEdit(StaffRole.actor, EditTarget.rolePlay), isTrue);
+      expect(canDelete(StaffRole.actor, EditTarget.rolePlay), isFalse);
 
-      expect(canEdit(AppUserRole.instructor, EditTarget.team), isTrue);
-      expect(canDelete(AppUserRole.instructor, EditTarget.team), isFalse);
+      expect(canEdit(StaffRole.instructor, EditTarget.team), isTrue);
+      expect(canDelete(StaffRole.instructor, EditTarget.team), isFalse);
     });
 
     group('while an exercise runs', () {
       setUp(() => ExerciseService().start(_exercise()));
 
       test('nobody deletes anything belonging to it', () {
-        for (final role in AppUserRole.values) {
+        for (final role in StaffRole.values) {
           for (final target in EditTarget.values) {
             expect(
               canDelete(role, target, exerciseUuid: _exerciseUuid),
@@ -243,7 +243,7 @@ void main() {
       test('not even a roleplay, which stays editable', () {
         expect(
           canEdit(
-            AppUserRole.director,
+            StaffRole.director,
             EditTarget.rolePlay,
             exerciseUuid: _exerciseUuid,
           ),
@@ -251,7 +251,7 @@ void main() {
         );
         expect(
           canDelete(
-            AppUserRole.director,
+            StaffRole.director,
             EditTarget.rolePlay,
             exerciseUuid: _exerciseUuid,
           ),
@@ -262,7 +262,7 @@ void main() {
       test('a different exercise is unaffected', () {
         expect(
           canDelete(
-            AppUserRole.director,
+            StaffRole.director,
             EditTarget.station,
             exerciseUuid: 'some-other-exercise',
           ),

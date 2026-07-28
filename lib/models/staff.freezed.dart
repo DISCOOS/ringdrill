@@ -15,10 +15,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Staff {
 
- String get uuid; String get realName; String? get phone;@JsonKey(includeFromJson: false, includeToJson: false) String? get notes;/// The organizational roles this person holds. Empty for someone who only
-/// plays markører, since that role is derived from casting rather than stored
-/// here. Additive and defaulted, so a record written before DESIGN-011 reads
-/// back unchanged.
+ String get uuid; String get realName; String? get phone;@JsonKey(includeFromJson: false, includeToJson: false) String? get notes;/// The roles this person holds. Additive and defaulted, so a record written
+/// before DESIGN-011 reads back unchanged — and one written before [actor]
+/// existed still reads as an actor when a roleplay is cast to them.
  Set<StaffRole> get roles;
 /// Create a copy of Staff
 /// with the given fields replaced by the non-null parameter values.
@@ -218,15 +217,13 @@ class _Staff implements Staff {
 @override final  String realName;
 @override final  String? phone;
 @override@JsonKey(includeFromJson: false, includeToJson: false) final  String? notes;
-/// The organizational roles this person holds. Empty for someone who only
-/// plays markører, since that role is derived from casting rather than stored
-/// here. Additive and defaulted, so a record written before DESIGN-011 reads
-/// back unchanged.
+/// The roles this person holds. Additive and defaulted, so a record written
+/// before DESIGN-011 reads back unchanged — and one written before [actor]
+/// existed still reads as an actor when a roleplay is cast to them.
  final  Set<StaffRole> _roles;
-/// The organizational roles this person holds. Empty for someone who only
-/// plays markører, since that role is derived from casting rather than stored
-/// here. Additive and defaulted, so a record written before DESIGN-011 reads
-/// back unchanged.
+/// The roles this person holds. Additive and defaulted, so a record written
+/// before DESIGN-011 reads back unchanged — and one written before [actor]
+/// existed still reads as an actor when a roleplay is cast to them.
 @override@JsonKey() Set<StaffRole> get roles {
   if (_roles is EqualUnmodifiableSetView) return _roles;
   // ignore: implicit_dynamic_type

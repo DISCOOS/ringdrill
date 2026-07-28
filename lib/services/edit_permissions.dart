@@ -53,7 +53,7 @@ enum EditPermission { create, edit, delete }
 /// those are already director-only, and a director editing the roster mid-drill
 /// breaks nothing another device is rendering.
 bool canEdit(
-  AppUserRole role,
+  StaffRole role,
   EditTarget target, {
   String? exerciseUuid,
   ExerciseService? exerciseService,
@@ -66,16 +66,16 @@ bool canEdit(
     case EditTarget.rolePlay:
       // Survives the live lock by design. See canDelete: *removing* one does
       // not.
-      return role == AppUserRole.director || role == AppUserRole.actor;
+      return role == StaffRole.director || role == StaffRole.actor;
     case EditTarget.team:
       if (live) return false;
-      return role == AppUserRole.director || role == AppUserRole.instructor;
+      return role == StaffRole.director || role == StaffRole.instructor;
     case EditTarget.plan:
     case EditTarget.exercise:
     case EditTarget.station:
     case EditTarget.actor:
       if (live) return false;
-      return role == AppUserRole.director;
+      return role == StaffRole.director;
   }
 }
 
@@ -97,7 +97,7 @@ bool canEdit(
 /// app users, so nothing links this device to a particular record. Narrowing
 /// edit/delete to self needs the account link on the ADR-0024/0025 track.
 bool canCreate(
-  AppUserRole role,
+  StaffRole role,
   EditTarget target, {
   String? exerciseUuid,
   ExerciseService? exerciseService,
@@ -106,13 +106,13 @@ bool canCreate(
     // Adding a person to the staff roster. An instructor supervises teams and
     // has no roster of their own to join yet (DESIGN-011 adds director and
     // instructor as staff roles; until then the roster holds markører only).
-    return role == AppUserRole.director || role == AppUserRole.actor;
+    return role == StaffRole.director || role == StaffRole.actor;
   }
   final live =
       exerciseUuid != null &&
       (exerciseService ?? ExerciseService()).isStartedOn(exerciseUuid);
   if (live) return false;
-  return role == AppUserRole.director;
+  return role == StaffRole.director;
 }
 
 /// Whether this device may *remove* a [target] (ADR-0057).
@@ -133,12 +133,12 @@ bool canCreate(
 /// [target] is unused today and kept for symmetry with [canEdit], so call sites
 /// read alike and a future per-kind rule lands here rather than at the surfaces.
 bool canDelete(
-  AppUserRole role,
+  StaffRole role,
   EditTarget target, {
   String? exerciseUuid,
   ExerciseService? exerciseService,
 }) {
-  if (role != AppUserRole.director) return false;
+  if (role != StaffRole.director) return false;
   final live =
       exerciseUuid != null &&
       (exerciseService ?? ExerciseService()).isStartedOn(exerciseUuid);

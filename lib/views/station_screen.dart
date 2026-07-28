@@ -100,7 +100,7 @@ class _StationScreenState extends State<StationScreen>
   // role (director sees the gated directorNotesMd section too), not an
   // in-sheet toggle. Defaults to director (participants do not use the
   // app) until [_bindRole] seeds the stored value, which is synchronous.
-  AppUserRole _role = AppUserRole.director;
+  StaffRole _role = StaffRole.director;
 
   /// Seeded synchronously and kept current: the role decides what this surface
   /// offers (ADR-0057), so it has to be right on the first frame *and* follow a

@@ -11,7 +11,7 @@ import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
-import 'package:ringdrill/views/widgets/staff_role_label.dart';
+import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
 
 /// Form for creating or editing an [Staff] record.
 ///
@@ -181,13 +181,38 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
   Widget _buildRoles(BuildContext context, AppLocalizations l10n) {
     final theme = Theme.of(context);
     final plays = _playedRolePlays();
+    // A FormField rather than a check inside _save(), so the role participates in
+    // the same validate() pass as the name field: one save path, one place errors
+    // appear, and the chips cannot drift out of the form's notion of validity.
+    //
+    // Enforced on create only. An existing member may have no stored role — every
+    // record written before the roles existed does — and blocking a phone-number
+    // edit behind picking one would punish the user for the schema's history.
+    return FormField<Set<StaffRole>>(
+      initialValue: _roles,
+      validator: (_) => widget.staff == null && _roles.isEmpty
+          ? l10n.staffRolesRequired
+          : null,
+      builder: (field) => _buildRolesBody(context, l10n, theme, plays, field),
+    );
+  }
+
+  Widget _buildRolesBody(
+    BuildContext context,
+    AppLocalizations l10n,
+    ThemeData theme,
+    List<RolePlay> plays,
+    FormFieldState<Set<StaffRole>> field,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           l10n.staffRolesLabel,
           style: theme.textTheme.labelLarge?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+            color: field.hasError
+                ? theme.colorScheme.error
+                : theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 8),
@@ -197,26 +222,42 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
           children: [
             for (final role in StaffRole.values)
               FilterChip(
-                label: Text(staffRoleLabel(l10n, role)),
+                label: Text(staffRoleLabel(role, l10n)),
                 selected: _roles.contains(role),
-                onSelected: (selected) => setState(() {
-                  if (selected) {
-                    _roles.add(role);
-                  } else {
-                    _roles.remove(role);
-                  }
-                }),
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _roles.add(role);
+                    } else {
+                      _roles.remove(role);
+                    }
+                  });
+                  // Clears the error as soon as a role is picked, instead of
+                  // leaving it until the next save attempt.
+                  field.didChange(_roles);
+                  if (field.hasError) field.validate();
+                },
               ),
-            // Derived, so it renders as a plain (non-interactive) chip whether or
-            // not it applies — absent would read as "not a markør yet", which is
-            // the same thing but harder to explain.
-            if (plays.isNotEmpty)
+            // Only when cast *without* the flag set: actor is a real selectable
+            // role now, so the implied chip exists just to explain why a member
+            // reads as an actor in the list without the box being ticked.
+            if (plays.isNotEmpty && !_roles.contains(StaffRole.actor))
               Chip(
-                avatar: const Icon(Icons.face, size: 18),
-                label: Text(staffRoleLabel(l10n, null)),
+                avatar: Icon(staffRoleIcon(StaffRole.actor), size: 18),
+                label: Text(staffRoleLabel(StaffRole.actor, l10n)),
               ),
           ],
         ),
+        if (field.hasError)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              field.errorText!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ),
         if (plays.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text(

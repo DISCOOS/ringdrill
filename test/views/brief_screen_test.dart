@@ -176,7 +176,7 @@ String _markdownData(WidgetTester tester) {
 
 /// Open the audience PopupMenuButton and tap the menu item with [label].
 Future<void> _tapAudience(WidgetTester tester, String label) async {
-  await tester.tap(find.byType(PopupMenuButton<AppUserRole>));
+  await tester.tap(find.byType(PopupMenuButton<StaffRole>));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 200));
   await tester.tap(find.text(label).last);
@@ -301,7 +301,7 @@ void main() {
       await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
       await _awaitRender(tester);
 
-      final picker = find.byType(PopupMenuButton<AppUserRole>);
+      final picker = find.byType(PopupMenuButton<StaffRole>);
       expect(picker, findsOneWidget);
 
       // Audience picker lives in the AppBar regardless of width — the slim
@@ -322,7 +322,7 @@ void main() {
         await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
         await _awaitRender(tester);
 
-        final picker = find.byType(PopupMenuButton<AppUserRole>);
+        final picker = find.byType(PopupMenuButton<StaffRole>);
         expect(picker, findsOneWidget);
 
         // TOC sidebar heading visible

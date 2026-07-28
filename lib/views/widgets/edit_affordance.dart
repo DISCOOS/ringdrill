@@ -36,7 +36,7 @@ class EditGate extends StatelessWidget {
       EditPermission.create => canCreate,
       EditPermission.delete => canDelete,
     };
-    return ValueListenableBuilder<AppUserRole>(
+    return ValueListenableBuilder<StaffRole>(
       valueListenable: appUserRole,
       builder: (context, role, _) =>
           builder(context, ask(role, target, exerciseUuid: exerciseUuid)),

@@ -1,45 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'package:ringdrill/services/brief/brief_audience.dart';
+import 'package:ringdrill/models/staff_role.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/prefs.dart';
 
-/// The role the person holding *this* device has in the exercise.
-///
-/// This is a local, device-level preference — distinct from:
-/// - [BriefAudience]: which document view a reader gets (export/print axis).
-/// - The Roster/Bemanning staffing of *other* people (DESIGN-006).
-/// - The ADR-0019 session role (coordinator / observer / roleplayer).
-///
-/// Participants do not use the app, so only staff roles are offered. The stored
-/// role drives [BriefAudience] as the default brief view (DESIGN-006 step 4) and,
-/// since ADR-0057, what this device may edit.
-enum AppUserRole {
-  /// Øvelsesleder — plans and runs the exercise. Edits everything.
-  director,
-
-  /// Veileder — supervises during the drill. Edits teams.
-  instructor,
-
-  /// Aktør — plays one or more markører. Edits roleplays.
-  ///
-  /// The person, not the character: an `Staff` in the roster is who portrays a
-  /// `RolePlay`. Added after director and instructor, because an actor adjusting
-  /// their own marker mid-drill is the one edit that has to survive a live
-  /// exercise.
-  actor;
-
-  /// Maps to the corresponding [BriefAudience] for the brief renderer.
-  ///
-  /// An actor gets the *director* view rather than a reduced one: they are staff
-  /// running the scenario from the inside and need the same detail — including
-  /// other actors' PII, since they have to find and work with them. Participants
-  /// are the audience that gets less, and they do not use the app.
-  BriefAudience get briefAudience => switch (this) {
-    AppUserRole.director => BriefAudience.director,
-    AppUserRole.instructor => BriefAudience.instructor,
-    AppUserRole.actor => BriefAudience.director,
-  };
-}
+// Re-exported so the ~40 files importing this for the enum keep working, and so
+// there is one obvious place to reach it from either side.
+export 'package:ringdrill/models/staff_role.dart';
 
 /// The role in force on this device, as a listenable.
 ///
@@ -50,17 +16,17 @@ enum AppUserRole {
 ///
 /// Seeded synchronously by [readAppUserRoleNow] where possible — see [Prefs] —
 /// so a gated affordance never renders under the wrong role for a frame.
-final ValueNotifier<AppUserRole> appUserRole = ValueNotifier<AppUserRole>(
-  readAppUserRoleNow() ?? AppUserRole.director,
+final ValueNotifier<StaffRole> appUserRole = ValueNotifier<StaffRole>(
+  readAppUserRoleNow() ?? StaffRole.director,
 );
 
-AppUserRole? _parse(String? name) => name == null
+StaffRole? _parse(String? name) => name == null
     ? null
-    : AppUserRole.values.where((r) => r.name == name).firstOrNull;
+    : StaffRole.values.where((r) => r.name == name).firstOrNull;
 
 /// The stored role read synchronously, or null when [Prefs] has no bound
 /// instance yet (a test, or an entry point that skips `main`).
-AppUserRole? readAppUserRoleNow() =>
+StaffRole? readAppUserRoleNow() =>
     _parse(Prefs.getString(AppConfig.keyAppUserRole));
 
 /// Re-reads the store into [appUserRole].
@@ -74,7 +40,7 @@ AppUserRole? readAppUserRoleNow() =>
 /// Not for reacting to changes: after seeding, the notifier leads and the store
 /// follows.
 void seedAppUserRoleFromStore() {
-  appUserRole.value = readAppUserRoleNow() ?? AppUserRole.director;
+  appUserRole.value = readAppUserRoleNow() ?? StaffRole.director;
 }
 
 /// The role in force, for a caller that only needs it once.
@@ -83,10 +49,10 @@ void seedAppUserRoleFromStore() {
 /// notifier is immediate, so re-reading the store right after a change can serve
 /// the previous role. The store seeds the notifier once ([readAppUserRoleNow]);
 /// after that the notifier leads.
-AppUserRole currentAppUserRole() => appUserRole.value;
+StaffRole currentAppUserRole() => appUserRole.value;
 
 /// Persists [role] and publishes it to [appUserRole].
-Future<void> setAppUserRole(AppUserRole role) async {
+Future<void> setAppUserRole(StaffRole role) async {
   // Published first, awaited second: the UI must not wait on a platform write to
   // show the role the user just picked.
   appUserRole.value = role;

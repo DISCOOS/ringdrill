@@ -56,8 +56,8 @@ void main() {
   });
 
   setUp(() {
-    appUserRole.value = AppUserRole.director;
-    addTearDown(() => appUserRole.value = AppUserRole.director);
+    appUserRole.value = StaffRole.director;
+    addTearDown(() => appUserRole.value = StaffRole.director);
   });
 
   testWidgets('a director gets the reorder toggle', (tester) async {
@@ -68,7 +68,7 @@ void main() {
   });
 
   testWidgets('an actor does not', (tester) async {
-    appUserRole.value = AppUserRole.actor;
+    appUserRole.value = StaffRole.actor;
     await tester.pumpWidget(const _Harness());
     await tester.pumpAndSettle();
 
@@ -80,7 +80,7 @@ void main() {
   });
 
   testWidgets('nor an instructor', (tester) async {
-    appUserRole.value = AppUserRole.instructor;
+    appUserRole.value = StaffRole.instructor;
     await tester.pumpWidget(const _Harness());
     await tester.pumpAndSettle();
 
@@ -96,7 +96,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('By name'), findsOneWidget);
 
-    appUserRole.value = AppUserRole.actor;
+    appUserRole.value = StaffRole.actor;
     await tester.pumpAndSettle();
 
     expect(
@@ -116,7 +116,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(l10n.exerciseReorderDone), findsOneWidget);
 
-    appUserRole.value = AppUserRole.actor;
+    appUserRole.value = StaffRole.actor;
     await tester.pumpAndSettle();
 
     expect(
@@ -126,7 +126,7 @@ void main() {
     );
     // And back to director: the toggle returns, not the Done bar — the mode was
     // exited, not merely hidden.
-    appUserRole.value = AppUserRole.director;
+    appUserRole.value = StaffRole.director;
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.exerciseReorderMode), findsOneWidget);

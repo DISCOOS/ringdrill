@@ -16,30 +16,30 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     Prefs.reset();
     Prefs.bind(await SharedPreferences.getInstance());
-    appUserRole.value = AppUserRole.director;
+    appUserRole.value = StaffRole.director;
     addTearDown(Prefs.reset);
   });
 
   test('a role read straight after a change is the new one', () {
     // Deliberately not awaited: this is the window the bug lived in — a surface
     // opening on the same frame as the pick.
-    final pending = setAppUserRole(AppUserRole.actor);
+    final pending = setAppUserRole(StaffRole.actor);
 
     expect(
       currentAppUserRole(),
-      AppUserRole.actor,
+      StaffRole.actor,
       reason: 'the notifier is published before the write is awaited',
     );
     return pending;
   });
 
   test('and it survives the write completing', () async {
-    await setAppUserRole(AppUserRole.instructor);
+    await setAppUserRole(StaffRole.instructor);
 
-    expect(currentAppUserRole(), AppUserRole.instructor);
+    expect(currentAppUserRole(), StaffRole.instructor);
     expect(
       Prefs.getString(AppConfig.keyAppUserRole),
-      AppUserRole.instructor.name,
+      StaffRole.instructor.name,
       reason: 'the store catches up',
     );
   });
@@ -47,12 +47,12 @@ void main() {
   test('the store seeds the notifier, it does not override it', () {
     // A stale stored value must not win over one already published — which is
     // what made a screen opened after a pick reset the role.
-    appUserRole.value = AppUserRole.actor;
+    appUserRole.value = StaffRole.actor;
 
-    expect(readAppUserRoleNow(), isNot(AppUserRole.actor));
+    expect(readAppUserRoleNow(), isNot(StaffRole.actor));
     expect(
       currentAppUserRole(),
-      AppUserRole.actor,
+      StaffRole.actor,
       reason: 'reading the store must not be how a surface learns the role',
     );
   });

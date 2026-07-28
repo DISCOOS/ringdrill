@@ -27,5 +27,5 @@ Map<String, dynamic> _$StaffToJson(_Staff instance) => <String, dynamic>{
 const _$StaffRoleEnumMap = {
   StaffRole.director: 'director',
   StaffRole.instructor: 'instructor',
-  StaffRole.other: 'other',
+  StaffRole.actor: 'actor',
 };

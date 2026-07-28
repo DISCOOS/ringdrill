@@ -2022,24 +2022,8 @@
   "@noStaffInRoster": {
     "description": "Tom tilstand vist i rollebesetting-arket når det ikke finnes noen Actor-poster i planen."
   },
-  "staffRoleDirector": "Øvelsesleder",
-  "staffRoleInstructor": "Veileder",
-  "staffRoleOther": "Annet",
-  "staffRoleMarkor": "Markør",
   "staffRolesLabel": "Roller",
   "staffPlaysLabel": "Spiller",
-  "@staffRoleDirector": {
-    "description": "StaffRole.director label (DESIGN-011) — a staff member who runs the exercise."
-  },
-  "@staffRoleInstructor": {
-    "description": "StaffRole.instructor label (DESIGN-011) — a staff member who supervises a team."
-  },
-  "@staffRoleOther": {
-    "description": "StaffRole.other label (DESIGN-011) — escape hatch for a role the enum does not name."
-  },
-  "@staffRoleMarkor": {
-    "description": "The derived markør role (DESIGN-011) — held by anyone cast to a roleplay. Not stored; computed from casting."
-  },
   "@staffRolesLabel": {
     "description": "Section label above the role multi-select in the staff editor (DESIGN-011)."
   },
@@ -2060,5 +2044,9 @@
         "type": "String"
       }
     }
+  },
+  "staffRolesRequired": "Velg minst én rolle",
+  "@staffRolesRequired": {
+    "description": "Validation error when creating a staff member with no organizational role selected (DESIGN-011). Only enforced on create."
   }
 }

@@ -4712,30 +4712,6 @@ abstract class AppLocalizations {
   /// **'No staff yet. Tap + New member to add one.'**
   String get noStaffInRoster;
 
-  /// StaffRole.director label (DESIGN-011) — a staff member who runs the exercise.
-  ///
-  /// In en, this message translates to:
-  /// **'Exercise director'**
-  String get staffRoleDirector;
-
-  /// StaffRole.instructor label (DESIGN-011) — a staff member who supervises a team.
-  ///
-  /// In en, this message translates to:
-  /// **'Instructor'**
-  String get staffRoleInstructor;
-
-  /// StaffRole.other label (DESIGN-011) — escape hatch for a role the enum does not name.
-  ///
-  /// In en, this message translates to:
-  /// **'Other'**
-  String get staffRoleOther;
-
-  /// The derived markør role (DESIGN-011) — held by anyone cast to a roleplay. Not stored; computed from casting.
-  ///
-  /// In en, this message translates to:
-  /// **'Marker'**
-  String get staffRoleMarkor;
-
   /// Section label above the role multi-select in the staff editor (DESIGN-011).
   ///
   /// In en, this message translates to:
@@ -4753,6 +4729,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} at station {badge} {window}'**
   String staffPlaysRow(String name, String badge, String window);
+
+  /// Validation error when creating a staff member with no organizational role selected (DESIGN-011). Only enforced on create.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one role'**
+  String get staffRolesRequired;
 }
 
 class _AppLocalizationsDelegate

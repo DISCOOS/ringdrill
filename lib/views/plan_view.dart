@@ -1120,7 +1120,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
         children: [
           ExerciseDescriptionRollup(
             exercise: exercise,
-            role: AppUserRole.director,
+            role: StaffRole.director,
             onTapSection: (_) {
               if (widget.onLongPress != null) {
                 widget.onLongPress!();

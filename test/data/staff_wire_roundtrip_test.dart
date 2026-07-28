@@ -73,17 +73,63 @@ void main() {
       expect(decoded.uuid, 'staff-legacy');
     });
 
-    test('markør is not a stored role', () {
-      expect(
-        StaffRole.values.map((r) => r.name),
-        isNot(contains('markor')),
-        reason: 'a markør is derived from casting, never stored (DESIGN-011)',
+    // Reversed from DESIGN-011's decision 2, which had markør derived only. It is
+    // stored now because a member's role is mandatory on create and a markør-only
+    // person had nothing to select, and because someone is recruited *as* a markør
+    // before any roleplay exists to cast them to.
+    test(
+      'actor is a stored role, and the enum is 1:1 with the device roles',
+      () {
+        expect(StaffRole.values.map((r) => r.name), [
+          'director',
+          'instructor',
+          'actor',
+        ]);
+        expect(
+          StaffRole.values.map((r) => r.name),
+          isNot(contains('participant')),
+          reason: 'participants are a Team count, not staff',
+        );
+        expect(
+          StaffRole.values.map((r) => r.name),
+          isNot(contains('other')),
+          reason: 'dropped so the roster roles and the device roles stay 1:1',
+        );
+      },
+    );
+
+    // The derivation is kept as a fallback, not replaced: a record written before
+    // actor was storable, or a cast made without ticking the box, must still read
+    // as an actor.
+    test('casting still implies actor when the flag is absent', () {
+      const untagged = Staff(uuid: 's', realName: 'Ola');
+
+      expect(untagged.effectiveRoles(isCast: false), isEmpty);
+      expect(untagged.effectiveRoles(isCast: true), {StaffRole.actor});
+    });
+
+    test('a stored role and casting do not double up', () {
+      const tagged = Staff(
+        uuid: 's',
+        realName: 'Ola',
+        roles: {StaffRole.actor, StaffRole.director},
       );
-      expect(
-        StaffRole.values.map((r) => r.name),
-        isNot(contains('participant')),
-        reason: 'participants are a Team count, not staff',
-      );
+
+      expect(tagged.effectiveRoles(isCast: true), {
+        StaffRole.director,
+        StaffRole.actor,
+      });
+    });
+
+    test('a role round-trips to its wire value', () {
+      final json = const Staff(
+        uuid: 's',
+        realName: 'Ola',
+        roles: {StaffRole.actor},
+      ).toJson();
+
+      expect(json['roles'], ['actor']);
+      expect(Staff.fromJson(json).roles, {StaffRole.actor});
     });
   });
 

@@ -3098,24 +3098,8 @@
   "@noStaffInRoster": {
     "description": "Empty state shown in the cast roster sheet when no Actor records exist in the plan."
   },
-  "staffRoleDirector": "Exercise director",
-  "staffRoleInstructor": "Instructor",
-  "staffRoleOther": "Other",
-  "staffRoleMarkor": "Marker",
   "staffRolesLabel": "Roles",
   "staffPlaysLabel": "Plays",
-  "@staffRoleDirector": {
-    "description": "StaffRole.director label (DESIGN-011) — a staff member who runs the exercise."
-  },
-  "@staffRoleInstructor": {
-    "description": "StaffRole.instructor label (DESIGN-011) — a staff member who supervises a team."
-  },
-  "@staffRoleOther": {
-    "description": "StaffRole.other label (DESIGN-011) — escape hatch for a role the enum does not name."
-  },
-  "@staffRoleMarkor": {
-    "description": "The derived markør role (DESIGN-011) — held by anyone cast to a roleplay. Not stored; computed from casting."
-  },
   "@staffRolesLabel": {
     "description": "Section label above the role multi-select in the staff editor (DESIGN-011)."
   },
@@ -3136,5 +3120,9 @@
         "type": "String"
       }
     }
+  },
+  "staffRolesRequired": "Select at least one role",
+  "@staffRolesRequired": {
+    "description": "Validation error when creating a staff member with no organizational role selected (DESIGN-011). Only enforced on create."
   }
 }

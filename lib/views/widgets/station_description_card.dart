@@ -18,7 +18,7 @@ class StationDescriptionCard extends StatelessWidget {
 
   final Exercise exercise;
   final Station station;
-  final AppUserRole role;
+  final StaffRole role;
 
   /// Called with a section's (or the lead's) id when its block is tapped.
   /// Null disables tap-to-edit entirely (every block renders without an
@@ -86,7 +86,7 @@ class StationDescriptionCard extends StatelessWidget {
           text: station.leaderAnswersMd,
           overrides: overrides,
         ),
-        if (role == AppUserRole.director)
+        if (role == StaffRole.director)
           RollupSection(
             id: 'directorNotes',
             label: l10n.briefSectionStationDirectorNotes,

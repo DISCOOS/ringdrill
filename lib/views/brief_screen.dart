@@ -69,7 +69,7 @@ class _BriefScreenState extends State<BriefScreen> {
   /// The role the reader is viewing *as*, which the picker selects and the
   /// audience derives from. Held separately because two roles map to the same
   /// audience (ADR-0057), so the audience alone cannot say which was chosen.
-  AppUserRole _asRole = AppUserRole.director;
+  StaffRole _asRole = StaffRole.director;
   final BriefMarkdownController _briefController = BriefMarkdownController();
   bool _searchOpen = false;
   String _searchQuery = '';
@@ -109,7 +109,7 @@ class _BriefScreenState extends State<BriefScreen> {
     }
   }
 
-  /// Applies the device's [AppUserRole] to [_audience].
+  /// Applies the device's [StaffRole] to [_audience].
   ///
   /// Reads the role's notifier rather than the store, for the same reason
   /// everything else does: a write is asynchronous, so a brief opened right after
@@ -437,7 +437,7 @@ class _BriefScreenState extends State<BriefScreen> {
     // the same document. The check follows the *role* picked rather than the
     // resulting audience, so choosing Markør does not silently look like
     // choosing Øvelsesleder.
-    return PopupMenuButton<AppUserRole>(
+    return PopupMenuButton<StaffRole>(
       initialValue: _asRole,
       onSelected: (role) {
         setState(() => _asRole = role);
@@ -445,15 +445,15 @@ class _BriefScreenState extends State<BriefScreen> {
       },
       tooltip: localizations.appUserRoleSectionTitle,
       position: PopupMenuPosition.under,
-      itemBuilder: (context) => AppUserRole.values.map((role) {
+      itemBuilder: (context) => StaffRole.values.map((role) {
         final selected = role == _asRole;
-        return PopupMenuItem<AppUserRole>(
+        return PopupMenuItem<StaffRole>(
           value: role,
           child: Row(
             children: [
-              Icon(selected ? Icons.check : appUserRoleIcon(role), size: 20),
+              Icon(selected ? Icons.check : staffRoleIcon(role), size: 20),
               const SizedBox(width: 12),
-              Text(appUserRoleLabel(role, localizations)),
+              Text(staffRoleLabel(role, localizations)),
             ],
           ),
         );
@@ -464,7 +464,7 @@ class _BriefScreenState extends State<BriefScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              appUserRoleLabel(_asRole, localizations),
+              staffRoleLabel(_asRole, localizations),
               style: TextStyle(
                 color: theme.text.heading,
                 fontSize: 14,

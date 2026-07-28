@@ -2748,18 +2748,6 @@ class AppLocalizationsNb extends AppLocalizations {
       'Ingen i staben ennå. Trykk + Nytt medlem for å legge til.';
 
   @override
-  String get staffRoleDirector => 'Øvelsesleder';
-
-  @override
-  String get staffRoleInstructor => 'Veileder';
-
-  @override
-  String get staffRoleOther => 'Annet';
-
-  @override
-  String get staffRoleMarkor => 'Markør';
-
-  @override
   String get staffRolesLabel => 'Roller';
 
   @override
@@ -2769,4 +2757,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String staffPlaysRow(String name, String badge, String window) {
     return '$name på post $badge $window';
   }
+
+  @override
+  String get staffRolesRequired => 'Velg minst én rolle';
 }

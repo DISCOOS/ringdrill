@@ -23,7 +23,7 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     Prefs.reset();
-    appUserRole.value = AppUserRole.director;
+    appUserRole.value = StaffRole.director;
     addTearDown(Prefs.reset);
   });
 
@@ -41,7 +41,7 @@ void main() {
 
     // Not via the picker: this is the listenable half — a role changed anywhere
     // must reach a button already on screen.
-    appUserRole.value = AppUserRole.actor;
+    appUserRole.value = StaffRole.actor;
     await tester.pump();
 
     expect(find.text(l10n.appUserRoleActor), findsOneWidget);
@@ -75,10 +75,10 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, l10n.appUserRoleActor));
     await tester.pumpAndSettle();
 
-    expect(appUserRole.value, AppUserRole.actor);
+    expect(appUserRole.value, StaffRole.actor);
     expect(
       Prefs.instanceOrNull!.getString(AppConfig.keyAppUserRole),
-      AppUserRole.actor.name,
+      StaffRole.actor.name,
     );
     // And the button reflects it without being rebuilt by its host.
     expect(find.text(l10n.appUserRoleActor), findsOneWidget);
@@ -108,7 +108,7 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, l10n.appUserRoleActor));
     await tester.pumpAndSettle();
 
-    expect(appUserRole.value, AppUserRole.actor);
+    expect(appUserRole.value, StaffRole.actor);
     expect(find.byType(Drawer), findsNothing);
   });
 
@@ -121,7 +121,7 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, l10n.appUserRoleActor));
     await tester.pumpAndSettle();
 
-    expect(appUserRole.value, AppUserRole.actor);
+    expect(appUserRole.value, StaffRole.actor);
     expect(find.byType(TextButton), findsOneWidget, reason: 'still mounted');
   });
 
@@ -133,7 +133,7 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, l10n.briefAudienceDirector));
     await tester.pumpAndSettle();
 
-    expect(appUserRole.value, AppUserRole.director);
+    expect(appUserRole.value, StaffRole.director);
   });
 
   // The rail form: 72px and label-less by design, so the label moves into the
@@ -141,11 +141,11 @@ void main() {
   testWidgets('iconOnly keeps the role legible through its tooltip', (
     tester,
   ) async {
-    appUserRole.value = AppUserRole.instructor;
+    appUserRole.value = StaffRole.instructor;
     await tester.pumpWidget(harness(iconOnly: true));
 
     expect(
-      find.byIcon(appUserRoleIcon(AppUserRole.instructor)),
+      find.byIcon(staffRoleIcon(StaffRole.instructor)),
       findsOneWidget,
     );
     expect(
@@ -157,18 +157,18 @@ void main() {
   });
 
   test('each role has its own icon and label', () {
-    final icons = AppUserRole.values.map(appUserRoleIcon).toSet();
-    expect(icons.length, AppUserRole.values.length);
+    final icons = StaffRole.values.map(staffRoleIcon).toSet();
+    expect(icons.length, StaffRole.values.length);
   });
 
   // Consequence of answering "director level" for the actor's brief: an actor is
   // staff running the scenario from the inside, so they get the same detail —
   // including other actors' PII, which they need to find and work with them.
   test('an actor reads the brief as a director', () {
-    expect(AppUserRole.actor.briefAudience.includesActorPii, isTrue);
-    expect(AppUserRole.actor.briefAudience.includesDirectorNotes, isTrue);
+    expect(StaffRole.actor.briefAudience.includesActorPii, isTrue);
+    expect(StaffRole.actor.briefAudience.includesDirectorNotes, isTrue);
     expect(
-      AppUserRole.instructor.briefAudience.includesActorPii,
+      StaffRole.instructor.briefAudience.includesActorPii,
       isFalse,
       reason: 'the instructor reduction is unchanged',
     );

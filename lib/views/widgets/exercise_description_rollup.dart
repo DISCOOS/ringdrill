@@ -75,7 +75,7 @@ class ExerciseDescriptionRollup extends StatelessWidget {
   });
 
   final Exercise exercise;
-  final AppUserRole role;
+  final StaffRole role;
 
   /// Called with a section's (or the lead's) id when its block is tapped.
   /// Null disables taps entirely (every block renders without an

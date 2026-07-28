@@ -126,8 +126,8 @@ void main() {
   setUp(() async {
     await _seed();
     ExerciseService().stop();
-    appUserRole.value = AppUserRole.director;
-    addTearDown(() => appUserRole.value = AppUserRole.director);
+    appUserRole.value = StaffRole.director;
+    addTearDown(() => appUserRole.value = StaffRole.director);
   });
 
   group('the roleplay viewer', () {
@@ -140,7 +140,7 @@ void main() {
 
     // The whole reason canDelete exists as its own function.
     testWidgets('an actor keeps the pencil but loses the bin', (tester) async {
-      appUserRole.value = AppUserRole.actor;
+      appUserRole.value = StaffRole.actor;
       await _pump(tester, const RolePlayScreen(uuid: _roleUuid));
 
       expect(
@@ -156,7 +156,7 @@ void main() {
     });
 
     testWidgets('an instructor gets neither', (tester) async {
-      appUserRole.value = AppUserRole.instructor;
+      appUserRole.value = StaffRole.instructor;
       await _pump(tester, const RolePlayScreen(uuid: _roleUuid));
 
       expect(_pencil, findsNothing);
@@ -208,7 +208,7 @@ void main() {
     });
 
     testWidgets('an actor has no menu at all', (tester) async {
-      appUserRole.value = AppUserRole.actor;
+      appUserRole.value = StaffRole.actor;
       await _pump(tester, CoordinatorScreen(uuid: _exerciseUuid));
 
       expect(
@@ -219,7 +219,7 @@ void main() {
     });
 
     testWidgets('nor an instructor', (tester) async {
-      appUserRole.value = AppUserRole.instructor;
+      appUserRole.value = StaffRole.instructor;
       await _pump(tester, CoordinatorScreen(uuid: _exerciseUuid));
 
       expect(find.byIcon(Icons.more_vert), findsNothing);

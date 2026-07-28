@@ -2750,18 +2750,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noStaffInRoster => 'No staff yet. Tap + New member to add one.';
 
   @override
-  String get staffRoleDirector => 'Exercise director';
-
-  @override
-  String get staffRoleInstructor => 'Instructor';
-
-  @override
-  String get staffRoleOther => 'Other';
-
-  @override
-  String get staffRoleMarkor => 'Marker';
-
-  @override
   String get staffRolesLabel => 'Roles';
 
   @override
@@ -2771,4 +2759,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String staffPlaysRow(String name, String badge, String window) {
     return '$name at station $badge $window';
   }
+
+  @override
+  String get staffRolesRequired => 'Select at least one role';
 }

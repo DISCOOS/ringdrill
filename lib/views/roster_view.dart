@@ -12,7 +12,7 @@ import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/edit_affordance.dart';
-import 'package:ringdrill/views/widgets/staff_role_label.dart';
+import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
 // ---------------------------------------------------------------------------
@@ -309,12 +309,17 @@ class _RosterViewState extends State<RosterView> {
           ? Colors.transparent
           : theme.colorScheme.secondaryContainer,
     );
+    // Stored roles plus actor-by-casting, unioned and deduped, so a member who is
+    // cast but was never ticked as an actor still reads as one — and never shows
+    // the same role twice. Outlined when only *implied* by casting: that one is not
+    // asserted on the record and cannot be edited here.
+    final effective = staff.effectiveRoles(isCast: castAs.isNotEmpty);
     final roleChips = [
-      for (final role in StaffRole.values)
-        if (staff.roles.contains(role))
-          chip(staffRoleLabel(localizations, role), derived: false),
-      if (castAs.isNotEmpty)
-        chip(staffRoleLabel(localizations, null), derived: true),
+      for (final role in effective)
+        chip(
+          staffRoleLabel(role, localizations),
+          derived: !staff.roles.contains(role),
+        ),
     ];
     return Material(
       type: MaterialType.transparency,

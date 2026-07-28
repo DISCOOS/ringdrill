@@ -94,8 +94,8 @@ void main() {
     SharedPreferences.setMockInitialValues(_prefs());
     await PlanService().init();
     ExerciseService().stop();
-    appUserRole.value = AppUserRole.director;
-    addTearDown(() => appUserRole.value = AppUserRole.director);
+    appUserRole.value = StaffRole.director;
+    addTearDown(() => appUserRole.value = StaffRole.director);
   });
 
   testWidgets('a director gets swipe-to-edit on an exercise', (tester) async {
@@ -109,7 +109,7 @@ void main() {
   testWidgets('an actor does not — exercises are director-only', (
     tester,
   ) async {
-    appUserRole.value = AppUserRole.actor;
+    appUserRole.value = StaffRole.actor;
     await _pumpPlanTab(tester);
 
     expect(_exerciseSwipe, findsNothing);
@@ -119,7 +119,7 @@ void main() {
   });
 
   testWidgets('nor an instructor', (tester) async {
-    appUserRole.value = AppUserRole.instructor;
+    appUserRole.value = StaffRole.instructor;
     await _pumpPlanTab(tester);
 
     expect(_exerciseSwipe, findsNothing);
@@ -150,11 +150,11 @@ void main() {
     await _pumpPlanTab(tester);
     expect(_exerciseSwipe, findsOneWidget);
 
-    appUserRole.value = AppUserRole.actor;
+    appUserRole.value = StaffRole.actor;
     await tester.pumpAndSettle();
     expect(_exerciseSwipe, findsNothing);
 
-    appUserRole.value = AppUserRole.director;
+    appUserRole.value = StaffRole.director;
     await tester.pumpAndSettle();
     expect(_exerciseSwipe, findsOneWidget);
   });
@@ -167,7 +167,7 @@ void main() {
     });
 
     testWidgets('an actor does not', (tester) async {
-      appUserRole.value = AppUserRole.actor;
+      appUserRole.value = StaffRole.actor;
       await _pumpPlanTab(tester);
 
       expect(

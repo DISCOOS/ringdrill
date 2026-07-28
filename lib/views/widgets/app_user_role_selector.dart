@@ -10,20 +10,19 @@ import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 /// a marker's portrayer is shown. `Icons.theater_comedy` — the Spill segment's
 /// masks — stands for the collection of roles, so it would read as the segment
 /// rather than as the person holding the device.
-IconData appUserRoleIcon(AppUserRole role) => switch (role) {
-  AppUserRole.director => Icons.manage_accounts,
-  AppUserRole.instructor => Icons.school,
-  AppUserRole.actor => Icons.face,
+IconData staffRoleIcon(StaffRole role) => switch (role) {
+  StaffRole.director => Icons.manage_accounts,
+  StaffRole.instructor => Icons.school,
+  StaffRole.actor => Icons.face,
 };
 
 /// Director and instructor reuse the brief-audience labels they have always been
 /// named by, so the same role reads the same wherever it appears.
-String appUserRoleLabel(AppUserRole role, AppLocalizations l10n) =>
-    switch (role) {
-      AppUserRole.director => l10n.briefAudienceDirector,
-      AppUserRole.instructor => l10n.briefAudienceInstructor,
-      AppUserRole.actor => l10n.appUserRoleActor,
-    };
+String staffRoleLabel(StaffRole role, AppLocalizations l10n) => switch (role) {
+  StaffRole.director => l10n.briefAudienceDirector,
+  StaffRole.instructor => l10n.briefAudienceInstructor,
+  StaffRole.actor => l10n.appUserRoleActor,
+};
 
 /// Picks the role this device acts as, persisting it through [setAppUserRole].
 ///
@@ -31,17 +30,17 @@ String appUserRoleLabel(AppUserRole role, AppLocalizations l10n) =>
 Future<void> showAppUserRolePicker(BuildContext context) async {
   final l10n = AppLocalizations.of(context)!;
   final current = appUserRole.value;
-  final picked = await showRingdrillPicker<AppUserRole>(
+  final picked = await showRingdrillPicker<StaffRole>(
     context: context,
     title: l10n.appUserRoleSectionTitle,
-    items: AppUserRole.values,
+    items: StaffRole.values,
     itemBuilder: (context, role, onTap) {
       final theme = Theme.of(context);
       final isCurrent = role == current;
       return ListTile(
-        leading: Icon(appUserRoleIcon(role)),
+        leading: Icon(staffRoleIcon(role)),
         title: Text(
-          appUserRoleLabel(role, l10n),
+          staffRoleLabel(role, l10n),
           style: TextStyle(
             fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
           ),
@@ -91,14 +90,14 @@ class AppUserRoleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return ValueListenableBuilder<AppUserRole>(
+    return ValueListenableBuilder<StaffRole>(
       valueListenable: appUserRole,
       builder: (context, role, _) {
-        final label = appUserRoleLabel(role, l10n);
+        final label = staffRoleLabel(role, l10n);
         final tooltip = '${l10n.appUserRoleSectionTitle}: $label';
         if (iconOnly) {
           return IconButton(
-            icon: Icon(appUserRoleIcon(role), color: foregroundColor),
+            icon: Icon(staffRoleIcon(role), color: foregroundColor),
             tooltip: tooltip,
             onPressed: () => showAppUserRolePicker(context),
           );
@@ -107,7 +106,7 @@ class AppUserRoleButton extends StatelessWidget {
           message: tooltip,
           child: TextButton.icon(
             onPressed: () => showAppUserRolePicker(context),
-            icon: Icon(appUserRoleIcon(role), size: 18),
+            icon: Icon(staffRoleIcon(role), size: 18),
             label: Text(label),
             style: TextButton.styleFrom(foregroundColor: foregroundColor),
           ),
