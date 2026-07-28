@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/team.dart';
+import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart' show kDrillAccentFontSize;
@@ -14,6 +15,7 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/team_form_screen.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
@@ -93,42 +95,26 @@ class _TeamsViewState extends State<TeamsView> {
                     selectedTarget.teamIndex == t.index) ||
                 (selectedTarget is TeamSheetTarget &&
                     selectedTarget.teamIndex == t.index);
-            final colorScheme = Theme.of(context).colorScheme;
-            return Dismissible(
-              key: ValueKey('team-row-${t.uuid}'),
-              direction: DismissDirection.endToStart,
-              background: Container(
-                color: colorScheme.secondaryContainer,
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      localizations.editTeam,
-                      style: TextStyle(color: colorScheme.onSecondaryContainer),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(Icons.edit, color: colorScheme.onSecondaryContainer),
-                  ],
-                ),
-              ),
-              confirmDismiss: (_) async {
-                await _openTeamForm(t);
-                return false;
-              },
+            // A team is the instructor's to edit (ADR-0057) — the thing they
+            // supervise during a drill. No exerciseUuid: this list spans every
+            // exercise the team is in, so there is no single one to lock on.
+            return EditableRow(
+              target: EditTarget.team,
+              dismissKey: ValueKey('team-row-${t.uuid}'),
+              label: localizations.editTeam,
+              onEdit: () => _openTeamForm(t),
               // Parity with Øvelser/Poster/Spill (DESIGN-006): the same
               // ExpandableTile shell instead of a taller Card+ListTile, so
               // height, padding and subtitle size match across all four
               // segments. Expands to a rotation peek; tap opens the overview.
-              child: ExpandableTile(
+              builder: (context, onLongPress) => ExpandableTile(
                 selected: isSelected,
                 title: Text(
                   t.name,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 subtitle: Text(parts.join(' · ')),
-                onLongPress: () => _openTeamForm(t),
+                onLongPress: onLongPress,
                 // Expand shows a static rotation peek (which post per round, per
                 // exercise). No body/chevron when the team is in no exercises.
                 expanded: _expandedTeamIndex == t.index,

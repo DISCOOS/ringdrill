@@ -11,6 +11,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart'
     show ActionChipFormatter;
+import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -24,6 +25,7 @@ import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/cast_pill.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/face_badge_icon.dart';
@@ -244,37 +246,22 @@ class _RolePlayListViewState extends State<RolePlayListView> {
     bool selected = false,
   }) {
     final expanded = _expandedRowIndex == rowIndex;
-    final colorScheme = Theme.of(context).colorScheme;
     final actor = rolePlay.actorUuid != null
         ? _service.getActor(rolePlay.actorUuid!)
         : null;
     final station = _stationFor(exercise, rolePlay);
 
-    final tile = Dismissible(
-      key: ValueKey('role-row-${rolePlay.uuid}'),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        color: colorScheme.secondaryContainer,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Text(
-              localizations.roleSection,
-              style: TextStyle(color: colorScheme.onSecondaryContainer),
-            ),
-            const SizedBox(width: 8),
-            Icon(Icons.edit, color: colorScheme.onSecondaryContainer),
-          ],
-        ),
-      ),
-      confirmDismiss: (_) async {
-        await _openRolePlayForm(exercise, rolePlay);
-        return false;
-      },
-      child: ExpandableTile(
-        onLongPress: () => _openRolePlayForm(exercise, rolePlay),
+    // A markør is the actor's own to change (ADR-0057), and the one kind that
+    // stays editable while the exercise runs — adjusting a marker's behaviour
+    // mid-scenario is the point of it.
+    final tile = EditableRow(
+      target: EditTarget.rolePlay,
+      exerciseUuid: exercise.uuid,
+      dismissKey: ValueKey('role-row-${rolePlay.uuid}'),
+      label: localizations.roleSection,
+      onEdit: () => _openRolePlayForm(exercise, rolePlay),
+      builder: (context, onLongPress) => ExpandableTile(
+        onLongPress: onLongPress,
         selected: selected,
         leading: RoleNumberBadge(
           label: _roleBadgeLabel(rolePlay, exerciseNumber),
@@ -621,19 +608,25 @@ class RolePlaysCreateFab extends StatelessWidget {
     return Positioned(
       right: 16,
       bottom: 16,
-      child: WindowSizeClass.of(context) == WindowSizeClass.compact
-          ? FloatingActionButton(
-              heroTag: null,
-              tooltip: localizations.newPlay,
-              onPressed: () => controller.openCreateRolePlay(context),
-              child: const Icon(Icons.add),
-            )
-          : FloatingActionButton.extended(
-              heroTag: null,
-              onPressed: () => controller.openCreateRolePlay(context),
-              icon: const Icon(Icons.add),
-              label: Text(localizations.newPlay),
-            ),
+      // Gated on the role (ADR-0057): an actor may create markører, and no
+      // exerciseUuid is passed because this FAB is not tied to one — it asks
+      // which exercise as part of the form.
+      child: IfEditable(
+        target: EditTarget.rolePlay,
+        child: WindowSizeClass.of(context) == WindowSizeClass.compact
+            ? FloatingActionButton(
+                heroTag: null,
+                tooltip: localizations.newPlay,
+                onPressed: () => controller.openCreateRolePlay(context),
+                child: const Icon(Icons.add),
+              )
+            : FloatingActionButton.extended(
+                heroTag: null,
+                onPressed: () => controller.openCreateRolePlay(context),
+                icon: const Icon(Icons.add),
+                label: Text(localizations.newPlay),
+              ),
+      ),
     );
   }
 }

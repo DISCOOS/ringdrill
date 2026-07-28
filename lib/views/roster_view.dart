@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
 // ---------------------------------------------------------------------------
@@ -39,6 +41,15 @@ class RosterController extends ScreenController {
   @override
   Widget? buildFAB(BuildContext context, BoxConstraints constraints) {
     final label = AppLocalizations.of(context)!.newActor;
+    // Gated on the role (ADR-0057): a create action a role will never have is
+    // noise, so it is absent rather than disabled.
+    return IfEditable(
+      target: EditTarget.actor,
+      child: _buildCreateFab(context, label),
+    );
+  }
+
+  Widget _buildCreateFab(BuildContext context, String label) {
     // Compact circular FAB on phones so the labelled bar does not cover the
     // bottom list rows; keep the extended variant on medium/expanded.
     if (WindowSizeClass.of(context) == WindowSizeClass.compact) {
@@ -220,54 +231,41 @@ class _RosterViewState extends State<RosterView> {
         itemBuilder: (context, index) {
           final actor = _actors[index];
           final roles = _rolesFor(actor.uuid);
-          return Dismissible(
-            key: ValueKey(actor.uuid),
-            direction: DismissDirection.endToStart,
-            confirmDismiss: (_) async {
-              if (_rolesFor(actor.uuid).isNotEmpty) {
-                await _tryDelete(actor);
-                return false;
-              }
-              return true;
-            },
-            onDismissed: (_) async {
-              await _service.deleteActor(actor.uuid);
-              _reload();
-            },
-            background: Container(
-              color: Theme.of(context).colorScheme.error,
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.only(right: 16),
-              child: Icon(
-                Icons.delete,
-                color: Theme.of(context).colorScheme.onError,
-              ),
-            ),
-            // Own Material (transparent) so the tile's ink/splash paints
-            // above the shell's surface-toned ColoredBox instead of being
-            // hidden by it.
-            child: Material(
-              type: MaterialType.transparency,
-              child: ListTile(
-                leading: const Icon(Icons.face),
-                title: Text(actor.realName),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (actor.phone != null) Text(actor.phone!),
-                    if (roles.isNotEmpty)
-                      Text(
-                        localizations.castedAs(roles.join(', ')),
-                        // ADR-0037: themed bodySmall instead of a hardcoded 12.
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                  ],
+          final tile = _buildActorTile(context, localizations, actor, roles);
+          // Gated on the role (ADR-0057): the roster is director-only. Gated
+          // rather than swapped for EditableRow, because this swipe *deletes*
+          // rather than opening an editor — a non-director gets the bare row,
+          // with no swipe to discover.
+          return EditGate(
+            target: EditTarget.actor,
+            builder: (context, allowed) {
+              if (!allowed) return tile;
+              return Dismissible(
+                key: ValueKey(actor.uuid),
+                direction: DismissDirection.endToStart,
+                confirmDismiss: (_) async {
+                  if (_rolesFor(actor.uuid).isNotEmpty) {
+                    await _tryDelete(actor);
+                    return false;
+                  }
+                  return true;
+                },
+                onDismissed: (_) async {
+                  await _service.deleteActor(actor.uuid);
+                  _reload();
+                },
+                background: Container(
+                  color: Theme.of(context).colorScheme.error,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 16),
+                  child: Icon(
+                    Icons.delete,
+                    color: Theme.of(context).colorScheme.onError,
+                  ),
                 ),
-                onTap: () => _openEdit(actor),
-              ),
-            ),
+                child: tile,
+              );
+            },
           );
         },
       );
@@ -284,6 +282,41 @@ class _RosterViewState extends State<RosterView> {
       key: widget.refreshIndicatorKey,
       onRefresh: () => active_actions.refreshActivePlanFromCatalog(context),
       child: content,
+    );
+  }
+
+  /// The actor row itself, built once and used with or without the swipe
+  /// wrapper so the two paths cannot drift apart.
+  ///
+  /// Own Material (transparent) so the tile's ink/splash paints above the
+  /// shell's surface-toned ColoredBox instead of being hidden by it.
+  Widget _buildActorTile(
+    BuildContext context,
+    AppLocalizations localizations,
+    Actor actor,
+    List<String> roles,
+  ) {
+    return Material(
+      type: MaterialType.transparency,
+      child: ListTile(
+        leading: const Icon(Icons.face),
+        title: Text(actor.realName),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (actor.phone != null) Text(actor.phone!),
+            if (roles.isNotEmpty)
+              Text(
+                localizations.castedAs(roles.join(', ')),
+                // ADR-0037: themed bodySmall instead of a hardcoded 12.
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+          ],
+        ),
+        onTap: () => _openEdit(actor),
+      ),
     );
   }
 }

@@ -8,6 +8,7 @@ import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
@@ -18,6 +19,7 @@ import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/drill_format_messages.dart';
 import 'package:ringdrill/views/publish_plan_dialog.dart';
 import 'package:ringdrill/views/widgets/catalog_browser.dart';
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/picker_error_banner.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
@@ -208,47 +210,61 @@ class _LibraryBodyState extends State<_LibraryBody>
         final trailingChildren = <Widget>[
           if (isActive) Chip(label: Text(localizations.libraryActive)),
         ];
-        return Dismissible(
-          key: ValueKey(plan.uuid),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            color: Colors.red,
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          confirmDismiss: (_) => _confirmDelete(context, plan),
-          onDismissed: (_) => _deletePlan(plan),
-          child: ExpandableTile(
-            // Radio icon, not the picker's Switch: this list is
-            // single-select (which plan is active), not multi-select.
-            leading: Icon(
-              isActive
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_unchecked,
-              // ExpandableTile does not clamp a bare leading Icon to the
-              // standard ListTile leading size the way ListTile does
-              // internally — size explicitly so the row height is driven
-              // by the text block, not an oversized icon.
-              size: 24,
-            ),
-            title: Text(plan.name),
-            subtitle: Text(planSubtitle(localizations, loaded ?? plan)),
-            // ExpandableTile only wraps trailing in 4px of padding, unlike
-            // the 16px its own `padding` param gives the leading side. Add
-            // the missing 12px here so the right edge matches the left.
-            trailing: trailingChildren.isEmpty
-                ? null
-                : Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: trailingChildren,
+        // Gated on the role (ADR-0057): the library is director-only. Gated
+        // rather than swapped for EditableRow, because this swipe *deletes* a
+        // plan rather than opening an editor.
+        return EditGate(
+          target: EditTarget.plan,
+          builder: (context, allowed) {
+            final tile = ExpandableTile(
+              // Radio icon, not the picker's Switch: this list is
+              // single-select (which plan is active), not multi-select.
+              leading: Icon(
+                isActive
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                // ExpandableTile does not clamp a bare leading Icon to the
+                // standard ListTile leading size the way ListTile does
+                // internally — size explicitly so the row height is driven
+                // by the text block, not an oversized icon.
+                size: 24,
+              ),
+              title: Text(plan.name),
+              subtitle: Text(planSubtitle(localizations, loaded ?? plan)),
+              // ExpandableTile only wraps trailing in 4px of padding, unlike
+              // the 16px its own `padding` param gives the leading side. Add
+              // the missing 12px here so the right edge matches the left.
+              trailing: trailingChildren.isEmpty
+                  ? null
+                  : Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: trailingChildren,
+                      ),
                     ),
-                  ),
-            onOpen: () => _activate(context, plan.uuid, closeOnSuccess: true),
-            onLongPress: () => _showPlanActions(context, plan),
-          ),
+              onOpen: () => _activate(context, plan.uuid, closeOnSuccess: true),
+              // Plan actions include destructive ones, so the long-press follows
+              // the same gate as the swipe.
+              onLongPress: allowed
+                  ? () => _showPlanActions(context, plan)
+                  : null,
+            );
+            if (!allowed) return tile;
+            return Dismissible(
+              key: ValueKey(plan.uuid),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                color: Colors.red,
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: const Icon(Icons.delete, color: Colors.white),
+              ),
+              confirmDismiss: (_) => _confirmDelete(context, plan),
+              onDismissed: (_) => _deletePlan(plan),
+              child: tile,
+            );
+          },
         );
       },
     );

@@ -7,6 +7,7 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/app_user_role.dart';
+import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
@@ -19,6 +20,7 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
@@ -336,7 +338,6 @@ class _StationListViewState extends State<StationListView> {
   }) {
     final rowKey = _rowKey(exercise, station);
     final expanded = !reordering && _expandedRowKey == rowKey;
-    final colorScheme = Theme.of(context).colorScheme;
     final isLive = _liveEvent?.exercise.uuid == exercise.uuid;
     final accent = LiveAccent.of(context, isLive: isLive);
 
@@ -376,31 +377,17 @@ class _StationListViewState extends State<StationListView> {
         // No onOpen, onLongPress, onToggle — gestures suspended in reorder mode.
       );
     } else {
-      tile = Dismissible(
-        key: ValueKey('station-row-${exercise.uuid}-${station.index}'),
-        direction: DismissDirection.endToStart,
-        background: Container(
-          color: colorScheme.secondaryContainer,
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Text(
-                localizations.editStation,
-                style: TextStyle(color: colorScheme.onSecondaryContainer),
-              ),
-              const SizedBox(width: 8),
-              Icon(Icons.edit, color: colorScheme.onSecondaryContainer),
-            ],
-          ),
-        ),
-        confirmDismiss: (_) async {
-          await _openStationForm(exercise, station);
-          return false;
-        },
-        child: ExpandableTile(
-          onLongPress: () => _openStationForm(exercise, station),
+      // Swipe and long-press are one affordance, and gated on the role
+      // (ADR-0057): a post is part of building the scenario, so only a director
+      // edits one — and nobody does while its exercise is running.
+      tile = EditableRow(
+        target: EditTarget.station,
+        exerciseUuid: exercise.uuid,
+        dismissKey: ValueKey('station-row-${exercise.uuid}-${station.index}'),
+        label: localizations.editStation,
+        onEdit: () => _openStationForm(exercise, station),
+        builder: (context, onLongPress) => ExpandableTile(
+          onLongPress: onLongPress,
           leading: badge,
           title: RingDrillText.plain(
             station.name,

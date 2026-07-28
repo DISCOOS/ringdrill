@@ -7,6 +7,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
+import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
@@ -34,6 +35,7 @@ import 'package:ringdrill/views/team_form_screen.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/exercise_description_card.dart';
 import 'package:ringdrill/views/widgets/exercise_mini_map.dart'
     show exerciseStationMarkers, ExerciseMapSheetHeader;
@@ -1432,31 +1434,19 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         );
       }
 
-      return Dismissible(
-        key: ValueKey<String>('coordinator-station-dismiss-${station.index}'),
-        direction: DismissDirection.endToStart,
-        background: Container(
-          color: context.colors.secondaryContainer,
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Text(
-                localizations.editStation,
-                style: TextStyle(color: context.colors.onSecondaryContainer),
-              ),
-              const SizedBox(width: 8),
-              Icon(Icons.edit, color: context.colors.onSecondaryContainer),
-            ],
-          ),
+      // Gated on the role (ADR-0057). Inside the player this is also where the
+      // live lock bites hardest: the exercise on screen is usually the running
+      // one, so its posts are frozen.
+      return EditableRow(
+        target: EditTarget.station,
+        exerciseUuid: exercise.uuid,
+        dismissKey: ValueKey<String>(
+          'coordinator-station-dismiss-${station.index}',
         ),
-        confirmDismiss: (_) async {
-          await _editStation(exercise, stationIndex);
-          return false;
-        },
-        child: ExpandableTile(
-          onLongPress: () => _editStation(exercise, stationIndex),
+        label: localizations.editStation,
+        onEdit: () => _editStation(exercise, stationIndex),
+        builder: (context, onLongPress) => ExpandableTile(
+          onLongPress: onLongPress,
           // Do NOT use a PageStorageKey here: any SelectableText below
           // (e.g. UtmWidget inside the station detail) reads from the
           // same bucket-path for its scroll offset, casting an
@@ -1674,76 +1664,86 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           final teamName =
               _planService.getTeam(teamIndex)?.name ??
               '${localizations.team(1)} ${teamIndex + 1}';
-          return ExpandableTile(
-            onLongPress: () => _editTeam(exercise, teamIndex),
-            // Use ValueKey (not PageStorageKey) — see the comment
-            // on the station ExpandableTile above for the reason.
-            key: ValueKey<String>('coordinator-team-$teamIndex'),
-            margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
-            accent: accent,
-            leading: accent.indicator,
-            title: Text(
-              teamName,
-              style: TextStyle(
-                fontSize: kDrillAccentFontSize,
-                color: accent.foreground,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: currentStationName == null
-                ? null
-                : Text(
-                    '→ $currentStationName',
-                    style:
-                        accent.textStyle ??
-                        TextStyle(
-                          color: context.colors.primary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                  ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: VerticalDividerWidget(),
+          return EditableRow(
+            target: EditTarget.team,
+            exerciseUuid: exercise.uuid,
+            dismissKey: ValueKey<String>('coordinator-team-dismiss-$teamIndex'),
+            label: localizations.editTeam,
+            onEdit: () => _editTeam(exercise, teamIndex),
+            builder: (context, onLongPress) => ExpandableTile(
+              onLongPress: onLongPress,
+              // Use ValueKey (not PageStorageKey) — see the comment
+              // on the station ExpandableTile above for the reason.
+              key: ValueKey<String>('coordinator-team-$teamIndex'),
+              margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
+              accent: accent,
+              leading: accent.indicator,
+              title: Text(
+                teamName,
+                style: TextStyle(
+                  fontSize: kDrillAccentFontSize,
+                  color: accent.foreground,
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: Text(
-                    localizations.station(1),
-                    style: TextStyle(
-                      fontSize: kDrillAccentFontSize,
-                      color: accent.foreground,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: currentStationName == null
+                  ? null
+                  : Text(
+                      '→ $currentStationName',
+                      style:
+                          accent.textStyle ??
+                          TextStyle(
+                            color: context.colors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: VerticalDividerWidget(),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Text(
+                      localizations.station(1),
+                      style: TextStyle(
+                        fontSize: kDrillAccentFontSize,
+                        color: accent.foreground,
+                      ),
                     ),
                   ),
+                  ...List<Widget>.generate(exercise.schedule.length, (
+                    roundIndex,
+                  ) {
+                    final isCurrent =
+                        event.isRunning && roundIndex == event.currentRound;
+                    return TeamStationWidget(
+                      isCurrent: isCurrent,
+                      exercise: exercise,
+                      teamIndex: teamIndex,
+                      roundIndex: roundIndex,
+                    );
+                  }),
+                ],
+              ),
+              expanded: _expandedTeamIndex == teamIndex,
+              // House rule (all ExpandableTiles): tap row opens sheet,
+              // chevron is the only expand affordance. CoordinatorScreen
+              // routes to the team-in-exercise player view so the rule
+              // holds across Poster/Øvelser/Markører/Lag/Spill.
+              onOpen: () => ContextSheet.of(context).show(
+                context,
+                TeamSheetTarget(
+                  exerciseUuid: widget.uuid,
+                  teamIndex: teamIndex,
                 ),
-                ...List<Widget>.generate(exercise.schedule.length, (
-                  roundIndex,
-                ) {
-                  final isCurrent =
-                      event.isRunning && roundIndex == event.currentRound;
-                  return TeamStationWidget(
-                    isCurrent: isCurrent,
-                    exercise: exercise,
-                    teamIndex: teamIndex,
-                    roundIndex: roundIndex,
-                  );
-                }),
-              ],
+              ),
+              onToggle: () => _toggleTeam(teamIndex),
+              body: _buildTeamDetail(exercise, teamIndex, event),
             ),
-            expanded: _expandedTeamIndex == teamIndex,
-            // House rule (all ExpandableTiles): tap row opens sheet,
-            // chevron is the only expand affordance. CoordinatorScreen
-            // routes to the team-in-exercise player view so the rule
-            // holds across Poster/Øvelser/Markører/Lag/Spill.
-            onOpen: () => ContextSheet.of(context).show(
-              context,
-              TeamSheetTarget(exerciseUuid: widget.uuid, teamIndex: teamIndex),
-            ),
-            onToggle: () => _toggleTeam(teamIndex),
-            body: _buildTeamDetail(exercise, teamIndex, event),
           );
         }),
       ),

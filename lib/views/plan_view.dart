@@ -9,6 +9,7 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/app_user_role.dart';
+import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart';
@@ -30,6 +31,7 @@ import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/exercise_description_rollup.dart';
 import 'package:ringdrill/views/widgets/exercise_mini_map.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
@@ -236,38 +238,15 @@ class _PlanViewState extends State<PlanView> {
         );
       }
 
-      // Default mode: Dismissible swipe-to-edit wrapping ExerciseCard with
-      // full gestures.
-      return Dismissible(
-        key: ValueKey(exercise.uuid),
-        direction: DismissDirection.endToStart,
-        background: Container(
-          color: Theme.of(context).colorScheme.secondaryContainer,
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Text(
-                l10n.editExercise,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.edit,
-                color: Theme.of(context).colorScheme.onSecondaryContainer,
-              ),
-            ],
-          ),
-        ),
-        confirmDismiss: (direction) async {
-          await _openExerciseForm(context, l10n, exercise);
-          // Always return false — the item should not be removed.
-          return false;
-        },
-        child: ExerciseCard(
+      // Default mode: swipe- and long-press-to-edit, gated on the role
+      // (ADR-0057) — an exercise is director-only, and frozen while it runs.
+      return EditableRow(
+        target: EditTarget.exercise,
+        exerciseUuid: exercise.uuid,
+        dismissKey: ValueKey(exercise.uuid),
+        label: l10n.editExercise,
+        onEdit: () => _openExerciseForm(context, l10n, exercise),
+        builder: (context, onLongPress) => ExerciseCard(
           exercise: exercise,
           plan: _planService.activePlan,
           exerciseNumber: index + 1,
@@ -284,7 +263,7 @@ class _PlanViewState extends State<PlanView> {
                   : exercise.uuid;
             });
           },
-          onLongPress: () => _openExerciseForm(context, l10n, exercise),
+          onLongPress: onLongPress,
           // V1: live card opens the DrillPlayer sheet (DESIGN-001).
           // All other cards keep the ContextSheet flow.
           // openContextTarget owns the live-vs-planning split (ADR-0056):
@@ -1197,7 +1176,9 @@ class _ExerciseCardState extends State<ExerciseCard> {
                 hasRoles: hasRoles,
               )
             : accent.indicator;
-        final tile = ExpandableTile(
+        // Gated on the role (ADR-0057), like the Poster segment's own rows —
+        // these are the same posts, reached through an expanded exercise card.
+        Widget buildTile(VoidCallback? onLongPress) => ExpandableTile(
           margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
           color: Theme.of(context).brightness == Brightness.dark
               ? RingDrillColors.brandDeep
@@ -1222,8 +1203,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
             overflow: TextOverflow.ellipsis,
           ),
           onOpen: () => _openStation(context, exercise, station),
-          onLongPress: () =>
-              _openStationForm(context, localizations, exercise, station),
+          onLongPress: onLongPress,
           expanded: _expandedStationIndex == stationIndex,
           onToggle: () => setState(() {
             _expandedStationIndex = _expandedStationIndex == stationIndex
@@ -1232,38 +1212,16 @@ class _ExerciseCardState extends State<ExerciseCard> {
           }),
           body: _buildStationDetail(exercise, station),
         );
-        return Dismissible(
-          key: ValueKey<String>(
+        return EditableRow(
+          target: EditTarget.station,
+          exerciseUuid: exercise.uuid,
+          dismissKey: ValueKey<String>(
             'exercise-card-station-${exercise.uuid}-${station.index}',
           ),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
-            color: Theme.of(context).colorScheme.secondaryContainer,
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  localizations.editStation,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSecondaryContainer,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.edit,
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                ),
-              ],
-            ),
-          ),
-          confirmDismiss: (_) async {
-            await _openStationForm(context, localizations, exercise, station);
-            return false;
-          },
-          child: tile,
+          label: localizations.editStation,
+          onEdit: () =>
+              _openStationForm(context, localizations, exercise, station),
+          builder: (context, onLongPress) => buildTile(onLongPress),
         );
       },
     );
@@ -1448,7 +1406,11 @@ abstract class PlanPageControllerBase extends ScreenController {
       return null;
     }
     return switch (activeSegment.value) {
-      PlanSegment.exercises => _buildExercisesFAB(context),
+      // Gated on the role (ADR-0057): exercises are director-only.
+      PlanSegment.exercises => IfEditable(
+        target: EditTarget.exercise,
+        child: _buildExercisesFAB(context),
+      ),
       PlanSegment.stations => stationListController.buildFAB(
         context,
         constraints,
