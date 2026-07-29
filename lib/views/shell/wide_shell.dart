@@ -127,11 +127,45 @@ class WideShell extends StatelessWidget {
       // this layout has no drawer header on screen, and the role decides what
       // the device may edit (ADR-0057), so it needs a home that is always
       // visible. Icon-only, since the rail is 72px and label-less by design.
+      //
+      // Pinned to the bottom and fenced off by a divider. Sitting directly
+      // under the last destination it read as a fourth tab, which it is not:
+      // it changes what this device may edit, it does not navigate anywhere.
+      // A divider rather than a border around the icon — the rail already
+      // marks the *selected* destination with a filled pill, so a persistent
+      // outline here would read as "selected", which is the very confusion
+      // being removed. Inset to roughly the icon's own width so it reads as a
+      // group separator rather than a full-width rule.
+      trailingAtBottom: true,
       trailing: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: AppUserRoleButton(
-          iconOnly: true,
-          foregroundColor: unselectedIconColor,
+        padding: const EdgeInsets.only(top: 8, bottom: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Explicit width, not `indent`/`endIndent`: this Column is
+            // `mainAxisSize.min`, so it hands the divider loose constraints and
+            // `Divider`'s own container then collapses to zero width and paints
+            // nothing at all. 40 is the icon's own width, so the rule reads as
+            // a separator for *this* item rather than a full-width rule across
+            // the rail.
+            SizedBox(
+              width: 40,
+              child: Divider(
+                height: 1,
+                thickness: 1,
+                // Derived from the rail's own icon tone, not
+                // `colorScheme.outlineVariant`: the seeded outline lands within
+                // a hair of `panelDark`/`panelLight` and the rule disappears.
+                // Same reason the icon colours above are explicit.
+                color: unselectedIconColor.withValues(alpha: 0.35),
+              ),
+            ),
+            const SizedBox(height: 8),
+            AppUserRoleButton(
+              iconOnly: true,
+              foregroundColor: unselectedIconColor,
+            ),
+          ],
         ),
       ),
     );
