@@ -49,6 +49,23 @@ void main() {
       expect(window.start, DateTime(2026, 7, 29, 8));
     });
 
+    // Long-standing behaviour, and the one this rewrite nearly lost: pressing start
+    // at 17:44 on an 08:00–08:17 exercise means the *next* occurrence, so it reports
+    // pending until tomorrow rather than immediately done. Four view tests failed on
+    // the regression before this branch existed.
+    test('after today\'s slot has passed, the window is tomorrow\'s', () {
+      final window = exercise.windowAt(DateTime(2026, 7, 29, 17, 44));
+
+      expect(window.start, DateTime(2026, 7, 30, 8));
+      expect(window.end, DateTime(2026, 7, 30, 11));
+    });
+
+    test('inside the window, it stays today', () {
+      final window = exercise.windowAt(DateTime(2026, 7, 29, 10, 59));
+
+      expect(window.start, DateTime(2026, 7, 29, 8));
+    });
+
     test('duration is the plain difference', () {
       expect(exercise.scheduledDuration, const Duration(hours: 3));
     });
@@ -98,6 +115,16 @@ void main() {
     // Past the end of yesterday's run but before tonight's.
     test('after yesterday ended, the window is the upcoming one', () {
       final window = exercise.windowAt(DateTime(2026, 7, 29, 2));
+
+      expect(window.start, DateTime(2026, 7, 29, 23));
+      expect(window.end, DateTime(2026, 7, 30, 1));
+    });
+
+    // The same next-occurrence rule for a window that crosses midnight: at 02:00
+    // yesterday's run has ended, so the next is tonight — already covered above —
+    // and at 12:00 the same holds without any day shift.
+    test('at midday it is tonight\'s window, not tomorrow\'s', () {
+      final window = exercise.windowAt(DateTime(2026, 7, 29, 12));
 
       expect(window.start, DateTime(2026, 7, 29, 23));
       expect(window.end, DateTime(2026, 7, 30, 1));

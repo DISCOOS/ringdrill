@@ -99,6 +99,18 @@ extension ExerciseX on Exercise {
           reference.isBefore(previous.end)) {
         return previous;
       }
+      return (start: start, end: end);
+    }
+    if (!reference.isBefore(end)) {
+      // Today's slot has already passed, so the next occurrence is tomorrow's. This
+      // is long-standing behaviour — starting an 08:00 exercise at 17:44 reports
+      // *pending until tomorrow*, not "done" — and it is easy to lose while fixing
+      // the midnight case, since both are about which day a clock face means. Four
+      // tests caught exactly that.
+      return (
+        start: start.add(const Duration(days: 1)),
+        end: end.add(const Duration(days: 1)),
+      );
     }
     return (start: start, end: end);
   }
