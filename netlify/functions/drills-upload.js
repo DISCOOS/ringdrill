@@ -6,10 +6,12 @@ import {
     writeBinaryConditional, writeJsonConditional,
     corsPreflight, withCors, reportLegacyProgramIdUsage
 } from "./_shared.js";
+// The PII strip and the schema gate live in their own module so their tests can
+// import the real code rather than a copy — see _drill_pii.js.
+import {
+    KNOWN_SCHEMA_MAX, isSchemaTooNew, stripPiiFolders
+} from "./_drill_pii.js";
 
-// The highest schema version this function accepts. Bumping this requires
-// coordinated changes to the Flutter app and this handler (AGENTS.md).
-const KNOWN_SCHEMA_MAX = "1.2";
 
 // Parse every top-level exercises/<uuid>.json entry once, returning both the
 // exercise count and every finite station position found across them.
@@ -210,19 +212,6 @@ export function resolvePlanIdParam(qs) {
 }
 
 /**
- * Folders holding local PII that must never reach the catalog.
- *
- * Two names for one thing: DESIGN-011 renames the folder `actors/` -> `staff/`,
- * and this function is deployed independently of the app that writes the
- * archive. Stripping both means neither deploy order can leak: an old app
- * uploading `actors/` is stripped by a new function, and a new app uploading
- * `staff/` is stripped by a function deployed before it. Keep `actors/` here
- * even after the app stops writing it — .drill files already exported to disk
- * still carry it, and they can be uploaded at any time.
- */
-const PII_FOLDERS = ["actors/", "staff/"];
-
-/**
  * Strip the PII folders from a .drill archive and validate the schema.
  * Returns { strippedBytes, program, error } where error is a Response when
  * invalid and program is the { name, description } read from program.json.
@@ -258,7 +247,7 @@ export function stripActorsAndValidate(request, bytes) {
             const clientSchema = String(metadata.schema);
             // Simple semver-like comparison for 1.x schemas.
             // Reject if client schema > our max.
-            if (compareSchemas(clientSchema, KNOWN_SCHEMA_MAX) > 0) {
+            if (isSchemaTooNew(clientSchema)) {
                 return { error: withCors(request, new Response(
                     JSON.stringify({ error: "unsupported_schema", schema: clientSchema, max: KNOWN_SCHEMA_MAX }),
                     { status: 415, headers: { "content-type": "application/json" } }
@@ -274,26 +263,11 @@ export function stripActorsAndValidate(request, bytes) {
     const program = programInfoFromArchive(files);
     program.languageCode = languageCode;
 
-    // Strip the PII folders (never published to catalog) — see PII_FOLDERS.
-    const stripped = {};
-    for (const [name, data] of Object.entries(files)) {
-        if (!PII_FOLDERS.some((folder) => name.startsWith(folder))) {
-            stripped[name] = data;
-        }
-    }
-
-    return { strippedBytes: Buffer.from(zipSync(stripped)), program };
-}
-
-/**
- * Compare two "major.minor" schema strings.
- * Returns negative if a < b, 0 if equal, positive if a > b.
- */
-function compareSchemas(a, b) {
-    const [aMaj, aMin] = a.split(".").map(Number);
-    const [bMaj, bMin] = b.split(".").map(Number);
-    if (aMaj !== bMaj) return aMaj - bMaj;
-    return (aMin || 0) - (bMin || 0);
+    // Never published to catalog — see PII_FOLDERS in _drill_pii.js.
+    return {
+        strippedBytes: Buffer.from(zipSync(stripPiiFolders(files))),
+        program,
+    };
 }
 
 export default async function (request) {

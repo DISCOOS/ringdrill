@@ -1,40 +1,33 @@
 /**
- * Tests for the actors/ stripping and schema validation logic in drills-upload.js.
+ * Tests for the PII strip and schema gate in `_drill_pii.js`.
  *
- * We test the helper functions by importing them from a thin wrapper module
- * rather than the full handler (which requires @netlify/blobs environment).
- * The strip/validate logic is self-contained and only needs fflate.
+ * These import the real functions. They used to re-implement them — "copied
+ * verbatim from drills-upload.js", by the old comment — so the one test guarding
+ * personal data could not detect a divergence in the code it claimed to cover:
+ * production could stop stripping and this file would stay green. That is why the
+ * strip lives in its own module now.
+ *
+ * The handler is still not imported directly; it pulls in @netlify/blobs and needs
+ * a Netlify context. `stripActorsAndValidate` composes unzip + schema gate + strip,
+ * and the two halves it composes are what matter here, so they are exercised
+ * through the same small composition below.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { zipSync, strFromU8, unzipSync } from "fflate";
-
-// Re-implement the helpers under test to avoid importing the full handler
-// (which would pull in @netlify/blobs and require a Netlify context).
-// These are copied verbatim from drills-upload.js.
-
-const KNOWN_SCHEMA_MAX = "1.2";
+import {
+    KNOWN_SCHEMA_MAX,
+    compareSchemas,
+    isSchemaTooNew,
+    stripPiiFolders,
+} from "../functions/_drill_pii.js";
 
 /**
- * Folders holding local PII that must never reach the catalog.
- *
- * Two names for one thing: DESIGN-011 renames the folder `actors/` -> `staff/`,
- * and this function is deployed independently of the app that writes the
- * archive. Stripping both means neither deploy order can leak: an old app
- * uploading `actors/` is stripped by a new function, and a new app uploading
- * `staff/` is stripped by a function deployed before it. Keep `actors/` here
- * even after the app stops writing it — .drill files already exported to disk
- * still carry it, and they can be uploaded at any time.
+ * The handler's own sequence: unzip, reject a too-new schema, strip the PII
+ * folders. Kept to the shape of `stripActorsAndValidate` so these tests read
+ * against the endpoint's behaviour, while every rule they assert comes from the
+ * imported module rather than a copy.
  */
-const PII_FOLDERS = ["actors/", "staff/"];
-
-function compareSchemas(a, b) {
-    const [aMaj, aMin] = a.split(".").map(Number);
-    const [bMaj, bMin] = b.split(".").map(Number);
-    if (aMaj !== bMaj) return aMaj - bMaj;
-    return (aMin || 0) - (bMin || 0);
-}
-
 function stripActorsAndValidate(request, bytes) {
     let files;
     try {
@@ -47,24 +40,15 @@ function stripActorsAndValidate(request, bytes) {
     if (metadataEntry) {
         let metadata;
         try { metadata = JSON.parse(strFromU8(metadataEntry)); } catch (_) {}
-        if (metadata?.schema) {
-            const clientSchema = String(metadata.schema);
-            if (compareSchemas(clientSchema, KNOWN_SCHEMA_MAX) > 0) {
-                return { error: new Response(
-                    JSON.stringify({ error: "unsupported_schema" }),
-                    { status: 415, headers: { "content-type": "application/json" } }
-                ) };
-            }
+        if (isSchemaTooNew(metadata?.schema)) {
+            return { error: new Response(
+                JSON.stringify({ error: "unsupported_schema" }),
+                { status: 415, headers: { "content-type": "application/json" } }
+            ) };
         }
     }
 
-    const stripped = {};
-    for (const [name, data] of Object.entries(files)) {
-        if (!PII_FOLDERS.some((folder) => name.startsWith(folder))) {
-            stripped[name] = data;
-        }
-    }
-    return { strippedBytes: Buffer.from(zipSync(stripped)) };
+    return { strippedBytes: Buffer.from(zipSync(stripPiiFolders(files))) };
 }
 
 // Helper: build a minimal .drill archive
@@ -232,3 +216,34 @@ test("compareSchemas works correctly", () => {
     assert.equal(compareSchemas("2.0", "1.1"), 1);
     assert.equal(compareSchemas("1.0", "2.0"), -1);
 });
+
+// Straight at the module, with no archive in the way. The composition above proves
+// the endpoint wires these together; these prove the rules themselves, which is the
+// part that must never regress.
+test("stripPiiFolders removes both PII folder names and nothing else", () => {
+    const files = {
+        "program.json": new Uint8Array([1]),
+        "actors/a.json": new Uint8Array([2]),
+        "staff/b.json": new Uint8Array([3]),
+        "staff/b/notes.md": new Uint8Array([4]),
+        "roleplays/rp.json": new Uint8Array([5]),
+        // Not a PII folder: the prefix must match a folder, not any substring.
+        "staffing-notes.json": new Uint8Array([6]),
+    };
+
+    assert.deepEqual(Object.keys(stripPiiFolders(files)).sort(), [
+        "program.json",
+        "roleplays/rp.json",
+        "staffing-notes.json",
+    ]);
+});
+
+test("isSchemaTooNew gates on the known max", () => {
+    assert.equal(isSchemaTooNew(null), false, "no marker means a 1.0 archive");
+    assert.equal(isSchemaTooNew(undefined), false);
+    assert.equal(isSchemaTooNew("1.0"), false);
+    assert.equal(isSchemaTooNew(KNOWN_SCHEMA_MAX), false);
+    assert.equal(isSchemaTooNew("2.0"), true);
+    assert.equal(compareSchemas("1.10", "1.9") > 0, true, "minor is numeric");
+});
+
