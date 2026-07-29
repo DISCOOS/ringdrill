@@ -2,6 +2,9 @@
 
 Changes since 1.0.3+27:
 
+- fix(shell): pin the rail's role selector to the bottom, fenced by a divider (2667b1c)
+- feat(views): teach the empty description cards what belongs in them (3f03132)
+- fix(views): the rollup card body was centred and unevenly padded (17ffafd)
 - docs(debt): DEBT-0003 is partly paid — the helper exists (03aaaca)
 - refactor(netlify): make the PII strip importable so its test covers real code (86c48f7)
 - fix(models): keep starting a passed-slot exercise as pending, not done (5082bc0)
