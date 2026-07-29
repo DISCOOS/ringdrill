@@ -54,11 +54,11 @@ DART_DEFINE_MIGRATION := $(if $(MIGRATION_DISABLED),--dart-define=MIGRATION_DISA
 
 build:
 	echo "Run code generation..."
-	dart run build_runner build --delete-conflicting-outputs
+	dart run build_runner build
 
 watch:
 	echo "Watch for buildable changes..."
-	dart run build_runner watch --delete-conflicting-outputs
+	dart run build_runner watch
 
 # Regenerate Flutter localization sources from lib/l10n/app_*.arb.
 # `make build` only covers freezed/json_serializable; the gen-l10n
