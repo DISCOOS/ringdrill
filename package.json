@@ -1,7 +1,7 @@
 {
   "type": "module",
   "engines": {
-    "node": ">=20.12.2"
+    "node": ">=22.13.0"
   },
   "dependencies": {
     "@netlify/blobs": "^10.7.11",
@@ -24,6 +24,6 @@
   "license": "ISC",
   "devDependencies": {
     "@resvg/resvg-js": "2.6.2",
-    "netlify-cli": "26.0.2"
+    "netlify-cli": "27.0.1"
   }
 }
