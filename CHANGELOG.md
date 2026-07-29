@@ -2,6 +2,13 @@
 
 Changes since 1.0.3+27:
 
+- chore(deps): bump netlify-cli to 27.0.1 and require Node 22.13 (0518d31)
+- Update iOS platform to 16.0 and adjust dependencies (1e7696c)
+- ci(deps): bump actions/checkout to v7 and actions/cache to v6 (e22013c)
+- ci(deps): bump actions/setup-node from 6 to 7 (cf2a78a)
+- Remove unused imports across multiple files (1959931)
+- chore(deps): clear the function tree's advisories via @netlify/blobs (94d5e1f)
+- chore(deps): take the pub minor/patch updates, minus the sentry alpha (ae4f67f)
 - fix(shell): pin the rail's role selector to the bottom, fenced by a divider (2667b1c)
 - feat(views): teach the empty description cards what belongs in them (3f03132)
 - fix(views): the rollup card body was centred and unevenly padded (17ffafd)
