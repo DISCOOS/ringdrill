@@ -4,9 +4,12 @@
     "node": ">=20.12.2"
   },
   "dependencies": {
-    "@netlify/blobs": "^10.0.8",
+    "@netlify/blobs": "^10.7.11",
     "@sentry/node": "10.68.0",
     "fflate": "0.8.3"
+  },
+  "overrides": {
+    "tmp": "^0.2.6"
   },
   "name": "functions",
   "version": "1.0.0",
