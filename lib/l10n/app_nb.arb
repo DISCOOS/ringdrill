@@ -1144,6 +1144,23 @@
   "@tapSectionToEditHint": {
     "description": "DESIGN-010 stage 3b: hint under Post-viewerens rollup-kort, som forteller forfatteren at et trykk på en oppløst seksjon hopper inn i den seksjonen i post-editoren."
   },
+  "descriptionAddAction": "Legg til beskrivelse",
+  "descriptionMissingSections": "Mangler: {sections}",
+  "@descriptionMissingSections": {
+    "placeholders": {
+      "sections": {
+        "type": "String",
+        "example": "Metode"
+      }
+    }
+  },
+  "descriptionMissingSectionsAction": "Legg til",
+  "exerciseDescriptionEmptyTitle": "Ingen øvingsbeskrivelse ennå",
+  "exerciseDescriptionEmptyBody": "Beskriv metode, ordreformat, samband og læringsmål, slik at instruktører og lagledere vet hva øvelsen skal trene.",
+  "stationDescriptionEmptyTitle": "Ingen postbeskrivelse ennå",
+  "stationDescriptionEmptyBody": "Beskriv situasjon, oppdrag, logistikk og utstyr på posten, slik at markører og instruktører kan forberede seg før øvelsen starter.",
+  "rolePlayDescriptionEmptyTitle": "Ingen markørordre ennå",
+  "rolePlayDescriptionEmptyBody": "Beskriv rollen — signalement, bakgrunn, oppførsel og rekvisitter — slik at markøren vet hvem som skal spilles, og hvordan.",
   "stationTimingCardTitle": "Tidsplan",
   "@stationTimingCardTitle": {
     "description": "DESIGN-010 stage 3b: Post-viewerens tidsplankort-tittel — lagenes øve/eval/rull-klokkeslett for denne posten."

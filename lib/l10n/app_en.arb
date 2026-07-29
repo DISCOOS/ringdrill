@@ -2220,6 +2220,48 @@
   "@tapSectionToEditHint": {
     "description": "DESIGN-010 stage 3b: hint under the Post viewer's rollup card, telling the author that tapping a resolved section jumps into that section of the station editor."
   },
+  "descriptionAddAction": "Add description",
+  "@descriptionAddAction": {
+    "description": "Button in a description card's teaching empty state (exercise, post, roleplay) — opens the entity editor at the section the surface marks as mandatory."
+  },
+  "descriptionMissingSections": "Missing: {sections}",
+  "@descriptionMissingSections": {
+    "description": "Nudge under a description card that has some content but is still missing a section the surface marks as mandatory. Nothing in the model requires these — the author is told, not stopped.",
+    "placeholders": {
+      "sections": {
+        "type": "String",
+        "example": "Method"
+      }
+    }
+  },
+  "descriptionMissingSectionsAction": "Add",
+  "@descriptionMissingSectionsAction": {
+    "description": "Inline action on the descriptionMissingSections nudge — opens the editor at the first missing mandatory section. Short because it sits on one row next to the nudge text, which already names what is missing."
+  },
+  "exerciseDescriptionEmptyTitle": "No exercise description yet",
+  "@exerciseDescriptionEmptyTitle": {
+    "description": "Teaching empty state in the exercise-description card (coordinator Info segment, Plan tab's expanded exercise) when none of the exercise's markdown sections have content."
+  },
+  "exerciseDescriptionEmptyBody": "Describe the method, order format, comms and learning goals so instructors and team leaders know what this exercise is meant to train.",
+  "@exerciseDescriptionEmptyBody": {
+    "description": "Body of the exercise-description teaching empty state — names the sections the author can fill, in the order the card presents them."
+  },
+  "stationDescriptionEmptyTitle": "No post description yet",
+  "@stationDescriptionEmptyTitle": {
+    "description": "Teaching empty state in the post-description card (Post viewer, Poster list's expanded tile) when neither the lead description nor any labeled section has content."
+  },
+  "stationDescriptionEmptyBody": "Describe the situation, mission, logistics and equipment at this post so markers and instructors can prepare before the exercise starts.",
+  "@stationDescriptionEmptyBody": {
+    "description": "Body of the post-description teaching empty state — names the sections the author can fill, in the order the card presents them."
+  },
+  "rolePlayDescriptionEmptyTitle": "No marker order yet",
+  "@rolePlayDescriptionEmptyTitle": {
+    "description": "Teaching empty state in the roleplay-description rollup (Spill list's expanded tile) when the roleplay has no description, background, behaviour or props."
+  },
+  "rolePlayDescriptionEmptyBody": "Describe the role — appearance, background, behaviour and props — so the marker knows who to play and how.",
+  "@rolePlayDescriptionEmptyBody": {
+    "description": "Body of the roleplay-description teaching empty state — names the sections the author can fill, in the order the rollup presents them."
+  },
   "stationTimingCardTitle": "Timing",
   "@stationTimingCardTitle": {
     "description": "DESIGN-010 stage 3b: the Post viewer's schedule card title — the per-team drill/eval/roll clock times for this station."

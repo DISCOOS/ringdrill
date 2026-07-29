@@ -14,6 +14,11 @@ import 'package:ringdrill/views/widgets/rollup.dart';
 /// Info segment) so the two surfaces cannot drift apart. Unlike a station,
 /// an exercise has no plain `description` lead field and no director-gated
 /// section — every entry here is an ordinary markdown field.
+///
+/// `method` carries a [RollupSection.mandatoryLabel]: it is the one section
+/// that says what the exercise *is* (a ring drill, a walk-through, a
+/// tabletop), so a card without it leaves a reader guessing however many other
+/// sections are filled. Still optional in the editor — see that field's doc.
 List<RollupSection> exerciseDescriptionSections(
   AppLocalizations l10n,
   Exercise exercise,
@@ -22,6 +27,7 @@ List<RollupSection> exerciseDescriptionSections(
   RollupSection(
     id: 'method',
     label: l10n.briefSectionExerciseMethod,
+    mandatoryLabel: l10n.briefSectionExerciseMethod,
     text: exercise.methodMd,
     overrides: overrides,
   ),
@@ -57,6 +63,16 @@ List<RollupSection> exerciseDescriptionSections(
   ),
 ];
 
+/// The teaching copy both exercise-description surfaces show when the exercise
+/// has no sections filled at all — shared for the same reason
+/// [exerciseDescriptionSections] is.
+RollupTeaching exerciseDescriptionTeaching(AppLocalizations l10n) =>
+    RollupTeaching(
+      title: l10n.exerciseDescriptionEmptyTitle,
+      body: l10n.exerciseDescriptionEmptyBody,
+      actionLabel: l10n.descriptionAddAction,
+    );
+
 /// The effective plan-variable map (ADR-0046) at [exercise]'s scope. Empty when
 /// there is no active plan (defense-in-depth; these surfaces only ever render
 /// inside one).
@@ -84,12 +100,14 @@ class ExerciseDescriptionRollup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Rollup(
       sections: exerciseDescriptionSections(
-        AppLocalizations.of(context)!,
+        l10n,
         exercise,
         exerciseDescriptionOverrides(exercise),
       ),
+      teaching: exerciseDescriptionTeaching(l10n),
       onTapSection: onTapSection,
     );
   }

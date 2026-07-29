@@ -2081,6 +2081,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tapSectionToEditHint => 'Tap a section to edit';
 
   @override
+  String get descriptionAddAction => 'Add description';
+
+  @override
+  String descriptionMissingSections(String sections) {
+    return 'Missing: $sections';
+  }
+
+  @override
+  String get descriptionMissingSectionsAction => 'Add';
+
+  @override
+  String get exerciseDescriptionEmptyTitle => 'No exercise description yet';
+
+  @override
+  String get exerciseDescriptionEmptyBody =>
+      'Describe the method, order format, comms and learning goals so instructors and team leaders know what this exercise is meant to train.';
+
+  @override
+  String get stationDescriptionEmptyTitle => 'No post description yet';
+
+  @override
+  String get stationDescriptionEmptyBody =>
+      'Describe the situation, mission, logistics and equipment at this post so markers and instructors can prepare before the exercise starts.';
+
+  @override
+  String get rolePlayDescriptionEmptyTitle => 'No marker order yet';
+
+  @override
+  String get rolePlayDescriptionEmptyBody =>
+      'Describe the role — appearance, background, behaviour and props — so the marker knows who to play and how.';
+
+  @override
   String get stationTimingCardTitle => 'Timing';
 
   @override

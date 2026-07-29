@@ -3554,6 +3554,60 @@ abstract class AppLocalizations {
   /// **'Tap a section to edit'**
   String get tapSectionToEditHint;
 
+  /// Button in a description card's teaching empty state (exercise, post, roleplay) — opens the entity editor at the section the surface marks as mandatory.
+  ///
+  /// In en, this message translates to:
+  /// **'Add description'**
+  String get descriptionAddAction;
+
+  /// Nudge under a description card that has some content but is still missing a section the surface marks as mandatory. Nothing in the model requires these — the author is told, not stopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing: {sections}'**
+  String descriptionMissingSections(String sections);
+
+  /// Inline action on the descriptionMissingSections nudge — opens the editor at the first missing mandatory section. Short because it sits on one row next to the nudge text, which already names what is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get descriptionMissingSectionsAction;
+
+  /// Teaching empty state in the exercise-description card (coordinator Info segment, Plan tab's expanded exercise) when none of the exercise's markdown sections have content.
+  ///
+  /// In en, this message translates to:
+  /// **'No exercise description yet'**
+  String get exerciseDescriptionEmptyTitle;
+
+  /// Body of the exercise-description teaching empty state — names the sections the author can fill, in the order the card presents them.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the method, order format, comms and learning goals so instructors and team leaders know what this exercise is meant to train.'**
+  String get exerciseDescriptionEmptyBody;
+
+  /// Teaching empty state in the post-description card (Post viewer, Poster list's expanded tile) when neither the lead description nor any labeled section has content.
+  ///
+  /// In en, this message translates to:
+  /// **'No post description yet'**
+  String get stationDescriptionEmptyTitle;
+
+  /// Body of the post-description teaching empty state — names the sections the author can fill, in the order the card presents them.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the situation, mission, logistics and equipment at this post so markers and instructors can prepare before the exercise starts.'**
+  String get stationDescriptionEmptyBody;
+
+  /// Teaching empty state in the roleplay-description rollup (Spill list's expanded tile) when the roleplay has no description, background, behaviour or props.
+  ///
+  /// In en, this message translates to:
+  /// **'No marker order yet'**
+  String get rolePlayDescriptionEmptyTitle;
+
+  /// Body of the roleplay-description teaching empty state — names the sections the author can fill, in the order the rollup presents them.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the role — appearance, background, behaviour and props — so the marker knows who to play and how.'**
+  String get rolePlayDescriptionEmptyBody;
+
   /// DESIGN-010 stage 3b: the Post viewer's schedule card title — the per-team drill/eval/roll clock times for this station.
   ///
   /// In en, this message translates to:

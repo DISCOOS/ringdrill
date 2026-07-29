@@ -6,6 +6,7 @@ import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/widgets/rollup.dart';
+import 'package:ringdrill/views/widgets/station_description_rollup.dart';
 
 class StationDescriptionCard extends StatelessWidget {
   const StationDescriptionCard({
@@ -39,62 +40,17 @@ class StationDescriptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final overrides = _overridesFor();
     return RollupCard(
       sectionId: 'description',
       icon: Icons.description,
       title: l10n.postDescriptionCardTitle,
-      sections: [
-        RollupSection(
-          id: 'description',
-          text: station.description,
-          overrides: overrides,
-        ),
-        RollupSection(
-          id: 'situation',
-          label: l10n.briefSectionStationSituation,
-          text: station.situationMd,
-          overrides: overrides,
-        ),
-        RollupSection(
-          id: 'mission',
-          label: l10n.briefSectionStationMission,
-          text: station.missionMd,
-          overrides: overrides,
-        ),
-        RollupSection(
-          id: 'logistics',
-          label: l10n.briefSectionStationLogistics,
-          text: station.logisticsMd,
-          overrides: overrides,
-        ),
-        RollupSection(
-          id: 'equipment',
-          label: l10n.briefSectionStationEquipment,
-          text: station.equipmentMd,
-          overrides: overrides,
-        ),
-        RollupSection(
-          id: 'criticalQuestions',
-          label: l10n.briefSectionStationCriticalQuestions,
-          text: station.criticalQuestionsMd,
-          overrides: overrides,
-        ),
-        RollupSection(
-          id: 'leaderAnswers',
-          label: l10n.briefSectionStationLeaderAnswers,
-          text: station.leaderAnswersMd,
-          overrides: overrides,
-        ),
-        if (role == StaffRole.director)
-          RollupSection(
-            id: 'directorNotes',
-            label: l10n.briefSectionStationDirectorNotes,
-            text: station.directorNotesMd,
-            overrides: overrides,
-            gated: true,
-          ),
-      ],
+      sections: stationDescriptionSections(
+        l10n,
+        station,
+        role,
+        _overridesFor(),
+      ),
+      teaching: stationDescriptionTeaching(l10n),
       onTapSection: onTapSection,
     );
   }

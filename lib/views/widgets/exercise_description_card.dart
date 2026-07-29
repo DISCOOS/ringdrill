@@ -46,6 +46,7 @@ class ExerciseDescriptionCard extends StatelessWidget {
         exercise,
         exerciseDescriptionOverrides(exercise),
       ),
+      teaching: exerciseDescriptionTeaching(l10n),
       onTapSection: onTapSection,
       trailing: trailing,
     );

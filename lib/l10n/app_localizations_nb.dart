@@ -2077,6 +2077,38 @@ class AppLocalizationsNb extends AppLocalizations {
   String get tapSectionToEditHint => 'Trykk en seksjon for å redigere';
 
   @override
+  String get descriptionAddAction => 'Legg til beskrivelse';
+
+  @override
+  String descriptionMissingSections(String sections) {
+    return 'Mangler: $sections';
+  }
+
+  @override
+  String get descriptionMissingSectionsAction => 'Legg til';
+
+  @override
+  String get exerciseDescriptionEmptyTitle => 'Ingen øvingsbeskrivelse ennå';
+
+  @override
+  String get exerciseDescriptionEmptyBody =>
+      'Beskriv metode, ordreformat, samband og læringsmål, slik at instruktører og lagledere vet hva øvelsen skal trene.';
+
+  @override
+  String get stationDescriptionEmptyTitle => 'Ingen postbeskrivelse ennå';
+
+  @override
+  String get stationDescriptionEmptyBody =>
+      'Beskriv situasjon, oppdrag, logistikk og utstyr på posten, slik at markører og instruktører kan forberede seg før øvelsen starter.';
+
+  @override
+  String get rolePlayDescriptionEmptyTitle => 'Ingen markørordre ennå';
+
+  @override
+  String get rolePlayDescriptionEmptyBody =>
+      'Beskriv rollen — signalement, bakgrunn, oppførsel og rekvisitter — slik at markøren vet hvem som skal spilles, og hvordan.';
+
+  @override
   String get stationTimingCardTitle => 'Tidsplan';
 
   @override

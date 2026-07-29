@@ -44,10 +44,20 @@ class RolePlayDescriptionRollup extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final overrides = _overridesFor();
     return Rollup(
+      teaching: RollupTeaching(
+        title: l10n.rolePlayDescriptionEmptyTitle,
+        body: l10n.rolePlayDescriptionEmptyBody,
+        actionLabel: l10n.descriptionAddAction,
+      ),
       sections: [
+        // `description` is the marker's signalement — the lead a reader starts
+        // from, and the one section that makes the role playable at all, so it
+        // is the mandatory one here. Still optional in the model; see
+        // [RollupSection.mandatoryLabel].
         RollupSection(
           id: 'description',
           text: rolePlay.description,
+          mandatoryLabel: l10n.roleDescription,
           overrides: overrides,
         ),
         RollupSection(
