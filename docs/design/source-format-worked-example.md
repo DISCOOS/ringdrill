@@ -3,10 +3,12 @@
 > **Status:** draft / discussion material. Not a DESIGN issue yet.
 > **Purpose:** make the source format concrete against one real plan before we
 > write the spec.
-> **Target model:** DESIGN-008 (variables + overrides + tokens, *Accepted*) and
-> DESIGN-009 (station-owned locations/persons, `personRef`, *Proposed*). The
-> example is written against where the model is going, not the legacy inline
-> roleplay identity.
+> **Target model:** DESIGN-008 (variables + overrides + tokens) and DESIGN-009
+> (station-owned locations/persons, `personRef`) — both *Accepted* and shipped.
+> Renames that have since landed: the Dart model `Program → Plan`, `Actor →
+> Staff` (the roster/PII layer, still stripped on publish; DESIGN-011), and the
+> scenario `signalement → description` field. The `.drill` envelope
+> (`program.json` root, folder layout, extension) stays frozen.
 > **Anchor:** the published catalog plan `lsor-eidene-2026.drill`
 > ("LSOR Eidene 2026", 7 exercises, 4 teams). The example below is exercise
 > **#2 Eidene**. Its scenario `locations`/`persons` are forward-ported to
@@ -20,11 +22,13 @@ is that `build(decompile(d))` yields the same `contentHash` as `d`.
 Guiding principle: **authored fields only, never derived ones.** If a value can
 be computed from something else, it does not belong here.
 
-Two conventions settled during design: field **names mirror the Dart model 1:1**
-(only value *shapes* are source-friendly — times as `"HH:MM"`, coordinates as
-`{lat, lng}`), and the document is **one YAML file with markdown in block
-scalars** (`|`). Example data (station names, prose) stays Norwegian because the
-plan is a real Norwegian SAR plan; only format prose and comments are English.
+Two conventions settled during design: field **names mirror the frozen `.drill`
+wire keys** (not the Dart class names — those were renamed `Program → Plan`, the
+wire keys were not), with only value *shapes* source-friendly (times as
+`"HH:MM"`, coordinates as `{lat, lng}`); and the document is **one YAML file with
+markdown in block scalars** (`|`). Example data (station names, prose) stays
+Norwegian because the plan is a real Norwegian SAR plan; only format prose and
+comments are English.
 
 ---
 
@@ -94,7 +98,7 @@ exercises:
             name: "Magnus Damslet"
             age: 6
             gender: male
-            signalement: "Rød jakke, blå lue."
+            description: "Rød jakke, blå lue."   # was `signalement` before the rename
             locSlug: lkp
 
         situation: |
@@ -112,7 +116,7 @@ exercises:
             # age: 7          # example: an override; omit to inherit from person
             behavior: |
               Gjemmer seg bak paviljongen, svarer ikke på rop.
-            # actor casting is PII (the roster layer) — never in the source.
+            # staff casting (Staff, the roster/PII layer) — never in the source.
 
       - name: "Økt selvmordsfare"
         position: { lat: 59.099762, lng: 10.403759 }
@@ -157,10 +161,12 @@ Settled during the design dialogue.
    document; a single string is a clean MCP contract. The directory form already
    exists — it is the unzipped `.drill`. Markdown inline (item 2 folds in here):
    block-scalar content is literal, so markdown `#`/`-`/`:` need no escaping.
-2. **Mirror model field names, reshape values only.** Names match the Dart model
-   1:1 (`startTime`, `numberOfTeams`, `position`); only value shapes are
-   source-friendly. Keeps schema, builder and decompile on one vocabulary. The
-   format is agent-oriented, so verbosity costs nothing.
+2. **Mirror the frozen `.drill` wire keys, reshape values only.** Names match the
+   archive's JSON keys (`startTime`, `numberOfTeams`, `position`), not the Dart
+   class names — so the landed `Program → Plan` rename does not touch the source
+   format. Only value shapes are source-friendly. Keeps schema, builder and
+   decompile on one vocabulary; the format is agent-oriented, so verbosity costs
+   nothing.
 3. **Position as `{lat, lng}`.** `.drill` stores `[lng, lat]`; the builder flips
    it. Kills the swap bug at the source.
 4. **References by array position; roleplays nested under the station.** Stations
@@ -186,10 +192,10 @@ Settled during the design dialogue.
    inheritance by *omitting* it. The builder denormalizes the effective value
    onto the roleplay (DESIGN-009 / ADR-0047), so a reader never sees a blank
    marker.
-9. **Actor/PII on decompile.** `personRef` and `persons` are publishable (no PII)
-   and resolve fine. Only the `Actor` (the real human) is stripped at publish, and
-   effective identity is denormalized, so decompile just drops the actor casting —
-   nothing dangles.
+9. **Staff/PII on decompile.** `personRef` and `persons` are publishable (no PII)
+   and resolve fine. Only `Staff` (the real-human roster, was `Actor`; DESIGN-011)
+   is stripped at publish, and effective identity is denormalized, so decompile
+   just drops the staff casting — nothing dangles.
 
 ---
 
