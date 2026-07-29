@@ -3,12 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart'
     show ActionChipFormatter;
 import 'package:ringdrill/services/edit_permissions.dart';
