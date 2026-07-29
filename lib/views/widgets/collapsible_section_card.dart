@@ -142,13 +142,21 @@ class _CollapsibleSectionCardState extends State<CollapsibleSectionCard>
         children: [
           InkWell(onTap: _toggle, child: header),
           // Vertical reveal: the body stays in the tree and is clipped from
-          // the bottom (axisAlignment -1 pins it to the top), so it expands
+          // the bottom (the `-1` y pins it to the top), so it expands
           // downward and collapses upward instead of appearing from the side
           // or vanishing at once.
+          //
+          // `topStart`, not `topCenter`: SizeTransition lays its child out
+          // inside an `Align`, which *loosens* the width constraint, so a body
+          // whose content does not itself stretch (a rollup's short section
+          // block) shrink-wraps — and a centered alignment then visibly
+          // centers that shrunk box inside the card. The `SizedBox` re-tightens
+          // the width to the card's own, so a body still fills the card
+          // regardless of how little content it has.
           SizeTransition(
-            alignment: Alignment.topCenter,
+            alignment: AlignmentDirectional.topStart,
             sizeFactor: collapseFactor,
-            child: widget.body,
+            child: SizedBox(width: double.infinity, child: widget.body),
           ),
         ],
       ),

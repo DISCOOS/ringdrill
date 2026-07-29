@@ -158,11 +158,13 @@ class RollupCard extends StatelessWidget {
 
     return _buildCard(
       Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final block in blocks) ...[block, const SizedBox(height: 12)],
-          ?_buildHint(context, hint),
-        ],
+        // Stretch, not start: a block's own column shrink-wraps to its widest
+        // line otherwise, which both narrows its tap-to-edit InkWell to the
+        // text and leaves a short block sitting in a box narrower than the
+        // card.
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 12,
+        children: [...blocks, ?_buildHint(context, hint)],
       ),
     );
   }
@@ -174,7 +176,12 @@ class RollupCard extends StatelessWidget {
       title: title,
       trailing: trailing,
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        // 12 on all four sides: the horizontal matches
+        // [CardSectionHeader]'s own inset, so a section's label lines up with
+        // the card title above it, and the vertical is the same gap the
+        // `spacing` puts between blocks — the body previously had none at the
+        // top and only an accidental trailing `SizedBox` at the bottom.
+        padding: const EdgeInsets.all(12),
         child: child,
       ),
     );
