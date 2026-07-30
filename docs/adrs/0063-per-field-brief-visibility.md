@@ -18,9 +18,10 @@ Two problems meet here, and neither is fixable alone.
 `BriefAudience` has three, and they are a different three: `participant`,
 `instructor`, `director`. `StaffRole.briefAudience` bridges the gap by
 collapsing: an actor gets the **director** view, and `other` gets the
-instructor view. So a markør reading the brief on their phone sees every other
-marker's script, every station's withheld answers, and every other actor's name
-and phone number. The role picker implies four views and delivers three.
+instructor view. So a markør reading the brief on their phone sees every station's
+withheld answers and the evaluation rubric for the whole course — none of which a
+marker has any use for, and some of which they will be standing next to a
+participant while holding. The role picker implies four views and delivers three.
 
 **Visibility is decided in the template, not declared on the field.**
 `BriefAudience` exposes exactly two gates — `includesDirectorNotes` (anyone but a
@@ -104,7 +105,7 @@ declared **set** per field:
 | `leader_answers` | station | | | ● | ● |
 | `director_notes` | station | | | ● | ● |
 | `behavior`, `background`, `props` | roleplay | | ● | ● | ● |
-| actor identity and phone | roleplay | | | ● | ● |
+| actor identity and phone | roleplay | | ● | ● | ● |
 
 `BriefRenderer` omits a field the audience is not in from the mustache context,
 so `{{#situationMd}}` finds nothing and the template needs no per-field
@@ -116,12 +117,20 @@ omission.
 local, private layer, stripped at publish and absent from the source format
 (ADR-0047), so there is no `SourceField` to annotate. It keeps a dedicated gate
 on `BriefAudience` — the present `includesActorPii`, widened from director-only to
-instructor and director. A veileder supervises a team through a station and has to
-coordinate with the markör standing at it: the course booklet's own standing
+**every staff role**.
+
+Markörer need each other: this booklet posts two at 4b and one to two at 2f, and
+they have to find each other and coordinate before the team arrives — the reason
+`StaffRole.briefAudience` already routes actors to the director view. Veiledere
+need them for the same reason one step out: a veileder supervises a team through a
+station and has to reach the markör standing at it, and the booklet's own standing
 instruction is that veiledere look after the markörer and do not drive off without
-them, which is impossible without being able to reach them. The same argument the
-existing code already makes for actors ("they have to find and work with them")
-applies at least as strongly to the role responsible for them.
+them.
+
+Participants are the only audience excluded, which makes `includesActorPii` the
+same predicate as `includesDirectorNotes` — "is this staff". Two gates collapse
+into one, and the two are worth keeping separate anyway: they answer different
+questions and will diverge again the moment a field is director-only.
 
 Once role-play fields and `leader_answers` are gated where they belong, the
 pressure to cram everything into `director_notes` goes away by itself: the
@@ -146,12 +155,14 @@ the station.
 * Bad: participant briefs change output. That is the intent, but anyone who has
   distributed one has distributed more than they meant to, and pre-rendered
   briefs (ADR-0044's site preview) need regenerating.
-* Bad: two audiences lose content they have today. An actor drops from the
-  director view to their own scenario, and `other` — proposed here as the
-  participant set, on ADR-0057's default-deny logic that "a role they do not name
-  gets nothing" — drops from the instructor view. Both are deliberate reductions,
-  and both are one line to revisit. Instructors gain rather than lose: actor
-  contact details, which only the director had.
+* Bad: two audiences lose content they have today. An actor keeps the cast's
+  contact details and the role-play fields but loses the instructor-only ones —
+  `leader_answers`, `critical_questions`, `director_notes`, `training_focus`,
+  `execution_tips` — and `other`, proposed here as the participant set on
+  ADR-0057's default-deny logic that "a role they do not name gets nothing", drops
+  from the instructor view. Both are deliberate reductions, and both are one line
+  to revisit. Instructors gain rather than lose: actor contact details, which only
+  the director had.
 * Bad: **the instructor and director briefs become identical.** Actor identity was
   the last director-only content, so with it at instructor level nothing in the
   brief distinguishes the two audiences. They remain distinct for edit rights
@@ -160,14 +171,12 @@ the station.
   or risk notes, the ØVLE phone tree. But as of this ADR the distinction is
   latent, and that should be a decision rather than something a later reader
   discovers and mistakes for an oversight.
-* Bad: this reverses the existing rationale for actors seeing each other's
-  contact details. `StaffRole.briefAudience` grants an actor the director view
-  today partly because "an actor needs other actors' contact details to work with
-  them", and the matrix above withholds them. Plan-wide PII for every markör is
-  over-broad — the markör at 3d does not need the number of the markör at 2f — but
-  co-located markers are real: this booklet has two at 4b and one to two at 2f. If
-  that case matters, the fix is a narrower cut (the actors cast to the same
-  station) rather than restoring the whole director view.
+* Bad: actor contact details reach every staff role, so the plan-wide roster is
+  visible to a markör who only needs the one standing next to them. That is
+  deliberate — co-located markers are the common case and the narrower cut (only
+  the actors cast to the same station) is a refinement this ADR does not make —
+  but it does mean PII scope is a role question, not a per-entry one, and a
+  markör's device holds the whole cast list.
 * Bad: `critical_questions` at instructor level is a judgement call. They are
   prompts for evaluating whether a team leader thought of something, but they
   carry domain intel a participant would benefit from. An author who wants
