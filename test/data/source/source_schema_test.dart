@@ -93,8 +93,15 @@ void main() {
 
   test('a coordinate is range-checked, shared by reference', () {
     final position = _defs(schema)['position'] as Map<String, dynamic>;
-    expect(_props(position)['lat'], containsPair('maximum', 90));
-    expect(_props(position)['lng'], containsPair('maximum', 180));
+    // Two accepted notations since ADR-0061: the {lat, lng} object and a
+    // coordinate string (UTM, as the brief renders it). The range check lives on
+    // the object branch — a string is validated by the parser, which is the same
+    // one the app uses for coordinate entry.
+    final branches = (position['oneOf'] as List).cast<Map<String, dynamic>>();
+    final object = branches.firstWhere((b) => b['type'] == 'object');
+    expect(_props(object)['lat'], containsPair('maximum', 90));
+    expect(_props(object)['lng'], containsPair('maximum', 180));
+    expect(branches.any((b) => b['type'] == 'string'), isTrue);
     // Every position field points at the one definition rather than restating it,
     // so the range check cannot be right in one place and missing in another.
     for (final scope in SourceScopes.all) {

@@ -210,24 +210,35 @@ scope is wrong, not the spelling.
 
 ## Coordinates
 
-`{lat, lng}` in decimal degrees. The compiler stores them in the archive's own
-order, so you never think about it. Latitude is range-checked, which catches the
-classic swap: `{lat: 10.4, lng: 59.1}` is two valid numbers and a station in the
-Indian Ocean.
+Either notation, at every `position` (ADR-0061):
 
-It does **not** catch a bad conversion. A source document in this domain almost
-always arrives in UTM — Norwegian SAR plans are written in zone 32V, and the
-brief renders positions back as UTM — so every coordinate has to be converted
-before it can be written here. A transposed digit or the wrong zone yields a
-coordinate that is perfectly valid and in the wrong place, and nothing downstream
-objects: the range check passes for anything on Earth, and `analyze` cannot know
-where a station was meant to be. Convert in bulk with one reviewable step rather
-than by hand per station, and spot-check a few against the source.
+```yaml
+position: { lat: 59.097921, lng: 10.397940 }
+position: "32V 0580083E 6551794N"
+```
 
-[ADR-0061](../../../docs/adrs/0061-utm-coordinate-input-in-source-format.md)
-proposes accepting a UTM string directly wherever a position is taken, which
-would remove this step. Until it lands, decimal degrees are the only accepted
-form.
+The string form is what this domain actually reads and writes — a source booklet
+carries UTM and the brief renders UTM back — so a coordinate can be copied out of
+the source material unchanged and checked by eye against it. That matters more
+than it sounds: a bad conversion is the one error class with no detection at all.
+Latitude is range-checked, which catches the classic swap (`{lat: 10.4, lng: 59.1}`
+is two valid numbers and a station in the Indian Ocean), but nothing can catch a
+transposed digit — the result is a valid coordinate in the wrong place, and
+`analyze` cannot know where a station was meant to be.
+
+Two things to know about the string form:
+
+* It is **metre precision**, so a plan authored in UTM and the same plan authored
+  in decimal degrees agree on the ground but not to the last decimal, and their
+  content hashes differ. Either is correct; do not mix notations for the same
+  coordinate and expect identical hashes.
+* `decompile` always emits `{lat, lng}`, because re-emitting UTM would either lose
+  precision or guess a zone. A document authored in UTM comes back in decimal
+  degrees. The rebuild is still byte-identical and preserves `contentHash`, so the
+  round trip holds — it is the source *text* that changes notation, not the plan.
+
+The compiler stores coordinates in the archive's own order (GeoJSON `[lng, lat]`),
+so you never think about it.
 
 ## Identity
 

@@ -61,16 +61,27 @@ class SourceSchema {
     r'$defs': {
       for (final scope in SourceScopes.all) scope.name: _scope(scope),
       'position': {
-        'type': 'object',
         'description':
-            'A WGS84 coordinate. Written {lat, lng}; stored in the archive as '
-            'GeoJSON [lng, lat], which the compiler flips.',
-        'required': ['lat', 'lng'],
-        'additionalProperties': false,
-        'properties': {
-          'lat': {'type': 'number', 'minimum': -90, 'maximum': 90},
-          'lng': {'type': 'number', 'minimum': -180, 'maximum': 180},
-        },
+            'A WGS84 coordinate, written either as {lat, lng} in decimal '
+            'degrees or as a coordinate string — UTM as the brief renders it, '
+            '"32V 0580083E 6551794N" (ADR-0061). Stored in the archive as '
+            'GeoJSON [lng, lat], which the compiler flips. `decompile` always '
+            'emits the {lat, lng} form, since UTM is metre-precision.',
+        'oneOf': [
+          {
+            'type': 'object',
+            'required': ['lat', 'lng'],
+            'additionalProperties': false,
+            'properties': {
+              'lat': {'type': 'number', 'minimum': -90, 'maximum': 90},
+              'lng': {'type': 'number', 'minimum': -180, 'maximum': 180},
+            },
+          },
+          {
+            'type': 'string',
+            'examples': ['32V 0580083E 6551794N', '59.097921,10.397940'],
+          },
+        ],
       },
     },
   };

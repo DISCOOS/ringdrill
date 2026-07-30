@@ -401,6 +401,58 @@ teams:
       expect(errors.single.hint, contains('swapped'));
     });
 
+    test('a UTM string and its decimal degrees build the same plan', () {
+      // ADR-0061. The notation an author reads in a brief is one they can paste
+      // back, and the two forms are interchangeable at every position site —
+      // proven by the content hash, which is what a rebuild lands on.
+      String doc(String position) => _doc(
+        exercises:
+            """
+  - name: "Ex"
+    startTime: "09:00"
+    numberOfTeams: 1
+    numberOfRounds: 1
+    executionTime: 15
+    evaluationTime: 5
+    rotationTime: 2
+    stations:
+      - name: "Post"
+        position: $position
+""",
+      );
+
+      final fromUtm = _build(doc('"32V 0580083E 6551794N"')).plan;
+      final fromDegrees = _build(
+        doc('{ lat: 59.097921, lng: 10.397940 }'),
+      ).plan;
+
+      final a = fromUtm.exercises.single.stations.first.position!;
+      final b = fromDegrees.exercises.single.stations.first.position!;
+      expect(a.latitude, closeTo(b.latitude, 1e-5));
+      expect(a.longitude, closeTo(b.longitude, 1e-5));
+    });
+
+    test('a coordinate string that is neither notation is an error', () {
+      final errors = _errors(
+        _doc(
+          exercises: """
+  - name: "Ex"
+    startTime: "09:00"
+    numberOfTeams: 1
+    numberOfRounds: 1
+    executionTime: 15
+    evaluationTime: 5
+    rotationTime: 2
+    stations:
+      - name: "Post"
+        position: "somewhere near the lake"
+""",
+        ),
+      );
+      expect(errors.single.message, contains('not a coordinate'));
+      expect(errors.single.hint, contains('32V'));
+    });
+
     test('a malformed time names the expected shape', () {
       final errors = _errors(
         _doc(

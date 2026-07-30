@@ -12,6 +12,7 @@
 /// Free of `package:flutter/*` (AGENTS.md rule 7).
 library;
 
+import 'package:ringdrill/utils/variable_values.dart';
 import 'package:ringdrill/data/source/source_diagnostic.dart';
 import 'package:ringdrill/data/source/source_field.dart';
 import 'package:ringdrill/data/source/source_fields.dart';
@@ -444,10 +445,24 @@ class SourceParser {
     String path,
     DiagnosticSink diagnostics,
   ) {
+    if (raw is String) {
+      final parsed = coordinateFromString(raw);
+      if (parsed == null) {
+        diagnostics.error(
+          path,
+          'not a coordinate: "$raw"',
+          hint:
+              'write {lat, lng} in decimal degrees, or a coordinate string like '
+              '"32V 0580083E 6551794N"',
+        );
+      }
+      return parsed;
+    }
     if (raw is! Map) {
       diagnostics.error(
         path,
-        'expected a coordinate as {lat, lng}, got ${_typeName(raw)}',
+        'expected a coordinate as {lat, lng} or a coordinate string, got '
+        '${_typeName(raw)}',
       );
       return null;
     }
@@ -527,4 +542,25 @@ class SourceParser {
     if (value is Map) return 'a mapping';
     return value.runtimeType.toString();
   }
+}
+
+/// A coordinate written as text, as the archive stores it — GeoJSON
+/// `[lng, lat]` — or null when the string is not a coordinate at all.
+///
+/// The notation this domain reads and writes is UTM: source booklets carry it and
+/// the brief renders it back, so decimal degrees existed only where a human had to
+/// type (ADR-0061). Delegates to the parse the app already uses for coordinate
+/// entry, which accepts either notation including the app's own
+/// `32V 0580414E 6552008N` display form — no second UTM implementation, and no
+/// external conversion step whose arithmetic nothing can check.
+///
+/// Shared by both position entry points: this parser, which handles a document's
+/// own `position:` keys, and `PlanBuilder`, which handles a `location`-typed
+/// variable's.
+Map<String, dynamic>? coordinateFromString(String raw) {
+  final parsed = parseCoordinateInput(raw);
+  if (parsed == null) return null;
+  return {
+    'coordinates': [parsed.longitude, parsed.latitude],
+  };
 }

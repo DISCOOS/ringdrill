@@ -173,8 +173,25 @@ class PlanBuilder {
   }
 
   Map<String, dynamic>? _position(Object? raw, String path) {
+    // Either notation (ADR-0061), through the one shared parse.
+    if (raw is String) {
+      final parsed = coordinateFromString(raw);
+      if (parsed == null) {
+        diagnostics.error(
+          path,
+          'not a coordinate: "$raw"',
+          hint:
+              'write {lat, lng} in decimal degrees, or a coordinate string like '
+              '"32V 0580083E 6551794N"',
+        );
+      }
+      return parsed;
+    }
     if (raw is! Map) {
-      diagnostics.error(path, 'expected a coordinate as {lat, lng}');
+      diagnostics.error(
+        path,
+        'expected a coordinate as {lat, lng} or a UTM string',
+      );
       return null;
     }
     final map = raw.map((k, v) => MapEntry('$k', v));

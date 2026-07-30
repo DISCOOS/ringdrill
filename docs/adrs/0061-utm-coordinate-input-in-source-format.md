@@ -69,10 +69,16 @@ with numeric `lat` and `lng`, and every `SourceShape.position` site in
 
 ## Decision outcome
 
-Chosen option: **Option B**, because one choke point (`PlanBuilder._position`)
-already governs every coordinate in the format, and routing it through a parser
-that already accepts both notations removes an entire error class without adding
-a field, a dependency or a concept.
+Chosen option: **Option B**, because the choke points that govern every
+coordinate in the format can route through a parser that already accepts both
+notations, removing an entire error class without adding a field, a dependency or
+a concept.
+
+Implementation note: there are **two** such choke points, not one as first
+written — `SourceParser._position`, which handles a document's own `position:`
+keys and owns the GeoJSON flip, and `PlanBuilder._position`, which handles a
+`location`-typed variable's. Both delegate to one shared
+`coordinateFromString`.
 
 A position may then be written either way, and the two are interchangeable
 everywhere `SourceShape.position` appears — station `position`, location
