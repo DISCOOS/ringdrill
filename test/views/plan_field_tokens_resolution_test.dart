@@ -183,7 +183,10 @@ void main() {
       final rendered = await BriefRenderer().render(
         plan: plan,
         exercise: exercise,
-        audience: BriefAudience.participant,
+        // Role-play fields are staff-facing (ADR-0063), so a participant render
+        // has no role-play section to resolve tokens in. This test is about token
+        // resolution, not visibility.
+        audience: BriefAudience.instructor,
         l10n: _l10n.brief,
       );
 

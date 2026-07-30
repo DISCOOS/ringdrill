@@ -13,6 +13,14 @@
 /// caller.
 library;
 
+// A rendering concern in the format's own table, accepted deliberately
+// (ADR-0063): a field's audience is declared beside its shape so `schema`
+// carries it and one table stays the single description. The alternative — a
+// second table in the brief layer keyed by field name — is the drift this repo
+// has already fixed twice. `BriefAudience` is a bare enum with no imports of its
+// own, so this costs the CLI nothing.
+import 'package:ringdrill/services/brief/brief_audience.dart';
+
 /// Whether an author writes a field, and what happens when they do not.
 enum SourceFieldKind {
   /// Written by a person or an agent. The source format's whole content.
@@ -91,6 +99,7 @@ class SourceField {
     this.enumValues = const [],
     this.mdFileName,
     this.description,
+    this.audiences = const {},
   }) : _wireKey = wireKey;
 
   /// The key an author writes.
@@ -123,6 +132,26 @@ class SourceField {
   /// English and not localized (AGENTS.md rule 12 governs docs, rule 4 governs
   /// app strings; this is neither).
   final String? description;
+
+  /// Who may see this field in a rendered brief (ADR-0063).
+  ///
+  /// Required for [SourceShape.markdown] — `source_fields_test.dart` fails on a
+  /// markdown field that declares none, because the alternative is a permissive
+  /// default that silently puts the next field in front of participants. The
+  /// empty default is therefore "nobody", which fails closed: a field nobody can
+  /// see is a visible bug, a field everybody can see is not.
+  ///
+  /// A set rather than a minimum level because the audiences are not an ordered
+  /// chain — an actor needs the role-play fields and none of the instructor's,
+  /// and vice versa. [BriefRenderer] omits a field whose set excludes the
+  /// audience from the mustache context, so the template carries no policy.
+  ///
+  /// Only markdown fields carry this. Structural values (a coordinate, a name, a
+  /// duration) are part of whatever section renders them.
+  final Set<BriefAudience> audiences;
+
+  /// Whether [audience] may see this field.
+  bool visibleTo(BriefAudience audience) => audiences.contains(audience);
 
   bool get isAuthored => kind == SourceFieldKind.authored;
   bool get isDerived => kind == SourceFieldKind.derived;

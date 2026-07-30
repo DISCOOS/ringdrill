@@ -158,16 +158,27 @@ void main() {
     expect(icons.length, StaffRole.values.length);
   });
 
-  // Consequence of answering "director level" for the actor's brief: an actor is
-  // staff running the scenario from the inside, so they get the same detail —
-  // including other actors' PII, which they need to find and work with them.
-  test('an actor reads the brief as a director', () {
+  // Every role reads the brief as itself (ADR-0063): the mapping is the identity,
+  // so no role borrows another's view. It used to collapse four roles onto three
+  // audiences — an actor read as a director, `other` as an instructor.
+  test('each role reads the brief as its own audience', () {
+    for (final role in StaffRole.values) {
+      expect(role.briefAudience.name, role.name);
+    }
+  });
+
+  test('an actor gets the cast but not the control notes', () {
+    // Markörer coordinate with each other, so they need the contact details; the
+    // instructor-facing notes are not theirs to hold next to a participant.
     expect(StaffRole.actor.briefAudience.includesActorPii, isTrue);
-    expect(StaffRole.actor.briefAudience.includesDirectorNotes, isTrue);
-    expect(
-      StaffRole.instructor.briefAudience.includesActorPii,
-      isFalse,
-      reason: 'the instructor reduction is unchanged',
-    );
+    expect(StaffRole.actor.briefAudience.includesDirectorNotes, isFalse);
+
+    // The veileder responsible for that markör needs to reach them too.
+    expect(StaffRole.instructor.briefAudience.includesActorPii, isTrue);
+    expect(StaffRole.instructor.briefAudience.includesDirectorNotes, isTrue);
+
+    // A role whose duties are undefined is granted nothing in particular.
+    expect(StaffRole.other.briefAudience.includesActorPii, isFalse);
+    expect(StaffRole.other.briefAudience.includesDirectorNotes, isFalse);
   });
 }

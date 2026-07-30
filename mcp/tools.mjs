@@ -200,8 +200,17 @@ export function toolsFor(backend) {
                     document: SOURCE_DOCUMENT_ARG,
                     audience: {
                         type: 'string',
-                        enum: ['participant', 'instructor', 'director'],
-                        description: 'Default participant.',
+                        enum: [
+                            'participant',
+                            'actor',
+                            'instructor',
+                            'director',
+                            'other',
+                        ],
+                        description:
+                            'One per staff role, plus participant — the printed ' +
+                            'handout, which withholds every staff-facing field ' +
+                            '(ADR-0063). Default participant.',
                     },
                     lang: {
                         type: 'string',

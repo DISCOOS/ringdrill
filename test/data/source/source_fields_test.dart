@@ -7,6 +7,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/data/source/source_field.dart';
 import 'package:ringdrill/data/source/source_fields.dart';
+import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/numbering.dart';
@@ -164,6 +165,94 @@ void main() {
             expect(child.keyField, isNotNull);
             expect(child.scope.field(child.keyField!), isNotNull);
           }
+        }
+      }
+    });
+  });
+
+  group('brief visibility (ADR-0063)', () {
+    test('every markdown field declares who may see it', () {
+      // The declaration is required rather than defaulted, because a permissive
+      // default is how the participant brief came to carry every marker's script:
+      // a field nobody wrapped in the template was public. An empty set here
+      // fails closed — the field renders for nobody — so this test is what turns
+      // "forgot to decide" into a failure instead of a leak.
+      final undeclared = <String>[];
+      for (final scope in SourceScopes.all) {
+        for (final field in scope.fields) {
+          if (field.shape == SourceShape.markdown && field.audiences.isEmpty) {
+            undeclared.add('${scope.name}.${field.sourceKey}');
+          }
+        }
+      }
+      expect(undeclared, isEmpty);
+    });
+
+    test('a participant never sees an instructor-facing field', () {
+      // The classification itself, asserted on the table rather than by rendering
+      // and grepping. Names the fields so a reclassification is a deliberate edit
+      // here, not a quiet change in behaviour.
+      const staffOnly = {
+        'training_focus',
+        'execution_tips',
+        'critical_questions',
+        'leader_answers',
+        'director_notes',
+        'behavior',
+        'background',
+        'props',
+      };
+      for (final scope in SourceScopes.all) {
+        for (final field in scope.fields) {
+          if (field.shape != SourceShape.markdown) continue;
+          expect(
+            field.visibleTo(BriefAudience.participant),
+            !staffOnly.contains(field.sourceKey),
+            reason: '${scope.name}.${field.sourceKey}',
+          );
+        }
+      }
+    });
+
+    test('an actor gets the role play but not the control material', () {
+      const rolePlayFields = {'behavior', 'background', 'props'};
+      const controlFields = {
+        'training_focus',
+        'execution_tips',
+        'critical_questions',
+        'leader_answers',
+        'director_notes',
+      };
+      for (final scope in SourceScopes.all) {
+        for (final field in scope.fields) {
+          if (field.shape != SourceShape.markdown) continue;
+          if (rolePlayFields.contains(field.sourceKey)) {
+            expect(
+              field.visibleTo(BriefAudience.actor),
+              isTrue,
+              reason: field.sourceKey,
+            );
+          }
+          if (controlFields.contains(field.sourceKey)) {
+            expect(
+              field.visibleTo(BriefAudience.actor),
+              isFalse,
+              reason: field.sourceKey,
+            );
+          }
+        }
+      }
+    });
+
+    test('`other` sees exactly what a participant sees', () {
+      for (final scope in SourceScopes.all) {
+        for (final field in scope.fields) {
+          if (field.shape != SourceShape.markdown) continue;
+          expect(
+            field.visibleTo(BriefAudience.other),
+            field.visibleTo(BriefAudience.participant),
+            reason: '${scope.name}.${field.sourceKey}',
+          );
         }
       }
     });

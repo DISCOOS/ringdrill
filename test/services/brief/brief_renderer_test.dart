@@ -246,10 +246,70 @@ void main() {
       // Roleplay name (publishable) must still appear
       expect(result, contains('Anne Glemsk'));
     });
+
+    test('withholds every staff-facing field, not just director notes', () async {
+      // The printed handout. Before ADR-0063 only director notes and actor PII
+      // were gated, so a participant sheet carried the marker's script and the
+      // answers a team leader is supposed to have to ask for.
+      final result = await renderer.render(
+        plan: _designPlan(),
+        audience: BriefAudience.participant,
+        l10n: _l10n.brief,
+      );
+
+      expect(result, isNot(contains('Har vert savnet fire ganger')));
+      expect(result, isNot(contains('Har gått seg fast?')));
+      expect(result, isNot(contains('dement dame i god fysisk form')));
+
+      // What a participant does need is untouched.
+      expect(result, contains('meldt savnet fra Gamlehuset'));
+      expect(result, contains('Gruppevis øving utendørs'));
+    });
+  });
+
+  group('BriefRenderer — actor audience', () {
+    test(
+      'gets the role play and the cast, not the instructor material',
+      () async {
+        // A markör needs their own scenario and the markörer they work beside — a
+        // station can post two — but not the withheld answers they would be
+        // holding next to a participant (ADR-0063).
+        final result = await renderer.render(
+          plan: _designPlan(),
+          audience: BriefAudience.actor,
+          l10n: _l10n.brief,
+        );
+
+        expect(result, contains('dement dame i god fysisk form'));
+        expect(result, contains('Kari Hansen'));
+
+        expect(result, isNot(contains('Har vert savnet fire ganger')));
+        expect(result, isNot(contains('Har gått seg fast?')));
+        expect(result, isNot(contains('Notater til instruktør/øvingsledelse')));
+      },
+    );
+  });
+
+  group('BriefRenderer — other audience', () {
+    test('gets the participant set, on default-deny', () async {
+      // A staffing role the enum does not name is granted nothing in particular,
+      // the same logic ADR-0057 applies to edit rights. It used to borrow the
+      // instructor view.
+      final result = await renderer.render(
+        plan: _designPlan(),
+        audience: BriefAudience.other,
+        l10n: _l10n.brief,
+      );
+
+      expect(result, contains('meldt savnet fra Gamlehuset'));
+      expect(result, isNot(contains('Har vert savnet fire ganger')));
+      expect(result, isNot(contains('dement dame i god fysisk form')));
+      expect(result, isNot(contains('Kari Hansen')));
+    });
   });
 
   group('BriefRenderer — instructor audience', () {
-    test('shows director notes but not actor PII', () async {
+    test('shows director notes and the cast the veileder has to reach', () async {
       final plan = _designPlan();
       final result = await renderer.render(
         plan: plan,
@@ -257,12 +317,13 @@ void main() {
         l10n: _l10n.brief,
       );
 
-      // Director notes must be present
       expect(result, contains('Notater til instruktør/øvingsledelse'));
 
-      // Staff PII must be absent
-      expect(result, isNot(contains('Kari Hansen')));
-      expect(result, isNot(contains('99887766')));
+      // A veileder supervises a team through a station and is responsible for the
+      // markör standing at it, so they get the contact details (ADR-0063). This
+      // used to be director-only.
+      expect(result, contains('Kari Hansen'));
+      expect(result, contains('99887766'));
     });
   });
 

@@ -18,6 +18,34 @@
 library;
 
 import 'package:ringdrill/data/source/source_field.dart';
+import 'package:ringdrill/services/brief/brief_audience.dart';
+
+// Who sees a markdown field (ADR-0063). Named for what the group *is*, so a
+// reclassification is one edit here rather than a hunt through the table.
+
+/// Participants and every staff role — the plan as everyone reads it.
+const _everyone = <BriefAudience>{
+  BriefAudience.participant,
+  BriefAudience.actor,
+  BriefAudience.instructor,
+  BriefAudience.director,
+  BriefAudience.other,
+};
+
+/// The roles that run and evaluate the exercise. Withheld from participants
+/// because it would spoil the station, and from actors because it is not theirs
+/// to hold while standing next to a participant.
+const _control = <BriefAudience>{
+  BriefAudience.instructor,
+  BriefAudience.director,
+};
+
+/// The marker's own material, plus the roles that brief and supervise them.
+const _rolePlay = <BriefAudience>{
+  BriefAudience.actor,
+  BriefAudience.instructor,
+  BriefAudience.director,
+};
 
 /// The format version the source document declares, and this build accepts.
 ///
@@ -165,17 +193,20 @@ class SourceScopes {
         'behavior',
         shape: SourceShape.markdown,
         mdFileName: 'behavior.md',
+        audiences: _rolePlay,
       ),
       SourceField(
         'background',
         shape: SourceShape.markdown,
         mdFileName: 'background.md',
+        audiences: _rolePlay,
       ),
       SourceField(
         'props',
         shape: SourceShape.markdown,
         wireKey: 'propsMd',
         mdFileName: 'props.md',
+        audiences: _rolePlay,
       ),
       // Derived, listed so schema/analyze can name them as such.
       SourceField(
@@ -244,42 +275,49 @@ class SourceScopes {
         shape: SourceShape.markdown,
         wireKey: 'equipmentMd',
         mdFileName: 'equipment.md',
+        audiences: _everyone,
       ),
       SourceField(
         'situation',
         shape: SourceShape.markdown,
         wireKey: 'situationMd',
         mdFileName: 'situation.md',
+        audiences: _everyone,
       ),
       SourceField(
         'mission',
         shape: SourceShape.markdown,
         wireKey: 'missionMd',
         mdFileName: 'mission.md',
+        audiences: _everyone,
       ),
       SourceField(
         'logistics',
         shape: SourceShape.markdown,
         wireKey: 'logisticsMd',
         mdFileName: 'logistics.md',
+        audiences: _everyone,
       ),
       SourceField(
         'critical_questions',
         shape: SourceShape.markdown,
         wireKey: 'criticalQuestionsMd',
         mdFileName: 'critical-questions.md',
+        audiences: _control,
       ),
       SourceField(
         'leader_answers',
         shape: SourceShape.markdown,
         wireKey: 'leaderAnswersMd',
         mdFileName: 'leader-answers.md',
+        audiences: _control,
       ),
       SourceField(
         'director_notes',
         shape: SourceShape.markdown,
         wireKey: 'directorNotesMd',
         mdFileName: 'director-notes.md',
+        audiences: _control,
         description: 'Instructor/director only. Never shown to participants.',
       ),
       SourceField(
@@ -350,36 +388,42 @@ class SourceScopes {
         shape: SourceShape.markdown,
         wireKey: 'methodMd',
         mdFileName: 'method.md',
+        audiences: _everyone,
       ),
       SourceField(
         'learning_goals',
         shape: SourceShape.markdown,
         wireKey: 'learningGoalsMd',
         mdFileName: 'learning-goals.md',
+        audiences: _everyone,
       ),
       SourceField(
         'training_focus',
         shape: SourceShape.markdown,
         wireKey: 'trainingFocusMd',
         mdFileName: 'training-focus.md',
+        audiences: _control,
       ),
       SourceField(
         'order_format',
         shape: SourceShape.markdown,
         wireKey: 'orderFormatMd',
         mdFileName: 'order-format.md',
+        audiences: _everyone,
       ),
       SourceField(
         'execution_tips',
         shape: SourceShape.markdown,
         wireKey: 'executionTipsMd',
         mdFileName: 'execution-tips.md',
+        audiences: _control,
       ),
       SourceField(
         'comms',
         shape: SourceShape.markdown,
         wireKey: 'commsMd',
         mdFileName: 'comms.md',
+        audiences: _everyone,
       ),
       // Derived.
       SourceField(
@@ -523,18 +567,21 @@ class SourceScopes {
         shape: SourceShape.markdown,
         wireKey: 'briefIntroMd',
         mdFileName: 'intro.md',
+        audiences: _everyone,
       ),
       SourceField(
         'comms',
         shape: SourceShape.markdown,
         wireKey: 'commsMd',
         mdFileName: 'comms.md',
+        audiences: _everyone,
       ),
       SourceField(
         'before_round',
         shape: SourceShape.markdown,
         wireKey: 'beforeRoundMd',
         mdFileName: 'before-round.md',
+        audiences: _everyone,
       ),
       // Derived / excluded.
       SourceField(
@@ -588,6 +635,22 @@ class SourceScopes {
     team,
     variable,
   ];
+
+  /// Every markdown field, keyed by wire key (`situationMd`, `directorNotesMd`).
+  ///
+  /// Wire keys because that is what the renderer builds its mustache context
+  /// with. A key is unique across scopes for the fields that matter here —
+  /// `comms` is declared on both plan and exercise and resolves to the same
+  /// `commsMd` with the same audiences.
+  /// A key absent here is not a markdown field and carries no audience of its
+  /// own — `description`, the plain-string station lead-in, is the case that
+  /// matters. The renderer passes those through rather than treating "no
+  /// declaration" as "nobody".
+  static final markdownByWireKey = <String, SourceField>{
+    for (final scope in all)
+      for (final field in scope.fields)
+        if (field.shape == SourceShape.markdown) field.wireKey: field,
+  };
 }
 
 /// Top-level keys of the source document.

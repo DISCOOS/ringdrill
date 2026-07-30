@@ -107,10 +107,10 @@ const briefTemplateSources = <String, String>{
 {{#propsMd}}
 **Props:** {{{propsMd}}}
 {{/propsMd}}
-{{#if_director}}{{#actor}}
+{{#actor}}
 **Actor:** {{realName}}{{#phone}} {{{phone}}}{{/phone}}
 
-{{/actor}}{{/if_director}}
+{{/actor}}
 {{/roleplays}}
 {{#situationMd}}
 #### Situation
@@ -142,12 +142,12 @@ const briefTemplateSources = <String, String>{
 {{{leaderAnswersMd}}}
 
 {{/leaderAnswersMd}}
-{{#if_instructor_or_director}}{{#directorNotesMd}}
+{{#directorNotesMd}}
 > **Notes for instructor/exercise control**
 >
 > {{{directorNotesMd}}}
 
-{{/directorNotesMd}}{{/if_instructor_or_director}}
+{{/directorNotesMd}}
 ---
 
 {{/stations}}
@@ -249,10 +249,10 @@ const briefTemplateSources = <String, String>{
 {{#propsMd}}
 **Rekvisita:** {{{propsMd}}}
 {{/propsMd}}
-{{#if_director}}{{#actor}}
+{{#actor}}
 **Markør:** {{realName}}{{#phone}} {{{phone}}}{{/phone}}
 
-{{/actor}}{{/if_director}}
+{{/actor}}
 {{/roleplays}}
 {{#situationMd}}
 #### Situasjon
@@ -284,12 +284,12 @@ const briefTemplateSources = <String, String>{
 {{{leaderAnswersMd}}}
 
 {{/leaderAnswersMd}}
-{{#if_instructor_or_director}}{{#directorNotesMd}}
+{{#directorNotesMd}}
 > **Notater til instruktør/øvingsledelse**
 >
 > {{{directorNotesMd}}}
 
-{{/directorNotesMd}}{{/if_instructor_or_director}}
+{{/directorNotesMd}}
 ---
 
 {{/stations}}

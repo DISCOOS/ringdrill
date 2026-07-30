@@ -126,23 +126,43 @@ and why repeating them in `logistics` produces two Comms-ish sections.
 
 ### Who sees what
 
-`BriefAudience` has exactly two gates (`lib/services/brief/brief_audience.dart`):
+There is one audience per staff role, plus `participant` — the printed handout,
+and the audience that gets least, because a participant is not staff. Every
+markdown field declares which of them may see it (ADR-0063), so this table is the
+field's own property rather than a rule the renderer applies from outside:
 
-* `director_notes` — instructor and director only. This is the one field the
-  participant brief withholds.
-* The real person cast as a marker (name, phone) — director only.
+| Field | participant / other | actor | instructor / director |
+|---|:-:|:-:|:-:|
+| `intro`, `comms`, `before_round` | ● | ● | ● |
+| `method`, `learning_goals`, `order_format` | ● | ● | ● |
+| `equipment`, `situation`, `mission`, `logistics` | ● | ● | ● |
+| `behavior`, `background`, `props` | | ● | ● |
+| `training_focus`, `execution_tips` | | | ● |
+| `critical_questions`, `leader_answers` | | | ● |
+| `director_notes` | | | ● |
+| the real person cast as a marker | | ● | ● |
 
-**Everything else renders for every audience, including participants** —
-`leader_answers` and the role-play `behavior`/`background`/`props` among them.
-So a spoiler is only actually withheld if it is in `director_notes`: where the
-marker hides, how they behave under pressure, what to withhold, which room is
-locked. Put it there, not in a role-play field, if a participant reading it would
-spoil the station.
+Read the columns as roles, not levels — they are not nested. An actor gets the
+role-play fields and the cast's contact details, so co-located markers can find
+each other, and none of the instructor-facing material they would otherwise be
+holding while standing next to a participant. `other` — a staffing role the enum
+does not name — gets the participant set, on the same default-deny logic that
+governs edit rights.
 
-Note also that `director_notes` is **not** stripped at publish — only Staff is.
-Real names, duty phone numbers and door codes in `director_notes` ship to the
-open catalog. Keep operational contact details in plan variables so they are easy
-to find and change before publishing.
+So **put a spoiler in the field that owns it**, not in `director_notes`: the
+marker's script in `behavior`, the intel to withhold in `leader_answers`, and
+`director_notes` for what is genuinely a note to whoever runs the station. A
+station whose whole scenario is one `director_notes` blob is an artefact of the
+days when that was the only gated field.
+
+A withheld field renders as nothing, and an audience that can see none of the
+role-play fields gets no role-play section at all — otherwise the heading and the
+marker's name would still announce that the station has one.
+
+Note that `director_notes` is **not** stripped at publish — only Staff is. Real
+names, duty phone numbers and door codes in `director_notes` ship to the open
+catalog. Keep operational contact details in plan variables so they are easy to
+find and change before publishing.
 
 ## Tokens
 

@@ -14,6 +14,8 @@ import 'package:meta/meta.dart';
 import 'package:mustache_template/mustache_template.dart';
 import 'package:ringdrill/services/brief/brief_labels.dart';
 import 'package:ringdrill/services/brief/brief_template_source.dart';
+import 'package:ringdrill/data/source/source_field.dart';
+import 'package:ringdrill/data/source/source_fields.dart';
 import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -144,7 +146,7 @@ class BriefRenderer {
     }).toList();
 
     final context = {
-      'plan': {
+      'plan': _forAudience(audience, {
         'name': planName,
         'description': planDescription.isEmpty ? null : planDescription,
         'briefIntroMd': resolver.resolveField(
@@ -159,10 +161,8 @@ class BriefRenderer {
           l10n: l10n,
           refContext: planRefContext,
         ),
-      },
+      }),
       'exercises': exerciseContexts,
-      'if_director': audience.includesActorPii,
-      'if_instructor_or_director': audience.includesDirectorNotes,
       'if_in_doc_toc': !wideTocSidebar,
       // Single-exercise mode skips the plan-level header (H1, description,
       // in-doc TOC, briefIntroMd, commsMd, divider) because the reader is
@@ -226,7 +226,7 @@ class BriefRenderer {
     // the template actually renders.
     final exerciseAnchor = _toAnchor(exerciseName);
 
-    return {
+    return _forAudience(audience, {
       'name': exerciseName,
       'exerciseNumber': exNum,
       'exerciseAnchor': exerciseAnchor,
@@ -268,7 +268,7 @@ class BriefRenderer {
       'effectiveCommsMd': effectiveComms,
       'organisationBlock': _organisationBlock(plan, exercise, l10n),
       'stations': stationContexts,
-    };
+    });
   }
 
   Map<String, dynamic> _buildStationContext({
@@ -376,7 +376,7 @@ class BriefRenderer {
         scenarioStation: station,
         scenarioRolePlays: rolePlays,
       );
-      return {
+      return _forAudience(audience, {
         'name': resolvedRpName,
         'age': rp.age,
         'description': rp.description,
@@ -384,8 +384,7 @@ class BriefRenderer {
         'background': resolveRoleplayField(rp.background),
         'propsMd': resolveRoleplayField(rp.propsMd),
         'actor': actorContext,
-        'if_director': audience.includesActorPii,
-      };
+      });
     }).toList();
 
     final stationAnchor = _toAnchor(
@@ -393,7 +392,7 @@ class BriefRenderer {
       '${station.variantSuffix != null ? ' – ${station.variantSuffix}' : ''}',
     );
 
-    return {
+    return _forAudience(audience, {
       'name': resolvedStationName,
       'variantSuffix': station.variantSuffix,
       'stationCode': stationCode,
@@ -408,19 +407,55 @@ class BriefRenderer {
       'logisticsMd': resolveField(station.logisticsMd),
       'criticalQuestionsMd': resolveField(station.criticalQuestionsMd),
       'leaderAnswersMd': resolveField(station.leaderAnswersMd),
-      'directorNotesMd': audience.includesDirectorNotes
-          ? resolveField(station.directorNotesMd)
-          : null,
+      'directorNotesMd': resolveField(station.directorNotesMd),
       'effectiveCommsMd': effectiveCommsMd,
-      'roleplays': roleplayContexts,
-      'if_director': audience.includesActorPii,
-      'if_instructor_or_director': audience.includesDirectorNotes,
-    };
+      'roleplays': _showsRolePlays(audience) ? roleplayContexts : const [],
+    });
   }
 
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  /// Whether [audience] sees role plays at all (ADR-0063).
+  ///
+  /// Emptying the role-play *fields* is not enough. The section heading and the
+  /// marker's name come from the `{{#roleplays}}` loop itself, so a participant
+  /// would still get "Markørspill (Anne Glemsk)" with nothing under it — which
+  /// announces both that the station has a marker and who plays them. An audience
+  /// that can see none of the role-play fields gets no role plays.
+  bool _showsRolePlays(BriefAudience audience) => SourceScopes.roleplay.fields
+      .any((f) => f.shape == SourceShape.markdown && f.visibleTo(audience));
+
+  /// Empties the markdown entries [audience] may not see (ADR-0063).
+  ///
+  /// Applied to a finished context rather than at each `resolveField` call, so a
+  /// field added to the map later is filtered by construction instead of by
+  /// somebody remembering to wrap it — the failure mode this replaces, where
+  /// visibility lived in two mustache conditionals and every unwrapped field was
+  /// public by default.
+  ///
+  /// The key stays and its value becomes null, rather than the key being removed.
+  /// The template is rendered non-leniently, so a *missing* key is an error —
+  /// which is worth keeping, since it catches a context key that no longer
+  /// matches the template. A withheld field is absent content, not an absent
+  /// field, and mustache treats null as an empty section either way.
+  ///
+  /// Keys the field table does not describe as markdown pass through untouched:
+  /// `description` is a plain-string lead-in, and the rest are labels, numbers
+  /// and nested contexts that belong to whatever section renders them.
+  Map<String, dynamic> _forAudience(
+    BriefAudience audience,
+    Map<String, dynamic> context,
+  ) {
+    final out = <String, dynamic>{};
+    for (final entry in context.entries) {
+      final field = SourceScopes.markdownByWireKey[entry.key];
+      final withheld = field != null && !field.visibleTo(audience);
+      out[entry.key] = withheld ? null : entry.value;
+    }
+    return out;
+  }
 
   /// Returns the 1-based position of [exercise] in [plan]'s exercise list.
   @visibleForTesting

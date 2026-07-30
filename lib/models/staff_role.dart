@@ -65,19 +65,18 @@ enum StaffRole {
   @JsonValue('other')
   other;
 
-  /// Maps to the corresponding [BriefAudience] for the brief renderer.
+  /// The [BriefAudience] for this role — the identity mapping (ADR-0063).
   ///
-  /// An actor gets the *director* view rather than a reduced one: they are staff
-  /// running the scenario from the inside and need the same detail — including
-  /// other actors' PII, since they have to find and work with them. Participants
-  /// are the audience that gets less, and they do not use the app.
+  /// Every role has its own audience, so nothing here decides what a role may
+  /// see: that is declared per field (`SourceField.audiences`) and, for the cast's
+  /// contact details, by [BriefAudience.includesActorPii]. This used to collapse
+  /// four roles onto three audiences — an actor borrowed the *director* view, and
+  /// `other` the instructor one — which handed a markör every station's withheld
+  /// answers and the evaluation rubric for the whole course.
   BriefAudience get briefAudience => switch (this) {
     StaffRole.director => BriefAudience.director,
     StaffRole.instructor => BriefAudience.instructor,
-    StaffRole.actor => BriefAudience.director,
-    // The conservative choice for a role whose duties are unknown: staff-level
-    // detail, but not the director view's full PII. An actor needs other actors'
-    // contact details to work with them; nothing says the same of `other`.
-    StaffRole.other => BriefAudience.instructor,
+    StaffRole.actor => BriefAudience.actor,
+    StaffRole.other => BriefAudience.other,
   };
 }

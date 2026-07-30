@@ -329,9 +329,11 @@ void main() {
           rolePlays: [rolePlay],
         );
 
+        // Instructor, not participant: a role-play field is staff-facing
+        // (ADR-0063) and this test is about token resolution, not visibility.
         final result = await renderer.render(
           plan: plan,
-          audience: BriefAudience.participant,
+          audience: BriefAudience.instructor,
           l10n: _l10n.brief,
         );
 

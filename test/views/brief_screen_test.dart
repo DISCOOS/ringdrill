@@ -250,7 +250,7 @@ void main() {
   });
 
   group('BriefScreen — instructor audience', () {
-    testWidgets('hides actor PII for instructor audience', (tester) async {
+    testWidgets('shows the cast for instructor audience', (tester) async {
       await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
       await _awaitRender(tester);
 
@@ -260,9 +260,12 @@ void main() {
       // directorNotesMd is excluded from the SharedPreferences JSON schema
       // (@JsonKey includeFromJson/includeToJson: false), so it is null after
       // round-trip. Director-notes content coverage lives in brief_renderer_test.
-      // Verify only that actor PII is hidden when instructor is selected.
-      expect(md, isNot(contains('Kari Hansen')));
-      expect(md, isNot(contains('99887766')));
+      //
+      // A veileder is responsible for the markör at the station they supervise,
+      // so they get the contact details (ADR-0063). This used to assert the
+      // opposite, when actor PII was director-only.
+      expect(md, contains('Kari Hansen'));
+      expect(md, contains('99887766'));
     });
   });
 
