@@ -65,6 +65,25 @@ class SourceAnalyzer {
     _checkUuidUniqueness(plan, diagnostics);
   }
 
+  /// [analyze] layered on [seed] — the diagnostics compilation already
+  /// produced — as one list.
+  ///
+  /// The single place the two are composed. `build` and `analyze` are separate
+  /// commands answering different questions ("can I make an archive" versus
+  /// "will this render"), but they have to agree on what a warning *is*, and
+  /// they did not: `build --strict` promised to refuse a document with warnings
+  /// while never running the reference checks, so the stricter-sounding flag was
+  /// the weaker of the two and a `{{var.typo}}` went straight through it. Both
+  /// commands, on both transports, now ask through here.
+  static List<SourceDiagnostic> review(
+    Plan plan, {
+    Iterable<SourceDiagnostic> seed = const [],
+  }) {
+    final sink = DiagnosticSink()..addAll(seed);
+    analyze(plan, sink);
+    return sink.items;
+  }
+
   /// `{{var.<name>}}` naming an undeclared variable.
   static void _checkVariableTokens(
     _Field field,

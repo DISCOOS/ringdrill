@@ -385,6 +385,40 @@ teams:
       );
     });
   });
+
+  group('review', () {
+    test('layers the analysis on the seed, keeping both', () {
+      // `build --strict` refuses on any diagnostic, so it has to see the
+      // compiler's warnings *and* the reference checks as one list. Composing
+      // them here is what stops `build --strict` from being weaker than
+      // `analyze`, which is what it was.
+      final result = SourceCompiler.toPlan(
+        _doc(
+          station:
+              '        persons: [{slug: magnus, name: "M"}]\n'
+              '        situation: "{{station.person.magnus.alder}} {{var.typo}}"',
+        ),
+      );
+      final seed = SourceDiagnostic.warning('seeded', 'from the compiler');
+
+      final reviewed = SourceAnalyzer.review(result.plan, seed: [seed]);
+
+      expect(reviewed.first, seed, reason: 'the seed comes first, unchanged');
+      expect(
+        reviewed.where((d) => d.isError).map((d) => d.message),
+        contains(contains('no variable named "typo"')),
+      );
+      expect(
+        reviewed.where((d) => !d.isError).map((d) => d.message),
+        contains(contains('has no facet "alder"')),
+      );
+    });
+
+    test('an empty seed is just the analysis', () {
+      final result = SourceCompiler.toPlan(_doc());
+      expect(SourceAnalyzer.review(result.plan), isEmpty);
+    });
+  });
 }
 
 /// Inlined rather than read from disk so this file stays runnable in isolation;

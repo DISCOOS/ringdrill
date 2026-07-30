@@ -101,9 +101,7 @@ Map<String, dynamic> _analyze(Map<String, dynamic> json) {
   final Plan? plan;
   try {
     final result = SourceCompiler.toPlan(json['document'] as String);
-    final sink = DiagnosticSink()..addAll(result.diagnostics);
-    SourceAnalyzer.analyze(result.plan, sink);
-    items = sink.items;
+    items = SourceAnalyzer.review(result.plan, seed: result.diagnostics);
     plan = result.plan;
   } on SourceFormatException catch (e) {
     return _diagnosticsOnly(e.diagnostics);
@@ -130,10 +128,14 @@ Map<String, dynamic> _build(Map<String, dynamic> json) {
   } on SourceFormatException catch (e) {
     return _diagnosticsOnly(e.diagnostics);
   }
-  if (strict && result.warnings.isNotEmpty) {
+  // `strict` asks the full question, reference checks included — otherwise it
+  // refuses on compile warnings while ignoring the `{{var.typo}}` that renders
+  // "‹missing variable›" to a reader.
+  final reviewed = SourceAnalyzer.review(result.plan, seed: result.warnings);
+  if (strict && reviewed.isNotEmpty) {
     return {
-      ..._diagnosticsOnly(result.warnings),
-      'error': 'refused: --strict and warnings present',
+      ..._diagnosticsOnly(reviewed),
+      'error': 'refused: strict and diagnostics present',
     };
   }
   final plan = result.plan;
@@ -147,7 +149,11 @@ Map<String, dynamic> _build(Map<String, dynamic> json) {
     'rolePlays': plan.rolePlays.length,
     'contentHash': plan.contentHash,
     'size': result.drillFile.content.length,
-    'warnings': result.warnings.map((d) => d.toJson()).toList(),
+    'warnings': reviewed
+        .where((d) => !d.isError)
+        .map((d) => d.toJson())
+        .toList(),
+    'errors': reviewed.where((d) => d.isError).map((d) => d.toJson()).toList(),
     'drillBase64': base64Encode(result.drillFile.content),
   };
 }
@@ -224,7 +230,10 @@ Map<String, dynamic> _decompile(Map<String, dynamic> json) {
   } on DrillFormatException catch (e) {
     return {'ok': false, 'error': e.message, 'reason': e.reason.name};
   }
-  final result = PlanDecompiler.decompile(plan, header: json['header'] as String?);
+  final result = PlanDecompiler.decompile(
+    plan,
+    header: json['header'] as String?,
+  );
   return {
     'ok': true,
     'planId': plan.uuid,

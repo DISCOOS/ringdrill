@@ -521,10 +521,15 @@ void _runBuild(List<String> args, ArgResults res, bool jsonOut) {
     return;
   }
 
-  if (strict && result.warnings.isNotEmpty) {
-    _printDiagnostics(path, result.warnings, jsonOut);
+  // `--strict` asks the full question, reference checks included — otherwise it
+  // refuses on compile warnings while ignoring the `{{var.typo}}` that renders
+  // "‹missing variable›" to a reader.
+  final reviewed = SourceAnalyzer.review(result.plan, seed: result.warnings);
+
+  if (strict && reviewed.isNotEmpty) {
+    _printDiagnostics(path, reviewed, jsonOut);
     stderr.writeln(
-      'Refusing to write $outPath: --strict and warnings present.',
+      'Refusing to write $outPath: --strict and diagnostics present.',
     );
     exitCode = 65;
     return;
@@ -548,7 +553,14 @@ void _runBuild(List<String> args, ArgResults res, bool jsonOut) {
         'rolePlays': result.plan.rolePlays.length,
         'contentHash': result.plan.contentHash,
         'size': result.drillFile.content.length,
-        'warnings': result.warnings.map((d) => d.toJson()).toList(),
+        'warnings': reviewed
+            .where((d) => !d.isError)
+            .map((d) => d.toJson())
+            .toList(),
+        'errors': reviewed
+            .where((d) => d.isError)
+            .map((d) => d.toJson())
+            .toList(),
       }),
     );
     return;
@@ -566,9 +578,9 @@ void _runBuild(List<String> args, ArgResults res, bool jsonOut) {
   stdout.writeln('  roles       : ${result.plan.rolePlays.length}');
   stdout.writeln('  contentHash : ${result.plan.contentHash}');
   stdout.writeln('  size        : ${result.drillFile.content.length} bytes');
-  if (result.warnings.isNotEmpty) {
+  if (reviewed.isNotEmpty) {
     stdout.writeln();
-    _printDiagnostics(path, result.warnings, false);
+    _printDiagnostics(path, reviewed, false);
   }
 }
 
