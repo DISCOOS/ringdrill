@@ -538,6 +538,23 @@ async function handle(message) {
     }
 }
 
+// A client that goes away mid-call closes the read end of stdout, and Node raises
+// an unhandled 'error' event that kills the process with a stack trace. A crash
+// dump is a worse signal than a clean exit: nothing is wrong on this side, the
+// conversation simply ended. Anything that is not EPIPE is a real fault and still
+// throws.
+process.stdout.on('error', (e) => {
+    if (e.code === 'EPIPE') process.exit(0);
+    throw e;
+});
+
+// Same for stdin: the loop below ends when the stream closes, but a reset
+// connection surfaces as an error rather than an end.
+process.stdin.on('error', (e) => {
+    if (e.code === 'EPIPE' || e.code === 'ECONNRESET') process.exit(0);
+    throw e;
+});
+
 const lines = createInterface({ input: process.stdin });
 for await (const line of lines) {
     const trimmed = line.trim();

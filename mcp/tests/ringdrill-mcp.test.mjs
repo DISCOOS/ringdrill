@@ -370,3 +370,46 @@ test('the host platform segment is preferred over another that is present', asyn
         await rm(sandbox, { recursive: true, force: true });
     }
 });
+
+test('a client that closes stdout mid-conversation gets a clean exit', async () => {
+    // Writing to a pipe whose reader has gone raises an unhandled 'error' event,
+    // which killed the process with a stack trace — a worse signal than a clean
+    // exit, because nothing is actually wrong on this side.
+    //
+    // Destroying the read end from here rather than relying on a `head -c` makes
+    // it deterministic: with a small response the write can fit the pipe buffer and
+    // never fail at all, which is why this was easy to miss.
+    const child = spawn('node', [server], {
+        cwd: repoRoot,
+        env: {
+            ...process.env,
+            RINGDRILL_CLI: `dart run ${join(repoRoot, 'bin', 'ringdrill.dart')}`,
+        },
+    });
+
+    let stderr = '';
+    child.stderr.on('data', (d) => (stderr += d));
+
+    // One exchange so the transport is live, then take the reader away.
+    child.stdin.write(
+        `${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} })}\n`,
+    );
+    await new Promise((resolve) => child.stdout.once('data', resolve));
+    child.stdout.destroy();
+
+    // Keep talking. Every reply now has nowhere to go.
+    for (let id = 2; id < 8; id++) {
+        child.stdin.write(
+            `${JSON.stringify({ jsonrpc: '2.0', id, method: 'tools/list' })}\n`,
+        );
+    }
+    child.stdin.end();
+
+    const code = await new Promise((resolve) => child.on('close', resolve));
+
+    assert.equal(code, 0, `expected a clean exit, got ${code}: ${stderr}`);
+    assert.ok(
+        !stderr.includes('write EPIPE') && !stderr.includes('at respond'),
+        `expected no stack trace on stderr, got: ${stderr}`,
+    );
+});
