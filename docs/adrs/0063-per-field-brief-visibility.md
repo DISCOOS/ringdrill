@@ -104,13 +104,24 @@ declared **set** per field:
 | `leader_answers` | station | | | ● | ● |
 | `director_notes` | station | | | ● | ● |
 | `behavior`, `background`, `props` | roleplay | | ● | ● | ● |
-| actor identity and phone | roleplay | | | | ● |
+| actor identity and phone | roleplay | | | ● | ● |
 
 `BriefRenderer` omits a field the audience is not in from the mustache context,
 so `{{#situationMd}}` finds nothing and the template needs no per-field
 conditional — `if_instructor_or_director` disappears. There is **no default**: a
 markdown field must state its set, so adding one is a decision rather than an
 omission.
+
+**Actor identity is the one row that cannot live in the field table.** Staff is a
+local, private layer, stripped at publish and absent from the source format
+(ADR-0047), so there is no `SourceField` to annotate. It keeps a dedicated gate
+on `BriefAudience` — the present `includesActorPii`, widened from director-only to
+instructor and director. A veileder supervises a team through a station and has to
+coordinate with the markör standing at it: the course booklet's own standing
+instruction is that veiledere look after the markörer and do not drive off without
+them, which is impossible without being able to reach them. The same argument the
+existing code already makes for actors ("they have to find and work with them")
+applies at least as strongly to the role responsible for them.
 
 Once role-play fields and `leader_answers` are gated where they belong, the
 pressure to cram everything into `director_notes` goes away by itself: the
@@ -135,11 +146,28 @@ the station.
 * Bad: participant briefs change output. That is the intent, but anyone who has
   distributed one has distributed more than they meant to, and pre-rendered
   briefs (ADR-0044's site preview) need regenerating.
-* Bad: two audiences change what staff see. An actor loses the director view they
-  have today, and `other` — proposed here as the participant set, on ADR-0057's
-  default-deny logic that "a role they do not name gets nothing" — loses the
-  instructor view. Both are deliberate reductions, and both are one line to
-  revisit.
+* Bad: two audiences lose content they have today. An actor drops from the
+  director view to their own scenario, and `other` — proposed here as the
+  participant set, on ADR-0057's default-deny logic that "a role they do not name
+  gets nothing" — drops from the instructor view. Both are deliberate reductions,
+  and both are one line to revisit. Instructors gain rather than lose: actor
+  contact details, which only the director had.
+* Bad: **the instructor and director briefs become identical.** Actor identity was
+  the last director-only content, so with it at instructor level nothing in the
+  brief distinguishes the two audiences. They remain distinct for edit rights
+  (ADR-0057) and player modes (ADR-0056), and the seam is worth keeping for
+  content that genuinely is director-only later — a plan-wide staff roster, safety
+  or risk notes, the ØVLE phone tree. But as of this ADR the distinction is
+  latent, and that should be a decision rather than something a later reader
+  discovers and mistakes for an oversight.
+* Bad: this reverses the existing rationale for actors seeing each other's
+  contact details. `StaffRole.briefAudience` grants an actor the director view
+  today partly because "an actor needs other actors' contact details to work with
+  them", and the matrix above withholds them. Plan-wide PII for every markör is
+  over-broad — the markör at 3d does not need the number of the markör at 2f — but
+  co-located markers are real: this booklet has two at 4b and one to two at 2f. If
+  that case matters, the fix is a narrower cut (the actors cast to the same
+  station) rather than restoring the whole director view.
 * Bad: `critical_questions` at instructor level is a judgement call. They are
   prompts for evaluating whether a team leader thought of something, but they
   carry domain intel a participant would benefit from. An author who wants
