@@ -51,3 +51,9 @@ sentry.properties
 # Local Netlify folder
 .netlify
 
+
+# dart2js by-products of the hosted MCP compiler bundle (the bundle itself is
+# committed; see ADR-0060). The map is 3x its size and only helps a server-side
+# stack trace.
+/netlify/functions/_mcp_compiler_bundle.js.map
+/netlify/functions/_mcp_compiler_bundle.js.deps

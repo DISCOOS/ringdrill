@@ -1,6 +1,6 @@
 .PHONY: \
 	build watch i18n labels templates format format-check cli-build cli-check \
-	mcp mcp-call mcp-test release patch publish \
+	mcp mcp-bundle mcp-call mcp-test release patch publish \
 	build-web build-web-js upload-symbols-web strip-source-maps-web release-web \
 	release-android patch-android \
 	release-ios patch-ios \
@@ -10,7 +10,7 @@
 
 .SILENT: \
 	build watch i18n labels templates format format-check \
-	cli-build cli-check mcp mcp-call mcp-test release patch
+	cli-build cli-check mcp mcp-bundle mcp-call mcp-test release patch
 
 # Local Netlify dev configuration. Override on the command line, e.g.:
 #   make catalog-seed SEED_DRILL=path/to/other.drill
@@ -161,6 +161,25 @@ mcp: cli-build
 	echo
 	echo "Try a tool without a client:  make mcp-call ARGS='schema'"
 	echo "List the tools:               make mcp-call"
+
+# Cross-compile the source compiler to JavaScript for the hosted MCP endpoint
+# (ADR-0060). The output is committed: a Netlify build has no Dart SDK, the same
+# reason headless_labels.g.dart and brief_templates.g.dart are committed.
+#
+# -O2 minifies, which roughly halves the bundle over the default. Anything above
+# -O2 enables assumptions (omitting implicit downcasts) that would trade a clear
+# failure for a silent wrong answer in code that computes coordinates and a hash.
+mcp-bundle:
+	echo "Cross-compile the source compiler to JavaScript..."
+	dart compile js tools/mcp_js_entry.dart -O2 \
+		-o netlify/functions/_mcp_compiler_bundle.js
+	# .deps and .map are by-products. The map is deliberately not committed:
+	# it is 3x the bundle, only helps a server-side stack trace, and this repo
+	# already strips maps before publishing (strip-source-maps-web) rather than
+	# shipping its sources.
+	rm -f netlify/functions/_mcp_compiler_bundle.js.deps
+	rm -f netlify/functions/_mcp_compiler_bundle.js.map
+	echo "  wrote netlify/functions/_mcp_compiler_bundle.js"
 
 # One-shot tool call, for poking at the server by hand. See mcp/dev-call.mjs for
 # the argument syntax (key=value, @file to read a file, --raw for the payload).

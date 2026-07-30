@@ -553,67 +553,55 @@ class DrillFile {
       final json = utf8.encode(jsonEncode(exercise.toJson()));
       archive.addFile(
         ArchiveFile(
-          path.join('exercises', '${exercise.uuid}.json'),
+          _entry('exercises', '${exercise.uuid}.json'),
           json.length,
           json,
         ),
       );
       // Exercise-level markdown fields.
-      final exBase = path.join('exercises', exercise.uuid);
-      _writeMd(archive, path.join(exBase, 'method.md'), exercise.methodMd);
+      final exBase = _entry('exercises', exercise.uuid);
+      _writeMd(archive, _entry(exBase, 'method.md'), exercise.methodMd);
       _writeMd(
         archive,
-        path.join(exBase, 'learning-goals.md'),
+        _entry(exBase, 'learning-goals.md'),
         exercise.learningGoalsMd,
       );
       _writeMd(
         archive,
-        path.join(exBase, 'training-focus.md'),
+        _entry(exBase, 'training-focus.md'),
         exercise.trainingFocusMd,
       );
       _writeMd(
         archive,
-        path.join(exBase, 'order-format.md'),
+        _entry(exBase, 'order-format.md'),
         exercise.orderFormatMd,
       );
       _writeMd(
         archive,
-        path.join(exBase, 'execution-tips.md'),
+        _entry(exBase, 'execution-tips.md'),
         exercise.executionTipsMd,
       );
-      _writeMd(archive, path.join(exBase, 'comms.md'), exercise.commsMd);
+      _writeMd(archive, _entry(exBase, 'comms.md'), exercise.commsMd);
       // Station-level markdown fields (keyed by station.index, not UUID).
       for (final station in exercise.stations) {
-        final sBase = path.join(exBase, 'stations', '${station.index}');
+        final sBase = _entry(exBase, 'stations', '${station.index}');
+        _writeMd(archive, _entry(sBase, 'equipment.md'), station.equipmentMd);
+        _writeMd(archive, _entry(sBase, 'situation.md'), station.situationMd);
+        _writeMd(archive, _entry(sBase, 'mission.md'), station.missionMd);
+        _writeMd(archive, _entry(sBase, 'logistics.md'), station.logisticsMd);
         _writeMd(
           archive,
-          path.join(sBase, 'equipment.md'),
-          station.equipmentMd,
-        );
-        _writeMd(
-          archive,
-          path.join(sBase, 'situation.md'),
-          station.situationMd,
-        );
-        _writeMd(archive, path.join(sBase, 'mission.md'), station.missionMd);
-        _writeMd(
-          archive,
-          path.join(sBase, 'logistics.md'),
-          station.logisticsMd,
-        );
-        _writeMd(
-          archive,
-          path.join(sBase, 'critical-questions.md'),
+          _entry(sBase, 'critical-questions.md'),
           station.criticalQuestionsMd,
         );
         _writeMd(
           archive,
-          path.join(sBase, 'leader-answers.md'),
+          _entry(sBase, 'leader-answers.md'),
           station.leaderAnswersMd,
         );
         _writeMd(
           archive,
-          path.join(sBase, 'director-notes.md'),
+          _entry(sBase, 'director-notes.md'),
           station.directorNotesMd,
         );
       }
@@ -623,7 +611,7 @@ class DrillFile {
     for (var team in plan.teams) {
       final json = utf8.encode(jsonEncode(team.toJson()));
       archive.addFile(
-        ArchiveFile(path.join('teams', '${team.uuid}.json'), json.length, json),
+        ArchiveFile(_entry('teams', '${team.uuid}.json'), json.length, json),
       );
     }
 
@@ -632,7 +620,7 @@ class DrillFile {
       final json = utf8.encode(jsonEncode(session.toJson()));
       archive.addFile(
         ArchiveFile(
-          path.join('sessions', '${session.uuid}.json'),
+          _entry('sessions', '${session.uuid}.json'),
           json.length,
           json,
         ),
@@ -644,38 +632,26 @@ class DrillFile {
       final json = utf8.encode(jsonEncode(rolePlay.toJson()));
       archive.addFile(
         ArchiveFile(
-          path.join('roleplays', '${rolePlay.uuid}.json'),
+          _entry('roleplays', '${rolePlay.uuid}.json'),
           json.length,
           json,
         ),
       );
       // Write .md companion files for markdown fields (null = no file,
       // empty string = zero-byte file).
-      final rpBase = path.join('roleplays', rolePlay.uuid);
-      _writeMd(archive, path.join(rpBase, 'behavior.md'), rolePlay.behavior);
-      _writeMd(
-        archive,
-        path.join(rpBase, 'background.md'),
-        rolePlay.background,
-      );
-      _writeMd(archive, path.join(rpBase, 'props.md'), rolePlay.propsMd);
+      final rpBase = _entry('roleplays', rolePlay.uuid);
+      _writeMd(archive, _entry(rpBase, 'behavior.md'), rolePlay.behavior);
+      _writeMd(archive, _entry(rpBase, 'background.md'), rolePlay.background);
+      _writeMd(archive, _entry(rpBase, 'props.md'), rolePlay.propsMd);
     }
 
     // Serialize staff into folder 'staff' (DESIGN-011; was 'actors').
     for (var actor in plan.staff) {
       final json = utf8.encode(jsonEncode(actor.toJson()));
       archive.addFile(
-        ArchiveFile(
-          path.join('staff', '${actor.uuid}.json'),
-          json.length,
-          json,
-        ),
+        ArchiveFile(_entry('staff', '${actor.uuid}.json'), json.length, json),
       );
-      _writeMd(
-        archive,
-        path.join('staff', actor.uuid, 'notes.md'),
-        actor.notes,
-      );
+      _writeMd(archive, _entry('staff', actor.uuid, 'notes.md'), actor.notes);
     }
 
     // Serialize Plan itself (without nested objects)
@@ -702,6 +678,17 @@ class DrillFile {
     );
   }
 }
+
+/// An archive entry name from its segments.
+///
+/// Always `/`, never the host separator. A ZIP entry name is not a filesystem
+/// path: the reader splits on `/` (see [DrillFile.plan]), so `path.join` — which
+/// this used to call — would have written `exercises\abc.json` on Windows and
+/// produced an archive that platform could write but nothing could read. It also
+/// made the writer unusable under `dart compile js`, where `package:path` reaches
+/// `Uri.base` to detect the platform style and throws (ADR-0060).
+String _entry(String first, [String? second, String? third, String? fourth]) =>
+    [first, ?second, ?third, ?fourth].join('/');
 
 /// Writes a markdown companion file to [archive] at [filePath] iff [content]
 /// is non-null. Empty string writes a zero-byte file; null writes no file.
