@@ -68,6 +68,21 @@ function payload(response) {
     return JSON.parse(response.result.content[0].text);
 }
 
+/// Copies the server and the modules it imports into `<root>/mcp/`.
+///
+/// The two tests below run the server from a temp tree so a fake `build/cli`
+/// cannot disturb the real one — the server derives its repo root from
+/// `import.meta.url`, so where the file sits *is* the root it looks under. Every
+/// sibling module has to come along, which is why this is a list rather than one
+/// `cp`: forgetting one fails as a module-not-found with no hint that the sandbox
+/// is what is incomplete.
+async function copyServerInto(root) {
+    await mkdir(join(root, 'mcp'), { recursive: true });
+    for (const file of ['ringdrill-mcp.mjs', 'tools.mjs', 'backend-cli.mjs']) {
+        await cp(join(here, '..', file), join(root, 'mcp', file));
+    }
+}
+
 test('initialize advertises tools', async () => {
     const responses = await rpc([
         { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} },
@@ -290,8 +305,7 @@ test('an unrunnable build/cli binary is rejected, not used', async () => {
     // one: the tree is symlinked except build/, which holds only the bad binary.
     const sandbox = await mkdtemp(join(tmpdir(), 'ringdrill-mcp-badcli-'));
     try {
-        await mkdir(join(sandbox, 'mcp'), { recursive: true });
-        await cp(join(here, '..', 'ringdrill-mcp.mjs'), join(sandbox, 'mcp', 'ringdrill-mcp.mjs'));
+        await copyServerInto(sandbox);
         // repoRoot comes from import.meta.url, so the server will look for
         // <sandbox>/build/cli and <sandbox>/bin/ringdrill.dart.
         const badDir = join(sandbox, 'build', 'cli', 'someother_arch', 'bundle', 'bin');
@@ -328,8 +342,7 @@ test('the host platform segment is preferred over another that is present', asyn
     // be tried first even when it happens to be executable.
     const sandbox = await mkdtemp(join(tmpdir(), 'ringdrill-mcp-hostpick-'));
     try {
-        await mkdir(join(sandbox, 'mcp'), { recursive: true });
-        await cp(join(here, '..', 'ringdrill-mcp.mjs'), join(sandbox, 'mcp', 'ringdrill-mcp.mjs'));
+        await copyServerInto(sandbox);
 
         const host = `${{ darwin: 'macos', linux: 'linux', win32: 'windows' }[process.platform]}_${process.arch}`;
         // Both "binaries" are shell scripts that exit 0, so both pass the probe —
