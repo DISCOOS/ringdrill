@@ -60,15 +60,19 @@
 [functions]
     directory = "netlify/functions"
 
-    # The cross-compiled source compiler (ADR-0060) ships as a data file rather
-    # than an import. dart2js output must not be re-bundled: esbuild inlines an
-    # imported module into the function, and that breaks Dart's runtime type
-    # information — analyze_plan failed with "type 'minified:z2' is not a subtype
-    # of type 'minified:z'" while simpler tools worked. _mcp_compiler.js therefore
-    # reads and evaluates it at runtime, which means esbuild never sees a
-    # dependency to follow, which means this line is what puts the file in the
-    # deployed bundle.
-    included_files = ["netlify/functions/_mcp_compiler_bundle.js"]
+# The cross-compiled source compiler (ADR-0060) ships as a data file rather than an
+# import. dart2js output must not be re-bundled: esbuild inlines an imported module
+# into the function, and that breaks Dart's runtime type information — analyze_plan
+# failed with "type 'minified:z2' is not a subtype of type 'minified:z'" while
+# simpler tools worked. lib/mcp-compiler.js therefore reads and evaluates it at
+# runtime, which means esbuild never sees a dependency to follow, which means this
+# is what puts the file in the deployed bundle.
+#
+# Scoped to the one function that needs it. Under the global [functions] table it
+# applied to *every* function, and Netlify copied the 706 KB bundle into all sixteen
+# deployment packages.
+[functions."mcp"]
+    included_files = ["netlify/functions/lib/mcp-compiler-bundle.js"]
 
 # Public API aliases.
 #

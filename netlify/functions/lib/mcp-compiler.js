@@ -1,12 +1,20 @@
 // Loads the cross-compiled source compiler and exposes it as a clean async API.
 //
-// `_mcp_compiler_bundle.js` is `dart compile js` output (ADR-0060): the same Dart
+// `mcp-compiler-bundle.js` is `dart compile js` output (ADR-0060): the same Dart
 // the app and CLI use, running in-process so the hosted MCP server can be a
 // function rather than a container. This file is the seam — the shim the bundle
 // needs, the one-call JSON contract, and a timeout.
 //
 // Regenerate the bundle with `make mcp-bundle`. It is committed because a Netlify
 // build has no Dart SDK.
+//
+// In `lib/` rather than beside the functions, and that matters: Netlify treats every
+// *top-level* file in the functions directory as a function of its own. As
+// `_mcp_compiler.js` this was bundled a second time as an endpoint, where esbuild
+// chose CJS and warned that `import.meta` would be empty — harmless for the real
+// function, which bundles as ESM, but alarming, wasteful, and it published a helper
+// at `/.netlify/functions/_mcp_compiler`. A subdirectory is how Netlify is told
+// "not a function"; the `_` prefix was only ever a convention to us.
 import { webcrypto } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -66,8 +74,9 @@ function load() {
 }
 
 /// Split out so the name is not a string literal esbuild could resolve as an
-/// import specifier, and so `included_files` and this agree in one place.
-const BUNDLE_FILE = "_mcp_compiler_bundle.js";
+/// import specifier, and so `netlify.toml`'s `included_files` and this agree in one
+/// place.
+const BUNDLE_FILE = "mcp-compiler-bundle.js";
 
 /// Milliseconds a single compile may take before it is abandoned.
 ///

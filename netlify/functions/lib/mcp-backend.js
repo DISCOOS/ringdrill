@@ -5,7 +5,7 @@
 // which one it has — one tool table, two implementations.
 //
 // The compiler operations go through the cross-compiled Dart in
-// `_mcp_compiler.js`. The catalog operations read Netlify Blobs directly, which is
+// `mcp-compiler.js`. The catalog operations read Netlify Blobs directly, which is
 // the reason ADR-0060 chose Netlify over a Worker: here they are a local call, and
 // they reuse `metaToFeedItem` so the hosted `search_catalog` and the CLI's `feed`
 // project the same shape from the same stored metadata rather than agreeing by
@@ -24,8 +24,8 @@ import {
     metaToFeedItem,
     readBinary as _readBinary,
     readJson as _readJson,
-} from "./_shared.js";
-import { invoke as _invoke } from "./_mcp_compiler.js";
+} from "../_shared.js";
+import { invoke as _invoke } from "./mcp-compiler.js";
 
 /// Largest source document accepted, in characters.
 ///

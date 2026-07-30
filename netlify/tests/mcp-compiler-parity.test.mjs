@@ -21,7 +21,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { invoke } from "../functions/_mcp_compiler.js";
+import { invoke } from "../functions/lib/mcp-compiler.js";
 
 const run = promisify(execFile);
 const here = dirname(fileURLToPath(import.meta.url));
@@ -214,7 +214,7 @@ test("the bundle is not stale relative to the Dart sources", async () => {
     // behaviour with no symptom. Compared against the newest source in the
     // bundle's own dependency graph rather than all of lib/, so an unrelated
     // widget change does not fail this.
-    const bundle = join(repoRoot, "netlify", "functions", "_mcp_compiler_bundle.js");
+    const bundle = join(repoRoot, "netlify", "functions", "lib", "mcp-compiler-bundle.js");
     const { stat } = await import("node:fs/promises");
     const builtAt = (await stat(bundle)).mtimeMs;
 
@@ -255,7 +255,7 @@ test("the bundle is not stale relative to the Dart sources", async () => {
 
     assert.ok(
         builtAt >= newest,
-        `_mcp_compiler_bundle.js is older than ${newestPath.slice(repoRoot.length + 1)}. ` +
+        `mcp-compiler-bundle.js is older than ${newestPath.slice(repoRoot.length + 1)}. ` +
             "Run `make mcp-bundle` — the hosted endpoint would serve stale compiler " +
             "behaviour with no other symptom.",
     );

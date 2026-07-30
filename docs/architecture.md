@@ -149,7 +149,7 @@ cross-compiled to JavaScript by `make mcp-bundle`. Both read one tool table
 Three generated files exist because a caller cannot reach Flutter assets or a Dart
 SDK: `lib/l10n/headless_labels.g.dart` (`make labels`),
 `lib/services/brief/brief_templates.g.dart` (`make templates`) and
-`netlify/functions/_mcp_compiler_bundle.js` (`make mcp-bundle`, for the hosted
+`netlify/functions/lib/mcp-compiler-bundle.js` (`make mcp-bundle`, for the hosted
 endpoint — a Netlify build has no Dart SDK). The first two are prerequisites of
 `make build`; all three have tests that fail when the copy drifts from its source.
 

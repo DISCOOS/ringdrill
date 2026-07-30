@@ -266,9 +266,9 @@ non-developer — the first being the toolchain requirement — and both are why
 
 ## How the hosted endpoint is built
 
-`netlify/functions/mcp.js` is the transport; `_mcp_backend.js` the operations. The
+`netlify/functions/mcp.js` is the transport; `lib/mcp-backend.js` the operations. The
 compiler is the *same Dart source* as the app and the CLI, cross-compiled by
-`make mcp-bundle` to `_mcp_compiler_bundle.js` and run in-process — so the format
+`make mcp-bundle` to `lib/mcp-compiler-bundle.js` and run in-process — so the format
 still has one implementation (ADR-0058), and there is no subprocess, which is what
 lets this be a function rather than a container.
 
@@ -282,9 +282,21 @@ Two constraints worth knowing before touching it:
 * **esbuild must not touch it.** Netlify's bundler inlines imported modules, and
   doing that to dart2js output breaks Dart's runtime type information — every
   `analyze_plan` failed with `type 'minified:z2' is not a subtype of type
-  'minified:z'` while simpler tools worked. `_mcp_compiler.js` therefore reads and
+  'minified:z'` while simpler tools worked. `lib/mcp-compiler.js` therefore reads and
   evaluates the file at runtime, and `netlify.toml`'s `included_files` is what ships
   it. Do not turn that back into an `import`.
+* **The helpers live in `lib/`, not beside the function.** Netlify treats every
+  *top-level* file in the functions directory as a function of its own. Sitting
+  there, `_mcp_compiler.js` was bundled a second time as an endpoint, where esbuild
+  chose CJS and warned that `import.meta` would be empty — harmless for the real
+  function, which bundles as ESM, but it also published a helper at
+  `/.netlify/functions/_mcp_compiler` and, because `included_files` under the global
+  `[functions]` table applies to every function, copied the 700 KB bundle into all
+  sixteen deployment packages. A subdirectory is how Netlify is told "not a
+  function", and `[functions."mcp"]` is how the data file is scoped to the one that
+  needs it. (`_shared.js` and `_drill_pii.js` predate this and still sit at the top
+  level, so they are still built as functions — pre-existing, and worth tidying
+  separately.)
 
 ## The raw protocol
 

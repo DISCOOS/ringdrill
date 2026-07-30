@@ -17,8 +17,8 @@
 // No tool needs a secret: each maps to a public CLI command, and `publish` is
 // deliberately absent, so there is nothing to authorize. The catalog it reads is
 // already public. That makes the problem abuse rather than authorization — handled
-// by a document-size cap (`_mcp_backend.js`), a compile timeout
-// (`_mcp_compiler.js`) and the body cap below. Adopting the MCP spec's OAuth story
+// by a document-size cap (`lib/mcp-backend.js`), a compile timeout
+// (`lib/mcp-compiler.js`) and the body cap below. Adopting the MCP spec's OAuth story
 // would be a large commitment buying nothing until a tool touches private state
 // (ADR-0024/0025).
 //
@@ -28,7 +28,7 @@
 // staff-only. This function reads a request, compiles it and answers. There is no
 // write path, and the only storage touched is a read of the public catalog.
 import { corsPreflight, withCors } from "./_shared.js";
-import { createCompilerBackend } from "./_mcp_backend.js";
+import { createCompilerBackend } from "./lib/mcp-backend.js";
 import { handleMessage, PROTOCOL_VERSION, toolsFor } from "../../mcp/tools.mjs";
 
 /// Largest request body accepted, in bytes.

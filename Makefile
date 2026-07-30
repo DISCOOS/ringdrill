@@ -172,14 +172,14 @@ mcp: cli-build
 mcp-bundle:
 	echo "Cross-compile the source compiler to JavaScript..."
 	dart compile js tools/mcp_js_entry.dart -O2 \
-		-o netlify/functions/_mcp_compiler_bundle.js
+		-o netlify/functions/lib/mcp-compiler-bundle.js
 	# .deps and .map are by-products. The map is deliberately not committed:
 	# it is 3x the bundle, only helps a server-side stack trace, and this repo
 	# already strips maps before publishing (strip-source-maps-web) rather than
 	# shipping its sources.
-	rm -f netlify/functions/_mcp_compiler_bundle.js.deps
-	rm -f netlify/functions/_mcp_compiler_bundle.js.map
-	echo "  wrote netlify/functions/_mcp_compiler_bundle.js"
+	rm -f netlify/functions/lib/mcp-compiler-bundle.js.deps
+	rm -f netlify/functions/lib/mcp-compiler-bundle.js.map
+	echo "  wrote netlify/functions/lib/mcp-compiler-bundle.js"
 
 # One-shot tool call, for poking at the server by hand. See mcp/dev-call.mjs for
 # the argument syntax (key=value, @file to read a file, --raw for the payload).

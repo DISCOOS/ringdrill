@@ -11,7 +11,7 @@ import { createHandler } from "../functions/mcp.js";
 import {
     createCompilerBackend,
     MAX_DOCUMENT_CHARS,
-} from "../functions/_mcp_backend.js";
+} from "../functions/lib/mcp-backend.js";
 
 const ENDPOINT = "https://api.ringdrill.app/mcp";
 
