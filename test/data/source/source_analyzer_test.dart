@@ -160,6 +160,75 @@ exercises:
       );
     });
 
+    test('a facet the resolvers do not know warns rather than fails', () {
+      // An unrecognized facet falls back to the bare rendering, so the brief
+      // reads plausibly while saying something else — a warning, not an error.
+      // `--strict` is what promotes it, at the command layer.
+      const station =
+          '        locations: [{slug: lkp, label: "LKP", position: {lat: 59.1, lng: 10.4}}]\n'
+          '        situation: "Sist sett {{station.loc.lkp.utm}}"';
+      expect(_errors(_doc(station: station)), isEmpty);
+
+      final warnings = _warnings(_doc(station: station));
+      expect(warnings.single.message, contains('has no facet "utm"'));
+      expect(warnings.single.hint, contains('renamed to position'));
+      expect(warnings.single.hint, contains('place, label, position'));
+      expect(warnings.single.path, endsWith('situation'));
+    });
+
+    test('an unknown person facet warns and lists what resolves', () {
+      final warnings = _warnings(
+        _doc(
+          station:
+              '        persons: [{slug: magnus, name: "M"}]\n'
+              '        situation: "{{station.person.magnus.alder}}"',
+        ),
+      );
+      expect(warnings.single.message, contains('has no facet "alder"'));
+      expect(warnings.single.hint, contains('age'));
+    });
+
+    test("a person's loc chains one level into the location facets", () {
+      const station =
+          '        locations: [{slug: lkp, label: "LKP", position: {lat: 59.1, lng: 10.4}}]\n'
+          '        persons: [{slug: magnus, name: "M", locSlug: lkp}]\n';
+      expect(
+        _analyze(
+          _doc(
+            station:
+                '$station'
+                '        situation: "{{station.person.magnus.loc.position}}"',
+          ),
+        ),
+        isEmpty,
+      );
+
+      // One level only — anything past the leaf is dropped by both resolvers.
+      final warnings = _warnings(
+        _doc(
+          station:
+              '$station'
+              '        situation: "{{station.person.magnus.loc.position.zone}}"',
+        ),
+      );
+      expect(warnings.single.message, contains('".zone" is ignored'));
+    });
+
+    test('the bare token and a known facet stay silent', () {
+      expect(
+        _analyze(
+          _doc(
+            station:
+                '        locations: [{slug: lkp, label: "LKP", position: {lat: 59.1, lng: 10.4}}]\n'
+                '        persons: [{slug: magnus, name: "M", age: 6}]\n'
+                '        situation: "{{station.loc.lkp}} {{station.loc.lkp.place}} '
+                '{{station.person.magnus}} {{station.person.magnus.age}}"',
+          ),
+        ),
+        isEmpty,
+      );
+    });
+
     test("a person's locSlug must name a location on the same station", () {
       final errors = _errors(
         _doc(

@@ -4,7 +4,8 @@
 /// coordinate out of range, more teams than stations. What is left, and what this
 /// adds, is everything that compiles fine but will not *render*: a
 /// `{{var.talegruppe}}` naming no declared variable, a
-/// `{{station.loc.lkp.utm}}` on a station with no such location, an
+/// `{{station.loc.lkp.position}}` on a station with no such location, a facet
+/// the resolvers do not know (`.utm`, removed by ADR-0050), an
 /// `{{exercise.phaseBreakdown}}` misspelled, a declared variable nothing uses.
 /// Those are exactly the mistakes a generating agent makes, and they are silent
 /// at build time — the token is stored raw and only fails at render, in front of
@@ -110,7 +111,16 @@ class SourceAnalyzer {
       final known = kind == 'loc'
           ? station.locations.map((l) => l.slug).toSet()
           : station.persons.map((p) => p.slug).toSet();
-      if (known.contains(slug)) continue;
+      if (known.contains(slug)) {
+        _checkScenarioFacets(
+          field,
+          kind,
+          slug,
+          stationScenarioTokenFacets(match),
+          diagnostics,
+        );
+        continue;
+      }
       diagnostics.error(
         field.path,
         'this station has no $kind "$slug"',
@@ -119,6 +129,94 @@ class SourceAnalyzer {
             : 'declared: ${(known.toList()..sort()).join(', ')}',
       );
     }
+  }
+
+  /// The facet path after a `{{station.loc|person.<slug>}}` slug that resolves.
+  ///
+  /// A warning, not an error, because an unrecognized facet does not fail: both
+  /// resolvers fall back to the bare rendering, so the brief reads plausibly
+  /// while saying something the author did not ask for. That is the worse
+  /// failure — `{{station.loc.lkp.utm}}` renders the place *and* the coordinate
+  /// where it asked for the coordinate alone, and nothing in the output looks
+  /// wrong. ADR-0050 renamed `utm`/`latlng` to `position`, so inherited
+  /// documents carry exactly this shape; `--strict` promotes it to an error for
+  /// a caller that wants the whole vocabulary checked.
+  static void _checkScenarioFacets(
+    _Field field,
+    String kind,
+    String slug,
+    List<String> facets,
+    DiagnosticSink diagnostics,
+  ) {
+    if (facets.isEmpty) return;
+    var token = 'station.$kind.$slug';
+    var remaining = facets;
+
+    if (kind == 'person') {
+      final facet = remaining.first;
+      if (!personFacetNames.contains(facet)) {
+        _warnUnknownFacet(field, token, facet, personFacetNames, diagnostics);
+        return;
+      }
+      token = '$token.$facet';
+      remaining = remaining.skip(1).toList();
+      // Only `loc` carries on, into the person's location's own facets.
+      if (facet != 'loc') {
+        _warnIgnoredTail(field, token, remaining, diagnostics);
+        return;
+      }
+    }
+
+    if (remaining.isEmpty) return;
+    final facet = remaining.first;
+    if (!locationFacetNames.contains(facet)) {
+      _warnUnknownFacet(field, token, facet, locationFacetNames, diagnostics);
+      return;
+    }
+    _warnIgnoredTail(
+      field,
+      '$token.$facet',
+      remaining.skip(1).toList(),
+      diagnostics,
+    );
+  }
+
+  static void _warnUnknownFacet(
+    _Field field,
+    String token,
+    String facet,
+    List<String> known,
+    DiagnosticSink diagnostics,
+  ) {
+    final renamed = facet == 'utm' || facet == 'latlng';
+    diagnostics.warn(
+      field.path,
+      '{{$token.$facet}} has no facet "$facet"',
+      hint: [
+        if (renamed) 'utm and latlng were renamed to position (ADR-0050)',
+        'available: ${known.join(', ')}',
+        'an unrecognized facet falls back to the bare rendering, so this '
+            'renders without failing',
+      ].join('; '),
+    );
+  }
+
+  /// Facets do not chain past a leaf, so a longer path is silently dropped by
+  /// both resolvers rather than misresolved.
+  static void _warnIgnoredTail(
+    _Field field,
+    String token,
+    List<String> tail,
+    DiagnosticSink diagnostics,
+  ) {
+    if (tail.isEmpty) return;
+    diagnostics.warn(
+      field.path,
+      '{{$token}} resolves, but the trailing ".${tail.join('.')}" is ignored',
+      hint:
+          'only a person\'s "loc" chains onwards, one level, into '
+          '${locationFacetNames.join(', ')}',
+    );
   }
 
   /// `{{plan.name}}`-style facet references, against what resolves at that scope.

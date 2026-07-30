@@ -9,7 +9,7 @@ import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
-import 'package:ringdrill/views/widgets/token_insertion_menu.dart';
+import 'package:ringdrill/utils/station_scenario_tokens.dart';
 
 /// DESIGN-009 follow-up 4d's "the picker never offers an unresolvable
 /// token" invariant, enforced mechanically for `station.loc.*`/

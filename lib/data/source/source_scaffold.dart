@@ -157,7 +157,7 @@ class SourceScaffold {
       'situation':
           '{{station.person.subject}} '
           '({{station.person.subject.age}}), last seen at '
-          '{{station.loc.lkp.utm}}. Comms on {{var.talkgroup}}.\n',
+          '{{station.loc.lkp.position}}. Comms on {{var.talkgroup}}.\n',
       'director_notes': 'Instructor-only notes. Not shown to participants.\n',
       'roleplays': [
         {

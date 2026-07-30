@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/utils/station_scenario_tokens.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
 
 /// One entry in the flat DESIGN-008 insertion-menu list. A single list, no
@@ -137,25 +138,6 @@ final _stationPersonPrefixPattern = RegExp(
   r'^station\.person\.(.*)$',
   caseSensitive: false,
 );
-
-/// The facets `field_resolver.dart`'s `_resolveLocationFacet` switches on,
-/// in picker display order (ADR-0047, DESIGN-009 follow-up 4d; renamed
-/// `utm`/`latlng` → `position` by ADR-0050). There is no facet enum in the
-/// resolver, so this constant — read directly by the resolution-guard test
-/// that renders each one through `BriefRenderer` — is what keeps the picker
-/// in sync with it. Public (not the usual leading underscore) for that
-/// test's benefit only, same rationale as
-/// [TokenInsertionMenuState.isMenuOpen]. The bare token (no facet) is a
-/// separate, always-offered default; it is not itself in this list.
-@visibleForTesting
-const locationFacetNames = ['place', 'label', 'position'];
-
-/// The facets `_resolvePersonFacet` switches on. `loc` chains to the
-/// person's location's own [locationFacetNames] one level deep (see
-/// `_facetAwareEntries`) — `brief_renderer.dart` supports exactly one level
-/// of chaining, so this picker does too.
-@visibleForTesting
-const personFacetNames = ['name', 'age', 'gender', 'description', 'loc'];
 
 String _locationFacetLabel(AppLocalizations l10n, String facet) =>
     switch (facet) {

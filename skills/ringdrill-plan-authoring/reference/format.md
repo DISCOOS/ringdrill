@@ -176,10 +176,12 @@ format-agnostic `position` by
 is also why `position` prints UTM: `CoordinateFormat` ships UTM only for now, and
 is the seam for MGRS and the degree variants later.
 
-An unrecognized facet is not an error — it falls back to the bare rendering. So
-`{{station.loc.ipp.utm}}` still produces *something*, just `place (32V …)`
-instead of the bare coordinate you asked for. Older documents and design notes
-still show `.utm`; migrate them to `.position` rather than copying them.
+An unrecognized facet does not fail at render — it falls back to the bare
+rendering, so `{{station.loc.ipp.utm}}` still produces *something*, just
+`place (32V …)` instead of the bare coordinate you asked for. `analyze` reports
+it as a **warning** for that reason, naming the facet and what is available;
+`--strict` promotes it to an error. Older documents and design notes still show
+`.utm`, so migrate rather than copy.
 
 Scopes cascade **downwards** only: a `{{plan.*}}` token resolves inside a station
 field, but `{{exercise.name}}` in a plan-level field has no exercise to resolve

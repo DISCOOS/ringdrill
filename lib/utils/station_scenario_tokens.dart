@@ -38,6 +38,26 @@ final stationScenarioTokenPattern = RegExp(
 List<String> stationScenarioTokenFacets(RegExpMatch match) =>
     (match.group(3) ?? '').split('.').where((s) => s.isNotEmpty).toList();
 
+/// The facets a `{{station.loc.<slug>}}` token accepts, in picker display
+/// order — what both [resolveLocationFacet] and `field_resolver.dart`'s
+/// `_resolveLocationFacet` switch on (ADR-0047, DESIGN-009 follow-up 4d;
+/// `utm`/`latlng` renamed to `position` by ADR-0050).
+///
+/// There is no facet enum in either resolver, so this list is the single
+/// statement of the vocabulary. It lives here, rather than beside the picker
+/// that offers it, because the source analyzer validates against it too and
+/// cannot import Flutter (ADR-0005). The bare token (no facet) is a separate,
+/// always-offered default and is deliberately not in this list.
+const locationFacetNames = ['place', 'label', 'position'];
+
+/// The facets a `{{station.person.<slug>}}` token accepts, as
+/// [resolvePersonFacet] and `_resolvePersonFacet` switch on them.
+///
+/// `loc` chains one level onwards into the person's location's own
+/// [locationFacetNames] — `field_resolver.dart` supports exactly one level of
+/// chaining, so the picker and the analyzer allow exactly one too.
+const personFacetNames = ['name', 'age', 'gender', 'description', 'loc'];
+
 /// `{{station.loc.<slug>[.facet]}}` facet resolution — the same facets as
 /// `field_resolver.dart`'s `_resolveLocationFacet`, minus the markdown
 /// inline-code wrapping around the coordinate (an editor chip/preview shows
