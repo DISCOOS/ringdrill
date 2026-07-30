@@ -25,9 +25,11 @@ import 'dart:io';
 /// Grouped by what needs them, because the two groups land in different stages
 /// and it should be obvious which is which.
 const headlessKeys = <String>[
-  // Generated default names, used by the source-format builder (`build`).
+  // Generated default names, used by the source-format builder (`build`) and
+  // the `create` scaffold.
   'team',
   'station',
+  'exercise',
   // The brief layer (`render`): field_resolver, brief_renderer and
   // exercise_share_format between them use exactly these. DESIGN-014 counted
   // nine, having looked only at the first two — exercise_share_format is in the

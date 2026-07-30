@@ -8,6 +8,7 @@ import 'package:ringdrill/data/source/plan_decompiler.dart';
 import 'package:ringdrill/data/source/source_analyzer.dart';
 import 'package:ringdrill/data/source/source_compiler.dart';
 import 'package:ringdrill/data/source/source_diagnostic.dart';
+import 'package:ringdrill/data/source/source_scaffold.dart';
 import 'package:ringdrill/data/source/source_schema.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
@@ -88,6 +89,36 @@ Future<void> main(List<String> argv) async {
       help: 'Specific version (download command). Default: latest.',
     )
     // source format (DESIGN-014)
+    ..addOption('name', help: 'Plan name (create command).')
+    ..addOption(
+      'exercises',
+      help: 'How many exercises to scaffold (create command). Default: 1.',
+      defaultsTo: '1',
+    )
+    ..addOption(
+      'teams',
+      help: 'How many teams rotate (create command). Default: 4.',
+      defaultsTo: '4',
+    )
+    ..addOption(
+      'stations',
+      help:
+          'Stations per exercise (create command). Default: the team count, '
+          'which is the fewest a rotation can have.',
+    )
+    ..addOption(
+      'rounds',
+      help:
+          'Rounds per exercise (create command). Default: the station count — '
+          'one round per station is a full rotation.',
+    )
+    ..addFlag(
+      'bare',
+      negatable: false,
+      help:
+          'Scaffold without the worked scenario example (create command): no '
+          'locations, persons, role plays or variables.',
+    )
     ..addOption(
       'audience',
       help:
@@ -165,6 +196,10 @@ Future<void> main(List<String> argv) async {
 
       case 'download':
         await _runDownload(client, args, res, jsonOut);
+        break;
+
+      case 'create':
+        _runCreate(args, res, jsonOut);
         break;
 
       case 'build':
@@ -359,6 +394,97 @@ Future<void> _runDownload(
 // ---------------------------------------------------------------------------
 // Source format (DESIGN-014)
 // ---------------------------------------------------------------------------
+
+/// `create --name=<plan> [--exercises=N] [--teams=N] …`
+///
+/// Writes a source document to start from. Everything is a flag rather than a
+/// prompt so the command works the same interactively, in a Makefile and from an
+/// MCP tool call; a scaffold nobody can script is only half useful.
+void _runCreate(List<String> args, ArgResults res, bool jsonOut) {
+  if (args.isNotEmpty) {
+    _fail('Usage: create --name=<plan> [options]  (no positional arguments)');
+  }
+  final name = (res['name'] as String?)?.trim();
+  if (name == null || name.isEmpty) {
+    _fail('Usage: create --name=<plan> [--exercises=N] [--teams=N] …');
+  }
+
+  final exercises = _positive(res['exercises'] as String?, 'exercises', 1);
+  final teams = _positive(res['teams'] as String?, 'teams', 4);
+  final stations = res['stations'] == null
+      ? null
+      : _positive(res['stations'] as String?, 'stations', teams);
+  final rounds = res['rounds'] == null
+      ? 0
+      : _positive(res['rounds'] as String?, 'rounds', 0);
+
+  if (stations != null && stations < teams) {
+    // The same rule `build` enforces, caught here so the scaffold cannot produce
+    // a document that immediately fails to compile.
+    _fail(
+      'Cannot scaffold $stations station(s) for $teams team(s): a rotation '
+      'needs at least one station per team.',
+    );
+  }
+
+  final document = SourceScaffold.generate(
+    name: name,
+    exercises: exercises,
+    teams: teams,
+    stationsPerExercise: stations,
+    rounds: rounds,
+    languageCode: ((res['lang'] as String?)?.trim().isEmpty ?? true)
+        ? 'en'
+        : (res['lang'] as String).trim(),
+    withExample: res['bare'] != true,
+  );
+
+  // Default the file name from the plan name, the same slug rule the catalog
+  // uses — so `create` then `build` then `upload` lands on a predictable slug
+  // rather than one that changes at the last step.
+  final outPath = (res['out'] as String?) ?? '${sanitizeSlug(name)}.yaml';
+  if (outPath == '-') {
+    stdout.write(document);
+    return;
+  }
+  if (File(outPath).existsSync()) {
+    _fail('Refusing to overwrite $outPath. Pass --out=<file> or remove it.');
+  }
+  File(outPath).writeAsStringSync(document);
+
+  if (jsonOut) {
+    stdout.writeln(
+      jsonEncode({
+        'out': outPath,
+        'name': name,
+        'exercises': exercises,
+        'teams': teams,
+        'stations': stations ?? teams,
+        'bytes': document.length,
+      }),
+    );
+    return;
+  }
+  stdout.writeln('✔ created $outPath');
+  stdout.writeln('  name      : $name');
+  stdout.writeln('  exercises : $exercises');
+  stdout.writeln('  teams     : $teams');
+  stdout.writeln('  stations  : ${stations ?? teams} per exercise');
+  stdout.writeln();
+  stdout.writeln('Next:');
+  stdout.writeln('  ringdrill analyze $outPath');
+  stdout.writeln('  ringdrill build $outPath');
+  stdout.writeln('  ringdrill render $outPath --audience=director');
+}
+
+int _positive(String? raw, String flag, int fallback) {
+  if (raw == null || raw.trim().isEmpty) return fallback;
+  final value = int.tryParse(raw.trim());
+  if (value == null || value < 1) {
+    _fail('Invalid --$flag "$raw". Expected a whole number of 1 or more.');
+  }
+  return value;
+}
 
 /// `build <source.yaml> [--out=<file>] [--strict]`
 ///
@@ -860,6 +986,10 @@ PUBLIC COMMANDS (no admin token required):
                                     [--out=<file>] [--version=N]
 
 SOURCE FORMAT COMMANDS (offline; DESIGN-014):
+  create                          Scaffold a source document to start from
+                                    --name=<plan> [--exercises=N] [--teams=N]
+                                    [--stations=N] [--rounds=N] [--lang=<code>]
+                                    [--bare] [--out=<file>]
   build <source.yaml>             Compile a source document to a .drill
                                     [--out=<file>] [--strict]
   decompile <file.drill>          Emit the source document for an archive

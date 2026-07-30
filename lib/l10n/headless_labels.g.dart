@@ -21,6 +21,11 @@ const headlessLabelMessages = <String, Map<String, Object>>{
       '=1': 'Station',
       'other': 'Stations',
     },
+    'exercise': <String, String>{
+      '=0': 'Exercise',
+      '=1': 'Exercise',
+      'other': 'Exercises',
+    },
     'round': <String, String>{'=0': 'Round', '=1': 'Round', 'other': 'Rounds'},
     'briefRingRoute': 'Ring route',
     'briefStationNoPosition': 'no position',
@@ -46,6 +51,11 @@ const headlessLabelMessages = <String, Map<String, Object>>{
   'nb': {
     'team': <String, String>{'=0': 'Lag', 'other': 'Lag'},
     'station': <String, String>{'=0': 'Post', '=1': 'Post', 'other': 'Poster'},
+    'exercise': <String, String>{
+      '=0': 'Øvelse',
+      '=1': 'Øvelse',
+      'other': 'Øvelser',
+    },
     'round': <String, String>{'=0': 'Runde', '=1': 'Runde', 'other': 'Runder'},
     'briefRingRoute': 'Ringløype',
     'briefStationNoPosition': 'ingen posisjon',
