@@ -20,17 +20,92 @@
 // dependency tree to an agent-tooling concern.
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { createInterface } from 'node:readline';
+import { fileURLToPath } from 'node:url';
 
 const PROTOCOL_VERSION = '2024-11-05';
 const SERVER_INFO = { name: 'ringdrill', version: '1.0.0' };
 
-// How to invoke the CLI. Defaults to the globally activated `ringdrill`
-// (`dart pub global activate -s path .`). Point RINGDRILL_CLI at a built binary
-// or a `dart run` invocation for a checkout — see the README.
-const CLI = process.env.RINGDRILL_CLI ?? 'ringdrill';
+const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+
+/// Locates the CLI, preferring whatever is fastest and most likely to be current.
+///
+/// `dart run` costs ~2.9s per call against ~0.6s for a compiled binary, and
+/// `get_plan` alone makes two calls — so from a checkout the difference between
+/// "configured well" and "not" is the difference between usable and not. Resolving
+/// it here rather than making everyone set RINGDRILL_CLI is the whole point:
+/// `make mcp` builds the binary, and this finds it.
+///
+/// Order: an explicit override, then a locally built binary, then a globally
+/// activated one, then `dart run` as the always-works fallback.
+function resolveCli() {
+    if (process.env.RINGDRILL_CLI) {
+        return { command: process.env.RINGDRILL_CLI, source: 'RINGDRILL_CLI' };
+    }
+
+    // `dart build cli` writes build/cli/<platform>/bundle/bin/ringdrill; the
+    // platform segment varies by host, so glob rather than hardcode it.
+    const cliDir = join(repoRoot, 'build', 'cli');
+    if (existsSync(cliDir)) {
+        for (const platform of readdirSync(cliDir)) {
+            const binary = join(cliDir, platform, 'bundle', 'bin', 'ringdrill');
+            if (!existsSync(binary)) continue;
+            return { command: binary, source: 'build/cli', path: binary };
+        }
+    }
+
+    return {
+        command: `dart run ${join(repoRoot, 'bin', 'ringdrill.dart')}`,
+        source: 'dart run (slow — run `make mcp` to build a binary)',
+    };
+}
+
+/// Warns when a built binary predates the Dart sources.
+///
+/// The footgun this exists for: edit Dart, forget to rebuild, spend twenty
+/// minutes testing the previous version's behaviour. Cheap to check and it costs
+/// nothing when the binary is current.
+function warnIfStale(resolved) {
+    if (!resolved.path) return;
+    const built = statSync(resolved.path).mtimeMs;
+    let newest = 0;
+    let newestPath = '';
+    const walk = (dir) => {
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+            const full = join(dir, entry.name);
+            if (entry.isDirectory()) {
+                walk(full);
+            } else if (entry.name.endsWith('.dart')) {
+                const at = statSync(full).mtimeMs;
+                if (at > newest) {
+                    newest = at;
+                    newestPath = full;
+                }
+            }
+        }
+    };
+    for (const dir of ['lib', 'bin']) {
+        const full = join(repoRoot, dir);
+        if (existsSync(full)) walk(full);
+    }
+    if (newest > built) {
+        const relative = newestPath.slice(repoRoot.length + 1);
+        process.stderr.write(
+            `ringdrill-mcp: the built CLI is older than ${relative}. ` +
+                'Run `make mcp` to rebuild, or you are testing stale code.\n',
+        );
+    }
+}
+
+const resolved = resolveCli();
+const CLI = resolved.command;
+// To stderr, never stdout: stdout is the JSON-RPC stream. Which CLI is in use is
+// the first thing you want to know when a tool behaves unexpectedly.
+process.stderr.write(`ringdrill-mcp: using CLI from ${resolved.source}\n`);
+warnIfStale(resolved);
 
 /** Runs the CLI and returns its parsed `--json` output. */
 async function cli(args, { input } = {}) {

@@ -1,5 +1,6 @@
 .PHONY: \
-	build watch i18n labels templates format format-check cli-check release patch publish \
+	build watch i18n labels templates format format-check cli-build cli-check \
+	mcp mcp-call mcp-test release patch publish \
 	build-web build-web-js upload-symbols-web strip-source-maps-web release-web \
 	release-android patch-android \
 	release-ios patch-ios \
@@ -8,7 +9,8 @@
 	netlify-dev netlify-dev-catalog-seed-all site-dev catalog-seed catalog-seed-demos catalog-feed catalog-reset
 
 .SILENT: \
-	build watch i18n format format-check release patch
+	build watch i18n labels templates format format-check \
+	cli-build cli-check mcp mcp-call mcp-test release patch
 
 # Local Netlify dev configuration. Override on the command line, e.g.:
 #   make catalog-seed SEED_DRILL=path/to/other.drill
@@ -127,10 +129,49 @@ format-check:
 # test/bin/cli_flutter_free_test.dart is the fast counterpart — it walks the same
 # closure in milliseconds and names the offending import chain, which a link
 # error does not.
-cli-check:
-	echo "Check the CLI builds without Flutter..."
-	dart build cli
+cli-check: cli-build
 	echo "  ok — bin/ringdrill.dart has no Flutter in its import closure"
+
+# The build itself, factored out so `mcp` can depend on it: the MCP server runs
+# the CLI once per tool call, and a compiled binary is ~0.6s against ~2.9s for
+# `dart run` — which `get_plan` pays twice.
+cli-build:
+	echo "Build the CLI with the Dart SDK..."
+	dart build cli
+
+# ---------------------------------------------------------------------------
+# MCP server (DESIGN-014 stage 4) — local development
+# ---------------------------------------------------------------------------
+
+# Get set up to test the MCP server: build the CLI it shells out to, then print
+# the client configuration to paste in. The server finds the built binary by
+# itself, so there is nothing to configure beyond this.
+mcp: cli-build
+	echo
+	echo "MCP server ready. Add this to your client's config:"
+	echo
+	echo '  {'
+	echo '    "mcpServers": {'
+	echo '      "ringdrill": {'
+	echo '        "command": "node",'
+	echo '        "args": ["$(CURDIR)/mcp/ringdrill-mcp.mjs"]'
+	echo '      }'
+	echo '    }'
+	echo '  }'
+	echo
+	echo "Try a tool without a client:  make mcp-call ARGS='schema'"
+	echo "List the tools:               make mcp-call"
+
+# One-shot tool call, for poking at the server by hand. See mcp/dev-call.mjs for
+# the argument syntax (key=value, @file to read a file, --raw for the payload).
+#   make mcp-call ARGS='create_plan name="LSOR 2027" teams=4 --raw'
+mcp-call:
+	node mcp/dev-call.mjs $(ARGS)
+
+# The server's own tests. Drive it over a real stdio pipe, deliberately via
+# `dart run` so the build-hooks preamble it has to tolerate stays exercised.
+mcp-test:
+	node --test mcp/tests/*.test.mjs
 
 # Web release pipeline. Decomposed so CI can run the steps individually
 # (one log group per step) but `make release-web` is the one-shot used

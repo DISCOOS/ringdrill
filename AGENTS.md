@@ -31,6 +31,9 @@ make cli-check                                 # verify the CLI builds without F
 make templates                                 # bake brief templates into Dart for the CLI
 ringdrill create --name="…"                    # scaffold a source document (DESIGN-014)
 ringdrill build|analyze|render|decompile|schema # the source-format commands
+make mcp                                       # build the CLI + print MCP client config
+make mcp-call ARGS='schema'                    # call one MCP tool by hand
+make mcp-test                                  # the MCP server's own tests
 skills/flutter-widget-preview/run_preview.sh   # render a widget to a PNG headlessly (no browser)
 ```
 
