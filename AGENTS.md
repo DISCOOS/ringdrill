@@ -34,7 +34,7 @@ ringdrill build|analyze|render|decompile|schema # the source-format commands
 make mcp                                       # build the CLI + print MCP client config
 make mcp-call ARGS='schema'                    # call one MCP tool by hand
 make mcp-test                                  # the MCP server's own tests
-make mcp-bundle                                # cross-compile the compiler to JS for the hosted endpoint
+make mcp-bundle                                # rebuild the hosted endpoint's compiler bundle (see rule 1)
 make mcp-serve                                 # serve the hosted MCP endpoint locally over HTTP
 skills/flutter-widget-preview/run_preview.sh   # render a widget to a PNG headlessly (no browser)
 ```
@@ -48,7 +48,8 @@ An ARB edit feeds **two** generators: `flutter gen-l10n` produces the Flutter-bo
 These are non-negotiable unless the maintainer says otherwise.
 
 1. **Run codegen, not regex.** When you add or change a `@freezed` class, an enum carrying `@JsonValue`, or anything with a `part 'x.g.dart'`/`part 'x.freezed.dart'` directive, run `make build` (or `dart run build_runner build --delete-conflicting-outputs`). Never edit the generated output by hand.
-2. **Never edit `*.freezed.dart`, `*.g.dart`, `app_localizations*.dart` directly.** They are regenerated and your changes will be lost. Change the source (`*.dart` model files or `*.arb` files) instead. This includes `lib/l10n/headless_labels.g.dart`, which is generated from the ARBs by `make labels` rather than by `build_runner`.
+   * **Changing the source compiler also means `make mcp-bundle`.** Anything under `lib/data/source/`, `lib/models/`, `lib/services/brief/` or `lib/l10n/` is cross-compiled to JavaScript for the hosted MCP endpoint (ADR-0060), and that bundle is committed because a Netlify build has no Dart SDK. A stale bundle serves *old compiler behaviour* from `/mcp` with no other symptom — the app and the CLI are fine, only the hosted endpoint lies. `npm test` fails when it is older than those sources, but a Dart-only change is exactly the case where nobody thinks to run the Node suite, so treat this as part of the edit rather than something the gate will catch.
+2. **Never edit `*.freezed.dart`, `*.g.dart`, `app_localizations*.dart` directly.** They are regenerated and your changes will be lost. Change the source (`*.dart` model files or `*.arb` files) instead. Two generated files do not carry a `.g.dart` name and are easy to mistake for hand-written code — `lib/l10n/headless_labels.g.dart` (`make labels`) is at least suffixed, but `netlify/functions/_mcp_compiler_bundle.js` (`make mcp-bundle`) is not. Neither comes from `build_runner`.
 3. **Keep mobile-safe imports mobile-safe.** Any file imported from `lib/main.dart` on a non-web platform must not transitively import `dart:html` or `package:web`. Use the existing `if (dart.library.io)` pattern with a stub. Web-only code lives under `lib/web/`.
 4. **Localize every user-visible string.** No raw English text in widgets. Add the key to `app_en.arb` and `app_nb.arb` together. If you do not know the Norwegian translation, copy the English string and flag it for review in the PR description.
 5. **Respect the analytics consent gate.** Do not call Sentry, analytics or any network telemetry outside the consent check in `lib/main.dart`. The default is opt-out.
