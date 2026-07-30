@@ -77,6 +77,43 @@ void main() {
       );
     });
 
+    test('a stale facet on a location variable warns', () {
+      // Same silent degradation as the scenario tokens, one namespace over: a
+      // location-typed variable takes the same facets, so `.utm` falls back to
+      // place-plus-coordinate where it asked for the coordinate alone.
+      const decl = '  variables:\n    ko: {value: "x", type: location}';
+      final warnings = _warnings(
+        _doc(
+          plan: decl,
+          station: '        situation: "KO er i {{var.ko.utm}}"',
+        ),
+      );
+      expect(warnings.single.message, contains('has no facet "utm"'));
+      expect(warnings.single.hint, contains('renamed to position'));
+
+      // The current facet is silent.
+      expect(
+        _analyze(
+          _doc(
+            plan: decl,
+            station: '        situation: "KO er i {{var.ko.position}}"',
+          ),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('a facet on a scalar variable warns that it is dropped', () {
+      final warnings = _warnings(
+        _doc(
+          plan: '  variables:\n    talegruppe: {value: "RK-1"}',
+          station: '        situation: "Samband {{var.talegruppe.place}}"',
+        ),
+      );
+      expect(warnings.single.message, contains('is a string variable'));
+      expect(warnings.single.hint, contains('ignored'));
+    });
+
     test('declared but never referenced warns', () {
       final warnings = _warnings(
         _doc(plan: '  variables:\n    unused: {value: "x"}'),

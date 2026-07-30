@@ -132,10 +132,15 @@ Map<String, dynamic> _build(Map<String, dynamic> json) {
   // refuses on compile warnings while ignoring the `{{var.typo}}` that renders
   // "‹missing variable›" to a reader.
   final reviewed = SourceAnalyzer.review(result.plan, seed: result.warnings);
-  if (strict && reviewed.isNotEmpty) {
+  // An error will visibly fail in the brief, so the archive is known-broken
+  // before it is written; `strict` adds warnings on top.
+  final blocking = reviewed.where((d) => d.isError).length;
+  if (blocking > 0 || (strict && reviewed.isNotEmpty)) {
     return {
       ..._diagnosticsOnly(reviewed),
-      'error': 'refused: strict and diagnostics present',
+      'error': blocking > 0
+          ? 'refused: $blocking error(s) that will not render'
+          : 'refused: strict and warnings present',
     };
   }
   final plan = result.plan;

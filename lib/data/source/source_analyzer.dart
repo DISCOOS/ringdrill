@@ -21,6 +21,7 @@
 library;
 
 import 'package:ringdrill/data/source/source_diagnostic.dart';
+import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/plan_field_names.dart';
@@ -52,9 +53,10 @@ class SourceAnalyzer {
   /// render fine but suggest the author meant something else.
   static void analyze(Plan plan, DiagnosticSink diagnostics) {
     final declared = {for (final v in plan.variables) v.name};
+    final types = {for (final v in plan.variables) v.name: v.type};
 
     for (final field in _fields(plan)) {
-      _checkVariableTokens(field, declared, diagnostics);
+      _checkVariableTokens(field, declared, types, diagnostics);
       _checkScenarioTokens(field, diagnostics);
       _checkFacetTokens(field, diagnostics);
     }
@@ -88,21 +90,83 @@ class SourceAnalyzer {
   static void _checkVariableTokens(
     _Field field,
     Set<String> declared,
+    Map<String, VariableType> types,
     DiagnosticSink diagnostics,
   ) {
     final content = field.content;
     if (content == null) return;
     for (final match in planVariableTokenPattern.allMatches(content)) {
       final name = match.group(1)!;
-      if (declared.contains(name)) continue;
-      diagnostics.error(
-        field.path,
-        'no variable named "$name" is declared',
-        hint: declared.isEmpty
-            ? 'declare it under plan.variables'
-            : 'declared: ${(declared.toList()..sort()).join(', ')}',
+      if (!declared.contains(name)) {
+        diagnostics.error(
+          field.path,
+          'no variable named "$name" is declared',
+          hint: declared.isEmpty
+              ? 'declare it under plan.variables'
+              : 'declared: ${(declared.toList()..sort()).join(', ')}',
+        );
+        continue;
+      }
+      _checkVariableFacets(
+        field,
+        name,
+        types[name] ?? VariableType.string,
+        planVariableTokenFacets(match),
+        diagnostics,
       );
     }
+  }
+
+  /// The facet path on a `{{var.<name>}}` token that names a declared variable.
+  ///
+  /// The same silent degradation the scenario-token facets have, one namespace
+  /// over: a `location`-typed variable projects onto the same `Location` shape and
+  /// takes the same facets, so a stale `.utm` renders the place *and* the
+  /// coordinate where it asked for the coordinate alone. On a scalar, a facet is
+  /// dropped outright and the bare value substituted. Both render, so both are
+  /// warnings — `--strict` promotes them.
+  static void _checkVariableFacets(
+    _Field field,
+    String name,
+    VariableType type,
+    List<String> facets,
+    DiagnosticSink diagnostics,
+  ) {
+    if (facets.isEmpty) return;
+    final facet = facets.first;
+
+    if (type != VariableType.location) {
+      diagnostics.warn(
+        field.path,
+        '{{var.$name.$facet}}: "$name" is a ${type.name} variable and has no '
+        'facets',
+        hint:
+            'a facet on a scalar is ignored and the bare value substituted; '
+            'drop it, or declare the variable as a location',
+      );
+      return;
+    }
+
+    if (!locationFacetNames.contains(facet)) {
+      final renamed = facet == 'utm' || facet == 'latlng';
+      diagnostics.warn(
+        field.path,
+        '{{var.$name.$facet}} has no facet "$facet"',
+        hint: [
+          if (renamed) 'utm and latlng were renamed to position (ADR-0050)',
+          'available: ${locationFacetNames.join(', ')}',
+          'an unrecognized facet falls back to the bare rendering, so this '
+              'renders without failing',
+        ].join('; '),
+      );
+      return;
+    }
+    _warnIgnoredTail(
+      field,
+      'var.$name.$facet',
+      facets.skip(1).toList(),
+      diagnostics,
+    );
   }
 
   /// `{{station.loc.<slug>}}` / `{{station.person.<slug>}}` against the station

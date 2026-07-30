@@ -123,9 +123,12 @@ Future<void> main(List<String> argv) async {
     ..addOption(
       'audience',
       help:
-          'Brief audience (render command): participant, instructor or '
-          'director. Director includes staff PII, which is stripped at '
-          'publish and only present in a locally held archive.',
+          'Brief audience (render command): one per staff role — actor, '
+          'instructor, director, other — plus participant, the printed '
+          'handout. Every audience but participant is a staff view; the ones '
+          'that include the cast\'s contact details only have them in a '
+          'locally held archive, since staff is stripped at publish '
+          '(ADR-0063).',
       defaultsTo: 'participant',
     )
     ..addOption(
@@ -526,10 +529,18 @@ void _runBuild(List<String> args, ArgResults res, bool jsonOut) {
   // "‹missing variable›" to a reader.
   final reviewed = SourceAnalyzer.review(result.plan, seed: result.warnings);
 
-  if (strict && reviewed.isNotEmpty) {
+  // An analyzer *error* is not advisory: the renderer substitutes
+  // "‹missing variable: x›" into the brief, so the archive is known-broken before
+  // it is written. Refusing is not a widening of `build`'s question ("can I make
+  // an archive") — it is answering it honestly. `--strict` adds warnings on top.
+  final blocking = reviewed.where((d) => d.isError).toList();
+  if (blocking.isNotEmpty || (strict && reviewed.isNotEmpty)) {
     _printDiagnostics(path, reviewed, jsonOut);
     stderr.writeln(
-      'Refusing to write $outPath: --strict and diagnostics present.',
+      blocking.isEmpty
+          ? 'Refusing to write $outPath: --strict and warnings present.'
+          : 'Refusing to write $outPath: ${blocking.length} error(s) that will '
+                'not render.',
     );
     exitCode = 65;
     return;
@@ -750,7 +761,8 @@ void _runAnalyze(List<String> args, ArgResults res, bool jsonOut) {
 Future<void> _runRender(List<String> args, ArgResults res, bool jsonOut) async {
   if (args.length != 1) {
     _fail(
-      'Usage: render <source.yaml|file.drill> [--audience=participant|instructor|director] '
+      'Usage: render <source.yaml|file.drill> '
+      '[--audience=participant|actor|instructor|director|other] '
       '[--lang=<code>] [--exercise=N] [--out=<file>]',
     );
   }
