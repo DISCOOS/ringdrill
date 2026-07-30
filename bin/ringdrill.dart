@@ -5,8 +5,10 @@ import 'package:http/http.dart' as http;
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/source/plan_decompiler.dart';
+import 'package:ringdrill/data/source/source_analyzer.dart';
 import 'package:ringdrill/data/source/source_compiler.dart';
 import 'package:ringdrill/data/source/source_diagnostic.dart';
+import 'package:ringdrill/data/source/source_schema.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:universal_io/io.dart';
 
@@ -147,6 +149,14 @@ Future<void> main(List<String> argv) async {
 
       case 'decompile':
         _runDecompile(args, res, jsonOut);
+        break;
+
+      case 'analyze':
+        _runAnalyze(args, res, jsonOut);
+        break;
+
+      case 'schema':
+        _runSchema(res);
         break;
 
       case 'publish':
@@ -477,6 +487,82 @@ void _runDecompile(List<String> args, ArgResults res, bool jsonOut) {
   stdout.writeln('  contentHash : ${plan.computeContentHash()}');
 }
 
+/// `analyze <source.yaml> [--strict]`
+///
+/// Checks a document without writing anything. Exit 0 when clean, 65 when
+/// something will not resolve — or when `--strict` and there are warnings.
+///
+/// Separate from `build --strict` because the questions differ: `build` asks "can
+/// I make an archive from this", `analyze` asks "will this render". A document
+/// with a `{{var.typo}}` builds perfectly and then shows "‹missing variable›" to
+/// a reader.
+void _runAnalyze(List<String> args, ArgResults res, bool jsonOut) {
+  if (args.length != 1) {
+    _fail('Usage: analyze <source.yaml> [--strict]');
+  }
+  final path = args[0];
+  final file = File(path);
+  if (!file.existsSync()) {
+    _fail('File not found: $path');
+  }
+
+  final strict = res['strict'] == true;
+  final diagnostics = DiagnosticSink();
+  final Plan plan;
+  try {
+    // Build in memory: reference checks need the assembled plan, since a token's
+    // scope and the station that owns a slug are structural.
+    final result = SourceCompiler.toPlan(file.readAsStringSync());
+    plan = result.plan;
+    diagnostics.addAll(result.diagnostics);
+  } on SourceFormatException catch (e) {
+    _printDiagnostics(path, e.diagnostics, jsonOut);
+    exitCode = 65; // EX_DATAERR
+    return;
+  }
+
+  SourceAnalyzer.analyze(plan, diagnostics);
+  final items = diagnostics.items;
+  final errors = items.where((d) => d.isError).length;
+  final warnings = items.length - errors;
+
+  if (jsonOut) {
+    stdout.writeln(
+      jsonEncode({
+        'source': path,
+        'ok': errors == 0 && !(strict && warnings > 0),
+        'errors': errors,
+        'warnings': warnings,
+        'name': plan.name,
+        'exercises': plan.exercises.length,
+        'diagnostics': items.map((d) => d.toJson()).toList(),
+      }),
+    );
+  } else if (items.isEmpty) {
+    stdout.writeln('✔ $path is clean');
+    stdout.writeln('  name      : ${plan.name}');
+    stdout.writeln('  exercises : ${plan.exercises.length}');
+    stdout.writeln('  variables : ${plan.variables.length}');
+  } else {
+    _printDiagnostics(path, items, false);
+  }
+
+  if (errors > 0 || (strict && warnings > 0)) exitCode = 65;
+}
+
+/// `schema`
+///
+/// Prints the source format's JSON Schema. Pretty-printed by default because a
+/// human reads it as reference; `--json` keeps it compact for a tool.
+void _runSchema(ArgResults res) {
+  final schema = SourceSchema.generate();
+  if (res['json'] == true) {
+    stdout.writeln(jsonEncode(schema));
+    return;
+  }
+  stdout.writeln(const JsonEncoder.withIndent('  ').convert(schema));
+}
+
 /// Prints diagnostics grouped by severity, errors first.
 ///
 /// The non-JSON form is deliberately `path: severity: message` rather than a
@@ -640,6 +726,9 @@ SOURCE FORMAT COMMANDS (offline; DESIGN-014):
                                     [--out=<file>] [--strict]
   decompile <file.drill>          Emit the source document for an archive
                                     [--out=<file>]  (stdout when omitted)
+  analyze <source.yaml>           Check a source document without building
+                                    [--strict]
+  schema                          Print the source format's JSON Schema
 
 ADMIN COMMANDS (RINGDRILL_ADMIN_TOKEN or --token required):
   list-versions <slug>            List versions for a slug

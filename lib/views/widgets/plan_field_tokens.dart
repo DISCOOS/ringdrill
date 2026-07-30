@@ -1,4 +1,5 @@
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/utils/plan_field_names.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
 
 /// Single source of truth for the [PlanFieldToken] lists every editor's
@@ -8,42 +9,51 @@ import 'package:ringdrill/views/widgets/editor_token.dart';
 /// — so a token this picker offers is always one the renderer can resolve
 /// at that scope. Never add a facet here that isn't already in the
 /// matching `refContext` map.
+///
+/// The facet *names* live in `lib/utils/plan_field_names.dart`, which is free of
+/// Flutter so the CLI's `analyze` can validate a `{{exercise.phaseBreakdown}}`
+/// reference headlessly (DESIGN-014). This class adds the localized picker
+/// labels, and `_labelled` asserts the two lists agree — a name added there
+/// without a label here, or vice versa, fails loudly rather than silently
+/// dropping a token from the picker.
 class PlanFieldTokens {
   const PlanFieldTokens._();
 
   /// Resolvable at plan scope and, via cascade, everywhere below it
   /// (exercise, station, roleplay).
-  static List<PlanFieldToken> plan(AppLocalizations l) => [
-    PlanFieldToken(name: 'plan.name', label: l.planName),
-    PlanFieldToken(name: 'plan.description', label: l.planDescription),
-  ];
+  static List<PlanFieldToken> plan(AppLocalizations l) => _labelled(
+    PlanFieldScope.plan,
+    {'plan.name': l.planName, 'plan.description': l.planDescription},
+  );
 
   /// Resolvable at exercise scope and, via cascade, station/roleplay scope
   /// — but never at plan scope, which has no exercise in context.
-  static List<PlanFieldToken> exercise(AppLocalizations l) => [
-    PlanFieldToken(name: 'exercise.name', label: l.exerciseName),
-    PlanFieldToken(name: 'exercise.numberOfTeams', label: l.numberOfTeams),
-    PlanFieldToken(name: 'exercise.numberOfRounds', label: l.numberOfRounds),
-    PlanFieldToken(name: 'exercise.startTime', label: l.startTime),
-    PlanFieldToken(name: 'exercise.endTime', label: l.endTime),
-    PlanFieldToken(name: 'exercise.timeLabel', label: l.timeLabel),
-    PlanFieldToken(name: 'exercise.durationLabel', label: l.durationLabel),
-    PlanFieldToken(name: 'exercise.executionTime', label: l.executionTime),
-    PlanFieldToken(name: 'exercise.evaluationTime', label: l.evaluationTime),
-    PlanFieldToken(name: 'exercise.rotationTime', label: l.rotationTime),
-    PlanFieldToken(name: 'exercise.phaseBreakdown', label: l.phaseBreakdown),
-  ];
+  static List<PlanFieldToken> exercise(AppLocalizations l) =>
+      _labelled(PlanFieldScope.exercise, {
+        'exercise.name': l.exerciseName,
+        'exercise.numberOfTeams': l.numberOfTeams,
+        'exercise.numberOfRounds': l.numberOfRounds,
+        'exercise.startTime': l.startTime,
+        'exercise.endTime': l.endTime,
+        'exercise.timeLabel': l.timeLabel,
+        'exercise.durationLabel': l.durationLabel,
+        'exercise.executionTime': l.executionTime,
+        'exercise.evaluationTime': l.evaluationTime,
+        'exercise.rotationTime': l.rotationTime,
+        'exercise.phaseBreakdown': l.phaseBreakdown,
+      });
 
   /// Resolvable at station scope and, via cascade, roleplay scope. Omits
   /// `station.description` (DESIGN-009 follow-up 4c): it *is* the free-text
   /// field the author edits in the station's own base section — resolving
   /// through the fixpoint pass, offering it there recurses on itself.
-  static List<PlanFieldToken> station(AppLocalizations l) => [
-    PlanFieldToken(name: 'station.name', label: l.stationName),
-    PlanFieldToken(name: 'station.stationCode', label: l.stationCode),
-    PlanFieldToken(name: 'station.position', label: l.positionUtm),
-    PlanFieldToken(name: 'station.variantSuffix', label: l.variantSuffix),
-  ];
+  static List<PlanFieldToken> station(AppLocalizations l) =>
+      _labelled(PlanFieldScope.station, {
+        'station.name': l.stationName,
+        'station.stationCode': l.stationCode,
+        'station.position': l.positionUtm,
+        'station.variantSuffix': l.variantSuffix,
+      });
 
   /// Resolvable at roleplay scope only. `roleplay.name` is self-referential
   /// in the roleplay's own name field the same way `station.description` is
@@ -54,10 +64,33 @@ class PlanFieldTokens {
   /// propsMd). `roleplay.description` has the matching issue in the
   /// description field, but that field is never token-aware in the first
   /// place, so no caller-side filtering is needed for it.
-  static List<PlanFieldToken> roleplay(AppLocalizations l) => [
-    PlanFieldToken(name: 'roleplay.name', label: l.roleName),
-    PlanFieldToken(name: 'roleplay.age', label: l.roleAge),
-    PlanFieldToken(name: 'roleplay.description', label: l.roleDescription),
-    PlanFieldToken(name: 'roleplay.position', label: l.positionUtm),
-  ];
+  static List<PlanFieldToken> roleplay(AppLocalizations l) =>
+      _labelled(PlanFieldScope.roleplay, {
+        'roleplay.name': l.roleName,
+        'roleplay.age': l.roleAge,
+        'roleplay.description': l.roleDescription,
+        'roleplay.position': l.positionUtm,
+      });
+
+  /// Pairs [PlanFieldNames.of] with [labels], asserting the two agree.
+  ///
+  /// The names are the contract (they are what the renderer resolves and what
+  /// `analyze` validates); the labels are presentation. Building the list from
+  /// the names rather than restating them means a facet cannot exist in the
+  /// picker without existing in the validator.
+  static List<PlanFieldToken> _labelled(
+    PlanFieldScope scope,
+    Map<String, String> labels,
+  ) {
+    final names = PlanFieldNames.of(scope);
+    assert(
+      labels.keys.toSet().difference(names.toSet()).isEmpty,
+      'labelled facets not in PlanFieldNames.${scope.name}: '
+      '${labels.keys.toSet().difference(names.toSet())}',
+    );
+    return [
+      for (final name in names)
+        PlanFieldToken(name: name, label: labels[name] ?? name),
+    ];
+  }
 }
