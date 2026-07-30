@@ -47,11 +47,16 @@ class Numbering {
 
   /// Compact label for a team, scoped to an exercise: the bare 1-based number.
   ///
-  /// Teams have no multi-format convention of their own — unlike stations, they
-  /// are not sub-divided — and no format enum to switch on. The number alone
-  /// stays distinguishable from an exercise's `#n` while keeping the badge
-  /// family's shape; the team's *name* is carried by the surface's title, not by
-  /// the badge (a name does not fit one).
+  /// There is no team format enum to switch on, and that is a deliberate
+  /// trade-off rather than a gap: team naming conventions are subject-area
+  /// specific — a Norwegian SAR callsign ("Larvik 21"), a military unit
+  /// designation and a plain "Lag 3" all fit a free-text name, and none of
+  /// them fit a scheme shared across domains. So the convention lives in
+  /// `Team.name`, authored, and nothing here derives it (see
+  /// `docs/glossary.md`, **Team**). The number alone stays distinguishable
+  /// from an exercise's `#n` while keeping the badge family's shape; the
+  /// team's *name* is carried by the surface's title, not by the badge (a
+  /// name does not fit one).
   static String team(int number) => '$number';
 
   /// Bijective base-26: 0 -> a, 25 -> z, 26 -> aa, 27 -> ab, ...

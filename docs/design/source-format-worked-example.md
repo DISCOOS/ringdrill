@@ -126,6 +126,24 @@ exercises:
           2–3 markører. Vurder realistisk respons ved kontakt.
 ```
 
+Two things the example deliberately omits, both optional:
+
+* **`uuid`** on the plan, an exercise, a roleplay or a team. Hand- and
+  agent-authored documents leave them out and `build` mints them; `decompile`
+  always emits them, so a decompiled plan rebuilds onto the same identities —
+  which is what makes the `contentHash` round trip an identity rather than an
+  approximation (`Exercise`/`RolePlay`/`Team` uuids are inside the hash, and are
+  its sort keys; `Plan.uuid` is not, but it is what the app keys an installed
+  plan on).
+* **`teams:`** at plan level — a list of `{name, numberOfMembers?, position?,
+  uuid?}`. When omitted, `build` derives the roster the way the app does: as many
+  teams as the largest `numberOfTeams` across the exercises, named "Lag N" /
+  "Team N" per the plan's language. When present and longer than that maximum,
+  the authored list wins (same `max(...)` semantics as `PlanService.ensureTeams`)
+  and `analyze` warns that those teams have no slot in any exercise — which is
+  the legitimate case where several teams are grouped into one temporary team for
+  a full-scale exercise, so it is a warning and not an error.
+
 ---
 
 ## 2. Authored vs derived
@@ -142,12 +160,18 @@ fields.
 | `station.name`, `position`, markdown fields | **authored** | Content |
 | `station.locations[]`, `station.persons[]` | **authored** | DESIGN-009 scenario data |
 | `roleplay.personRef`, `behavior`, `background`, `propsMd`, identity overrides | **authored** | Content |
+| `station.variantSuffix` | **authored** | Content |
+| `teams[]` (name, `numberOfMembers`, `position`) | **authored**, optional | Free text (see glossary, **Team**); generated when omitted — see the note ending §1 |
+| `plan/exercise/roleplay/team.uuid` | **identity**: optional in, always out | Not derivable from anything else; `decompile` emits it, `build` mints one only when absent |
 | `exercise.schedule[]`, `exercise.endTime` | derived | `startTime` + `rounds` + `*Time` |
-| `exercise.index`, `station.index`, `roleplay.index` | derived | ordering |
+| `exercise.index`, `station.index`, `roleplay.index`, `team.index` | derived | ordering |
 | `roleplay.stationIndex` | derived | the station it is nested under (DESIGN-009) |
+| `roleplay.exerciseUuid` | derived | the exercise the station belongs to |
 | roleplay effective identity (denormalized `name`/`age`/…) | derived | person + overrides (DESIGN-009) |
 | station/exercise labels ("2.1", "#2") | derived | number format + index |
-| all `uuid`; `source`; `contentHash` | derived | generated/preserved at build/publish |
+| `sessions[]` | derived | always `[]` in a published plan; run records, never authored |
+| `staff[]` | — | Local PII, stripped at publish; never in the source |
+| `source`; `contentHash` | derived | generated/preserved at build/publish |
 | feed metadata (mapCenter, exerciseCount, place) | derived | at publish |
 | `{{station.loc.lkp.utm}}` in text | derived | from the location's coordinate at render |
 
@@ -175,10 +199,20 @@ Settled during the design dialogue.
    `stationIndex` is fully derived. Broader descendant addressing (a plan-intro
    pointing at "post 2's location") is **DESIGN-008 open question 4**, unresolved
    in the app itself — the source format must not get ahead of it.
-5. **Numbering out of names.** The real plan has `stationNumberFormat: dotted`
-   yet names still carry an alpha prefix ("2a) Fisker") — an inconsistent baked-in
-   label. The source holds a clean name; the label is derived; decompile strips
-   the prefix (alpha and dotted) robustly.
+5. **Numbering comes from order; names are opaque.** A label ("#2", "2.1") is
+   derived from the number format and the item's position, and an item that
+   carries no explicit number gets one from its ordering — never from parsing
+   its name. Some older plans have the label baked into the name ("2a) Fisker",
+   "#6 Førsteinnsats søk"), a practice that predates automatic numbering. That
+   text is the author's content: **the source format makes no assumptions about
+   what a name contains**, decompile emits names verbatim, and a round trip
+   preserves them byte for byte. Nothing strips a prefix, and nothing warns
+   about one — stripping is a value rewrite, which would change `contentHash`
+   and break the round-trip contract above, and any "looks like a label"
+   heuristic would misfire on legitimate names ("B2 Bilcamping", "1. etasje")
+   for the same reason team naming has no shared scheme: conventions are
+   subject-area specific and the name is where they live. See
+   [ADR-0059](../adrs/0059-drill-schema-migration-ladder.md).
 6. **Structured markdown fields.** The source uses `situation`, `mission`,
    `director_notes`, … Decompiling a legacy plan (all content in one
    `description`) puts it into `situation` as the best guess.

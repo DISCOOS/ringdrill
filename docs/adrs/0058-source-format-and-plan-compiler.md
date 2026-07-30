@@ -38,7 +38,7 @@ Chosen option: **Option A**, because it gives the model one coherent document to
 Three decisions follow from it and are load-bearing:
 
 * **Mirror the frozen `.drill` wire keys, not the Dart class names.** The `Program → Plan` rename changed Dart identifiers but not the archive's JSON keys or its `program.json` root, so binding the source format to the wire keys insulates it from such renames.
-* **The source format carries its own version, decoupled from the `.drill` schema, and the compiler owns a legacy-wire-key tolerance map.** The envelope is frozen, but content keys have changed (`signalement → description` clean break; `programId → planId` with a fallback, ADR-0055), so `decompile` of the older catalog corpus must tolerate historical variants.
+* **The source format carries its own version, decoupled from the `.drill` schema, and the compiler owns a legacy-wire-key tolerance map.** The envelope is frozen, but content keys have changed (`signalement → description` clean break; `programId → planId` with a fallback, ADR-0055), so `decompile` of the older catalog corpus must tolerate historical variants. *Amended by [ADR-0059](./0059-drill-schema-migration-ladder.md): the tolerance map is replaced by an ordered migration ladder shared with `DrillFile.plan()`, since `decompile` is a second reader of the same variance and a per-command map would duplicate or diverge from the existing back-compat branches.*
 * **`render` is enabled by finishing ADR-0048, not by a new decision.** `build`, `decompile` and `analyze` are Flutter-free today; `render` needs `field_resolver`/`brief_renderer` decoupled from `AppLocalizations` via a plain-Dart `BriefLabels` interface whose headless implementation reads the ARB JSON directly. That is an amendment to ADR-0048.
 
 ### Consequences
@@ -67,5 +67,5 @@ Three decisions follow from it and are load-bearing:
 ## Links
 
 * Related design: [DESIGN-014](../design/014-source-format-and-plan-compiler.md), [source-format worked example](../design/source-format-worked-example.md)
-* Related ADRs: [ADR-0005](./0005-cli-must-remain-flutter-free.md), [ADR-0007](./0007-drill-file-format.md), [ADR-0022](./0022-markdown-content-as-files.md), [ADR-0046](./0046-plan-variables.md), [ADR-0047](./0047-scenario-locations-and-persons.md), [ADR-0048](./0048-flutter-free-field-resolver.md) (amended by the `render` enabler), [ADR-0055](./0055-programid-planid-wire-back-compat.md)
+* Related ADRs: [ADR-0005](./0005-cli-must-remain-flutter-free.md), [ADR-0007](./0007-drill-file-format.md), [ADR-0022](./0022-markdown-content-as-files.md), [ADR-0046](./0046-plan-variables.md), [ADR-0047](./0047-scenario-locations-and-persons.md), [ADR-0048](./0048-flutter-free-field-resolver.md) (amended by the `render` enabler), [ADR-0055](./0055-programid-planid-wire-back-compat.md), [ADR-0059](./0059-drill-schema-migration-ladder.md) (amends the legacy-tolerance decision above)
 * Related code: `bin/ringdrill.dart`, `lib/data/drill_file.dart`, `lib/models/plan.dart`, `lib/utils/plan_variable_refs.dart`, `lib/utils/station_scenario_tokens.dart`, `lib/services/brief/field_resolver.dart`

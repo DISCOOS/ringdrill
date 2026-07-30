@@ -30,6 +30,8 @@ related_adrs:
   - 0047-scenario-locations-and-persons.md
   - 0048-flutter-free-field-resolver.md
   - 0055-programid-planid-wire-back-compat.md
+  - 0058-source-format-and-plan-compiler.md
+  - 0059-drill-schema-migration-ladder.md
 ---
 
 # Source format and the plan compiler
@@ -54,9 +56,12 @@ from scratch and from templates — deployed first as an MCP server plus a skill
 with the open catalog as the generation corpus.
 
 The point of the split: an LLM produces one coherent document well; it should
-never hand-author derived, structural bookkeeping (`schedule`, indices, uuids,
+never hand-author derived, structural bookkeeping (`schedule`, indices,
 `contentHash`, numbering labels, rotation math). The source format carries intent
-only; the compiler owns everything mechanical.
+only; the compiler owns everything mechanical. The one carve-out is **identity**:
+`uuid` is optional on input and always emitted on output, because it is not
+derivable and it is inside the content hash — that is what makes the round trip an
+identity rather than an approximation.
 
 ## Rationale
 
@@ -99,8 +104,32 @@ shape in brief:
   the landed `Program → Plan` rename does not touch the source format. Only value
   *shapes* are source-friendly (times as `"HH:MM"`, coordinates as `{lat, lng}`
   which the builder flips to the stored `[lng, lat]`).
-* **Authored fields only, never derived ones.** The authored/derived split is the
-  contract; it is enumerated in the worked example's table.
+* **Authored fields only, never derived ones** — with one carve-out. The
+  authored/derived split is the contract; it is enumerated in the worked
+  example's table. The carve-out is **identity**: `uuid` on plan, exercise,
+  roleplay and team is *optional on input, always emitted on output*. It is not
+  derivable from anything else, and `Exercise`/`RolePlay`/`Team` uuids are inside
+  `computeContentHash` (via `toJson`) *and* are its sort keys, so minting fresh
+  ones would make `build(decompile(d))` produce a different hash and a different
+  ordering. An author or an agent omits them and `build` mints `nanoid(8)`;
+  `decompile` emits them so a rebuild lands on the same identities. `Plan.uuid`
+  is outside the hash but is what the app keys an installed plan on, so
+  preserving it is what makes a decompile-edit-rebuild cycle an *update* to the
+  installed plan rather than a duplicate.
+* **Names are opaque.** Numbering is derived from the number format and the
+  item's position; an item with no explicit number gets one from its ordering.
+  The format makes no assumptions about what a name contains — a legacy baked-in
+  label ("#6 Førsteinnsats søk") is authored content, decompile emits it
+  verbatim, and a round trip preserves it byte for byte. Nothing strips such a
+  prefix and nothing warns about one; see worked example decision 5 and
+  [ADR-0059](../adrs/0059-drill-schema-migration-ladder.md).
+* **`teams:` is authored but optional.** `Plan.teams` carries free-text names
+  (glossary, **Team**) plus optional `numberOfMembers`/`position`, and the
+  worked example does not show it. When omitted, `build` derives the roster the
+  way the app already does — as many teams as the largest `numberOfTeams` across
+  the exercises, with generated names — and when authored it wins. A station's
+  `variantSuffix` is likewise authored and unshown; `sessions` are run records,
+  always `[]` in a published plan, and never authored.
 * Layers, all authored: plan (name, description, tags, language, number formats);
   DESIGN-008 `variables` (declared on the plan) with `variableOverrides` on
   exercise and station; DESIGN-009 station-owned `locations` and `persons`
@@ -117,14 +146,36 @@ Flutter-free, `--json`-friendly CLI (`bin/ringdrill.dart`, which already has
 (AGENTS.md rule 7).
 
 * **`build <source>` → `.drill`.** Parse the YAML, construct the model, fill
-  derived fields (`schedule`, `endTime`, indices, uuids, numbering, `contentHash`),
-  serialize via `DrillFile.fromProgram`. This is provably Flutter-free today:
-  `tools/generate_example_drills.dart` already builds a `.drill` from model
-  objects under `dart run`. Tokens are stored raw and resolved only at render, so
-  `build` never touches the resolver.
+  derived fields (`schedule`, `endTime`, indices, uuids where absent, numbering,
+  `contentHash`), serialize via `DrillFile.fromPlan`. Tokens are stored raw and
+  resolved only at render, so `build` never touches the resolver.
+
+  One small extraction is needed first, and it is *extraction, not
+  reimplementation*. The canonical rotation math lives in
+  `PlanService.generateSchedule`, which is unreachable from the CLI because its
+  signature is `TimeOfDay` (`package:flutter/material.dart`) — not because of
+  l10n, so the ARB pivot below does not address it. `tools/generate_example_drills.dart`
+  proves the *output* is Flutter-free, but only by hand-rolling a second copy of
+  the math; a third copy in the compiler is the thing to avoid. Retype the pure
+  arithmetic onto `SimpleTimeOfDay` in a Flutter-free helper and have
+  `PlanService` delegate to it. `generateSchedule` also carries a `calcFromTimes`
+  flag with two different schedule semantics; nothing in the repo passes `false`,
+  so pin the `true` behaviour and drop the branch rather than porting a dead one.
+
+  A second, smaller l10n consequence: `build` needs exactly two localized
+  strings — `l10n.team(1)` and `l10n.station(1)`, for generated default team and
+  station names — and both are ICU plurals. So a *minimal* version of the
+  headless ARB label provider (§ Enabling render) is wanted in stage 1, with two
+  keys, and stage 5 extends the same class to the nine brief keys. Cheaper than
+  hardcoding an `nb`/`en` pair in stage 1 and replacing it in stage 5.
 * **`decompile <.drill>` → source.** The inverse: read via `DrillFile`, strip the
-  derived fields, emit the source document. It must tolerate **legacy wire-key
-  variants** in the older catalog corpus (see Open questions).
+  derived fields, emit the source document. Historical variance in the corpus is
+  normalized by the migration ladder in
+  [ADR-0059](../adrs/0059-drill-schema-migration-ladder.md), shared with
+  `DrillFile.plan()`, under one invariant: a rung may fill an absent field or
+  rename a key, never rewrite an authored value. Most of the variance needs no
+  code at all — `@Default` on the additive model fields already absorbs it (see
+  Open questions 1).
 * **`analyze <source>` → errors/warnings.** Structural checks plus
   reference integrity (red = unresolved reference blocks; amber = declared-but-empty
   warns), reusing the already-Flutter-free `lib/utils/plan_variable_refs.dart` and
@@ -144,18 +195,30 @@ produce a plan with the same `contentHash` as `d`.
 
 ### Enabling render (a small prerequisite)
 
-`render` is blocked only by a narrow dependency: four files import
-`AppLocalizations` — `field_resolver.dart`, `brief_renderer.dart`,
-`utils/variable_values.dart`, `utils/plan_variables.dart`. The resolver already
-takes `l10n` as an explicit parameter (not via `BuildContext`), so no call-graph
-surgery is needed — only the *type* leaks Flutter. The brief layer uses just nine
-distinct l10n members. The fix is a small dependency inversion: a plain-Dart
-`BriefLabels` interface those files depend on, with an app-side adapter over
-`AppLocalizations` (behaviour-preserving) and a headless implementation that
-**reads the ARB JSON directly** (`app_en.arb`/`app_nb.arb` are JSON), formatting
-ICU messages with the already-Flutter-free `package:intl`. Two nuances: `localeName`
-comes from the ARB `@@locale` (or the plan's `languageCode`), and a few messages
-are ICU plurals, not plain `{name}` substitution. This is an **amendment to
+`render` is blocked only by a narrow dependency, though the file list is not the
+one stated when this was drafted. `utils/variable_values.dart` and
+`utils/plan_variables.dart` are **already** Flutter-free (they only name
+`AppLocalizations` in comments). The actual closure is five files:
+`field_resolver.dart` and `brief_renderer.dart` (both import
+`app_localizations.dart`), `utils/exercise_share_format.dart` (five uses), and
+`template_registry.dart` → `utils/locale_utils.dart`, which imports
+`package:flutter/widgets.dart` for `Locale`. Plus one dependency not previously
+noted: `brief_renderer.dart` loads its mustache templates through
+`rootBundle`/`AssetBundle`, so it needs a template-source abstraction alongside
+the label one.
+
+The resolver already takes `l10n` as an explicit parameter (not via
+`BuildContext`), so no call-graph surgery is needed — only the *type* leaks
+Flutter. The brief layer uses just nine distinct l10n members (verified). The fix
+is a small dependency inversion: a plain-Dart `BriefLabels` interface those files
+depend on, with an app-side adapter over `AppLocalizations`
+(behaviour-preserving) and a headless implementation that **reads the ARB JSON
+directly** (`app_en.arb`/`app_nb.arb` are JSON), formatting ICU messages with the
+already-Flutter-free `package:intl`. Two nuances: several messages are ICU
+plurals rather than plain `{name}` substitution, and `localeName` must come from
+the plan's `languageCode` or the ARB filename — **neither ARB file has an
+`@@locale` key**, so the source this originally named does not exist. This is an
+**amendment to
 [ADR-0048](../adrs/0048-flutter-free-field-resolver.md)** — finishing its stated
 "resolver stays free of `package:flutter`" — not a new ADR. Once done, both
 `render` and full-fidelity `analyze` are Flutter-free, and one resolver serves
@@ -189,32 +252,56 @@ generated is traceable and lineage is kept — no schema bump.
 The nine format decisions are stated with their rationale in the worked example
 (§3, "Decided"): single YAML file with inline markdown; mirror the frozen wire
 keys; `{lat, lng}` coordinates; references by array position with roleplays
-nested under the station; numbering out of names; structured markdown fields;
-UTM via a location token; effective identity by inheritance; staff/PII stripped
-on decompile. Beyond those:
+nested under the station; numbering from order with names left opaque; structured
+markdown fields; UTM via a location token; effective identity by inheritance;
+staff/PII stripped on decompile. Beyond those:
 
 1. **`build` + `decompile` + `analyze` + `schema` are the immediate
-   deliverables** — they need no change to existing app code. **`render` is one
-   small prerequisite away** (the ADR-0048 amendment below: a headless ARB-JSON
-   label provider), behaviour-preserving, and belongs in the same v1 effort —
-   ordered after the zero-refactor commands, not deferred.
+   deliverables**, and they need two small, behaviour-preserving extractions
+   rather than none as first drafted: the rotation math off `TimeOfDay` (§ The
+   compiler and the CLI, `build`), and a two-key headless ARB label provider for
+   generated default names. **`render` is one further prerequisite away** (the
+   ADR-0048 amendment below, extending the same label provider to nine keys plus
+   a template source), behaviour-preserving, and belongs in the same v1 effort —
+   ordered after the other commands, not deferred.
 2. **The compiler is pure Dart in `lib/`, wrapped by the CLI; the MCP server
    wraps the CLI.** One source of truth for the format — avoid a third
    reimplementation beyond Dart `drill_file.dart` and the JS the Netlify publish
    path already has.
 3. **The source format carries its own version**, decoupled from the `.drill`
-   schema, and the compiler owns a legacy-wire-key tolerance map (below).
+   schema. Historical variance in the corpus is normalized by a shared migration
+   ladder ([ADR-0059](../adrs/0059-drill-schema-migration-ladder.md)) rather than
+   a per-reader tolerance map, under one invariant — a rung may fill an absent
+   field or rename a key, never rewrite an authored value — which is what keeps
+   normalization compatible with the `contentHash` round trip. **No `.drill`
+   schema bump and no support floor**: measured against the live catalog, the
+   version string does not identify the content shape (open question 1).
 
 ## Open questions
 
-1. **Legacy wire keys on decompile.** The `.drill` *envelope* is frozen
-   (`program.json` root, folder layout, extension), but content keys have changed:
-   `signalement → description` (a clean break, no back-compat read) and
-   `programId → planId` ([ADR-0055](../adrs/0055-programid-planid-wire-back-compat.md),
-   with a fallback). `DrillFile` back-compat-reads `actors/` and `programId` but
-   not `signalement`. `decompile` of the older catalog corpus therefore needs a
-   tolerance map; scope it against what the live catalog actually contains (in
-   today's corpus, `signalement` is largely null, so the loss is marginal).
+1. **Legacy wire keys on decompile — settled, and smaller than feared.** Scoped
+   against what the live catalog actually contains: it holds **three plans, all
+   schema `1.2`**, and they still differ in shape (two carry `actors`, one
+   `staff`; one has `variables`, two do not; one has no `languageCode`). That is
+   the additive-without-a-bump policy working as intended, and it is why a
+   version *floor* was considered and rejected — the version string does not
+   identify the content shape, so a floor would reject archives it can read while
+   admitting shapes it cannot fully interpret, at the cost of a rule-8 coordinated
+   bump this design does not otherwise need. What absorbs the variance is
+   `@Default` on the additive model fields: `Plan.fromJson` reads all three today,
+   and since `decompile` reads a `Plan` rather than raw JSON, almost no tolerance
+   code is required. The residue is value-level, not key-level, and is handled by
+   the migration ladder in
+   [ADR-0059](../adrs/0059-drill-schema-migration-ladder.md): `signalement →
+   description` (a key rename — the one genuine silent-data-loss path today, since
+   `DrillFile` does not read the old key at all), prose in `description` that
+   belongs in `situation`, and an absent `exercise.index` in schema 1.0 archives,
+   where index comes from arrival order exactly as `PlanService` already assigns
+   it on import. Baked-in numbering labels in names are *not* in scope — see
+   "Names are opaque" above. `test/fixtures/test-7x.drill` is a stale schema-1.0
+   archive and is worth keeping precisely for that: it is the repo's only pre-1.2
+   artifact and the natural bottom-rung test. Add the real `lsor-eidene-2026`
+   archive as a current 1.2 fixture for the round-trip golden.
 2. **Station-owned locations duplicate shared points.** DESIGN-009 chose
    station-owned data over a central registry (roll-up deferred). A point every
    station references — one IPP for the exercise — is declared once per station.
@@ -226,19 +313,41 @@ on decompile. Beyond those:
 4. **Which markdown fields are effectively required** for a usable brief
    (`situation`? `mission`?) — a generation/validation guideline for the skill,
    not a format rule.
-5. **Companion ADR — recorded.** The source format and the Flutter-free compiler
-   are recorded in [ADR-0058](../adrs/0058-source-format-and-plan-compiler.md)
-   (accepted); the `render` enabler is an amendment to ADR-0048, not a new ADR.
+5. **Companion ADRs.** The source format and the Flutter-free compiler are
+   recorded in [ADR-0058](../adrs/0058-source-format-and-plan-compiler.md)
+   (accepted). Legacy normalization is
+   [ADR-0059](../adrs/0059-drill-schema-migration-ladder.md) (proposed), which
+   supersedes ADR-0058's "the compiler owns a legacy-wire-key tolerance map" with
+   a ladder shared by both readers. The `render` enabler remains an amendment to
+   ADR-0048, not a new ADR.
 
 ## Implementation notes
 
 Staged, each a separate PR; all additive, no schema bump.
 
 1. **Source model + `build`.** Define the source document parse/emit against the
-   current model, fill the derived fields, `DrillFile.fromProgram`. Golden test:
-   `build(decompile(d))` preserves `contentHash`. Companion **ADR-0058**.
-2. **`decompile` + legacy tolerance.** Emit the source document from a `.drill`,
-   with the legacy-wire-key map for the catalog corpus.
+   current model, fill the derived fields, `DrillFile.fromPlan`. Rather than a
+   second typed model of the document (a third representation after `Plan` and the
+   wire JSON, and a guaranteed source of drift between the four commands), drive
+   all four from **one declarative field table** — per field: source key, wire key,
+   value-shape converter (`"HH:MM"` ↔ `{hour,minute}`, `{lat,lng}` ↔ `[lng,lat]`),
+   authored/derived/identity, and scope. Parse normalizes YAML to a wire map,
+   injects the derived fields, and hands it to the existing `Plan.fromJson` /
+   `Exercise.fromJson`, patching markdown in via `copyWith` the way
+   `DrillFile.plan()` already does; `decompile` reads the same table backwards; and
+   `schema` cannot then describe something `build` will not accept. Includes the
+   schedule extraction and the two-key ARB label provider above. Golden test:
+   `build(decompile(d))` preserves `contentHash` (lands with stage 2; a
+   build-only golden here). Companion **ADR-0058**. Add a CI guard for AGENTS.md
+   rule 7 while here (`dart compile exe bin/ringdrill.dart`): the CLI's import
+   closure is `drill_client` + `drill_file` today, this design grows it
+   substantially, and there is currently no check that fails on a stray Flutter
+   import.
+2. **`decompile` + the migration ladder.** Emit the source document from a
+   `.drill`; introduce the ADR-0059 ladder and move the existing scattered
+   back-compat branches onto it. Deterministic output is a requirement of the
+   golden test, so decompile tie-breaks ordering on archive entry name where
+   arrival order is arbitrary.
 3. **`analyze` + `schema`.** Structural + reference-integrity analysis on the
    Flutter-free ref utils; extract a Flutter-free facet list from `PlanFieldTokens`
    for full fidelity; emit the JSON Schema.
