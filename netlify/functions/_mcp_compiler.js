@@ -8,6 +8,10 @@
 // Regenerate the bundle with `make mcp-bundle`. It is committed because a Netlify
 // build has no Dart SDK.
 import { webcrypto } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { runInThisContext } from "node:vm";
 
 /// dart2js targets browsers, where `self` and `crypto` are globals. Node has
 /// neither by default, and `Random.secure()` compiles to code that reads `self` —
@@ -24,25 +28,46 @@ function installBrowserGlobals() {
 
 let ready;
 
-/// Imports the bundle once per process, returning `globalThis.ringdrillInvoke`.
+/// Evaluates the bundle once per process, returning `globalThis.ringdrillInvoke`.
 ///
-/// Netlify reuses a warm function instance, so this is paid on a cold start only —
-/// which matters, since parsing ~700 KB of JavaScript is the bulk of the work for
-/// a small document.
+/// Read and evaluated rather than `import`ed, and that is load-bearing: **dart2js
+/// output must not be re-bundled.** Netlify's esbuild step inlines an imported
+/// module into the function, and doing that to this bundle breaks Dart's runtime
+/// type information — every `analyze_plan` came back as
+/// `type 'minified:z2' is not a subtype of type 'minified:z'` while `create_plan`,
+/// which touches no generic collection, worked fine. Verified by driving the
+/// esbuild-produced file directly outside Netlify: it fails there too, so it is the
+/// bundling and not the runtime.
+///
+/// `runInThisContext` executes the script against the current global, which is
+/// exactly what the bundle expects — it is a script that assigns to globals, not a
+/// module. The path is built at runtime so esbuild cannot see a dependency to
+/// follow; `netlify.toml`'s `included_files` is what actually ships the file.
+///
+/// Netlify reuses a warm instance, so this is paid on a cold start only — which
+/// matters, since evaluating ~700 KB of JavaScript is the bulk of the work for a
+/// small document.
 function load() {
     ready ??= (async () => {
         installBrowserGlobals();
-        await import("./_mcp_compiler_bundle.js");
+        const here = dirname(fileURLToPath(import.meta.url));
+        const path = join(here, BUNDLE_FILE);
+        const code = await readFile(path, "utf8");
+        runInThisContext(code, { filename: path });
         if (typeof globalThis.ringdrillInvoke !== "function") {
             throw new Error(
-                "_mcp_compiler_bundle.js did not install ringdrillInvoke — " +
-                    "regenerate it with `make mcp-bundle`",
+                `${BUNDLE_FILE} did not install ringdrillInvoke — regenerate it ` +
+                    "with `make mcp-bundle`",
             );
         }
         return globalThis.ringdrillInvoke;
     })();
     return ready;
 }
+
+/// Split out so the name is not a string literal esbuild could resolve as an
+/// import specifier, and so `included_files` and this agree in one place.
+const BUNDLE_FILE = "_mcp_compiler_bundle.js";
 
 /// Milliseconds a single compile may take before it is abandoned.
 ///

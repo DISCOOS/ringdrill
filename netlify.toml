@@ -60,6 +60,16 @@
 [functions]
     directory = "netlify/functions"
 
+    # The cross-compiled source compiler (ADR-0060) ships as a data file rather
+    # than an import. dart2js output must not be re-bundled: esbuild inlines an
+    # imported module into the function, and that breaks Dart's runtime type
+    # information — analyze_plan failed with "type 'minified:z2' is not a subtype
+    # of type 'minified:z'" while simpler tools worked. _mcp_compiler.js therefore
+    # reads and evaluates it at runtime, which means esbuild never sees a
+    # dependency to follow, which means this line is what puts the file in the
+    # deployed bundle.
+    included_files = ["netlify/functions/_mcp_compiler_bundle.js"]
+
 # Public API aliases.
 #
 # Two forms are supported. Both route to the same Netlify function.
@@ -80,6 +90,19 @@
 [[redirects]]
     from = "/api/drills-upload"
     to = "/.netlify/functions/drills-upload"
+    status = 200
+
+# The hosted MCP endpoint (ADR-0060). `/mcp` is the conventional path a client
+# expects, so it is exposed at the API origin's root rather than under /api/ —
+# a URL a person pastes into a client config should be as short as it can be.
+[[redirects]]
+    from = "/mcp"
+    to = "/.netlify/functions/mcp"
+    status = 200
+
+[[redirects]]
+    from = "/api/mcp"
+    to = "/.netlify/functions/mcp"
     status = 200
 
 [[redirects]]
