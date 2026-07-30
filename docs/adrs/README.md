@@ -68,6 +68,8 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0058 | [Introduce a source format compiled to `.drill` by a Flutter-free CLI](./0058-source-format-and-plan-compiler.md) | Accepted |
 | ADR-0059 | [Normalize legacy `.drill` archives through an ordered migration ladder](./0059-drill-schema-migration-ladder.md) | Accepted |
 | ADR-0060 | [Serve the MCP server remotely as a Netlify function, with the compiler cross-compiled to JavaScript](./0060-remote-mcp-server.md) | Accepted |
+| ADR-0061 | [Accept a UTM string wherever the source format takes a position](./0061-utm-coordinate-input-in-source-format.md) | Proposed |
+| ADR-0062 | [Author an exercise's rounds explicitly when they are not uniform](./0062-authored-rounds-for-non-uniform-exercises.md) | Proposed |
 
 ## When to write an ADR
 
