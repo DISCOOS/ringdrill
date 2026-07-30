@@ -212,7 +212,14 @@ class SourceScopes {
         'identity is (exercise, index).',
     fields: [
       SourceField('name', shape: SourceShape.string),
-      SourceField('variantSuffix', shape: SourceShape.string),
+      SourceField(
+        'variantSuffix',
+        shape: SourceShape.string,
+        description:
+            'Display-only qualifier appended after the station name in '
+            'the brief ("7a – Assistanse turgåer – variant B"). Nothing is '
+            'derived from it and it has no editable UI in the app.',
+      ),
       SourceField(
         'position',
         shape: SourceShape.position,
@@ -496,11 +503,20 @@ class SourceScopes {
         'exerciseNumberFormat',
         shape: SourceShape.enumeration,
         enumValues: ['hash'],
+        description:
+            'How a derived exercise number is displayed: '
+            '"hash" renders exercise 2 as "#2".',
       ),
       SourceField(
         'stationNumberFormat',
         shape: SourceShape.enumeration,
         enumValues: ['dotted', 'alpha'],
+        description:
+            'How a derived station code is displayed: "dotted" '
+            'renders exercise 2\'s first station as "2.1", "alpha" as "2a". '
+            'Pick "alpha" to reproduce a source document that labels its posts '
+            '1a/2f/7c — model each of its exercises as one exercise and its '
+            'lettered sub-sections as that exercise\'s stations.',
       ),
       SourceField(
         'intro',

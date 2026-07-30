@@ -39,8 +39,16 @@ table the compiler validates against, so it cannot be out of date.
 4. Write the content.
 5. **`analyze_plan`** — always. Fix everything it reports.
 6. **`render_plan --audience=director`** — read the brief. This is where a plan
-   that is structurally fine but useless becomes obvious.
-7. **`build_plan`** when it is right.
+   that is structurally fine but useless becomes obvious. `analyze` passing tells
+   you the references resolve, nothing about whether the output reads. Look for:
+   a heading rendered twice because a field opens with its own heading; a
+   `**Bold**` sub-heading duplicating a section the template already emits; a
+   location token printing a place the prose just named; a derived schedule that
+   contradicts times you wrote in prose.
+7. **`render_plan --audience=participant`** when the plan has anything to hide —
+   only `director_notes` is withheld, so this is how you find a spoiler sitting in
+   the wrong field.
+8. **`build_plan`** when it is right.
 
 Publishing is not available to you, by design. Hand the built archive to the
 person you are working with; they publish it.
@@ -79,9 +87,24 @@ deliberate override of everything.
 **Never invent staff.** Real people are a local, private layer that is stripped at
 publish. `persons` are fictional scenario subjects and carry no PII.
 
+**And never write staff into prose.** The stripping applies to Staff, not to the
+markdown fields, so a real name or a duty number in `director_notes` publishes
+with the plan. Source documents are full of them — a marker roster in a tips
+column, "ring Narve på …", a contact person for a venue. Drop the names and keep
+the role ("markør tildeles av veileder"). Operational numbers that genuinely
+belong in the plan go in a variable, where they are easy to find and change before
+publishing.
+
 **More teams than stations cannot rotate.** `numberOfTeams` must be ≤ the station
 count. The reverse is fine and common: a full-scale exercise often runs
 `numberOfTeams: 1` over several stations, with the real teams grouped into one.
+
+**Not every exercise is a rotation, and some cannot be expressed.** Every round
+is the same length, and two stations cannot run concurrently. Real booklets
+contain both. Read *What the rotation cannot express* in
+[`reference/format.md`](reference/format.md) before you force an exercise into a
+grid it does not fit — the honest move is sometimes a correct per-station duration
+plus a note that the derived schedule does not apply.
 
 ## Writing content that is worth reading
 
