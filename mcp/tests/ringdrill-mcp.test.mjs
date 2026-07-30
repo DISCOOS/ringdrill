@@ -9,6 +9,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { mkdtemp, mkdir, writeFile, rm, cp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -276,4 +278,95 @@ test('render_plan produces the brief a director reads', async () => {
     // Director-only content is present, and the scaffold's tokens resolved.
     assert.match(result.markdown, /Instructor-only notes/);
     assert.ok(!result.markdown.includes('{{'), 'a token was left unresolved');
+});
+
+test('an unrunnable build/cli binary is rejected, not used', async () => {
+    // The case that produced "Syntax error: word unexpected" from a Linux sandbox
+    // holding a macOS build: existence is not runnability, and the error that
+    // reached the agent named no cause. The server must reject the binary, say
+    // which one and why, and fall through to a CLI that works.
+    //
+    // Run against a copy of the repo so a fake build/cli cannot disturb the real
+    // one: the tree is symlinked except build/, which holds only the bad binary.
+    const sandbox = await mkdtemp(join(tmpdir(), 'ringdrill-mcp-badcli-'));
+    try {
+        await mkdir(join(sandbox, 'mcp'), { recursive: true });
+        await cp(join(here, '..', 'ringdrill-mcp.mjs'), join(sandbox, 'mcp', 'ringdrill-mcp.mjs'));
+        // repoRoot comes from import.meta.url, so the server will look for
+        // <sandbox>/build/cli and <sandbox>/bin/ringdrill.dart.
+        const badDir = join(sandbox, 'build', 'cli', 'someother_arch', 'bundle', 'bin');
+        await mkdir(badDir, { recursive: true });
+        // Not a valid executable in any format — the same shape of failure as a
+        // Mach-O binary on Linux or a truncated build.
+        await writeFile(join(badDir, 'ringdrill'), 'not-an-executable\n', { mode: 0o755 });
+
+        const child = spawn('node', [join(sandbox, 'mcp', 'ringdrill-mcp.mjs')], {
+            cwd: repoRoot,
+        });
+        let stderr = '';
+        child.stderr.on('data', (d) => (stderr += d));
+        child.stdin.write(
+            `${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' })}\n`,
+        );
+        child.stdin.end();
+        await new Promise((resolve) => child.on('close', resolve));
+
+        assert.match(
+            stderr,
+            /ignoring .*someother_arch.*ringdrill —/,
+            `expected the rejected path and reason on stderr, got: ${stderr}`,
+        );
+        // Fell through rather than committing to the unusable binary.
+        assert.match(stderr, /using CLI from (?!build\/cli)/);
+    } finally {
+        await rm(sandbox, { recursive: true, force: true });
+    }
+});
+
+test('the host platform segment is preferred over another that is present', async () => {
+    // Ordering, not just probing: a stale directory for a different arch must not
+    // be tried first even when it happens to be executable.
+    const sandbox = await mkdtemp(join(tmpdir(), 'ringdrill-mcp-hostpick-'));
+    try {
+        await mkdir(join(sandbox, 'mcp'), { recursive: true });
+        await cp(join(here, '..', 'ringdrill-mcp.mjs'), join(sandbox, 'mcp', 'ringdrill-mcp.mjs'));
+
+        const host = `${{ darwin: 'macos', linux: 'linux', win32: 'windows' }[process.platform]}_${process.arch}`;
+        // Both "binaries" are shell scripts that exit 0, so both pass the probe —
+        // which is the point: only the ordering can distinguish them.
+        for (const [segment, marker] of [[host, 'HOST'], ['zz_other_arch', 'OTHER']]) {
+            const dir = join(sandbox, 'build', 'cli', segment, 'bundle', 'bin');
+            await mkdir(dir, { recursive: true });
+            await writeFile(
+                join(dir, 'ringdrill'),
+                `#!/bin/sh\necho '{"marker":"${marker}"}'\n`,
+                { mode: 0o755 },
+            );
+        }
+
+        const child = spawn('node', [join(sandbox, 'mcp', 'ringdrill-mcp.mjs')], {
+            cwd: repoRoot,
+        });
+        let stdout = '';
+        child.stdout.on('data', (d) => (stdout += d));
+        child.stdin.write(
+            `${JSON.stringify({
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'tools/call',
+                params: { name: 'schema', arguments: {} },
+            })}\n`,
+        );
+        child.stdin.end();
+        await new Promise((resolve) => child.on('close', resolve));
+
+        const message = JSON.parse(stdout.trim().split('\n').pop());
+        assert.equal(
+            JSON.parse(message.result.content[0].text).marker,
+            'HOST',
+            'the host-matching segment should be chosen',
+        );
+    } finally {
+        await rm(sandbox, { recursive: true, force: true });
+    }
 });

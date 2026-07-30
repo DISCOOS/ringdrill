@@ -18,7 +18,7 @@
 // less code than the dependency would be — and this repo's package.json is the
 // Netlify functions package, so adding one there would couple the backend's
 // dependency tree to an agent-tooling concern.
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -31,6 +31,35 @@ const SERVER_INFO = { name: 'ringdrill', version: '1.0.0' };
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
+/// The `build/cli` directory name `dart build cli` would use on this host, or null
+/// for a platform/arch pair we have no mapping for.
+function hostPlatformSegment() {
+    const os = { darwin: 'macos', linux: 'linux', win32: 'windows' }[
+        process.platform
+    ];
+    const arch = { arm64: 'arm64', x64: 'x64' }[process.arch];
+    return os && arch ? `${os}_${arch}` : null;
+}
+
+/// Null when [binary] runs, otherwise why it does not.
+///
+/// Existence is not runnability. A repo mounted or copied across machines carries
+/// whatever `build/cli` it was built with, and running a Mach-O binary on Linux
+/// fails in a way that names no cause: the kernel refuses the header, the shell
+/// falls back to reading it as a script, and the caller gets
+/// `Syntax error: word unexpected`. Neither an agent nor a person can recover from
+/// that message. A truncated or half-written binary fails the same way, which a
+/// platform-name check alone would not catch — so probe rather than infer.
+///
+/// One spawn at startup, not per call, so this does not touch the latency budget
+/// the resolution order exists to protect. `--help` exits 0 and writes only usage.
+function whyNotExecutable(binary) {
+    const probe = spawnSync(binary, ['--help'], { stdio: 'ignore' });
+    if (probe.error) return probe.error.message;
+    if (probe.status !== 0) return `exited ${probe.status}`;
+    return null;
+}
+
 /// Locates the CLI, preferring whatever is fastest and most likely to be current.
 ///
 /// `dart run` costs ~2.9s per call against ~0.6s for a compiled binary, and
@@ -39,20 +68,37 @@ const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 /// it here rather than making everyone set RINGDRILL_CLI is the whole point:
 /// `make mcp` builds the binary, and this finds it.
 ///
-/// Order: an explicit override, then a locally built binary, then a globally
-/// activated one, then `dart run` as the always-works fallback.
+/// Order: an explicit override, then a locally built binary that runs, then a
+/// globally activated one, then `dart run` as the always-works fallback.
 function resolveCli() {
     if (process.env.RINGDRILL_CLI) {
         return { command: process.env.RINGDRILL_CLI, source: 'RINGDRILL_CLI' };
     }
 
-    // `dart build cli` writes build/cli/<platform>/bundle/bin/ringdrill; the
-    // platform segment varies by host, so glob rather than hardcode it.
+    // `dart build cli` writes build/cli/<platform>/bundle/bin/ringdrill. Try the
+    // segment matching this host first; keep a glob as a second pass so a segment
+    // name we did not anticipate still works, and probe either way.
     const cliDir = join(repoRoot, 'build', 'cli');
     if (existsSync(cliDir)) {
-        for (const platform of readdirSync(cliDir)) {
+        const host = hostPlatformSegment();
+        const present = readdirSync(cliDir);
+        const ordered = [
+            ...present.filter((p) => p === host),
+            ...present.filter((p) => p !== host),
+        ];
+        for (const platform of ordered) {
             const binary = join(cliDir, platform, 'bundle', 'bin', 'ringdrill');
             if (!existsSync(binary)) continue;
+            const problem = whyNotExecutable(binary);
+            if (problem) {
+                // Say so: an unexplained fall-through to the slow path is the kind
+                // of thing that gets diagnosed twice.
+                process.stderr.write(
+                    `ringdrill-mcp: ignoring ${binary} — ${problem}` +
+                        `${platform === host ? '' : ` (built for ${platform}, host is ${host ?? 'unknown'})`}\n`,
+                );
+                continue;
+            }
             return { command: binary, source: 'build/cli', path: binary };
         }
     }
