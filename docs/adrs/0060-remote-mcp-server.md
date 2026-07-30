@@ -14,6 +14,8 @@ informed: []
 
 That is a developer's setup, and the people the feature is for are not developers. A SAR instructor drafting an exercise plan has Claude in a browser or a desktop app; they do not have a Dart toolchain, and telling them to get one is telling them not to use the feature. Stdio serves the person building RingDrill; it does not serve the person using it. Remote hosting is what makes stage 4 reach its actual audience.
 
+The toolchain is not the only barrier, and probing the local server established a second, independent one: a stdio server does not run inside the Cowork sandbox. One configured in the desktop app is bridged in and runs on the host — which is why it reaches a locally built binary at all — so it works in the desktop app only, and a remote session gets no local servers to bridge. Even a developer therefore cannot use the stdio server everywhere they use Claude. See [`mcp/README.md`](../../mcp/README.md) for the detail.
+
 The obstacle was assumed to be structural. Every tool shells out to the `ringdrill` CLI — a native binary — which no function runtime can hold: Cloudflare Workers are V8 isolates with no subprocesses at all, and a Netlify function bundling a platform-specific executable is a build problem nobody wants. The apparent options were a container (a new infrastructure category for this repo) or a hand-written JavaScript port of the compiler, which [ADR-0058](./0058-source-format-and-plan-compiler.md) rejected precisely to avoid a second implementation of the format.
 
 That assumption turned out to be wrong, and measurement is what settled it (see Decision outcome). The compiler is Flutter-free pure Dart, and Dart cross-compiles to JavaScript.

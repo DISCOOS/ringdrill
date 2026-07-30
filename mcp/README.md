@@ -66,13 +66,23 @@ gets used is the difference between usable and irritating: **~0.6s** for a compi
 binary against **~2.9s** for `dart run`. Resolution order:
 
 1. `RINGDRILL_CLI`, if set
-2. a binary built by `dart build cli` (what `make mcp` produces)
+2. a binary built by `dart build cli` (what `make mcp` produces), preferring the
+   `build/cli` directory matching this host and **probing it before use**
 3. `ringdrill` on `PATH` (`dart pub global activate -s path .`)
 4. `dart run bin/ringdrill.dart` — always works, slowest
 
-The server writes which one it chose to stderr, and warns when a built binary is
-older than the newest `.dart` file — the twenty-minutes-testing-stale-code
-footgun. stderr, never stdout: stdout is the JSON-RPC stream.
+Existence is not runnability, which is why step 2 probes. A repo mounted or copied
+across machines carries whatever `build/cli` it was built with, and running a macOS
+binary on Linux fails in a way that names no cause — the kernel refuses the header,
+the shell reads it as a script, and the caller gets
+`Syntax error: word unexpected`. A truncated or half-written build fails the same
+way, which a platform-name check alone would not catch. A rejected candidate is
+named on stderr with the reason, so falling back to the slow path is visible.
+
+The server also writes which CLI it chose to stderr, and warns when a built binary
+is older than the newest `.dart` file — the twenty-minutes-testing-stale-code
+footgun. stderr, never stdout: stdout is the JSON-RPC stream, and a stray write to
+it corrupts the transport.
 
 ## Requirements
 
@@ -122,6 +132,24 @@ that form works.
 
 `RINGDRILL_BASE_URL` is read by the CLI itself and points the catalog tools at a
 different backend — see [`docs/api.md`](../docs/api.md).
+
+### Cowork, and why a local server is not enough
+
+A stdio server does **not** run inside the Cowork sandbox. A server configured in
+the desktop app's own config is bridged into the session by the desktop app and runs
+on the *host*, which is how it reaches a locally built binary at all. Two
+consequences worth knowing before you rely on it:
+
+* It works in the **desktop app only**. A remote Cowork session gets no local
+  servers, so there is nothing to bridge.
+* Bundling the server in a plugin manifest is currently a dead end: `mcpServers` in
+  `plugin.json` is dropped during parsing
+  ([anthropics/claude-code#16143](https://github.com/anthropics/claude-code/issues/16143)).
+  The workaround is a `.mcp.json` inside the plugin directory.
+
+This is the second, independent reason the stdio server cannot reach a
+non-developer — the first being the toolchain requirement — and both are why
+[ADR-0060](../docs/adrs/0060-remote-mcp-server.md) accepts remote hosting.
 
 ## The raw protocol
 
