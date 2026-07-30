@@ -25,9 +25,36 @@ changed.
 | `build_plan` | `ringdrill build`, returning the archive base64-encoded |
 | `render_plan` | `ringdrill render` |
 
+The hosted deployment runs the same operations against a cross-compiled copy of the
+same compiler rather than the binary — see *How the hosted endpoint is built*.
+
 **`publish` is deliberately absent.** The catalog is a shared, wiki-model corpus,
 and an agent should not write to it unattended. Publishing stays a human running
 `ringdrill publish`.
+
+## Hosted or local?
+
+Two deployments, one tool table (`tools.mjs`), so an agent sees the same seven tools
+either way. What differs is where your document goes.
+
+|  | Hosted | Local (stdio) |
+|---|---|---|
+| Setup | a URL | a checkout, Dart SDK, Node, `make mcp` |
+| Where the plan text goes | to `api.ringdrill.app` | nowhere — it stays on the machine |
+| Works in ChatGPT, remote Cowork | yes | no |
+| Works offline | no | yes |
+
+**Use the local server for anything you would not email.** Real plans are marked
+staff-only — the anchor plan in the catalog opens with "KUN FOR STAB" — and the
+hosted endpoint necessarily receives the text you send it. It **does not persist
+documents**: it compiles the request and answers, there is no write path, and the
+only storage it touches is a read of the already-public catalog
+([ADR-0060](../docs/adrs/0060-remote-mcp-server.md)). That is a design requirement,
+not a courtesy — but "not stored" is still not the same as "never sent", and only
+the local server gives you the latter.
+
+The hosted endpoint accepts documents up to 512 KB and bounds a compile at 10
+seconds. Beyond that, use the local server.
 
 ## Running it locally
 
@@ -179,18 +206,30 @@ inherits — give an absolute path to the node binary too.
 
 Not committed here, since `.vscode/` is a matter of personal preference.
 
-### ChatGPT — not yet
+### Using the hosted endpoint instead
 
-ChatGPT's MCP connectors take a **remote HTTPS endpoint**; a local stdio server is
-not something it can launch. Until the hosted endpoint of
-[ADR-0060](../docs/adrs/0060-remote-mcp-server.md) exists, the options are to
-bridge this server to a URL yourself (`mcp-remote` over a tunnel) or to use one of
-the clients above.
+Any client that takes a remote MCP server takes this one — no command, no path:
+
+```
+https://api.ringdrill.app/mcp
+```
+
+Claude Code: `claude mcp add --transport http ringdrill https://api.ringdrill.app/mcp`.
+Claude Desktop and Codex CLI take a `url` in place of `command`/`args`. In VS Code,
+`.vscode/mcp.json` takes `{"type": "http", "url": "…"}`.
+
+### ChatGPT
+
+ChatGPT's MCP connectors take a **remote HTTPS endpoint** and cannot launch a local
+stdio server, so the hosted endpoint above is the only way in — add it as a
+connector in developer mode. Read the privacy note in *Hosted or local?* first: a
+plan sent to ChatGPT reaches both OpenAI and this endpoint.
 
 ### Cowork
 
 A local server reaches a Cowork session only through the desktop app, and not at all
 in a remote one — see [the constraint below](#cowork-and-why-a-local-server-is-not-enough).
+The hosted endpoint has neither limitation, which is what it is for.
 
 ### Environment overrides
 
@@ -225,23 +264,27 @@ This is the second, independent reason the stdio server cannot reach a
 non-developer — the first being the toolchain requirement — and both are why
 [ADR-0060](../docs/adrs/0060-remote-mcp-server.md) accepts remote hosting.
 
-## When the hosted endpoint lands
+## How the hosted endpoint is built
 
-ADR-0060 is accepted but not built. Everything above describes the local server, so
-when the hosted one exists these need revisiting together — it is easy to add a URL
-somewhere and leave five pages describing a world where only stdio exists:
+`netlify/functions/mcp.js` is the transport; `_mcp_backend.js` the operations. The
+compiler is the *same Dart source* as the app and the CLI, cross-compiled by
+`make mcp-bundle` to `_mcp_compiler_bundle.js` and run in-process — so the format
+still has one implementation (ADR-0058), and there is no subprocess, which is what
+lets this be a function rather than a container.
 
-* **This file** — a hosted section alongside `Running it locally`, the ChatGPT entry
-  replaced with the real endpoint, and each client's config gaining the remote form.
-* **The root [`README.md`](../README.md)** — its authoring section currently says
-  "run it locally".
-* **[`skills/ringdrill-plan-authoring/SKILL.md`](../skills/ringdrill-plan-authoring/SKILL.md)**
-  — it tells the agent which tools to call, not where they run, so it should need no
-  change. Worth confirming rather than assuming.
-* **The privacy statement.** ADR-0060 requires that the hosted server not persist
-  documents. That has to be visible to the person deciding whether to paste a
-  staff-only plan into it, which means here and in the root README — not only in an
-  ADR nobody reads first.
+Two constraints worth knowing before touching it:
+
+* **The bundle is committed.** A Netlify build has no Dart SDK, so it cannot be
+  produced at deploy time — the same reason `headless_labels.g.dart` and
+  `brief_templates.g.dart` are committed. `make mcp-bundle` after changing anything
+  the compiler reaches; `npm test` fails when the bundle is older than those
+  sources, and a parity test compares its output against the VM's through the CLI.
+* **esbuild must not touch it.** Netlify's bundler inlines imported modules, and
+  doing that to dart2js output breaks Dart's runtime type information — every
+  `analyze_plan` failed with `type 'minified:z2' is not a subtype of type
+  'minified:z'` while simpler tools worked. `_mcp_compiler.js` therefore reads and
+  evaluates the file at runtime, and `netlify.toml`'s `included_files` is what ships
+  it. Do not turn that back into an `import`.
 
 ## The raw protocol
 

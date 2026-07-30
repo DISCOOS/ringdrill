@@ -16,7 +16,8 @@
   "description": "",
   "main": "netlify/functions/_shared.js",
   "scripts": {
-    "test": "node --test netlify/tests/**/*.test.mjs mcp/tests/*.test.mjs",
+    "test": "node --test --test-concurrency=1 netlify/tests/**/*.test.mjs mcp/tests/*.test.mjs",
+    "//test": "--test-concurrency=1 is required, not tuning: both suites shell out to `dart run`, which shares .dart_tool state, and concurrent files intermittently fail one of the Dart invocations.",
     "og:image": "node tools/generate-og-image.mjs"
   },
   "keywords": [],

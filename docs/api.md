@@ -36,6 +36,23 @@ change. The tables below are the human-readable summary.
 | `GET` | `/i/{slug}` | HTML install/preview page for a shared drill |
 | `GET` | `/brief/{uuid}` | `302` to `web.ringdrill.app/brief/{uuid}` (interim, ADR-0041) |
 | `GET` | `/brief/plan/{uuid}` | `302` to `web.ringdrill.app/brief/plan/{uuid}` |
+| `POST` | `/mcp` (alias `/api/mcp`) | The hosted MCP endpoint — MCP over Streamable HTTP. `GET` answers `405`: the server is stateless and pushes nothing |
+
+### The MCP endpoint
+
+`POST /mcp` speaks JSON-RPC 2.0 per the MCP Streamable HTTP transport, exposing the
+source-format tools an AI assistant uses to draft a drill plan
+([ADR-0060](./adrs/0060-remote-mcp-server.md), tool list in
+[`mcp/README.md`](../mcp/README.md)). Notable properties, all deliberate:
+
+* **Unauthenticated.** Every tool maps to a public operation and `publish` is
+  absent, so there is nothing to authorize. Abuse is bounded instead: 1 MB body,
+  512 KB source document, 10 s compile.
+* **Stateless.** No `Mcp-Session-Id`, no SSE stream. A batch of only notifications
+  answers `202`.
+* **Nothing is persisted.** The endpoint compiles what it is sent and answers; the
+  only storage it touches is a read of the public catalog.
+* `Cache-Control: no-store` — a result depends on the request body.
 
 ### Admin
 

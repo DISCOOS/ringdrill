@@ -43,9 +43,10 @@ lib/
   l10n/                      .arb sources + generated AppLocalizations
 bin/ringdrill.dart           admin CLI + the source-format commands
                              (create/build/decompile/analyze/render/schema)
-mcp/                         MCP server wrapping the CLI, for agent authoring
+mcp/                         MCP server (stdio) and the tool table both transports share
 skills/                      agent skills (widget preview, plan authoring)
-netlify/functions/           Node.js backend (drill upload/head, deep links, admin, market feed) — api.ringdrill.app
+netlify/functions/           Node.js backend (drill upload/head, deep links, admin, market feed,
+                             the hosted MCP endpoint) — api.ringdrill.app
 site/                        static Astro site (ringdrill.app), deployed to Cloudflare Pages
 workers/apex-proxy/          Cloudflare Worker reverse-proxying dynamic apex paths to the API (ADR-0039)
 test/                        Flutter and pure-Dart tests
@@ -139,12 +140,18 @@ The design is [DESIGN-014](./design/014-source-format-and-plan-compiler.md) with
 is the migration ladder of
 [ADR-0059](./adrs/0059-drill-schema-migration-ladder.md). The agent-facing
 deployment is [`mcp/`](../mcp/README.md) plus the
-[`ringdrill-plan-authoring` skill](../skills/ringdrill-plan-authoring/SKILL.md).
+[`ringdrill-plan-authoring` skill](../skills/ringdrill-plan-authoring/SKILL.md), in
+two forms: a local stdio server, and a hosted endpoint at `/mcp` on the API origin
+([ADR-0060](./adrs/0060-remote-mcp-server.md)) that runs the *same* compiler
+cross-compiled to JavaScript by `make mcp-bundle`. Both read one tool table
+(`mcp/tools.mjs`); only the transport and the backend differ.
 
-Two generated files exist because the CLI cannot reach Flutter assets:
-`lib/l10n/headless_labels.g.dart` (`make labels`) and
-`lib/services/brief/brief_templates.g.dart` (`make templates`). Both are
-prerequisites of `make build`, and both have sync tests.
+Three generated files exist because a caller cannot reach Flutter assets or a Dart
+SDK: `lib/l10n/headless_labels.g.dart` (`make labels`),
+`lib/services/brief/brief_templates.g.dart` (`make templates`) and
+`netlify/functions/_mcp_compiler_bundle.js` (`make mcp-bundle`, for the hosted
+endpoint — a Netlify build has no Dart SDK). The first two are prerequisites of
+`make build`; all three have tests that fail when the copy drifts from its source.
 
 ## Briefs, templates and variables
 

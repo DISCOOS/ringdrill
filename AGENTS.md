@@ -34,6 +34,8 @@ ringdrill build|analyze|render|decompile|schema # the source-format commands
 make mcp                                       # build the CLI + print MCP client config
 make mcp-call ARGS='schema'                    # call one MCP tool by hand
 make mcp-test                                  # the MCP server's own tests
+make mcp-bundle                                # cross-compile the compiler to JS for the hosted endpoint
+make mcp-serve                                 # serve the hosted MCP endpoint locally over HTTP
 skills/flutter-widget-preview/run_preview.sh   # render a widget to a PNG headlessly (no browser)
 ```
 

@@ -19,9 +19,20 @@ A drill plan can be written as a single YAML **source document** and compiled to
 schema` — and an **MCP server** exposes those commands to an AI assistant, so it
 can read the published catalog, draft a plan, check it and render the brief.
 
-Run it locally with `make mcp`. Setup, per-client configuration and what the
-assistant can and cannot do live in [`mcp/README.md`](mcp/README.md); the format
-itself is [DESIGN-014](docs/design/014-source-format-and-plan-compiler.md).
+Two ways to reach it. **Hosted**, needing nothing installed:
+
+```
+https://api.ringdrill.app/mcp
+```
+
+Or **locally** with `make mcp`, which keeps the plan text on your own machine — use
+that for anything you would not email, since the hosted endpoint necessarily
+receives what you send it (it stores nothing; see
+[ADR-0060](docs/adrs/0060-remote-mcp-server.md)).
+
+Both offer the same tools. Setup, per-client configuration and what the assistant
+can and cannot do live in [`mcp/README.md`](mcp/README.md); the format itself is
+[DESIGN-014](docs/design/014-source-format-and-plan-compiler.md).
 
 Publishing is never done by the assistant — the catalog is shared, so that stays a
 human step.

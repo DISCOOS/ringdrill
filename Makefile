@@ -1,6 +1,6 @@
 .PHONY: \
 	build watch i18n labels templates format format-check cli-build cli-check \
-	mcp mcp-bundle mcp-call mcp-test release patch publish \
+	mcp mcp-bundle mcp-call mcp-serve mcp-test release patch publish \
 	build-web build-web-js upload-symbols-web strip-source-maps-web release-web \
 	release-android patch-android \
 	release-ios patch-ios \
@@ -10,7 +10,7 @@
 
 .SILENT: \
 	build watch i18n labels templates format format-check \
-	cli-build cli-check mcp mcp-bundle mcp-call mcp-test release patch
+	cli-build cli-check mcp mcp-bundle mcp-call mcp-serve mcp-test release patch
 
 # Local Netlify dev configuration. Override on the command line, e.g.:
 #   make catalog-seed SEED_DRILL=path/to/other.drill
@@ -191,6 +191,17 @@ mcp-call:
 # `dart run` so the build-hooks preamble it has to tolerate stays exercised.
 mcp-test:
 	node --test mcp/tests/*.test.mjs
+
+# Serve the hosted endpoint (ADR-0060) locally, so it can be exercised over real
+# HTTP rather than only through its handler. Needs the bundle, and worth using
+# rather than trusting the unit tests: Netlify's esbuild step transforms what it
+# imports, and that is how the dart2js/rti breakage was found.
+#
+#   curl -s localhost:8888/.netlify/functions/mcp -H 'content-type: application/json' \
+#     -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+mcp-serve: mcp-bundle
+	echo "Serving the hosted MCP endpoint at http://localhost:8888/.netlify/functions/mcp"
+	npx netlify functions:serve --port 8888
 
 # Web release pipeline. Decomposed so CI can run the steps individually
 # (one log group per step) but `make release-web` is the one-shot used
