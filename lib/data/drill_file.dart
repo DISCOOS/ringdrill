@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as path;
+import 'package:ringdrill/data/drill_migrations.dart';
 import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
@@ -318,10 +319,21 @@ class DrillFile {
     }
 
     // Build Exercise entities, patching in markdown fields and station markdown.
+    //
+    // Manifests are visited in a stable order — archive entry name — so the
+    // ordinal the migration ladder assigns to an index-less 1.0 exercise is the
+    // same on every read of the same bytes. Without that, `decompile` of such an
+    // archive would produce a different document each run and the round-trip
+    // golden could not hold (ADR-0059).
     final exercises = <Exercise>[];
-    for (final entry in exerciseJsons.entries) {
-      final uuid = entry.key;
-      final json = entry.value;
+    final orderedExerciseUuids = exerciseJsons.keys.toList()..sort();
+    var exerciseOrdinal = 0;
+    for (final uuid in orderedExerciseUuids) {
+      final json = DrillMigrations.exercise(
+        exerciseJsons[uuid]!,
+        path: 'exercises/$uuid.json',
+        ordinal: exerciseOrdinal++,
+      );
       late final Exercise base;
       try {
         base = Exercise.fromJson(json);

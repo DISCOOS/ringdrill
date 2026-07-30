@@ -1,0 +1,275 @@
+// The DESIGN-014 round-trip contract: `build(decompile(d))` produces a plan with
+// the same `contentHash` as `d`.
+//
+// This is the test the whole design hangs on. It is what makes `decompile` safe
+// to use on published plans — an author can decompile, edit and rebuild without
+// the compiler quietly changing anything they did not touch — and it is what
+// enforces the two rules that make it possible: uuids are carried through
+// (they are inside the hash and are its sort keys), and no authored value is ever
+// rewritten (ADR-0059).
+//
+// Run against real archives, not synthetic ones. A hand-built fixture only
+// exercises the shapes the fixture's author thought of; the published corpus
+// exercises what people actually wrote.
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ringdrill/data/drill_file.dart';
+import 'package:ringdrill/data/drill_migrations.dart';
+import 'package:ringdrill/data/source/plan_decompiler.dart';
+import 'package:ringdrill/data/source/source_compiler.dart';
+import 'package:ringdrill/models/plan.dart';
+
+/// Decompiles then rebuilds [drillPath], returning both plans.
+({Plan before, Plan after, String yaml}) _roundTrip(String drillPath) {
+  final original = DrillFile.fromFile(File(drillPath)).plan();
+  final document = PlanDecompiler.decompile(original);
+  final rebuilt = SourceCompiler.toPlan(
+    document.yaml,
+    now: DateTime.utc(2026, 1, 1),
+    // A round trip must never need to mint anything: every uuid comes from the
+    // decompiled document. If this throws, that assumption is broken and the
+    // failure names it directly rather than showing up as a hash mismatch.
+    mintUuid: () => throw StateError(
+      'the round trip minted a uuid, so decompile dropped one',
+    ),
+  );
+  return (before: original, after: rebuilt.plan, yaml: document.yaml);
+}
+
+void main() {
+  group('round trip preserves the content hash', () {
+    // The repo's own fixture is a schema-1.0 archive: no metadata.schema, no
+    // tags/variables/languageCode, no markdown files, no role plays, and — the
+    // interesting part — no exercise.index at all, so it exercises the migration
+    // ladder's bottom rung.
+    test('test-7x.drill (schema 1.0, no exercise index)', () {
+      final result = _roundTrip('test/fixtures/test-7x.drill');
+      expect(
+        result.after.computeContentHash(),
+        result.before.computeContentHash(),
+      );
+    });
+
+    // The real published plan the design was written against — schema 1.2, with
+    // tags, a languageCode, markdown companion files and a role play. The
+    // strongest evidence available, because it is what the app actually wrote
+    // rather than what a fixture author thought of.
+    test('lsor-eidene-2026.drill (schema 1.2, published)', () {
+      final result = _roundTrip('test/fixtures/source/lsor-eidene-2026.drill');
+      expect(
+        result.after.computeContentHash(),
+        result.before.computeContentHash(),
+      );
+      // Guards against the fixture being swapped for something thinner: these
+      // are the features that make it worth having as well as test-7x.
+      expect(result.before.tags, isNotEmpty);
+      expect(result.before.metadata.languageCode, 'nb');
+      expect(result.before.exercises.length, greaterThan(1));
+      expect(
+        result.before.exercises.any((e) => e.methodMd != null),
+        isTrue,
+        reason: 'expected markdown companion files',
+      );
+    });
+  });
+
+  group('what the round trip must carry', () {
+    late ({Plan before, Plan after, String yaml}) result;
+
+    setUpAll(() => result = _roundTrip('test/fixtures/test-7x.drill'));
+
+    test('the plan uuid, so a rebuild updates rather than duplicates', () {
+      expect(result.after.uuid, result.before.uuid);
+    });
+
+    test('every exercise and team uuid, in the same order', () {
+      expect(
+        result.after.exercises.map((e) => e.uuid),
+        result.before.exercises.map((e) => e.uuid),
+      );
+      expect(
+        result.after.teams.map((t) => t.uuid),
+        result.before.teams.map((t) => t.uuid),
+      );
+    });
+
+    test('names verbatim, including baked-in numbering labels', () {
+      // The fixture's exercises are named "#1 Søk og redning (ringøvelse)" and
+      // its stations "1a) Turgåer" — a pre-automatic-numbering practice. Numbering
+      // comes from order and names are opaque, so these survive untouched
+      // (ADR-0059). Stripping them would change the hash, which is why the
+      // contract and the rule are the same rule.
+      expect(
+        result.after.exercises.map((e) => e.name),
+        result.before.exercises.map((e) => e.name),
+      );
+      expect(
+        result.before.exercises.any((e) => e.name.startsWith('#')),
+        isTrue,
+        reason: 'fixture no longer covers baked-in numbering',
+      );
+      for (var i = 0; i < result.before.exercises.length; i++) {
+        expect(
+          result.after.exercises[i].stations.map((s) => s.name),
+          result.before.exercises[i].stations.map((s) => s.name),
+        );
+      }
+    });
+
+    test('coordinates, without drifting through the {lat, lng} flip', () {
+      final before = result.before.exercises
+          .expand((e) => e.stations)
+          .where((s) => s.position != null)
+          .map((s) => '${s.position!.latitude},${s.position!.longitude}');
+      final after = result.after.exercises
+          .expand((e) => e.stations)
+          .where((s) => s.position != null)
+          .map((s) => '${s.position!.latitude},${s.position!.longitude}');
+      expect(after, before);
+      expect(before, isNotEmpty);
+    });
+
+    test('the derived schedule matches what the archive already stored', () {
+      // The archive carries a schedule; the compiler recomputes it. They have to
+      // agree, or the extracted ExerciseSchedule has diverged from whatever wrote
+      // these files.
+      for (var i = 0; i < result.before.exercises.length; i++) {
+        expect(
+          result.after.exercises[i].schedule,
+          result.before.exercises[i].schedule,
+          reason: 'exercise ${result.before.exercises[i].name}',
+        );
+        expect(
+          result.after.exercises[i].endTime,
+          result.before.exercises[i].endTime,
+        );
+      }
+    });
+
+    test('the emitted document is byte-stable', () {
+      // Re-decompiling the same plan must produce identical text, or the golden
+      // is comparing something that varies run to run.
+      final again = PlanDecompiler.decompile(result.before);
+      expect(again.yaml, PlanDecompiler.decompile(result.before).yaml);
+    });
+  });
+
+  group('the migration ladder', () {
+    test('fills an absent exercise index from archive order', () {
+      // Schema 1.0 wrote no index, so all seven exercises in the fixture read as
+      // index 0 without this rung — and Numbering.exercise would label every one
+      // of them "#1".
+      final plan = DrillFile.fromFile(
+        File('test/fixtures/test-7x.drill'),
+      ).plan();
+      expect(plan.exercises.map((e) => e.index).toList()..sort(), [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+      ]);
+    });
+
+    test('assigns the same order on every read of the same bytes', () {
+      // Manifests are uuid-named files, so "archive order" has to be pinned to
+      // something stable or decompile would emit a different document each run.
+      final first = DrillFile.fromFile(
+        File('test/fixtures/test-7x.drill'),
+      ).plan();
+      final second = DrillFile.fromFile(
+        File('test/fixtures/test-7x.drill'),
+      ).plan();
+      expect(
+        second.exercises.map((e) => '${e.uuid}:${e.index}'),
+        first.exercises.map((e) => '${e.uuid}:${e.index}'),
+      );
+    });
+
+    test('does not renumber an exercise that already has an index', () {
+      // Idempotence, and the invariant: the rung fills what is absent and never
+      // overwrites what is there.
+      final notes = <MigrationNote>[];
+      final json = <String, dynamic>{'index': 5, 'name': 'Sixth'};
+      DrillMigrations.exercise(json, path: 'x', ordinal: 0, notes: notes);
+      expect(json['index'], 5);
+      expect(notes, isEmpty);
+    });
+
+    test('moves signalement into description', () {
+      final notes = <MigrationNote>[];
+      final json = <String, dynamic>{
+        'stations': [
+          {
+            'persons': [
+              {'slug': 'magnus', 'signalement': 'Rød jakke.'},
+            ],
+          },
+        ],
+      };
+      DrillMigrations.exercise(json, path: 'x', ordinal: 0, notes: notes);
+      final person =
+          (json['stations'] as List).first['persons'].first
+              as Map<String, dynamic>;
+      expect(person['description'], 'Rød jakke.');
+      expect(person.containsKey('signalement'), isFalse);
+      // Two rungs fire: this one, and fill-exercise-index, since the manifest has
+      // no index either. Both are reported — that is the point of the notes.
+      expect(
+        notes.map((n) => n.rung),
+        containsAll(['signalement-to-description', 'fill-exercise-index']),
+      );
+    });
+
+    test('never overwrites a description that is already there', () {
+      // The invariant again: a manifest carrying both keys keeps the current
+      // value, since replacing it would be rewriting an authored value.
+      final json = <String, dynamic>{
+        'stations': [
+          {
+            'persons': [
+              {
+                'slug': 'magnus',
+                'signalement': 'Old.',
+                'description': 'Current.',
+              },
+            ],
+          },
+        ],
+      };
+      DrillMigrations.exercise(json, path: 'x', ordinal: 0);
+      final person =
+          (json['stations'] as List).first['persons'].first
+              as Map<String, dynamic>;
+      expect(person['description'], 'Current.');
+    });
+
+    test('is idempotent', () {
+      final json = <String, dynamic>{
+        'stations': [
+          {
+            'persons': [
+              {'slug': 'magnus', 'signalement': 'Rød jakke.'},
+            ],
+          },
+        ],
+      };
+      DrillMigrations.exercise(json, path: 'x', ordinal: 0);
+      final once = json.toString();
+      DrillMigrations.exercise(json, path: 'x', ordinal: 3);
+      expect(json.toString(), once);
+    });
+
+    test('every rung explains what it handles', () {
+      // The ladder's value is being enumerable — a rung with no description is a
+      // rung nobody can evaluate for removal when raising a support floor.
+      for (final rung in DrillMigrations.all) {
+        expect(rung.name, isNotEmpty);
+        expect(rung.describes, isNotEmpty);
+      }
+    });
+  });
+}

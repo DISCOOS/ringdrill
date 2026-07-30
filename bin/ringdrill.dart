@@ -4,8 +4,10 @@ import 'package:args/args.dart';
 import 'package:http/http.dart' as http;
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
+import 'package:ringdrill/data/source/plan_decompiler.dart';
 import 'package:ringdrill/data/source/source_compiler.dart';
 import 'package:ringdrill/data/source/source_diagnostic.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:universal_io/io.dart';
 
 const _defaultBaseUrl = 'https://ringdrill.netlify.app';
@@ -141,6 +143,10 @@ Future<void> main(List<String> argv) async {
 
       case 'build':
         _runBuild(args, res, jsonOut);
+        break;
+
+      case 'decompile':
+        _runDecompile(args, res, jsonOut);
         break;
 
       case 'publish':
@@ -401,6 +407,76 @@ void _runBuild(List<String> args, ArgResults res, bool jsonOut) {
   }
 }
 
+/// `decompile <file.drill> [--out=<file>]`
+///
+/// Emits the source document for an existing archive. Writes to stdout when
+/// `--out` is absent, so it composes in a pipeline — `decompile x.drill | less`
+/// is the fastest way to read a published plan.
+void _runDecompile(List<String> args, ArgResults res, bool jsonOut) {
+  if (args.length != 1) {
+    _fail('Usage: decompile <file.drill> [--out=<file>]');
+  }
+  final path = args[0];
+  final file = File(path);
+  if (!file.existsSync()) {
+    _fail('File not found: $path');
+  }
+
+  final drillFile = DrillFile.fromFile(file);
+  final Plan plan;
+  try {
+    plan = drillFile.plan();
+  } on DrillFormatException catch (e) {
+    stderr.writeln('Cannot read $path: ${e.message}');
+    exitCode = 65; // EX_DATAERR
+    return;
+  }
+
+  final result = PlanDecompiler.decompile(
+    plan,
+    // A decompiled document is a derived artefact; say so in the file itself, or
+    // it gets mistaken for hand-written source and edited in the wrong place.
+    header:
+        'Decompiled from $path by `ringdrill decompile`.\n'
+        'Edit freely, then rebuild with `ringdrill build`.\n'
+        'Derived fields (schedule, indices, contentHash) are omitted — the\n'
+        'compiler fills them. uuids are kept so a rebuild lands on the same\n'
+        'plan rather than a copy.',
+  );
+
+  final outPath = res['out'] as String?;
+  if (outPath != null) {
+    File(outPath).writeAsStringSync(result.yaml);
+  }
+
+  if (jsonOut) {
+    stdout.writeln(
+      jsonEncode({
+        'source': path,
+        'out': ?outPath,
+        'planId': plan.uuid,
+        'name': plan.name,
+        'exercises': result.exercises.length,
+        'teams': result.teams.length,
+        'contentHash': plan.computeContentHash(),
+        if (outPath == null) 'document': result.yaml,
+      }),
+    );
+    return;
+  }
+
+  if (outPath == null) {
+    stdout.write(result.yaml);
+    return;
+  }
+  stdout.writeln('✔ decompiled $path → $outPath');
+  stdout.writeln('  name        : ${plan.name}');
+  stdout.writeln('  planId      : ${plan.uuid}');
+  stdout.writeln('  exercises   : ${result.exercises.length}');
+  stdout.writeln('  teams       : ${result.teams.length}');
+  stdout.writeln('  contentHash : ${plan.computeContentHash()}');
+}
+
 /// Prints diagnostics grouped by severity, errors first.
 ///
 /// The non-JSON form is deliberately `path: severity: message` rather than a
@@ -562,6 +638,8 @@ PUBLIC COMMANDS (no admin token required):
 SOURCE FORMAT COMMANDS (offline; DESIGN-014):
   build <source.yaml>             Compile a source document to a .drill
                                     [--out=<file>] [--strict]
+  decompile <file.drill>          Emit the source document for an archive
+                                    [--out=<file>]  (stdout when omitted)
 
 ADMIN COMMANDS (RINGDRILL_ADMIN_TOKEN or --token required):
   list-versions <slug>            List versions for a slug
