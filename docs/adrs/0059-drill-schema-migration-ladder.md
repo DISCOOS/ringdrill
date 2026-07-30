@@ -35,6 +35,8 @@ The schema version cannot be the organizing principle here, and measurement conf
 
 Chosen option: **Option A**, because it puts the full set of historical variants in one enumerable, individually-testable place that both readers share, and because a single invariant on what a rung may do is what makes normalization compatible with the round-trip contract.
 
+A **rung** is one migration step — a named, self-describing transform handling exactly one historical shape. The **ladder** is the ordered list of them. The metaphor is load-bearing rather than decorative: order matters (see below), and "raising a support floor" is then literally deleting the bottom rung and its test rather than auditing branches spread across a reader. See also `docs/glossary.md`.
+
 The invariant is load-bearing:
 
 > **A rung may fill a field that is absent, or rename a key. A rung may never rewrite an authored value.**

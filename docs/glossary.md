@@ -16,6 +16,11 @@ The authoritative names are **English** — used in code, tests and all document
 
 * **BriefAudience** — `participant` / `instructor` / `director` (IDs stay English in code). Norwegian labels: `participant` → "Deltaker", `instructor` → "Veileder" (not "Instruktør"), `director` → "Øvelsesleder".
 
+## Formats and tooling
+
+* **Source format** — the one-YAML-file authoring surface a person or an agent writes, compiled to a `.drill` by `ringdrill build` (DESIGN-014, ADR-0058). Norwegian: *kildeformat*. Not a synonym for the `.drill` archive: the archive is the build artifact, and the format deliberately cannot express anything derived.
+* **Migration ladder** / **rung** — the ordered set of normalizers that bring an older `.drill`'s content up to the shape the current model reads (ADR-0059). A **rung** is one step of it: one migration, handling one historical shape, named and self-describing (`lib/data/drill_migrations.dart`). Say "rung" rather than "migration step" — the ordering is real, and "delete the bottom rung" is how a support floor gets raised. A rung may fill an absent field or rename a key; it may never rewrite an authored value.
+
 ## Surfaces
 
 * **Site** — the public website (the Site / PWA / API origin split, ADR-0039). Do not call it "marketing" — that is too narrow.

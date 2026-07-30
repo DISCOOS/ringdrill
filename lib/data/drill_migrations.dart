@@ -85,7 +85,15 @@ class MigrationNote {
   String toString() => '[$rung] $path: $message';
 }
 
-/// One step of the ladder.
+/// One step of the ladder — a **rung**.
+///
+/// The term is used throughout ADR-0059, this library and its tests, so: a rung
+/// is one migration handling exactly one historical shape, named and
+/// self-describing; the ladder is the ordered list of them
+/// ([DrillMigrations.all]). Two consequences follow from the metaphor and both
+/// are real: rungs have an order (see the library doc), and dropping support for
+/// the oldest archives is deleting the bottom rung plus its test rather than
+/// auditing branches spread across a reader.
 abstract class DrillMigration {
   const DrillMigration();
 
