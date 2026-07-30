@@ -70,7 +70,7 @@ void main() {
         _errors(
           _doc(
             plan: '  variables:\n    ipp: {value: "x", type: location}',
-            station: '        situation: "IPP {{var.ipp.utm}}"',
+            station: '        situation: "IPP {{var.ipp.position}}"',
           ),
         ),
         isEmpty,
@@ -115,7 +115,7 @@ exercises:
         _doc(
           station:
               '        locations: [{slug: lkp, label: "LKP"}]\n'
-              '        situation: "Sist sett {{station.loc.ipp.utm}}"',
+              '        situation: "Sist sett {{station.loc.ipp.position}}"',
         ),
       );
       expect(errors.single.message, contains('has no loc "ipp"'));
@@ -138,7 +138,7 @@ exercises:
       // Scenario data is station-owned (DESIGN-009), so this is not a typo — the
       // text is in a place where no station is in context.
       final errors = _errors(
-        _doc(plan: '  intro: "Sist sett {{station.loc.lkp.utm}}"'),
+        _doc(plan: '  intro: "Sist sett {{station.loc.lkp.position}}"'),
       );
       expect(
         errors.single.message,
@@ -153,7 +153,7 @@ exercises:
           _doc(
             station:
                 '        locations: [{slug: lkp, label: "LKP", position: {lat: 59.1, lng: 10.4}}]\n'
-                '        situation: "Sist sett {{station.loc.lkp.utm}}"',
+                '        situation: "Sist sett {{station.loc.lkp.position}}"',
           ),
         ),
         isEmpty,
@@ -349,7 +349,7 @@ exercises:
             locSlug: lkp
         situation: |
           {{station.person.magnus}} ({{station.person.magnus.age}} år).
-          Sist sett {{station.loc.lkp.utm}}. Samband på {{var.talegruppe}}.
+          Sist sett {{station.loc.lkp.position}}. Samband på {{var.talegruppe}}.
         roleplays:
           - personRef: magnus
             behavior: |
