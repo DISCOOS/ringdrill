@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ringdrill": {
+      "command": "node",
+      "args": ["mcp/ringdrill-mcp.mjs"]
+    }
+  }
+}

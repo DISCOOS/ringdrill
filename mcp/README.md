@@ -84,18 +84,31 @@ would couple the backend's dependency tree to an agent-tooling concern.
 
 ## Configuring a client
 
+A checkout already carries [`.mcp.json`](../.mcp.json) at the repo root, so in
+Claude Code the server is offered on approval with nothing to edit and no absolute
+path to paste:
+
 ```json
 {
   "mcpServers": {
     "ringdrill": {
       "command": "node",
-      "args": ["/absolute/path/to/ringdrill/mcp/ringdrill-mcp.mjs"]
+      "args": ["mcp/ringdrill-mcp.mjs"]
     }
   }
 }
 ```
 
-`make mcp` prints this with the path filled in.
+That relative path is resolved by the *launcher*, not by the server — the server
+itself is cwd-independent, since it derives the repo root from `import.meta.url`
+and finds `build/cli` and `bin/` from there regardless of where it was started.
+Verified: an absolute path works from any working directory. **Not** verified: which
+working directory the client launches with. If the relative form fails to resolve,
+use an absolute path, or `${CLAUDE_PROJECT_DIR}/mcp/ringdrill-mcp.mjs` if your
+client expands that.
+
+For a client configured by hand, `make mcp` prints the block with the absolute path
+filled in.
 
 `RINGDRILL_CLI` overrides the resolution above — pin a specific binary, or force
 `dart run` when you want to skip the rebuild step:
