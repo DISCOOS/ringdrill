@@ -16,7 +16,7 @@
   "description": "",
   "main": "netlify/functions/_shared.js",
   "scripts": {
-    "test": "node --test netlify/tests/**/*.test.mjs",
+    "test": "node --test netlify/tests/**/*.test.mjs mcp/tests/*.test.mjs",
     "og:image": "node tools/generate-og-image.mjs"
   },
   "keywords": [],
