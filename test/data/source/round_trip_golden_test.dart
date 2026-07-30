@@ -11,6 +11,7 @@
 // Run against real archives, not synthetic ones. A hand-built fixture only
 // exercises the shapes the fixture's author thought of; the published corpus
 // exercises what people actually wrote.
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -261,6 +262,96 @@ void main() {
       final once = json.toString();
       DrillMigrations.exercise(json, path: 'x', ordinal: 3);
       expect(json.toString(), once);
+    });
+
+    test('renames actors/ to staff/ before anything is classified', () {
+      // DESIGN-011 renamed the folder; a peer-to-peer archive from before that
+      // still arrives. The reader no longer knows the old name at all, so this
+      // rung is the only thing keeping such an archive readable.
+      final notes = <MigrationNote>[];
+      final entries = <String, List<int>>{
+        'actors/a1.json': utf8.encode('{}'),
+        'actors/a1/notes.md': utf8.encode('Local note.'),
+        'staff/keep.json': utf8.encode('{}'),
+      };
+      DrillMigrations.archive(entries, notes: notes);
+      expect(entries.keys.toSet(), {
+        'staff/a1.json',
+        'staff/a1/notes.md',
+        'staff/keep.json',
+      });
+      expect(notes.map((n) => n.rung), everyElement('actors-folder-to-staff'));
+    });
+
+    test('a both-folders archive keeps the current one', () {
+      // The invariant: fill what is absent, never overwrite. An archive carrying
+      // both would otherwise lose whichever the iteration reached second.
+      final entries = <String, List<int>>{
+        'actors/a1.json': utf8.encode('{"realName":"old"}'),
+        'staff/a1.json': utf8.encode('{"realName":"current"}'),
+      };
+      DrillMigrations.archive(entries);
+      expect(utf8.decode(entries['staff/a1.json']!), contains('current'));
+      expect(entries.containsKey('actors/a1.json'), isFalse);
+    });
+
+    test('lifts inline markdown into companion entries', () {
+      // Pre-ADR-0022 archives carried these as JSON strings, and the model's
+      // fields are includeFromJson: false — so without this the content is
+      // dropped silently, exactly like signalement was.
+      final notes = <MigrationNote>[];
+      final entries = <String, List<int>>{
+        'roleplays/rp1.json': utf8.encode(
+          jsonEncode({'behavior': 'Hides.', 'background': 'Lost.'}),
+        ),
+        'staff/s1.json': utf8.encode(jsonEncode({'notes': 'Has own car.'})),
+      };
+      DrillMigrations.archive(entries, notes: notes);
+      expect(utf8.decode(entries['roleplays/rp1/behavior.md']!), 'Hides.');
+      expect(utf8.decode(entries['roleplays/rp1/background.md']!), 'Lost.');
+      expect(utf8.decode(entries['staff/s1/notes.md']!), 'Has own car.');
+      expect(notes, hasLength(3));
+    });
+
+    test('an existing companion file wins over an inline value', () {
+      // The precedence the hand-written branch had, preserved.
+      final entries = <String, List<int>>{
+        'roleplays/rp1.json': utf8.encode(jsonEncode({'behavior': 'inline'})),
+        'roleplays/rp1/behavior.md': utf8.encode('companion'),
+      };
+      DrillMigrations.archive(entries);
+      expect(utf8.decode(entries['roleplays/rp1/behavior.md']!), 'companion');
+    });
+
+    test('the actors rename runs before the markdown lift', () {
+      // Order-dependent pair: the lift addresses `staff/` paths, so a legacy
+      // archive's inline notes only move if the folder was renamed first. This
+      // is why the ladder is ordered rather than a set.
+      final entries = <String, List<int>>{
+        'actors/a1.json': utf8.encode(jsonEncode({'notes': 'Legacy note.'})),
+      };
+      DrillMigrations.archive(entries);
+      expect(utf8.decode(entries['staff/a1/notes.md']!), 'Legacy note.');
+    });
+
+    test('a corrupt manifest is left for the reader to report', () {
+      // The rung must not throw: DrillFile raises a typed DrillFormatException
+      // with the path and cause a moment later, which is the better message.
+      final entries = <String, List<int>>{
+        'roleplays/rp1.json': utf8.encode('not json at all'),
+      };
+      expect(() => DrillMigrations.archive(entries), returnsNormally);
+    });
+
+    test('archive rungs are idempotent', () {
+      final entries = <String, List<int>>{
+        'actors/a1.json': utf8.encode(jsonEncode({'notes': 'n'})),
+        'roleplays/rp1.json': utf8.encode(jsonEncode({'behavior': 'b'})),
+      };
+      DrillMigrations.archive(entries);
+      final once = entries.keys.toList()..sort();
+      DrillMigrations.archive(entries);
+      expect(entries.keys.toList()..sort(), once);
     });
 
     test('every rung explains what it handles', () {

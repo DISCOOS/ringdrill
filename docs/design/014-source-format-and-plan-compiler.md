@@ -292,12 +292,15 @@ staff/PII stripped on decompile. Beyond those:
    and since `decompile` reads a `Plan` rather than raw JSON, almost no tolerance
    code is required. The residue is value-level, not key-level, and is handled by
    the migration ladder in
-   [ADR-0059](../adrs/0059-drill-schema-migration-ladder.md): `signalement →
-   description` (a key rename — the one genuine silent-data-loss path today, since
-   `DrillFile` does not read the old key at all), prose in `description` that
-   belongs in `situation`, and an absent `exercise.index` in schema 1.0 archives,
-   where index comes from arrival order exactly as `PlanService` already assigns
-   it on import. Baked-in numbering labels in names are *not* in scope — see
+   [ADR-0059](../adrs/0059-drill-schema-migration-ladder.md), which has four
+   rungs: the `actors/` → `staff/` folder rename (DESIGN-011); pre-ADR-0022 inline
+   `behavior`/`background`/`notes` lifted into their companion files; `signalement
+   → description`; and an absent `exercise.index` in schema 1.0 archives, where
+   index comes from arrival order exactly as `PlanService` already assigns it on
+   import. The first two and the third were all silent-data-loss paths — the model
+   fields are `includeFromJson: false`, so nothing read the legacy location. Prose
+   in `description` that arguably belongs in `situation` is *not* a rung: moving it
+   would be a value rewrite. Baked-in numbering labels in names are *not* in scope — see
    "Names are opaque" above. `test/fixtures/test-7x.drill` is a stale schema-1.0
    archive and is worth keeping precisely for that: it is the repo's only pre-1.2
    artifact and the natural bottom-rung test. Add the real `lsor-eidene-2026`

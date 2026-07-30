@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-07-30
 deciders: ["kengu"]
 consulted: []
@@ -27,7 +27,7 @@ The schema version cannot be the organizing principle here, and measurement conf
 
 ## Considered options
 
-* **Option A — An ordered ladder of named, idempotent normalizers over the raw wire maps**, applied before `Plan.fromJson`, each rung declaring what it detects and what it rewrites, governed by one invariant on what a rung may do.
+* **Option A — An ordered ladder of named, idempotent normalizers**, applied before anything is classified or parsed, each rung declaring what it detects and what it rewrites, governed by one invariant on what a rung may do.
 * **Option B — Keep the per-call-site back-compat branches** and add the missing cases (`signalement`) where they are needed, once per reader.
 * **Option C — Declare a supported schema floor** (e.g. `>= 1.3`, requiring a schema bump) and refuse anything below it, relying on the app's read-then-write cycle to upgrade archives in circulation.
 
@@ -45,12 +45,54 @@ The invariant is load-bearing:
 
 Ordering follows from the same rule. An exercise's `index` is absent in schema 1.0 archives, so every exercise deserializes to `index: 0`; the ladder assigns index from arrival order, which is what `PlanService` already does on import (`nextIndex++`). Where arrival order is itself arbitrary — a ZIP whose entries are uuid-named — `decompile` tie-breaks on archive entry name, so the same input twice yields the same output. That is determinism, not an attempt to recover intent.
 
-Consequently **no schema bump and no support floor are adopted** (Option C is rejected below on evidence). The ladder makes a floor a later, cheap decision: raising it means deleting the bottom rung.
+### Two kinds of rung
+
+The variance does not all live at the same level, so the ladder has two rung
+types rather than forcing one shape:
+
+* An **archive rung** rewrites the entry index — the map of archive path to bytes
+  — before classification. This is where a renamed folder belongs (`actors/` →
+  `staff/`, DESIGN-011), and also where a value that *moved out of JSON into a
+  companion file* belongs: before ADR-0022 a role play's `behavior`/`background`
+  and a staff member's `notes` were inline manifest strings, and the model fields
+  are now `includeFromJson: false`, so the content is dropped silently exactly as
+  `signalement` was. Synthesizing the absent companion entry — rather than
+  patching the entity afterwards — is what lets the reader drop its legacy
+  branches entirely: once the ladder has run, a value is always where the current
+  format says it is.
+* A **manifest rung** rewrites one parsed JSON manifest (`signalement →
+  description`; filling an absent `exercise.index`).
+
+The ladder is **ordered**, and one pair depends on it: the folder rename must
+precede the companion-file synthesis, which addresses `staff/` paths. Rungs are
+individually idempotent but not order-independent, which is why they are run
+through the ladder rather than picked out of the list.
+
+Normalization is **silent by default and reportable on demand**. Each rung
+appends a note; `DrillFile.plan()` takes an optional sink and `decompile` prints
+what it collected. The app has nowhere useful to say "this archive predated a
+rename", but someone decompiling a file a colleague sent them does want to know —
+particularly that the document they are about to edit is not a byte-for-byte view
+of the archive.
+
+### Out of scope
+
+The `programId → planId` fallback is **not** absorbed. It is not archive content:
+it is a field on the Netlify API's JSON responses, handled in `drill_client.dart`,
+with its own Sentry-tracked deprecation
+([ADR-0055](./0055-programid-planid-wire-back-compat.md)). Folding it in would put
+an HTTP concern behind an archive-reading abstraction and obscure the telemetry
+that decides when it can be dropped.
+
+Consequently **no schema bump and no support floor are adopted** (Option C is
+rejected below on evidence). The ladder makes a floor a later, cheap decision:
+raising it means deleting the bottom rung.
 
 ### Consequences
 
-* Good: one enumerable list of what "an older archive" can mean, replacing branches that are only discoverable by reading every call site.
-* Good: `signalement` content stops being dropped silently — the first real data-loss path closed rather than documented.
+* Good: one enumerable list of what "an older archive" can mean, replacing branches that were only discoverable by reading every call site. `DrillFile.plan()` no longer knows the `actors/` folder exists, and its three legacy-inline fallbacks are gone — the ladder removed reader code rather than adding a layer beside it.
+* Good: `signalement` content stops being dropped silently, and so does pre-ADR-0022 inline markdown — two real data-loss paths closed rather than documented.
+* Good: normalization is reportable, so a legacy archive announces itself instead of being quietly rewritten.
 * Good: the round-trip contract is protected by construction, because the invariant forbids exactly the class of change that would break it.
 * Good: each rung is independently testable, and the stale schema-1.0 fixture (`test/fixtures/test-7x.drill`) becomes a genuine asset — the only pre-1.2 artifact in the repo, and the natural bottom-rung test.
 * Good: raising a support floor later is a deletion with a test to delete alongside it.
@@ -76,4 +118,4 @@ Consequently **no schema bump and no support floor are adopted** (Option C is re
 
 * Related design: [DESIGN-014](../design/014-source-format-and-plan-compiler.md), [source-format worked example](../design/source-format-worked-example.md)
 * Related ADRs: [ADR-0007](./0007-drill-file-format.md) (the archive format), [ADR-0018](./0018-roleplayer-data-model.md), [ADR-0022](./0022-markdown-content-as-files.md), [ADR-0043](./0043-tags-in-drill-format.md), [ADR-0046](./0046-plan-variables.md), [ADR-0047](./0047-scenario-locations-and-persons.md) (the additive-without-bump precedents), [ADR-0055](./0055-programid-planid-wire-back-compat.md) (the `programId` fallback this ladder absorbs), [ADR-0058](./0058-source-format-and-plan-compiler.md) (the compiler that adds the second reader)
-* Related code: `lib/data/drill_file.dart`, `lib/models/plan.dart` (`computeContentHash`), `lib/services/plan_service.dart` (import-time reindexing)
+* Related code: `lib/data/drill_migrations.dart` (the ladder), `lib/data/drill_file.dart` (the reader that runs it), `lib/models/plan.dart` (`computeContentHash`), `lib/services/plan_service.dart` (import-time reindexing), `bin/ringdrill.dart` (`decompile` reports the notes)

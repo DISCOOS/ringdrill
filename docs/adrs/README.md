@@ -66,7 +66,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0056 | [One drill player with peer modes — exercise, station, roleplay, team](./0056-player-modes-exercise-station-roleplay.md) | Accepted |
 | ADR-0057 | [Editing is gated on the device's role, and frozen on a running exercise](./0057-role-gated-editing.md) | Accepted |
 | ADR-0058 | [Introduce a source format compiled to `.drill` by a Flutter-free CLI](./0058-source-format-and-plan-compiler.md) | Accepted |
-| ADR-0059 | [Normalize legacy `.drill` archives through an ordered migration ladder](./0059-drill-schema-migration-ladder.md) | Proposed |
+| ADR-0059 | [Normalize legacy `.drill` archives through an ordered migration ladder](./0059-drill-schema-migration-ladder.md) | Accepted |
 
 ## When to write an ADR
 

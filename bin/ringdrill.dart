@@ -4,6 +4,7 @@ import 'package:args/args.dart';
 import 'package:http/http.dart' as http;
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
+import 'package:ringdrill/data/drill_migrations.dart';
 import 'package:ringdrill/data/source/plan_decompiler.dart';
 import 'package:ringdrill/data/source/source_analyzer.dart';
 import 'package:ringdrill/data/source/source_compiler.dart';
@@ -587,9 +588,14 @@ void _runDecompile(List<String> args, ArgResults res, bool jsonOut) {
   }
 
   final drillFile = DrillFile.fromFile(file);
+  // Collect what the ADR-0059 ladder normalized on the way in. The app has
+  // nowhere useful to say this, but here it is worth knowing: it is how someone
+  // finds out that the archive a colleague sent them predates a rename, and that
+  // the document they are about to edit is not a byte-for-byte view of it.
+  final migrations = <MigrationNote>[];
   final Plan plan;
   try {
-    plan = drillFile.plan();
+    plan = drillFile.plan(migrationNotes: migrations);
   } on DrillFormatException catch (e) {
     stderr.writeln('Cannot read $path: ${e.message}');
     exitCode = 65; // EX_DATAERR
@@ -623,6 +629,7 @@ void _runDecompile(List<String> args, ArgResults res, bool jsonOut) {
         'exercises': result.exercises.length,
         'teams': result.teams.length,
         'contentHash': plan.computeContentHash(),
+        'migrations': migrations.map((n) => n.toJson()).toList(),
         if (outPath == null) 'document': result.yaml,
       }),
     );
@@ -630,6 +637,9 @@ void _runDecompile(List<String> args, ArgResults res, bool jsonOut) {
   }
 
   if (outPath == null) {
+    // Migration notes go to stderr, so `decompile x.drill > y.yaml` still
+    // produces a clean document while the reader still sees them.
+    _printMigrations(migrations);
     stdout.write(result.yaml);
     return;
   }
@@ -639,6 +649,20 @@ void _runDecompile(List<String> args, ArgResults res, bool jsonOut) {
   stdout.writeln('  exercises   : ${result.exercises.length}');
   stdout.writeln('  teams       : ${result.teams.length}');
   stdout.writeln('  contentHash : ${plan.computeContentHash()}');
+  _printMigrations(migrations);
+}
+
+/// Reports what the migration ladder changed, if anything.
+void _printMigrations(List<MigrationNote> notes) {
+  if (notes.isEmpty) return;
+  stderr.writeln();
+  stderr.writeln(
+    'Normalized ${notes.length} legacy item(s) while reading the archive '
+    '(ADR-0059):',
+  );
+  for (final note in notes) {
+    stderr.writeln('  ${note.path}: ${note.message} [${note.rung}]');
+  }
 }
 
 /// `analyze <source.yaml> [--strict]`

@@ -101,7 +101,15 @@ class DrillFile {
   String get slug => path.basenameWithoutExtension(fileName);
   String get versionedSlug => sanitizeSlug('$slug@$version');
 
-  Plan plan() {
+  /// Reads the plan out of the archive.
+  ///
+  /// [migrationNotes], when given, collects what the ADR-0059 migration ladder
+  /// changed on the way in — a renamed folder, markdown lifted out of JSON, a
+  /// `signalement` moved into `description`. Normalization is silent by default
+  /// because the app has nowhere useful to say it; the CLI's `decompile` reports
+  /// it, which is how anyone finds out that a peer-to-peer archive was old.
+  Plan plan({List<MigrationNote>? migrationNotes}) {
+    final notes = migrationNotes ?? <MigrationNote>[];
     final teams = <Team>[];
     final sessions = <Session>[];
     // Exercise manifests keyed by uuid; markdown patches collected separately.
@@ -175,13 +183,17 @@ class DrillFile {
       );
     }
 
-    // Pass 1: index all archive entries by name.
-    final index = <String, List<int>>{};
+    // Pass 1: index all archive entries by name, then normalize the index
+    // through the ADR-0059 ladder. Doing it here — before anything is
+    // classified — is what lets the passes below know only current paths: no
+    // `actors/` alias, no markdown hiding inside a manifest.
+    final rawIndex = <String, List<int>>{};
     for (final file in archive.files) {
       if (file.isFile) {
-        index[file.name] = file.content as List<int>;
+        rawIndex[file.name] = file.content as List<int>;
       }
     }
+    final index = DrillMigrations.archive(rawIndex, notes: notes);
 
     // Early fast-fail for the by-far most common breakage mode (the
     // Sentry ticket that triggered this hardening). Catching it before
@@ -264,10 +276,9 @@ class DrillFile {
           } else if (folder == 'roleplays') {
             final uuid = file.substring(0, file.length - 5); // strip .json
             rolePlayJsons[uuid] = json;
-            // Both names: DESIGN-011 writes 'staff/', but a .drill exported
-            // before the rename carries 'actors/' and is shared peer-to-peer
-            // (USB, AirDrop, email), so it can be imported at any time.
-          } else if (folder == 'staff' || folder == 'actors') {
+            // Only 'staff/': an archive written before DESIGN-011 renamed the
+            // folder has already been rewritten by the ladder above.
+          } else if (folder == 'staff') {
             final uuid = file.substring(0, file.length - 5);
             actorJsons[uuid] = json;
           }
@@ -292,8 +303,7 @@ class DrillFile {
           exerciseMdFields.putIfAbsent(uuid, () => {})[field] = mdContent;
         } else if (folder == 'roleplays') {
           rolePlayMdFields.putIfAbsent(uuid, () => {})[field] = mdContent;
-        } else if ((folder == 'staff' || folder == 'actors') &&
-            field == 'notes.md') {
+        } else if (folder == 'staff' && field == 'notes.md') {
           staffNotesFields[uuid] = mdContent;
         }
         continue;
@@ -333,6 +343,7 @@ class DrillFile {
         exerciseJsons[uuid]!,
         path: 'exercises/$uuid.json',
         ordinal: exerciseOrdinal++,
+        notes: notes,
       );
       late final Exercise base;
       try {
@@ -378,15 +389,15 @@ class DrillFile {
       exercises.add(exercise.copyWith(stations: patchedStations));
     }
 
-    // Build RolePlay entities with legacy-inline fallback + .md precedence.
+    // Build RolePlay entities, patching in markdown fields.
+    //
+    // No legacy-inline fallback: a pre-ADR-0022 archive carrying `behavior` or
+    // `background` as JSON strings has already had them lifted into companion
+    // entries by the ladder, so there is one place a value can be.
     final rolePlays = <RolePlay>[];
     for (final entry in rolePlayJsons.entries) {
       final uuid = entry.key;
       final json = entry.value;
-
-      // Capture legacy inline values before fromJson (which ignores them).
-      final legacyBehavior = json['behavior'] as String?;
-      final legacyBackground = json['background'] as String?;
 
       late final RolePlay rpBase;
       try {
@@ -402,13 +413,8 @@ class DrillFile {
       var rp = rpBase;
 
       final mdFields = rolePlayMdFields[uuid];
-      final behavior = mdFields != null && mdFields.containsKey('behavior.md')
-          ? mdFields['behavior.md']
-          : legacyBehavior;
-      final background =
-          mdFields != null && mdFields.containsKey('background.md')
-          ? mdFields['background.md']
-          : legacyBackground;
+      final behavior = mdFields?['behavior.md'];
+      final background = mdFields?['background.md'];
       final propsMd = mdFields?['props.md'];
 
       if (behavior != null || background != null || propsMd != null) {
@@ -421,12 +427,11 @@ class DrillFile {
       rolePlays.add(rp);
     }
 
-    // Build Staff entities with legacy-inline fallback + .md precedence.
+    // Build Staff entities, patching in notes.md. Same as above: an inline
+    // legacy `notes` string is already a companion entry by now.
     for (final entry in actorJsons.entries) {
       final uuid = entry.key;
       final json = entry.value;
-
-      final legacyNotes = json['notes'] as String?;
 
       late final Staff actorBase;
       try {
@@ -441,12 +446,9 @@ class DrillFile {
       }
       var actor = actorBase;
 
-      final notes = staffNotesFields.containsKey(uuid)
-          ? staffNotesFields[uuid]
-          : legacyNotes;
-
-      if (notes != null) {
-        actor = actor.copyWith(notes: notes);
+      final staffNotes = staffNotesFields[uuid];
+      if (staffNotes != null) {
+        actor = actor.copyWith(notes: staffNotes);
       }
       actors.add(actor);
     }

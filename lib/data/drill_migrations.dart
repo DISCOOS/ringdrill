@@ -18,11 +18,35 @@
 /// be a value rewrite, so it is refused: numbering comes from order, names are
 /// opaque, and a round trip preserves them byte for byte.
 ///
-/// Note what is deliberately *not* here. Most historical variance needs no code
-/// at all, because `@Default` on the additive model fields already absorbs it —
-/// a 1.0 archive with no `tags`, `variables`, `locations` or `persons` key reads
-/// fine today (ADR-0018, ADR-0043, ADR-0046, ADR-0047). The ladder is only for
-/// what the model cannot absorb.
+/// ## Two kinds of rung
+///
+/// [ArchiveMigration] rewrites the archive's entry index — the map of path to
+/// bytes — before anything is classified or parsed. [ManifestMigration] rewrites
+/// one already-parsed JSON manifest. The split follows where the variance
+/// actually lives: a renamed folder and a value that moved out of JSON into a
+/// companion file are archive-shaped, while a renamed field is manifest-shaped.
+///
+/// The ladder is **ordered**, and at least one pair depends on it:
+/// [RenameActorsFolderToStaff] must run before
+/// [InlineMarkdownToCompanionFiles], which addresses entries by their `staff/`
+/// path. Rungs are individually idempotent — applying one twice changes nothing
+/// the second time — but they are not order-independent, so run them through
+/// [DrillMigrations.archive] rather than picking them out of [all].
+///
+/// ## What is deliberately not here
+///
+/// Most historical variance needs no code at all, because `@Default` on the
+/// additive model fields already absorbs it — a 1.0 archive with no `tags`,
+/// `variables`, `locations` or `persons` key reads fine today (ADR-0018,
+/// ADR-0043, ADR-0046, ADR-0047). The ladder is only for what the model cannot
+/// absorb.
+///
+/// The `programId → planId` fallback is **out of scope**. It is not archive
+/// content: it is a field on the Netlify API's JSON responses, handled in
+/// `drill_client.dart`, with its own Sentry-tracked deprecation
+/// ([ADR-0055](../../docs/adrs/0055-programid-planid-wire-back-compat.md)).
+/// Folding it in here would put an HTTP concern behind an archive-reading
+/// abstraction and obscure the telemetry that decides when it can be dropped.
 ///
 /// There is no supported-version floor. Measured against the live catalog, the
 /// schema string does not identify the content shape: every published plan is
@@ -32,6 +56,8 @@
 ///
 /// Free of `package:flutter/*` (AGENTS.md rule 7).
 library;
+
+import 'dart:convert';
 
 /// What a rung changed, for reporting rather than control flow.
 class MigrationNote {
@@ -49,17 +75,17 @@ class MigrationNote {
 
   final String message;
 
+  Map<String, dynamic> toJson() => {
+    'rung': rung,
+    'path': path,
+    'message': message,
+  };
+
   @override
   String toString() => '[$rung] $path: $message';
 }
 
 /// One step of the ladder.
-///
-/// Rungs are **idempotent** — applying one twice changes nothing the second
-/// time — so they compose in any order and re-running normalization on already-
-/// normalized content is a no-op. That property is what makes it safe to run the
-/// ladder unconditionally rather than gating it on a version check that, as
-/// above, would not be reliable anyway.
 abstract class DrillMigration {
   const DrillMigration();
 
@@ -68,6 +94,19 @@ abstract class DrillMigration {
 
   /// What historical shape this handles, and why the model cannot.
   String get describes;
+}
+
+/// A rung that rewrites the archive's entry index.
+///
+/// Runs before classification, so downstream code sees only current paths. The
+/// map is path to bytes, mutated in place and returned for chaining.
+abstract class ArchiveMigration extends DrillMigration {
+  const ArchiveMigration();
+
+  Map<String, List<int>> apply(
+    Map<String, List<int>> entries, {
+    required List<MigrationNote> notes,
+  });
 }
 
 /// A rung that rewrites one entity manifest in place.
@@ -80,6 +119,125 @@ abstract class ManifestMigration extends DrillMigration {
     required String path,
     required List<MigrationNote> notes,
   });
+}
+
+/// `actors/` → `staff/`.
+///
+/// DESIGN-011 renamed the folder. A `.drill` exported before that is shared
+/// peer-to-peer (USB, AirDrop, email), so it can arrive at any time. Renaming the
+/// entries here means the reader has one folder name to know about, and the next
+/// person adding a staff-related entry cannot forget the alias.
+class RenameActorsFolderToStaff extends ArchiveMigration {
+  const RenameActorsFolderToStaff();
+
+  @override
+  String get name => 'actors-folder-to-staff';
+
+  @override
+  String get describes =>
+      'DESIGN-011 renamed the actors/ folder to staff/; archives written before '
+      'that are still shared peer-to-peer.';
+
+  @override
+  Map<String, List<int>> apply(
+    Map<String, List<int>> entries, {
+    required List<MigrationNote> notes,
+  }) {
+    final legacy = entries.keys.where((k) => k.startsWith('actors/')).toList();
+    for (final key in legacy) {
+      final renamed = 'staff/${key.substring('actors/'.length)}';
+      // Only fills what is absent: an archive carrying both folders keeps the
+      // current one, since replacing it would discard authored content.
+      if (entries.containsKey(renamed)) continue;
+      entries[renamed] = entries.remove(key)!;
+      notes.add(
+        MigrationNote(rung: name, path: key, message: 'renamed to $renamed'),
+      );
+    }
+    // A both-folders archive still needs the stale entries gone, or they get
+    // classified twice.
+    for (final key in legacy) {
+      entries.remove(key);
+    }
+    return entries;
+  }
+}
+
+/// Moves markdown that used to live inline in JSON into its companion file.
+///
+/// Before ADR-0022, a role play's `behavior`/`background` and a staff member's
+/// `notes` were string fields in the manifest; now they are `.md` files beside
+/// it. The model fields are `includeFromJson: false`, so `fromJson` ignores the
+/// inline value entirely — without this rung the content is silently dropped.
+///
+/// Synthesizing the missing entry rather than patching the entity afterwards is
+/// what lets `DrillFile` drop its three legacy branches: once this has run, a
+/// value is always where the current format says it is. The manifest bytes are
+/// left untouched — the inline key stays, ignored by `fromJson` as it already
+/// was — so the rung only ever *adds*.
+class InlineMarkdownToCompanionFiles extends ArchiveMigration {
+  const InlineMarkdownToCompanionFiles();
+
+  /// Manifest folder → the inline JSON keys and the companion files they became.
+  static const _moves = <String, Map<String, String>>{
+    'roleplays': {'behavior': 'behavior.md', 'background': 'background.md'},
+    'staff': {'notes': 'notes.md'},
+  };
+
+  @override
+  String get name => 'inline-markdown-to-companion-files';
+
+  @override
+  String get describes =>
+      'Before ADR-0022 a role play\'s behavior/background and a staff member\'s '
+      'notes were inline JSON strings rather than .md companion files; the '
+      'model no longer reads them from JSON at all.';
+
+  @override
+  Map<String, List<int>> apply(
+    Map<String, List<int>> entries, {
+    required List<MigrationNote> notes,
+  }) {
+    for (final entry in _moves.entries) {
+      final folder = entry.key;
+      for (final path in entries.keys.toList()) {
+        if (!path.startsWith('$folder/') || !path.endsWith('.json')) continue;
+        final segments = path.split('/');
+        // Only `<folder>/<uuid>.json`, not something nested deeper.
+        if (segments.length != 2) continue;
+        final uuid = segments[1].substring(0, segments[1].length - 5);
+
+        final Map<String, dynamic> json;
+        try {
+          json =
+              jsonDecode(utf8.decode(entries[path]!)) as Map<String, dynamic>;
+        } catch (_) {
+          // A corrupt manifest is not this rung's problem to report — the
+          // reader raises a typed DrillFormatException for it a moment later,
+          // with the path and the cause.
+          continue;
+        }
+
+        for (final move in entry.value.entries) {
+          final value = json[move.key];
+          if (value is! String) continue;
+          final companion = '$folder/$uuid/${move.value}';
+          // The companion file wins when both exist, which is the precedence the
+          // hand-written branches had.
+          if (entries.containsKey(companion)) continue;
+          entries[companion] = utf8.encode(value);
+          notes.add(
+            MigrationNote(
+              rung: name,
+              path: path,
+              message: 'moved inline "${move.key}" into $companion',
+            ),
+          );
+        }
+      }
+    }
+    return entries;
+  }
 }
 
 /// `signalement` → `description` on a scenario person.
@@ -181,14 +339,39 @@ class FillExerciseIndex extends DrillMigration {
 class DrillMigrations {
   const DrillMigrations._();
 
+  static const actorsFolder = RenameActorsFolderToStaff();
+  static const inlineMarkdown = InlineMarkdownToCompanionFiles();
   static const signalement = RenameSignalementToDescription();
   static const exerciseIndex = FillExerciseIndex();
 
   /// Every rung, for documentation and tests.
-  static const all = <DrillMigration>[signalement, exerciseIndex];
+  static const all = <DrillMigration>[
+    actorsFolder,
+    inlineMarkdown,
+    signalement,
+    exerciseIndex,
+  ];
+
+  /// Archive-level rungs, in the order they must run.
+  ///
+  /// [inlineMarkdown] addresses `staff/` paths, so [actorsFolder] comes first.
+  static const archiveRungs = <ArchiveMigration>[actorsFolder, inlineMarkdown];
 
   /// Rungs that rewrite an exercise manifest with no extra input.
   static const manifestRungs = <ManifestMigration>[signalement];
+
+  /// Normalizes the archive's entry index. Call once, before classifying.
+  static Map<String, List<int>> archive(
+    Map<String, List<int>> entries, {
+    List<MigrationNote>? notes,
+  }) {
+    final sink = notes ?? <MigrationNote>[];
+    var out = entries;
+    for (final rung in archiveRungs) {
+      out = rung.apply(out, notes: sink);
+    }
+    return out;
+  }
 
   /// Normalizes one exercise manifest.
   ///
