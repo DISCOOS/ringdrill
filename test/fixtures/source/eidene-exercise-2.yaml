@@ -1,0 +1,87 @@
+# The DESIGN-014 worked example, as a fixture.
+#
+# Kept in step with docs/design/source-format-worked-example.md § 1 — that
+# document is the format's reference example, and a reference example that does
+# not compile is worse than none. test/data/source/plan_builder_test.dart builds
+# this file.
+#
+# Example content (station names, prose) is Norwegian because it comes from a
+# real Norwegian SAR plan; only comments are English (AGENTS.md rule 12).
+plan:
+  name: "LSOR Eidene 2026"
+  language: nb
+  exerciseNumberFormat: hash
+  stationNumberFormat: dotted
+  tags: [søk og redning, lagledelse, lsor]
+  description: |
+    KUN FOR STAB. Øvingsplan 2026 for kurset Lagledelse søk og redning på
+    Eidene (Røde Kors Hjelpekorps Vestfold). Syv øvelser fredag–søndag.
+
+  variables:
+    talegruppe: { value: "RK-VFOLD-ØV2 / DMO-ANDRE-1", hint: "Talkgroup for the exercise" }
+
+exercises:
+  - name: "Førsteinnsats søk (ringøvelse)"
+    startTime: "09:45"
+    numberOfTeams: 4
+    numberOfRounds: 6
+    executionTime: 15
+    evaluationTime: 10
+    rotationTime: 5
+
+    stations:
+      - name: "Fisker (Angler)"
+        position: { lat: 59.09789, lng: 10.402513 }
+        situation: |
+          Kari Fiskeløs – finsøk rundt IPP innenfor R25.
+
+      - name: "Bilcamping"
+        position: { lat: 59.09814, lng: 10.404234 }
+        situation: |
+          Hermod Hess (tysk) – finsøk fra bobil ut til R25.
+
+      - name: "Løper"
+        position: { lat: 59.098841, lng: 10.40428 }
+        situation: |
+          Ine Vigerdal (42) – søk treningsløype.
+
+      - name: "Mental sykdom"
+        position: { lat: 59.098473, lng: 10.400913 }
+        situation: |
+          Jan Guttormsen (54) – ledelinjesøk NØ ut fra IPP (Tjøme Sykehjem).
+
+      - name: "Barn 4-6 år"
+        position: { lat: 59.096857, lng: 10.401633 }
+        variableOverrides: { talegruppe: "RK-VFOLD-ØV3" }
+
+        locations:
+          - slug: lkp
+            kind: lkp
+            label: "Sist kjent posisjon"
+            position: { lat: 59.09672, lng: 10.40201 }
+        persons:
+          - slug: magnus
+            name: "Magnus Damslet"
+            age: 6
+            gender: male
+            description: "Rød jakke, blå lue."
+            locSlug: lkp
+
+        situation: |
+          {{station.person.magnus}} ({{station.person.magnus.age}} år) –
+          grovsøk R25 fra IPP. Sist sett {{station.loc.lkp.utm}}.
+          Samband på {{var.talegruppe}}.
+        director_notes: |
+          Markør bak paviljongen. Passiv første minutt, svarer på direkte tiltale.
+
+        roleplays:
+          - personRef: magnus
+            behavior: |
+              Gjemmer seg bak paviljongen, svarer ikke på rop.
+
+      - name: "Økt selvmordsfare"
+        position: { lat: 59.099762, lng: 10.403759 }
+        situation: |
+          Tonje Bakken (17) – ledelinjesøk ut til R50.
+        director_notes: |
+          2–3 markører. Vurder realistisk respons ved kontakt.

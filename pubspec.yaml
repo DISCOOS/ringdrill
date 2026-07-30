@@ -81,6 +81,11 @@ dependencies:
   mustache_template: ^2.0.5
   http_parser: ^4.1.2
   args: ^2.7.0
+  # Reading the DESIGN-014 source format. Already present transitively; a
+  # direct dependency because lib/data/source/ imports it. Parse only —
+  # emitting is lib/data/source/source_emitter.dart, which needs byte-stable
+  # output and block scalars that no pub emitter gives us.
+  yaml: ^3.1.2
 
 dev_dependencies:
   sentry_dart_plugin: ^3.4.0

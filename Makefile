@@ -1,5 +1,5 @@
 .PHONY: \
-	build watch i18n format format-check release patch publish \
+	build watch i18n labels format format-check cli-check release patch publish \
 	build-web build-web-js upload-symbols-web strip-source-maps-web release-web \
 	release-android patch-android \
 	release-ios patch-ios \
@@ -52,7 +52,7 @@ DART_DEFINE_GIT  := --dart-define=GIT_COMMIT=$(GIT_COMMIT)$(GIT_DIRTY) --dart-de
 MIGRATION_DISABLED ?=
 DART_DEFINE_MIGRATION := $(if $(MIGRATION_DISABLED),--dart-define=MIGRATION_DISABLED=$(MIGRATION_DISABLED),)
 
-build:
+build: labels
 	echo "Run code generation..."
 	dart run build_runner build
 
@@ -65,9 +65,22 @@ watch:
 # step is a separate Flutter tool and must be run after any ARB
 # change. The generated `app_localizations*.dart` files must never
 # be hand-edited (see CLAUDE.md).
-i18n:
+#
+# Depends on `labels` because both read the same ARBs: gen-l10n produces the
+# Flutter-bound AppLocalizations, `labels` the Flutter-free copy the CLI needs.
+# An ARB change has to reach both or the two disagree.
+i18n: labels
 	echo "Generate Flutter localizations from ARB..."
 	flutter gen-l10n
+
+# Regenerate the Flutter-free subset of ARB messages that the CLI's `build` and
+# `render` need (DESIGN-014, the ADR-0048 amendment). Cheap and deterministic:
+# no ARB change means no diff, so it is safe as a prerequisite of both `build`
+# and `i18n` rather than something to remember. test/l10n/
+# headless_labels_sync_test.dart is the backstop if it is skipped anyway.
+labels:
+	echo "Generate headless ARB labels..."
+	dart run tools/generate_headless_labels.dart
 
 # Apply Dart's default formatting across the tree.
 #
@@ -85,6 +98,29 @@ format:
 format-check:
 	echo "Check Dart formatting..."
 	dart format --output=none --set-exit-if-changed lib/ test/ bin/
+
+# Enforce AGENTS.md rule 7 / ADR-0005: the CLI must stay free of Flutter.
+#
+# Building it with the *Dart* SDK is the check that actually bites — a stray
+# `package:flutter/*` in the import closure fails to resolve `dart:ui` here,
+# while `flutter analyze` accepts it happily and `dart pub global activate` only
+# breaks later, on someone else's machine. Worth wiring up now because
+# DESIGN-014 grew that closure a long way past the two files it used to be
+# (drill_client + drill_file): it now reaches the source compiler, the models,
+# the schedule derivation and the headless labels.
+#
+# `dart build cli` rather than `dart compile exe`: a transitive dependency
+# (objective_c, via the notification/geolocator plugins) ships build hooks, and
+# `dart compile` refuses to run those. Output lands in build/cli/, which is
+# gitignored.
+#
+# test/bin/cli_flutter_free_test.dart is the fast counterpart — it walks the same
+# closure in milliseconds and names the offending import chain, which a link
+# error does not.
+cli-check:
+	echo "Check the CLI builds without Flutter..."
+	dart build cli
+	echo "  ok — bin/ringdrill.dart has no Flutter in its import closure"
 
 # Web release pipeline. Decomposed so CI can run the steps individually
 # (one log group per step) but `make release-web` is the one-shot used

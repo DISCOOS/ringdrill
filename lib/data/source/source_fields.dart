@@ -1,0 +1,591 @@
+/// The DESIGN-014 source format, as data.
+///
+/// This table is the single description of the format. `build`, `decompile`,
+/// `analyze` and `schema` all read it, which is what keeps them consistent by
+/// construction rather than by discipline: a field added here is accepted,
+/// emitted, validated and documented in one edit.
+///
+/// Two conventions, both from the worked example:
+///
+/// * **Names mirror the frozen `.drill` wire keys** (decision 2), not the Dart
+///   class names — the `Program → Plan` rename changed identifiers, not the
+///   archive's JSON keys. Only value *shapes* are source-friendly.
+/// * **Markdown fields take their archive file's name** (decision 6):
+///   `directorNotesMd` is stored as `director-notes.md` and written
+///   `director_notes`. For those the archive path is the wire key.
+///
+/// Free of `package:flutter/*` (AGENTS.md rule 7).
+library;
+
+import 'package:ringdrill/data/source/source_field.dart';
+
+/// The format version the source document declares, and this build accepts.
+///
+/// Deliberately decoupled from `DrillFile.drillSchemaCurrent` (settled decision
+/// 3): the authored surface and the archive evolve for different reasons, and
+/// DESIGN-014 adds no `.drill` schema bump.
+const sourceFormatVersion = '1.0';
+
+/// Scope definitions, reachable from [planScope] downwards.
+class SourceScopes {
+  const SourceScopes._();
+
+  /// A station-owned scenario place (ADR-0047, DESIGN-009).
+  static const location = SourceScope(
+    name: 'location',
+    description:
+        'Scenario geography owned by a station, referenced in prose '
+        'as {{station.loc.<slug>}}.',
+    fields: [
+      SourceField(
+        'slug',
+        shape: SourceShape.string,
+        description:
+            'Reference key, unique within the station. '
+            r'Must match ^[a-z][a-z0-9_]*$.',
+      ),
+      SourceField('label', shape: SourceShape.string),
+      SourceField(
+        'kind',
+        shape: SourceShape.enumeration,
+        enumValues: [
+          'lkp',
+          'ipp',
+          'pp',
+          'rendezvous',
+          'commandPost',
+          'home',
+          'trackFound',
+          'dogInterest',
+          'obstacle',
+          'notSearchable',
+          'phoneTrace',
+          'observation',
+          'vantagePoint',
+          'containmentPost',
+          'personFound',
+          'other',
+        ],
+        description:
+            'Marker styling and picker grouping. An unknown value '
+            'reads as "other".',
+      ),
+      SourceField('place', shape: SourceShape.string),
+      SourceField(
+        'position',
+        shape: SourceShape.position,
+        description: 'Scenario coordinate as {lat, lng}.',
+      ),
+      SourceField('note', shape: SourceShape.string),
+    ],
+  );
+
+  /// A station-owned fictional person — no PII (ADR-0047, DESIGN-009).
+  static const person = SourceScope(
+    name: 'person',
+    description:
+        'A fictional scenario person owned by a station, referenced '
+        'in prose as {{station.person.<slug>}}. Never a real human — that is '
+        'Staff, which is stripped at publish and absent from this format.',
+    fields: [
+      SourceField(
+        'slug',
+        shape: SourceShape.string,
+        description:
+            'Reference key, unique within the station. '
+            r'Must match ^[a-z][a-z0-9_]*$.',
+      ),
+      SourceField('name', shape: SourceShape.string),
+      SourceField('age', shape: SourceShape.integer),
+      SourceField('gender', shape: SourceShape.string),
+      SourceField(
+        'description',
+        shape: SourceShape.string,
+        description:
+            'Appearance and identifying detail. Was named '
+            '"signalement" before the rename; ADR-0059 migrates that key.',
+      ),
+      SourceField(
+        'locSlug',
+        shape: SourceShape.string,
+        description: 'Slug of a location on the same station.',
+      ),
+      SourceField('notes', shape: SourceShape.string),
+    ],
+  );
+
+  /// A role a marker enacts, nested under the station that owns its person.
+  static const roleplay = SourceScope(
+    name: 'roleplay',
+    description:
+        'A role portraying one of the station\'s persons. Identity '
+        'fields are inherited from that person unless written here; the '
+        'builder denormalizes the effective value (ADR-0047).',
+    fields: [
+      SourceField(
+        'uuid',
+        shape: SourceShape.string,
+        kind: SourceFieldKind.identity,
+      ),
+      SourceField(
+        'personRef',
+        shape: SourceShape.string,
+        description:
+            'Slug of the person on this station that the role '
+            'portrays.',
+      ),
+      SourceField(
+        'name',
+        shape: SourceShape.string,
+        description: 'Overrides the person\'s name. Omit to inherit.',
+      ),
+      SourceField(
+        'age',
+        shape: SourceShape.integer,
+        description: 'Overrides the person\'s age. Omit to inherit.',
+      ),
+      SourceField(
+        'gender',
+        shape: SourceShape.string,
+        description: 'Overrides the person\'s gender. Omit to inherit.',
+      ),
+      SourceField(
+        'description',
+        shape: SourceShape.string,
+        description: 'Overrides the person\'s description. Omit to inherit.',
+      ),
+      SourceField(
+        'position',
+        shape: SourceShape.position,
+        description:
+            'Overrides the coordinate inherited from the person\'s '
+            'location, as {lat, lng}.',
+      ),
+      SourceField(
+        'behavior',
+        shape: SourceShape.markdown,
+        mdFileName: 'behavior.md',
+      ),
+      SourceField(
+        'background',
+        shape: SourceShape.markdown,
+        mdFileName: 'background.md',
+      ),
+      SourceField(
+        'props',
+        shape: SourceShape.markdown,
+        wireKey: 'propsMd',
+        mdFileName: 'props.md',
+      ),
+      // Derived, listed so schema/analyze can name them as such.
+      SourceField(
+        'index',
+        shape: SourceShape.integer,
+        kind: SourceFieldKind.derived,
+      ),
+      SourceField(
+        'exerciseUuid',
+        shape: SourceShape.string,
+        kind: SourceFieldKind.derived,
+      ),
+      SourceField(
+        'stationIndex',
+        shape: SourceShape.integer,
+        kind: SourceFieldKind.derived,
+      ),
+      SourceField(
+        'staffUuid',
+        shape: SourceShape.string,
+        kind: SourceFieldKind.derived,
+        description:
+            'Casting to a real person. Local PII, never published, '
+            'never authored here.',
+      ),
+    ],
+  );
+
+  /// A rotation post.
+  static const station = SourceScope(
+    name: 'station',
+    description:
+        'A rotation post within an exercise. Stations have no uuid — '
+        'identity is (exercise, index).',
+    fields: [
+      SourceField('name', shape: SourceShape.string),
+      SourceField('variantSuffix', shape: SourceShape.string),
+      SourceField(
+        'position',
+        shape: SourceShape.position,
+        description:
+            'Administrative placement of the post itself, as '
+            '{lat, lng}. Scenario geography belongs in locations.',
+      ),
+      SourceField(
+        'description',
+        shape: SourceShape.string,
+        description: 'Short lead-in. Longer prose belongs in situation.',
+      ),
+      SourceField(
+        'variableOverrides',
+        shape: SourceShape.stringMap,
+        description:
+            'Overrides plan variable values for this station. Never '
+            'declares new variables (ADR-0046).',
+      ),
+      SourceField(
+        'equipment',
+        shape: SourceShape.markdown,
+        wireKey: 'equipmentMd',
+        mdFileName: 'equipment.md',
+      ),
+      SourceField(
+        'situation',
+        shape: SourceShape.markdown,
+        wireKey: 'situationMd',
+        mdFileName: 'situation.md',
+      ),
+      SourceField(
+        'mission',
+        shape: SourceShape.markdown,
+        wireKey: 'missionMd',
+        mdFileName: 'mission.md',
+      ),
+      SourceField(
+        'logistics',
+        shape: SourceShape.markdown,
+        wireKey: 'logisticsMd',
+        mdFileName: 'logistics.md',
+      ),
+      SourceField(
+        'critical_questions',
+        shape: SourceShape.markdown,
+        wireKey: 'criticalQuestionsMd',
+        mdFileName: 'critical-questions.md',
+      ),
+      SourceField(
+        'leader_answers',
+        shape: SourceShape.markdown,
+        wireKey: 'leaderAnswersMd',
+        mdFileName: 'leader-answers.md',
+      ),
+      SourceField(
+        'director_notes',
+        shape: SourceShape.markdown,
+        wireKey: 'directorNotesMd',
+        mdFileName: 'director-notes.md',
+        description: 'Instructor/director only. Never shown to participants.',
+      ),
+      SourceField(
+        'index',
+        shape: SourceShape.integer,
+        kind: SourceFieldKind.derived,
+      ),
+    ],
+    children: [
+      SourceChild('locations', scope: location),
+      SourceChild('persons', scope: person),
+      SourceChild(
+        'roleplays',
+        scope: roleplay,
+        collection: SourceCollection.relocatedList,
+        description:
+            'Nested here, stored at plan level with a derived '
+            'exerciseUuid and stationIndex.',
+      ),
+    ],
+  );
+
+  /// One exercise: a set of stations and the rotation over them.
+  static const exercise = SourceScope(
+    name: 'exercise',
+    fields: [
+      SourceField(
+        'uuid',
+        shape: SourceShape.string,
+        kind: SourceFieldKind.identity,
+      ),
+      SourceField(
+        'name',
+        shape: SourceShape.string,
+        description:
+            'The name alone. The displayed number ("#2") is derived '
+            'from position, so it does not belong here — but a name that '
+            'already contains one is content and is preserved verbatim.',
+      ),
+      SourceField(
+        'startTime',
+        shape: SourceShape.time,
+        description:
+            'Clock face as "HH:MM". An exercise has no date '
+            '(DEBT-0013).',
+      ),
+      SourceField('numberOfTeams', shape: SourceShape.integer),
+      SourceField('numberOfRounds', shape: SourceShape.integer),
+      SourceField(
+        'executionTime',
+        shape: SourceShape.integer,
+        description: 'Minutes of execution per round.',
+      ),
+      SourceField(
+        'evaluationTime',
+        shape: SourceShape.integer,
+        description: 'Minutes of evaluation per round.',
+      ),
+      SourceField(
+        'rotationTime',
+        shape: SourceShape.integer,
+        description: 'Minutes to rotate between stations.',
+      ),
+      SourceField('templateId', shape: SourceShape.string),
+      SourceField('variableOverrides', shape: SourceShape.stringMap),
+      SourceField(
+        'method',
+        shape: SourceShape.markdown,
+        wireKey: 'methodMd',
+        mdFileName: 'method.md',
+      ),
+      SourceField(
+        'learning_goals',
+        shape: SourceShape.markdown,
+        wireKey: 'learningGoalsMd',
+        mdFileName: 'learning-goals.md',
+      ),
+      SourceField(
+        'training_focus',
+        shape: SourceShape.markdown,
+        wireKey: 'trainingFocusMd',
+        mdFileName: 'training-focus.md',
+      ),
+      SourceField(
+        'order_format',
+        shape: SourceShape.markdown,
+        wireKey: 'orderFormatMd',
+        mdFileName: 'order-format.md',
+      ),
+      SourceField(
+        'execution_tips',
+        shape: SourceShape.markdown,
+        wireKey: 'executionTipsMd',
+        mdFileName: 'execution-tips.md',
+      ),
+      SourceField(
+        'comms',
+        shape: SourceShape.markdown,
+        wireKey: 'commsMd',
+        mdFileName: 'comms.md',
+      ),
+      // Derived.
+      SourceField(
+        'index',
+        shape: SourceShape.integer,
+        kind: SourceFieldKind.derived,
+      ),
+      SourceField(
+        'schedule',
+        shape: SourceShape.raw,
+        kind: SourceFieldKind.derived,
+        description:
+            'Phase boundaries per round, from startTime and the '
+            'three durations.',
+      ),
+      SourceField(
+        'endTime',
+        shape: SourceShape.time,
+        kind: SourceFieldKind.derived,
+        description:
+            'startTime + numberOfRounds × (execution + evaluation + '
+            'rotation).',
+      ),
+    ],
+    children: [SourceChild('stations', scope: station)],
+  );
+
+  /// A rotating group of participants.
+  static const team = SourceScope(
+    name: 'team',
+    description:
+        'Optional. When absent, build derives as many teams as the '
+        'largest numberOfTeams across the exercises, with generated names — '
+        'the same rule the app applies (PlanService.ensureTeams).',
+    fields: [
+      SourceField(
+        'uuid',
+        shape: SourceShape.string,
+        kind: SourceFieldKind.identity,
+      ),
+      SourceField(
+        'name',
+        shape: SourceShape.string,
+        description:
+            'Free text. Naming conventions are subject-area '
+            'specific, so nothing is derived from it (see docs/glossary.md).',
+      ),
+      SourceField('numberOfMembers', shape: SourceShape.integer),
+      SourceField('position', shape: SourceShape.position),
+      SourceField(
+        'index',
+        shape: SourceShape.integer,
+        kind: SourceFieldKind.derived,
+      ),
+    ],
+  );
+
+  /// A plan-global variable (ADR-0046, DESIGN-008).
+  static const variable = SourceScope(
+    name: 'variable',
+    description:
+        'Declared once on the plan and referenced as '
+        '{{var.<name>}}. Exercises and stations may only override the value.',
+    fields: [
+      SourceField(
+        'name',
+        shape: SourceShape.string,
+        description: r'Reference key. Must match ^[a-z][a-z0-9_]*$.',
+      ),
+      SourceField(
+        'value',
+        shape: SourceShape.string,
+        description:
+            'Canonically encoded per type. Unused when type is '
+            '"location" — use the location field.',
+      ),
+      SourceField('hint', shape: SourceShape.string),
+      SourceField(
+        'type',
+        shape: SourceShape.enumeration,
+        enumValues: [
+          'string',
+          'number',
+          'time',
+          'date',
+          'duration',
+          'location',
+        ],
+      ),
+      SourceField(
+        'location',
+        shape: SourceShape.raw,
+        description:
+            'Structured value for type "location": {place, position} '
+            'with position as {lat, lng}.',
+      ),
+    ],
+  );
+
+  /// The plan itself — the document root's `plan:` mapping.
+  static const plan = SourceScope(
+    name: 'plan',
+    fields: [
+      SourceField(
+        'uuid',
+        shape: SourceShape.string,
+        kind: SourceFieldKind.identity,
+      ),
+      SourceField('name', shape: SourceShape.string),
+      SourceField('description', shape: SourceShape.string),
+      SourceField(
+        'language',
+        shape: SourceShape.string,
+        wireKey: 'languageCode',
+        description:
+            'ISO 639-1 code for the plan\'s content language. Also '
+            'selects the language of any generated default names.',
+      ),
+      SourceField('tags', shape: SourceShape.stringList),
+      SourceField(
+        'exerciseNumberFormat',
+        shape: SourceShape.enumeration,
+        enumValues: ['hash'],
+      ),
+      SourceField(
+        'stationNumberFormat',
+        shape: SourceShape.enumeration,
+        enumValues: ['dotted', 'alpha'],
+      ),
+      SourceField(
+        'intro',
+        shape: SourceShape.markdown,
+        wireKey: 'briefIntroMd',
+        mdFileName: 'intro.md',
+      ),
+      SourceField(
+        'comms',
+        shape: SourceShape.markdown,
+        wireKey: 'commsMd',
+        mdFileName: 'comms.md',
+      ),
+      SourceField(
+        'before_round',
+        shape: SourceShape.markdown,
+        wireKey: 'beforeRoundMd',
+        mdFileName: 'before-round.md',
+      ),
+      // Derived / excluded.
+      SourceField(
+        'contentHash',
+        shape: SourceShape.raw,
+        kind: SourceFieldKind.derived,
+      ),
+      SourceField(
+        'source',
+        shape: SourceShape.raw,
+        kind: SourceFieldKind.derived,
+      ),
+      SourceField(
+        'metadata',
+        shape: SourceShape.raw,
+        kind: SourceFieldKind.derived,
+      ),
+      SourceField(
+        'sessions',
+        shape: SourceShape.raw,
+        kind: SourceFieldKind.derived,
+        description: 'Run records. Always empty in a published plan.',
+      ),
+      SourceField(
+        'staff',
+        shape: SourceShape.raw,
+        kind: SourceFieldKind.derived,
+        description:
+            'Local roster with PII. Stripped at publish; never in '
+            'this format.',
+      ),
+    ],
+    children: [
+      SourceChild(
+        'variables',
+        scope: variable,
+        collection: SourceCollection.keyedMap,
+        keyField: 'name',
+      ),
+    ],
+  );
+
+  /// Every scope, for schema generation and tests.
+  static const all = <SourceScope>[
+    plan,
+    exercise,
+    station,
+    location,
+    person,
+    roleplay,
+    team,
+    variable,
+  ];
+}
+
+/// Top-level keys of the source document.
+///
+/// The document is `{sourceFormat?, plan, exercises?, teams?}` — the plan's own
+/// scalars live under `plan:` while the collections sit beside it, so a long
+/// exercise list does not bury the plan header.
+class SourceDocumentKeys {
+  const SourceDocumentKeys._();
+
+  static const sourceFormat = 'sourceFormat';
+  static const plan = 'plan';
+  static const exercises = 'exercises';
+  static const teams = 'teams';
+
+  static const all = <String>[sourceFormat, plan, exercises, teams];
+}

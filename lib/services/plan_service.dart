@@ -13,6 +13,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/models/schedule.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
@@ -1175,7 +1176,6 @@ class PlanService {
     required int evaluationTime,
     required int rotationTime,
     required AppLocalizations localizations,
-    bool calcFromTimes = true,
     List<Station> stations = const [],
     Map<String, String> variableOverrides = const {},
   }) {
@@ -1183,40 +1183,17 @@ class PlanService {
       numberOfTeams <= numberOfStations,
       '<numberOfTeams> must be less or equal to <numberOfStations>',
     );
-    final schedule = List<List<TimeOfDay>>.generate(numberOfRounds, (
-      stationIndex,
-    ) {
-      TimeOfDay currentStartTime = _addMinutesToTime(
-        startTime,
-        stationIndex * (executionTime + evaluationTime + rotationTime),
-      );
-
-      return List.generate(3, (phaseIndex) {
-        final phaseDuration = switch (phaseIndex) {
-          0 => calcFromTimes ? 0 : executionTime,
-          1 => calcFromTimes ? executionTime : evaluationTime,
-          2 => calcFromTimes ? evaluationTime : rotationTime,
-          _ => throw UnimplementedError(),
-        };
-        final phaseTime = _addMinutesToTime(currentStartTime, phaseDuration);
-
-        currentStartTime = phaseTime;
-        return phaseTime;
-      });
-    });
-
-    final lastRound = schedule.last;
-    final lastPhase = lastRound.last;
-    final endTime = calcFromTimes
-        ? TimeOfDay.fromDateTime(
-            lastPhase.toDateTime().add(Duration(minutes: rotationTime)),
-          )
-        : lastPhase;
-
+    // The rotation math itself lives in ExerciseSchedule, which is free of
+    // package:flutter so the source-format builder can call it too — this
+    // method's TimeOfDay signature is what keeps it out of the CLI's reach
+    // (DESIGN-014). A `calcFromTimes: false` variant used to live here with a
+    // different phase model; nothing ever passed false, so it went with the
+    // move rather than being ported.
+    final start = startTime.toSimple();
     return Exercise(
       name: name,
       uuid: uuid ?? nanoid(8),
-      startTime: startTime.toSimple(),
+      startTime: start,
       executionTime: executionTime,
       evaluationTime: evaluationTime,
       rotationTime: rotationTime,
@@ -1224,9 +1201,21 @@ class PlanService {
       numberOfRounds: numberOfRounds,
       stations: ensureStations(localizations, numberOfStations, stations),
       schedule: List.unmodifiable(
-        schedule.map((e) => e.map((e) => e.toSimple()).toList()),
+        ExerciseSchedule.rounds(
+          startTime: start,
+          numberOfRounds: numberOfRounds,
+          executionTime: executionTime,
+          evaluationTime: evaluationTime,
+          rotationTime: rotationTime,
+        ),
       ),
-      endTime: endTime.toSimple(),
+      endTime: ExerciseSchedule.endTime(
+        startTime: start,
+        numberOfRounds: numberOfRounds,
+        executionTime: executionTime,
+        evaluationTime: evaluationTime,
+        rotationTime: rotationTime,
+      ),
       variableOverrides: variableOverrides,
     );
   }
@@ -1264,13 +1253,5 @@ class PlanService {
               );
       }),
     );
-  }
-
-  static TimeOfDay _addMinutesToTime(TimeOfDay time, int minutesToAdd) {
-    final totalMinutes = time.hour * 60 + time.minute + minutesToAdd;
-    final addedHours = totalMinutes ~/ 60;
-    final addedMinutes = totalMinutes % 60;
-
-    return TimeOfDay(hour: addedHours % 24, minute: addedMinutes);
   }
 }

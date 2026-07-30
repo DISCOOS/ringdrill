@@ -4,6 +4,8 @@ import 'package:args/args.dart';
 import 'package:http/http.dart' as http;
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
+import 'package:ringdrill/data/source/source_compiler.dart';
+import 'package:ringdrill/data/source/source_diagnostic.dart';
 import 'package:universal_io/io.dart';
 
 const _defaultBaseUrl = 'https://ringdrill.netlify.app';
@@ -76,6 +78,15 @@ Future<void> main(List<String> argv) async {
     ..addOption(
       'version',
       help: 'Specific version (download command). Default: latest.',
+    )
+    // source format (DESIGN-014)
+    ..addFlag(
+      'strict',
+      negatable: false,
+      help:
+          'Treat warnings as errors (build/analyze commands). Useful in a '
+          'pipeline where a generated document should be clean, not just '
+          'buildable.',
     );
 
   late final ArgResults res;
@@ -126,6 +137,10 @@ Future<void> main(List<String> argv) async {
 
       case 'download':
         await _runDownload(client, args, res, jsonOut);
+        break;
+
+      case 'build':
+        _runBuild(args, res, jsonOut);
         break;
 
       case 'publish':
@@ -298,6 +313,132 @@ Future<void> _runDownload(
 }
 
 // ---------------------------------------------------------------------------
+// Source format (DESIGN-014)
+// ---------------------------------------------------------------------------
+
+/// `build <source.yaml> [--out=<file>] [--strict]`
+///
+/// Compiles a source document to a `.drill`. Synchronous and offline — nothing
+/// here touches the network, which is why it does not take the client.
+void _runBuild(List<String> args, ArgResults res, bool jsonOut) {
+  if (args.length != 1) {
+    _fail('Usage: build <source.yaml> [--out=<file>] [--strict]');
+  }
+  final path = args[0];
+  final file = File(path);
+  if (!file.existsSync()) {
+    _fail('File not found: $path');
+  }
+
+  // The archive's slug comes from its file name, so default the output to the
+  // source's basename: `lsor-eidene-2026.yaml` builds `lsor-eidene-2026.drill`,
+  // and the slug the catalog sees matches the file the author edits.
+  final baseName = _baseName(path);
+  final outPath =
+      (res['out'] as String?) ?? '$baseName.${DrillFile.drillExtension}';
+  final strict = res['strict'] == true;
+
+  final CompileResult result;
+  try {
+    result = SourceCompiler.compile(
+      file.readAsStringSync(),
+      fileName: _baseName(outPath),
+    );
+  } on SourceFormatException catch (e) {
+    _printDiagnostics(path, e.diagnostics, jsonOut);
+    exitCode = 65; // EX_DATAERR
+    return;
+  }
+
+  if (strict && result.warnings.isNotEmpty) {
+    _printDiagnostics(path, result.warnings, jsonOut);
+    stderr.writeln(
+      'Refusing to write $outPath: --strict and warnings present.',
+    );
+    exitCode = 65;
+    return;
+  }
+
+  File(outPath).writeAsBytesSync(result.drillFile.content);
+
+  if (jsonOut) {
+    stdout.writeln(
+      jsonEncode({
+        'source': path,
+        'out': outPath,
+        'planId': result.plan.uuid,
+        'name': result.plan.name,
+        'exercises': result.plan.exercises.length,
+        'stations': result.plan.exercises.fold<int>(
+          0,
+          (acc, e) => acc + e.stations.length,
+        ),
+        'teams': result.plan.teams.length,
+        'rolePlays': result.plan.rolePlays.length,
+        'contentHash': result.plan.contentHash,
+        'size': result.drillFile.content.length,
+        'warnings': result.warnings.map((d) => d.toJson()).toList(),
+      }),
+    );
+    return;
+  }
+
+  stdout.writeln('✔ built $path → $outPath');
+  stdout.writeln('  name        : ${result.plan.name}');
+  stdout.writeln('  planId      : ${result.plan.uuid}');
+  stdout.writeln(
+    '  exercises   : ${result.plan.exercises.length} '
+    '(${result.plan.exercises.fold<int>(0, (a, e) => a + e.stations.length)} '
+    'stations)',
+  );
+  stdout.writeln('  teams       : ${result.plan.teams.length}');
+  stdout.writeln('  roles       : ${result.plan.rolePlays.length}');
+  stdout.writeln('  contentHash : ${result.plan.contentHash}');
+  stdout.writeln('  size        : ${result.drillFile.content.length} bytes');
+  if (result.warnings.isNotEmpty) {
+    stdout.writeln();
+    _printDiagnostics(path, result.warnings, false);
+  }
+}
+
+/// Prints diagnostics grouped by severity, errors first.
+///
+/// The non-JSON form is deliberately `path: severity: message` rather than a
+/// table: it is what an editor's error parser and a human skim both handle, and
+/// the paths are long enough that columns would wrap.
+void _printDiagnostics(
+  String file,
+  List<SourceDiagnostic> diagnostics,
+  bool jsonOut,
+) {
+  if (jsonOut) {
+    stderr.writeln(
+      jsonEncode({
+        'source': file,
+        'diagnostics': diagnostics.map((d) => d.toJson()).toList(),
+      }),
+    );
+    return;
+  }
+  final errors = diagnostics.where((d) => d.isError).toList();
+  final warnings = diagnostics.where((d) => !d.isError).toList();
+  for (final d in [...errors, ...warnings]) {
+    final where = d.path.isEmpty ? file : '$file:${d.path}';
+    final label = d.isError ? 'error' : 'warning';
+    stderr.writeln('$where: $label: ${d.message}');
+    if (d.hint != null) stderr.writeln('    $where: hint: ${d.hint}');
+  }
+  stderr.writeln('${errors.length} error(s), ${warnings.length} warning(s).');
+}
+
+/// File name without directory or extension.
+String _baseName(String path) {
+  final name = path.split(Platform.pathSeparator).last.split('/').last;
+  final dot = name.lastIndexOf('.');
+  return dot <= 0 ? name : name.substring(0, dot);
+}
+
+// ---------------------------------------------------------------------------
 // Printers
 // ---------------------------------------------------------------------------
 
@@ -417,6 +558,10 @@ PUBLIC COMMANDS (no admin token required):
                                     [--limit=N] [--cursor=C]
   download <slug>                 Download a .drill to disk
                                     [--out=<file>] [--version=N]
+
+SOURCE FORMAT COMMANDS (offline; DESIGN-014):
+  build <source.yaml>             Compile a source document to a .drill
+                                    [--out=<file>] [--strict]
 
 ADMIN COMMANDS (RINGDRILL_ADMIN_TOKEN or --token required):
   list-versions <slug>            List versions for a slug

@@ -14,7 +14,8 @@ RingDrill is a Flutter app (Dart 3, SDK `^3.8.0`) plus a Dart admin CLI (`bin/ri
 flutter pub get                                # install deps
 make build                                     # one-shot codegen (freezed/json_serializable)
 make watch                                     # incremental codegen watcher
-make i18n                                      # regenerate Flutter localizations from ARB
+make i18n                                      # regenerate Flutter localizations from ARB (runs `labels` first)
+make labels                                    # regenerate the Flutter-free ARB subset the CLI uses
 make format                                    # dart format lib/ test/ bin/ (whole-tree sweep)
 make format-check                              # fail if anything is unformatted, without writing
 flutter analyze                                # static analysis (CI gate)
@@ -29,14 +30,16 @@ ringdrill -h                                   # CLI usage (needs RINGDRILL_ADMI
 skills/flutter-widget-preview/run_preview.sh   # render a widget to a PNG headlessly (no browser)
 ```
 
-Localization is regenerated automatically the next time you `flutter run`, `flutter build` or `flutter test` after editing `lib/l10n/app_en.arb` or `app_nb.arb`. Run `make i18n` (`flutter gen-l10n`) when you need an explicit regen — `make build` only covers freezed/`json_serializable` and does NOT touch `app_localizations*.dart`.
+Localization is regenerated automatically the next time you `flutter run`, `flutter build` or `flutter test` after editing `lib/l10n/app_en.arb` or `app_nb.arb`. Run `make i18n` (`flutter gen-l10n`) when you need an explicit regen — `make build` covers freezed/`json_serializable` and the headless label subset, but does NOT touch `app_localizations*.dart`.
+
+An ARB edit feeds **two** generators: `flutter gen-l10n` produces the Flutter-bound `AppLocalizations`, and `make labels` produces `lib/l10n/headless_labels.g.dart`, the small Flutter-free copy the CLI's `build`/`render` need because they cannot import Flutter (DESIGN-014, the ADR-0048 amendment). `make i18n` and `make build` both run `labels` for you; `test/l10n/headless_labels_sync_test.dart` fails if the copy ever drifts from the ARBs. Never hand-edit `headless_labels.g.dart` — add the key to `headlessKeys` in `tools/generate_headless_labels.dart` and regenerate.
 
 ## Rules for agents
 
 These are non-negotiable unless the maintainer says otherwise.
 
 1. **Run codegen, not regex.** When you add or change a `@freezed` class, an enum carrying `@JsonValue`, or anything with a `part 'x.g.dart'`/`part 'x.freezed.dart'` directive, run `make build` (or `dart run build_runner build --delete-conflicting-outputs`). Never edit the generated output by hand.
-2. **Never edit `*.freezed.dart`, `*.g.dart`, `app_localizations*.dart` directly.** They are regenerated and your changes will be lost. Change the source (`*.dart` model files or `*.arb` files) instead.
+2. **Never edit `*.freezed.dart`, `*.g.dart`, `app_localizations*.dart` directly.** They are regenerated and your changes will be lost. Change the source (`*.dart` model files or `*.arb` files) instead. This includes `lib/l10n/headless_labels.g.dart`, which is generated from the ARBs by `make labels` rather than by `build_runner`.
 3. **Keep mobile-safe imports mobile-safe.** Any file imported from `lib/main.dart` on a non-web platform must not transitively import `dart:html` or `package:web`. Use the existing `if (dart.library.io)` pattern with a stub. Web-only code lives under `lib/web/`.
 4. **Localize every user-visible string.** No raw English text in widgets. Add the key to `app_en.arb` and `app_nb.arb` together. If you do not know the Norwegian translation, copy the English string and flag it for review in the PR description.
 5. **Respect the analytics consent gate.** Do not call Sentry, analytics or any network telemetry outside the consent check in `lib/main.dart`. The default is opt-out.
