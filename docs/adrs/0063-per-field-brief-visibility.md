@@ -127,10 +127,13 @@ station and has to reach the markör standing at it, and the booklet's own stand
 instruction is that veiledere look after the markörer and do not drive off without
 them.
 
-Participants are the only audience excluded, which makes `includesActorPii` the
-same predicate as `includesDirectorNotes` — "is this staff". Two gates collapse
-into one, and the two are worth keeping separate anyway: they answer different
-questions and will diverge again the moment a field is director-only.
+The two gates stay distinct, and neither is simply "is this staff": `other` is
+staff and gets the participant set, so it sees no contact details, and an actor
+sees the cast without seeing `director_notes`. Resolved against the five
+audiences:
+
+* `includesActorPii` — actor, instructor, director.
+* `includesDirectorNotes` — instructor, director.
 
 Once role-play fields and `leader_answers` are gated where they belong, the
 pressure to cram everything into `director_notes` goes away by itself: the
@@ -182,8 +185,10 @@ the station.
   carry domain intel a participant would benefit from. An author who wants
   participants to have it can move it into `situation`.
 * Bad: `director_notes` is visible from instructor, so the name overstates the
-  restriction. ADR-0059's ladder permits a key rename, so `control_notes` stays
-  available; renaming here would churn every document for a cosmetic gain.
+  restriction. **Kept as it is**, deliberately: the name is what authors and every
+  existing document already use, ADR-0059's ladder would carry a rename but every
+  plan, doc and test would churn for a cosmetic gain, and "notes for whoever runs
+  the station" is close enough to what it holds.
 * Bad: the source-format table takes on a rendering concern. It already carries
   `mdFileName` and wire keys, and the alternative — a second table in the brief
   layer keyed by field name — is the drift this repo has now fixed twice.
