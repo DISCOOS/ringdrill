@@ -51,7 +51,7 @@ Plan _plan() {
     ],
     situationMd:
         '{{station.person.magnus}} ({{station.person.magnus.age}} år) – '
-        'grovsøk R25 fra IPP. Sist sett {{station.loc.lkp.utm}}. '
+        'grovsøk R25 fra IPP. Sist sett {{station.loc.lkp.position}}. '
         'Samband på {{var.talegruppe}}.',
     directorNotesMd: 'Markør bak paviljongen.',
   );

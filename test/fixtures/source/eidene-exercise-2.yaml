@@ -69,7 +69,7 @@ exercises:
 
         situation: |
           {{station.person.magnus}} ({{station.person.magnus.age}} år) –
-          grovsøk R25 fra IPP. Sist sett {{station.loc.lkp.utm}}.
+          grovsøk R25 fra IPP. Sist sett {{station.loc.lkp.position}}.
           Samband på {{var.talegruppe}}.
         director_notes: |
           Markør bak paviljongen. Passiv første minutt, svarer på direkte tiltale.

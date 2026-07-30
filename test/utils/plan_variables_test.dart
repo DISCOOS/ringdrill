@@ -289,7 +289,7 @@ void main() {
       );
     });
 
-    test('resolves location facets .place/.utm/.latlng and bare', () {
+    test('resolves location facets .place/.position and bare', () {
       const vars = {'oppmote': oppmote};
       expect(
         resolveTypedPlanVariables(
@@ -299,20 +299,13 @@ void main() {
         ),
         'Meiselen 14',
       );
-      final utm = resolveTypedPlanVariables(
-        '{{var.oppmote.utm}}',
+      final position = resolveTypedPlanVariables(
+        '{{var.oppmote.position}}',
         vars,
         format: format,
       );
-      expect(utm, contains('32V'));
-      expect(
-        resolveTypedPlanVariables(
-          '{{var.oppmote.latlng}}',
-          vars,
-          format: format,
-        ),
-        '59.744500,10.204500',
-      );
+      expect(position, contains('32V'));
+      expect(position, isNot(contains('Meiselen')));
       final bare = resolveTypedPlanVariables(
         '{{var.oppmote}}',
         vars,
@@ -320,6 +313,35 @@ void main() {
       );
       expect(bare, startsWith('Meiselen 14 ('));
       expect(bare, contains('32V'));
+    });
+
+    test('the facets ADR-0050 removed resolve as unrecognized', () {
+      // A `location`-typed variable projects onto the same Location shape, so
+      // it takes the same facets as a station location — including the rename
+      // of `utm`/`latlng` to `position`. The brief's resolver has treated these
+      // as unrecognized since ADR-0050; this path now agrees.
+      //
+      // Note the two distinct defaults: the *bare* token renders place + UTM,
+      // while any *facet* that is not recognized falls to the location default
+      // (place, or UTM when there is no place). So the comparison is against
+      // another unrecognized facet, not against the bare token.
+      const vars = {'oppmote': oppmote};
+      final unrecognized = resolveTypedPlanVariables(
+        '{{var.oppmote.bogus}}',
+        vars,
+        format: format,
+      );
+      for (final stale in ['utm', 'latlng']) {
+        expect(
+          resolveTypedPlanVariables(
+            '{{var.oppmote.$stale}}',
+            vars,
+            format: format,
+          ),
+          unrecognized,
+          reason: '.$stale should resolve like any unrecognized facet',
+        );
+      }
     });
 
     test('an unknown name goes through onUnknown, or stays literal', () {

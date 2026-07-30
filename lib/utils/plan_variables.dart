@@ -17,8 +17,9 @@ import 'package:ringdrill/utils/station_scenario_tokens.dart';
 import 'package:ringdrill/utils/variable_values.dart';
 
 /// Matches `{{var.<name>}}`, tolerating inner whitespace around the name,
-/// with an optional dotted facet path (`.place`, `.utm`, `.latlng` — used
-/// by `location`-typed variables, DESIGN-008 follow-up 11). Capture group 1
+/// with an optional dotted facet path (`.place`, `.position` — used
+/// by `location`-typed variables, DESIGN-008 follow-up 11; `utm`/`latlng`
+/// were renamed to `position` by ADR-0050). Capture group 1
 /// is the name, group 2 the facet path including its leading dots (empty
 /// for the bare token) — same shape as `stationScenarioTokenPattern`. A
 /// declared variable name (ADR-0046) starts with a lowercase letter, then
@@ -31,7 +32,7 @@ final planVariableTokenPattern = RegExp(
 );
 
 /// Facet path segments after the name for a [planVariableTokenPattern]
-/// match, e.g. `.utm` → `['utm']`; empty for the bare token.
+/// match, e.g. `.position` → `['position']`; empty for the bare token.
 List<String> planVariableTokenFacets(Match match) =>
     (match.group(2) ?? '').split('.').where((s) => s.isNotEmpty).toList();
 
@@ -72,7 +73,7 @@ String substitutePlanVariables(
 /// each scalar formatted canonically for its type via
 /// [formatVariableValue] with [format], and a `location`-typed variable
 /// resolved through the shared DESIGN-009 Location facet code
-/// ([resolveLocationFacet]): `.place`, `.utm`, `.latlng`, bare = place +
+/// ([resolveLocationFacet]): `.place`, `.position`, bare = place +
 /// UTM. Facets on a scalar are ignored and the bare formatted value
 /// substituted (scalars render bare in v1).
 ///

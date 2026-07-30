@@ -24,7 +24,8 @@ import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/utils/projection.dart';
 
 /// Matches `{{station.loc.<slug>}}` / `{{station.person.<slug>}}`, with an
-/// optional dotted facet path (`.place`, `.utm`, `.loc.utm`, ...). Group 1
+/// optional dotted facet path (`.place`, `.position`, `.loc.position`, ...).
+/// Group 1
 /// is `loc`/`person`, group 2 the slug, group 3 the facet path including its
 /// leading dots (empty for the bare token). Mirrors
 /// `BriefRenderer`'s own (private) pattern of the same shape.
@@ -37,35 +38,35 @@ final stationScenarioTokenPattern = RegExp(
 List<String> stationScenarioTokenFacets(RegExpMatch match) =>
     (match.group(3) ?? '').split('.').where((s) => s.isNotEmpty).toList();
 
-/// `{{station.loc.<slug>[.facet]}}` facet resolution — same shape as
-/// `BriefRenderer`'s `_resolveLocationFacet`, minus the markdown inline-code
-/// wrapping around `.utm` (an editor chip/preview shows plain text, not
-/// rendered markdown).
+/// `{{station.loc.<slug>[.facet]}}` facet resolution — the same facets as
+/// `field_resolver.dart`'s `_resolveLocationFacet`, minus the markdown
+/// inline-code wrapping around the coordinate (an editor chip/preview shows
+/// plain text, not rendered markdown).
+///
+/// Keep the two switches in step. They drifted once: ADR-0050 renamed the flat
+/// `utm`/`latlng` facets to a format-agnostic `position` in the brief's resolver
+/// but not here, so a document written against the old names resolved in the
+/// editor preview and silently fell back to the bare default in the brief —
+/// which is the one place the author would not see it. An unrecognized facet
+/// must land on [_locationDefault] on **both** paths.
 String resolveLocationFacet(Location location, List<String> facets) {
   switch (facets.isEmpty ? null : facets.first) {
     case 'place':
       return location.place;
     case 'label':
       return location.label;
-    case 'utm':
+    case 'position':
       return _locationUtm(location);
-    case 'latlng':
-      return locationLatLng(location);
     default:
       return _locationDefault(location);
   }
 }
 
-/// `.latlng` facet (DESIGN-008 follow-up 11): the coordinate as a decimal
-/// `lat,lng` pair — 6 decimals, `.` separator — pasteable into a GPS.
-/// Empty when the location has no position.
-String locationLatLng(Location location) {
-  final position = location.position;
-  if (position == null) return '';
-  return '${position.latitude.toStringAsFixed(6)},'
-      '${position.longitude.toStringAsFixed(6)}';
-}
-
+/// The `position` facet, as UTM.
+///
+/// The brief formats this through `CoordinateFormat`, which ships UTM only
+/// (ADR-0050) — so the two agree today. When a second format lands, this path
+/// needs the same seam rather than a hard-coded UTM call.
 String _locationUtm(Location location) {
   final position = location.position;
   if (position == null) return '';

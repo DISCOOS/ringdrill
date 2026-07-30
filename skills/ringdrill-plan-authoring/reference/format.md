@@ -149,7 +149,7 @@ to find and change before publishing.
 | Token | Resolves to |
 |---|---|
 | `{{var.<name>}}` | The variable's effective value at that scope. |
-| `{{var.<name>.utm}}` / `.place` | Facets of a `location`-typed variable. |
+| `{{var.<name>.position}}` / `.place` | Facets of a `location`-typed variable — it projects onto the same shape as a station location, so it takes the same facets. |
 | `{{station.loc.<slug>}}` | The location's `place` and coordinate — `place (32V …)` when it has both, otherwise whichever it has. |
 | `{{station.loc.<slug>.position}}` | The coordinate alone, as a copy chip. |
 | `{{station.loc.<slug>.place}}` / `.label` | The place text / the label. |
@@ -170,15 +170,16 @@ situation: |
 Either drop `place` and let the token carry the coordinate alone, or let the
 token carry the naming and keep it out of the prose.
 
-> **Known divergence — `.utm` and `.latlng`.** The brief's resolver
-> (`_resolveLocationFacet` in `lib/services/brief/field_resolver.dart`) handles
-> `place`, `label` and `position` only. `{{station.loc.<slug>.utm}}` and
-> `.latlng` therefore fall through to the bare rendering **in a brief**, which
-> includes `place` — even though the in-app editor preview
-> (`resolveLocationFacet` in `lib/utils/station_scenario_tokens.dart`) resolves
-> both correctly. Prefer `.position` for a bare coordinate until the two
-> resolvers agree; the comment in `station_scenario_tokens.dart` claiming parity
-> between them is currently wrong.
+**There is no `.utm` facet.** `utm` and `latlng` were renamed to the
+format-agnostic `position` by
+[ADR-0050](../../../docs/adrs/0050-per-output-format-chip-formatting.md), which
+is also why `position` prints UTM: `CoordinateFormat` ships UTM only for now, and
+is the seam for MGRS and the degree variants later.
+
+An unrecognized facet is not an error — it falls back to the bare rendering. So
+`{{station.loc.ipp.utm}}` still produces *something*, just `place (32V …)`
+instead of the bare coordinate you asked for. Older documents and design notes
+still show `.utm`; migrate them to `.position` rather than copying them.
 
 Scopes cascade **downwards** only: a `{{plan.*}}` token resolves inside a station
 field, but `{{exercise.name}}` in a plan-level field has no exercise to resolve

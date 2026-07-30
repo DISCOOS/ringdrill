@@ -48,7 +48,7 @@ void main() {
       expect(resolveLocationFacet(withNeither, const []), isEmpty);
     });
 
-    test('.place/.label/.utm facets resolve their own field', () {
+    test('.place/.label/.position facets resolve their own field', () {
       const location = Location(
         slug: 'a',
         label: 'Siste kjente posisjon',
@@ -60,7 +60,25 @@ void main() {
         resolveLocationFacet(location, ['label']),
         'Siste kjente posisjon',
       );
-      expect(resolveLocationFacet(location, ['utm']), isNotEmpty);
+      // The coordinate alone, not the place it falls back to when a facet is
+      // unrecognized.
+      expect(resolveLocationFacet(location, ['position']), startsWith('32V '));
+    });
+
+    test('the facets ADR-0050 removed fall back to the bare default', () {
+      // `utm`/`latlng` were renamed to `position`. This path used to resolve
+      // them while the brief's resolver did not, so a document written against
+      // the old names read correctly in the editor preview and silently
+      // degraded in the brief. Both now treat them as any other unrecognized
+      // facet.
+      const location = Location(
+        slug: 'a',
+        place: 'Sentrum',
+        position: LatLng(59.9139, 10.7522),
+      );
+      final bare = resolveLocationFacet(location, const []);
+      expect(resolveLocationFacet(location, ['utm']), bare);
+      expect(resolveLocationFacet(location, ['latlng']), bare);
     });
   });
 

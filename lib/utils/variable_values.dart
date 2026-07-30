@@ -211,7 +211,7 @@ String formatVariableValue(DrillVariable variable, VariableFormat format) {
 /// [variable]'s location value projected onto the `Location` model shape
 /// (slug = the variable name, kind left at its default), so the DESIGN-009
 /// location facet code (`resolveLocationFacet`, UTM formatting) is reused
-/// for `{{var.<name>.place/.utm/.latlng}}` instead of being forked.
+/// for `{{var.<name>.place/.position}}` instead of being forked.
 Location variableLocationAsLocation(DrillVariable variable) {
   final location = variable.location ?? const VariableLocation();
   return Location(
