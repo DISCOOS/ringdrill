@@ -1,27 +1,10 @@
 import 'package:flutter/widgets.dart';
+// normalizeLanguageSubtag / languageOfLocaleTag live in language_tags.dart, which
+// is free of Flutter so the brief layer can reach them headlessly (DESIGN-014).
+// Re-exported here so existing callers and tests keep one import.
+export 'package:ringdrill/utils/language_tags.dart';
 
-/// Map legacy / deprecated Norwegian language subtags onto Bokmål.
-///
-/// `Intl.getCurrentLocale()` and Flutter's `Locale.languageCode` can still
-/// report the legacy ISO-639-1 Norwegian code `no` (and the seldom-used
-/// `nn`) on some Android builds. The app only ships `nb`, so we collapse
-/// both onto Bokmål; everything else passes through lowercased.
-String normalizeLanguageSubtag(String code) {
-  final lower = code.toLowerCase();
-  if (lower == 'no' || lower == 'nn') return 'nb';
-  return lower;
-}
-
-/// Lowercased, legacy-aware language subtag from any BCP 47 / ICU locale
-/// string: `no_NO` -> `nb`, `en-US` -> `en`, `nb` -> `nb`. Returns `'en'`
-/// for empty input.
-String languageOfLocaleTag(String tag) {
-  final clean = tag.trim();
-  if (clean.isEmpty) return 'en';
-  final sep = clean.indexOf(RegExp(r'[-_]'));
-  final lang = sep < 0 ? clean : clean.substring(0, sep);
-  return normalizeLanguageSubtag(lang);
-}
+import 'package:ringdrill/utils/language_tags.dart';
 
 /// Pick the supported [Locale] best matching the device locale list.
 ///

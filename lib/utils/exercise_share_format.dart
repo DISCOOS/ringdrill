@@ -1,4 +1,4 @@
-import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/services/brief/brief_labels.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 
@@ -24,9 +24,9 @@ class RotationRound {
 }
 
 /// Returns one [RotationRound] per entry in [exercise.schedule].
-/// The last round gets [AppLocalizations.rotationShareReturn]; all others
-/// get [AppLocalizations.rotationShareNext].
-List<RotationRound> rotationRounds(Exercise exercise, AppLocalizations l10n) {
+/// The last round gets [BriefLabels.rotationShareReturn]; all others
+/// get [BriefLabels.rotationShareNext].
+List<RotationRound> rotationRounds(Exercise exercise, BriefLabels l10n) {
   final rounds = exercise.schedule.length;
   return [
     for (var r = 0; r < rounds; r++)
@@ -60,7 +60,7 @@ String exerciseTimeLabel(Exercise exercise) =>
 /// "90 min (30 min pr oppdrag)" otherwise. Single-round exercises show
 /// just the total without the per-round suffix. Shared by `BriefRenderer`
 /// (`{{exercise.durationLabel}}`) and DESIGN-010's view-layer resolution.
-String exerciseDurationLabel(Exercise exercise, AppLocalizations l10n) {
+String exerciseDurationLabel(Exercise exercise, BriefLabels l10n) {
   final round = rotationRoundMinutes(exercise);
   final total = exercise.numberOfRounds * round;
   final totalStr = (total >= 60 && total % 60 == 0)
@@ -129,7 +129,7 @@ int rotationRoundMinutes(Exercise exercise) =>
 /// carries names only, not per-station scope.
 String formatExerciseForShare(
   Exercise exercise,
-  AppLocalizations l10n, {
+  BriefLabels l10n, {
   Map<String, String> variables = const {},
 }) {
   final buf = StringBuffer();

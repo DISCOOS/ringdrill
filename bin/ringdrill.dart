@@ -9,7 +9,11 @@ import 'package:ringdrill/data/source/source_analyzer.dart';
 import 'package:ringdrill/data/source/source_compiler.dart';
 import 'package:ringdrill/data/source/source_diagnostic.dart';
 import 'package:ringdrill/data/source/source_schema.dart';
+import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/services/brief/brief_audience.dart';
+import 'package:ringdrill/services/brief/brief_labels.dart';
+import 'package:ringdrill/services/brief/brief_renderer.dart';
 import 'package:universal_io/io.dart';
 
 const _defaultBaseUrl = 'https://ringdrill.netlify.app';
@@ -84,6 +88,26 @@ Future<void> main(List<String> argv) async {
       help: 'Specific version (download command). Default: latest.',
     )
     // source format (DESIGN-014)
+    ..addOption(
+      'audience',
+      help:
+          'Brief audience (render command): participant, instructor or '
+          'director. Director includes staff PII, which is stripped at '
+          'publish and only present in a locally held archive.',
+      defaultsTo: 'participant',
+    )
+    ..addOption(
+      'lang',
+      help:
+          'Language for the rendered brief (render command). Default: the '
+          "plan's own content language.",
+    )
+    ..addOption(
+      'exercise',
+      help:
+          '1-based exercise number to scope the brief to (render command). '
+          'Default: the whole plan.',
+    )
     ..addFlag(
       'strict',
       negatable: false,
@@ -153,6 +177,10 @@ Future<void> main(List<String> argv) async {
 
       case 'analyze':
         _runAnalyze(args, res, jsonOut);
+        break;
+
+      case 'render':
+        await _runRender(args, res, jsonOut);
         break;
 
       case 'schema':
@@ -550,6 +578,116 @@ void _runAnalyze(List<String> args, ArgResults res, bool jsonOut) {
   if (errors > 0 || (strict && warnings > 0)) exitCode = 65;
 }
 
+/// `render <source.yaml|file.drill> [--audience=…] [--lang=…] [--exercise=N]`
+///
+/// Renders the markdown brief. Accepts either side of the compiler — a source
+/// document or a built archive — because both are things you have in hand and
+/// want to read.
+///
+/// This is what the ADR-0048 amendment bought: the resolver and the renderer used
+/// to take an `AppLocalizations` and load their template through the Flutter asset
+/// bundle, so none of it could run here.
+Future<void> _runRender(List<String> args, ArgResults res, bool jsonOut) async {
+  if (args.length != 1) {
+    _fail(
+      'Usage: render <source.yaml|file.drill> [--audience=participant|instructor|director] '
+      '[--lang=<code>] [--exercise=N] [--out=<file>]',
+    );
+  }
+  final path = args[0];
+  final file = File(path);
+  if (!file.existsSync()) {
+    _fail('File not found: $path');
+  }
+
+  final audienceName = (res['audience'] as String).trim();
+  final audience = BriefAudience.values.where((a) => a.name == audienceName);
+  if (audience.isEmpty) {
+    _fail(
+      'Unknown audience "$audienceName". '
+      'Expected one of ${BriefAudience.values.map((a) => a.name).join(', ')}.',
+    );
+  }
+
+  final Plan plan;
+  if (path.endsWith('.${DrillFile.drillExtension}')) {
+    try {
+      plan = DrillFile.fromFile(file).plan();
+    } on DrillFormatException catch (e) {
+      stderr.writeln('Cannot read $path: ${e.message}');
+      exitCode = 65;
+      return;
+    }
+  } else {
+    try {
+      plan = SourceCompiler.toPlan(file.readAsStringSync()).plan;
+    } on SourceFormatException catch (e) {
+      _printDiagnostics(path, e.diagnostics, jsonOut);
+      exitCode = 65;
+      return;
+    }
+  }
+
+  // The plan's own content language, not the host's locale (ADR-0007 addendum) —
+  // a brief must not read differently depending on which machine rendered it.
+  // --lang overrides, for rendering a Norwegian plan's brief in English.
+  final languageCode = (res['lang'] as String?)?.trim();
+  final labels = HeadlessBriefLabels(
+    languageCode: (languageCode == null || languageCode.isEmpty)
+        ? plan.metadata.languageCode
+        : languageCode,
+  );
+
+  Exercise? exercise;
+  final exerciseArg = (res['exercise'] as String?)?.trim();
+  if (exerciseArg != null && exerciseArg.isNotEmpty) {
+    final number = int.tryParse(exerciseArg);
+    if (number == null || number < 1 || number > plan.exercises.length) {
+      _fail(
+        'Invalid --exercise "$exerciseArg". '
+        'The plan has ${plan.exercises.length} exercise(s), numbered from 1.',
+      );
+    }
+    final ordered = plan.exercises.toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+    exercise = ordered[number - 1];
+  }
+
+  final markdown = await BriefRenderer().render(
+    plan: plan,
+    exercise: exercise,
+    audience: audience.first,
+    l10n: labels,
+  );
+
+  final outPath = res['out'] as String?;
+  if (outPath != null) File(outPath).writeAsStringSync(markdown);
+
+  if (jsonOut) {
+    stdout.writeln(
+      jsonEncode({
+        'source': path,
+        'out': ?outPath,
+        'audience': audience.first.name,
+        'lang': labels.localeName,
+        'exercise': ?exercise?.name,
+        'bytes': markdown.length,
+        if (outPath == null) 'markdown': markdown,
+      }),
+    );
+    return;
+  }
+  if (outPath == null) {
+    stdout.write(markdown);
+    return;
+  }
+  stdout.writeln('✔ rendered $path → $outPath');
+  stdout.writeln('  audience : ${audience.first.name}');
+  stdout.writeln('  language : ${labels.localeName}');
+  if (exercise != null) stdout.writeln('  exercise : ${exercise.name}');
+  stdout.writeln('  size     : ${markdown.length} bytes');
+}
+
 /// `schema`
 ///
 /// Prints the source format's JSON Schema. Pretty-printed by default because a
@@ -728,6 +866,9 @@ SOURCE FORMAT COMMANDS (offline; DESIGN-014):
                                     [--out=<file>]  (stdout when omitted)
   analyze <source.yaml>           Check a source document without building
                                     [--strict]
+  render <source.yaml|.drill>     Render the markdown brief
+                                    [--audience=<a>] [--lang=<code>]
+                                    [--exercise=N] [--out=<file>]
   schema                          Print the source format's JSON Schema
 
 ADMIN COMMANDS (RINGDRILL_ADMIN_TOKEN or --token required):

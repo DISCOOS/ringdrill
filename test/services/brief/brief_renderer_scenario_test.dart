@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/l10n/app_localizations_nb.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
@@ -87,7 +88,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       final utm = BriefRenderer.formatUtm(_lkp.position);
@@ -116,7 +117,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(result, contains('UTM:[] Standard:[`Rådhuset`]'));
@@ -150,7 +151,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(result, contains('Navn: Anne Glemsk'));
@@ -178,7 +179,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       final utm = BriefRenderer.formatUtm(_lkp.position);
@@ -203,7 +204,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(result, contains('Sted: `Fjellheisen`'));
@@ -238,7 +239,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(result, contains('Navn: Anne Nordmann'));
@@ -261,7 +262,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(result, contains('Navn: Anne Glemsk'));
@@ -300,7 +301,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(result, contains('Kjønn: kvinne'));
@@ -331,7 +332,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(result, contains('Spiller Anne Glemsk'));
@@ -352,7 +353,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(
@@ -376,7 +377,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(
@@ -399,7 +400,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(
@@ -422,7 +423,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(
@@ -449,7 +450,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(result, contains('Description:[]'));
@@ -477,7 +478,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       final utm = BriefRenderer.formatUtm(station.position);

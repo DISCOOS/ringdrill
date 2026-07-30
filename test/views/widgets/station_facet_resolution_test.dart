@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/l10n/app_localizations_en.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
@@ -95,7 +96,7 @@ Future<void> _expectAllResolve(List<String> tokenNames) async {
     plan: plan,
     exercise: exercise,
     audience: BriefAudience.participant,
-    l10n: _l10n,
+    l10n: _l10n.brief,
   );
 
   expect(rendered, isNot(contains('missing reference')));

@@ -29,7 +29,9 @@ const headlessKeys = <String>[
   'team',
   'station',
   // The brief layer (`render`): field_resolver, brief_renderer and
-  // exercise_share_format between them use exactly these.
+  // exercise_share_format between them use exactly these. DESIGN-014 counted
+  // nine, having looked only at the first two — exercise_share_format is in the
+  // closure too and adds the rest.
   'round',
   'briefRingRoute',
   'briefStationNoPosition',
@@ -38,6 +40,13 @@ const headlessKeys = <String>[
   'rotationShareLegendPhases',
   'rotationShareTitle',
   'variableDurationHourUnit',
+  'hour',
+  'briefPerStation',
+  'shareNoteRevisits',
+  'shareNoteUnderCoverage',
+  'rotationShareEachRound',
+  'rotationShareReturn',
+  'rotationShareNext',
 ];
 
 /// Locales to bake in — the set the app ships (`flutter gen-l10n` reads the

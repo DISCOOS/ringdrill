@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/l10n/app_localizations_nb.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/location.dart';
@@ -31,7 +32,7 @@ void main() {
         final result = resolveField(
           'Title: {{exercise.name}}',
           vars: vars,
-          l10n: _l10n,
+          l10n: _l10n.brief,
           refContext: refContext,
         );
 
@@ -55,7 +56,7 @@ void main() {
       final result = resolveField(
         'Sted: {{station.loc.lkp.place}}, UTM: {{station.loc.lkp.position}}',
         vars: const {},
-        l10n: _l10n,
+        l10n: _l10n.brief,
         scenarioStation: station,
       );
 
@@ -75,7 +76,7 @@ void main() {
         'v11': const DrillVariable(name: 'v11', value: 'END'),
       };
 
-      final result = resolveField('{{var.v0}}', vars: chain, l10n: _l10n);
+      final result = resolveField('{{var.v0}}', vars: chain, l10n: _l10n.brief);
 
       // Bounded by the cap before reaching 'END' — the unresolved token
       // stays visible rather than the render hanging or throwing.
@@ -83,7 +84,7 @@ void main() {
     });
 
     test('returns null for null content', () {
-      expect(resolveField(null, vars: const {}, l10n: _l10n), isNull);
+      expect(resolveField(null, vars: const {}, l10n: _l10n.brief), isNull);
     });
   });
 
@@ -174,7 +175,7 @@ void main() {
       final result = resolveField(
         'Sted: {{station.loc.lkp}}',
         vars: const {},
-        l10n: _l10n,
+        l10n: _l10n.brief,
         scenarioStation: station,
       );
 
@@ -198,7 +199,7 @@ void main() {
       final result = resolveField(
         'Sted: {{station.loc.lkp.position}}',
         vars: const {},
-        l10n: _l10n,
+        l10n: _l10n.brief,
         scenarioStation: station,
         chips: const ActionChipFormatter(),
       );

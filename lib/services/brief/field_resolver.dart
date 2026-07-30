@@ -10,14 +10,19 @@
 /// → `StationScope`) will feed this same function from the widget layer, so
 /// an in-editor preview and the brief share one resolver instead of drifting
 /// apart. This file stays free of `package:flutter/*` so the CLI and any
-/// other pure-Dart caller can resolve fields too (ADR-0005); it only touches
-/// `AppLocalizations` and pure model types, the same tolerance the code had
-/// inside `BriefRenderer`.
+/// other pure-Dart caller can resolve fields too (ADR-0005); it touches only
+/// [BriefLabels] and pure model types.
+///
+/// It used to take an `AppLocalizations`, which made "Flutter-free" true of the
+/// call graph but not of the *signature* — the resolver could not actually run
+/// under `dart run`. DESIGN-014's amendment to ADR-0048 replaced that with
+/// [BriefLabels], whose member names are identical, so nothing in this file
+/// changed except the parameter type.
 library;
 
 import 'package:latlong2/latlong.dart';
 import 'package:mustache_template/mustache_template.dart';
-import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/services/brief/brief_labels.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
@@ -182,7 +187,7 @@ enum CoordinateFormat {
 String? resolveField(
   String? content, {
   required Map<String, DrillVariable> vars,
-  required AppLocalizations l10n,
+  required BriefLabels l10n,
   Map<String, dynamic> refContext = const {},
   Station? scenarioStation,
   List<RolePlay> scenarioRolePlays = const [],
@@ -229,7 +234,7 @@ String? resolveField(
 String _resolveFieldOnce(
   String content, {
   required Map<String, DrillVariable> vars,
-  required AppLocalizations l10n,
+  required BriefLabels l10n,
   required Map<String, dynamic> refContext,
   Station? scenarioStation,
   List<RolePlay> scenarioRolePlays = const [],
@@ -282,7 +287,7 @@ String _resolveFieldOnce(
 String substituteTypedVariables(
   String content,
   Map<String, DrillVariable> vars,
-  AppLocalizations l10n, {
+  BriefLabels l10n, {
   ChipFormatter chips = const CopyChipFormatter(),
   CoordinateFormat format = CoordinateFormat.utm,
 }) {
@@ -325,7 +330,7 @@ String _resolveStationScenarioTokens(
   String content, {
   required Station station,
   required List<RolePlay> rolePlays,
-  required AppLocalizations l10n,
+  required BriefLabels l10n,
   ChipFormatter chips = const CopyChipFormatter(),
   CoordinateFormat format = CoordinateFormat.utm,
 }) {

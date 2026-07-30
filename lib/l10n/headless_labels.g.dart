@@ -29,6 +29,19 @@ const headlessLabelMessages = <String, Map<String, Object>>{
     'rotationShareLegendPhases': 'drill | eval | roll / inbound',
     'rotationShareTitle': 'Rotation (time of day)',
     'variableDurationHourUnit': 'h',
+    'hour': <String, String>{
+      '=0': 'now',
+      '=1': '1 hour',
+      'other': '{count} hours',
+    },
+    'briefPerStation': 'per station',
+    'shareNoteRevisits':
+        'Note: {rounds} rounds across {stations} stations means each team will revisit some stations.',
+    'shareNoteUnderCoverage':
+        'Note: {rounds} rounds across {stations} stations means each team will only visit some stations.',
+    'rotationShareEachRound': 'Each round',
+    'rotationShareReturn': 'return',
+    'rotationShareNext': 'next',
   },
   'nb': {
     'team': <String, String>{'=0': 'Lag', 'other': 'Lag'},
@@ -41,5 +54,18 @@ const headlessLabelMessages = <String, Map<String, Object>>{
     'rotationShareLegendPhases': 'øve | eval | rull / retur',
     'rotationShareTitle': 'Rullering (klokkeslett)',
     'variableDurationHourUnit': 't',
+    'hour': <String, String>{
+      '=0': 'nå',
+      '=1': '1 time',
+      'other': '{count} timer',
+    },
+    'briefPerStation': 'pr oppdrag',
+    'shareNoteRevisits':
+        'Merk: {rounds} runder på {stations} poster betyr at hvert lag besøker noen poster flere ganger.',
+    'shareNoteUnderCoverage':
+        'Merk: {rounds} runder på {stations} poster betyr at hvert lag bare besøker noen poster.',
+    'rotationShareEachRound': 'Generelt hver runde',
+    'rotationShareReturn': 'retur',
+    'rotationShareNext': 'neste',
   },
 };

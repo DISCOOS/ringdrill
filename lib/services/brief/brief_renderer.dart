@@ -9,11 +9,11 @@
 /// of the field content, e.g. `{{=<% %>=}} some {{literal}} text <%={{ }}=%>`.
 library;
 
-import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:meta/meta.dart';
 import 'package:mustache_template/mustache_template.dart';
-import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/services/brief/brief_labels.dart';
+import 'package:ringdrill/services/brief/brief_template_source.dart';
 import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -65,12 +65,20 @@ class BriefTemplateException implements Exception {
 }
 
 class BriefRenderer {
-  BriefRenderer({TemplateRegistry? registry, AssetBundle? bundle})
+  BriefRenderer({TemplateRegistry? registry, BriefTemplateSource? templates})
     : _registry = registry ?? TemplateRegistry.instance,
-      _bundle = bundle ?? rootBundle;
+      _templates = templates ?? const BakedBriefTemplateSource();
 
   final TemplateRegistry _registry;
-  final AssetBundle _bundle;
+
+  /// Where template source text comes from.
+  ///
+  /// Was an `AssetBundle`, which made this class — and so the whole brief layer
+  /// — unusable outside a Flutter app even though rendering is pure string work
+  /// (DESIGN-014's amendment to ADR-0048). The default reads the baked-in copies,
+  /// which works identically in the app, under `dart run` and inside a compiled
+  /// CLI; a test can still substitute its own source.
+  final BriefTemplateSource _templates;
 
   /// Renders a brief for [plan]. When [exercise] is non-null, scopes the
   /// brief to that exercise. When null, renders the whole plan. The
@@ -86,13 +94,13 @@ class BriefRenderer {
     required Plan plan,
     Exercise? exercise,
     required BriefAudience audience,
-    required AppLocalizations l10n,
+    required BriefLabels l10n,
     bool wideTocSidebar = false,
   }) async {
     final template = _registry.resolve(exercise?.templateId, l10n.localeName);
     final String source;
     try {
-      source = await _bundle.loadString(template.assetPath);
+      source = await _templates.load(template.assetPath);
     } catch (e) {
       throw BriefTemplateException(
         templateId: template.id,
@@ -172,7 +180,7 @@ class BriefRenderer {
     required BriefAudience audience,
     required Map<String, Staff> actorMap,
     required List<RolePlay> rolePlays,
-    required AppLocalizations l10n,
+    required BriefLabels l10n,
     required Map<String, dynamic> planRefContext,
   }) {
     final exNum = _exerciseNumber(plan, exercise);
@@ -272,7 +280,7 @@ class BriefRenderer {
     required Map<String, Staff> actorMap,
     required List<RolePlay> rolePlays,
     required String? effectiveCommsMd,
-    required AppLocalizations l10n,
+    required BriefLabels l10n,
     required Map<String, dynamic> exerciseRefContext,
   }) {
     final stationCode = Numbering.station(
@@ -428,10 +436,8 @@ class BriefRenderer {
   /// Total duration plus per-round breakdown for the exercise.
   /// Examples: "2 timer (60 min pr oppdrag)", "90 min (30 min pr oppdrag)".
   @visibleForTesting
-  static String exerciseDurationLabel(
-    Exercise exercise,
-    AppLocalizations l10n,
-  ) => exercise_format.exerciseDurationLabel(exercise, l10n);
+  static String exerciseDurationLabel(Exercise exercise, BriefLabels l10n) =>
+      exercise_format.exerciseDurationLabel(exercise, l10n);
 
   /// Per-round duration with phase breakdown for a station: "30 min (15 | 10 | 5)".
   @visibleForTesting
@@ -443,7 +449,7 @@ class BriefRenderer {
   static String organisationBlock(
     Plan plan,
     Exercise exercise,
-    AppLocalizations l10n,
+    BriefLabels l10n,
   ) => _organisationBlock(plan, exercise, l10n);
 
   /// Formats [latLng] as "32V 0580414E 6552008N" (UTM, easting before
@@ -478,7 +484,7 @@ class BriefRenderer {
   static String resolvePlanScopeText(
     Plan plan,
     String content,
-    AppLocalizations l10n, {
+    BriefLabels l10n, {
     Exercise? exercise,
     Station? station,
   }) =>
@@ -519,7 +525,7 @@ class BriefRenderer {
   static String substituteVariables(
     String content,
     Map<String, String> vars,
-    AppLocalizations l10n,
+    BriefLabels l10n,
   ) => substitutePlanVariables(
     content,
     vars,
@@ -551,7 +557,7 @@ String _stationDurationLabel(Exercise exercise) {
 }
 
 /// Full Organisering markdown block used in the brief template.
-String _organisationBlock(Plan plan, Exercise exercise, AppLocalizations l10n) {
+String _organisationBlock(Plan plan, Exercise exercise, BriefLabels l10n) {
   final phases = rotationPhaseBreakdown(exercise);
   // Ringløype line: keep config + legend on the same physical line so the
   // legend doesn't wrap unnecessarily on wide screens. Markdown reflows the
@@ -610,24 +616,22 @@ Map<String, dynamic> _planRefContext(Plan plan) => {
 /// roleplay refContexts too (see `_buildStationContext`), so
 /// `{{exercise.name}}` also resolves from inside a station or roleplay
 /// field, not just the exercise's own.
-Map<String, dynamic> _exerciseRefContext(
-  Exercise exercise,
-  AppLocalizations l10n,
-) => {
-  'exercise': {
-    'name': exercise.name,
-    'numberOfTeams': exercise.numberOfTeams,
-    'numberOfRounds': exercise.numberOfRounds,
-    'startTime': exercise.startTime.toString(),
-    'endTime': exercise.endTime.toString(),
-    'timeLabel': exerciseTimeLabel(exercise),
-    'durationLabel': exerciseDurationLabel(exercise, l10n),
-    'executionTime': exercise.executionTime,
-    'evaluationTime': exercise.evaluationTime,
-    'rotationTime': exercise.rotationTime,
-    'phaseBreakdown': rotationPhaseBreakdown(exercise),
-  },
-};
+Map<String, dynamic> _exerciseRefContext(Exercise exercise, BriefLabels l10n) =>
+    {
+      'exercise': {
+        'name': exercise.name,
+        'numberOfTeams': exercise.numberOfTeams,
+        'numberOfRounds': exercise.numberOfRounds,
+        'startTime': exercise.startTime.toString(),
+        'endTime': exercise.endTime.toString(),
+        'timeLabel': exerciseTimeLabel(exercise),
+        'durationLabel': exerciseDurationLabel(exercise, l10n),
+        'executionTime': exercise.executionTime,
+        'evaluationTime': exercise.evaluationTime,
+        'rotationTime': exercise.rotationTime,
+        'phaseBreakdown': rotationPhaseBreakdown(exercise),
+      },
+    };
 
 /// Effective *typed* plan variables, keyed by name, at the plan scope
 /// (DESIGN-008 follow-up 11). Delegates to the shared

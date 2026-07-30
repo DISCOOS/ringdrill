@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/l10n/app_localizations_nb.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -83,7 +84,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(result, contains('Plan kanal Kanal 6'));
@@ -131,7 +132,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: audience,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(
@@ -172,7 +173,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(result, contains(_l10n.briefUnknownVariable('mangler')));
@@ -204,7 +205,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(result, contains('Verdi:[] slutt'));
@@ -238,7 +239,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(result, contains('Kanal Kanal 6'));
@@ -279,7 +280,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(result, contains('Kanal Kanal 6 ved `$expectedUtm`'));
@@ -326,7 +327,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.director,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(result, contains('Intro Kanal 6'));
@@ -350,7 +351,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(result, contains('# Plan Kanal 6'));
@@ -366,7 +367,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(result, contains('_Beskrivelse Kanal 6_'));
@@ -397,7 +398,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(result, contains('## Øvelse Kanal 6'));
@@ -445,7 +446,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.director,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(
@@ -480,7 +481,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(result, contains(_l10n.briefUnknownVariable('mangler')));
@@ -512,7 +513,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(result, contains('## Øvelse[]'));
@@ -558,7 +559,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.director,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(result, contains('# Test Plan'));
@@ -590,7 +591,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(result, contains('# LSOR Eidene 2026'));
@@ -610,7 +611,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(result, contains('Detaljer: Se planen LSOR Eidene 2026.'));
@@ -628,7 +629,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       // Reaching here at all proves the fixpoint loop terminated; the cap's
@@ -681,7 +682,7 @@ void main() {
       final result = await renderer.render(
         plan: typedPlan(),
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(result, contains('kl 12:00'));
@@ -697,7 +698,7 @@ void main() {
         final result = await renderer.render(
           plan: typedPlan(),
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         // Bare token: place + position, position as an inline-code chip.
@@ -737,7 +738,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(result, contains('Post-tid 14:30'));

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
@@ -38,7 +39,7 @@ String resolvePlanText(
     : BriefRenderer.resolvePlanScopeText(
         plan,
         text,
-        l10n,
+        l10n.brief,
         exercise: exercise,
         station: station,
       );

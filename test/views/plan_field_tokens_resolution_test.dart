@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/l10n/app_localizations_en.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
@@ -119,7 +120,7 @@ void main() {
       final rendered = await BriefRenderer().render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       _expectAllResolved(rendered, tokens);
@@ -138,7 +139,7 @@ void main() {
         plan: plan,
         exercise: exercise,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       _expectAllResolved(rendered, tokens);
@@ -158,7 +159,7 @@ void main() {
         plan: plan,
         exercise: exercise,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       _expectAllResolved(rendered, tokens);
@@ -183,7 +184,7 @@ void main() {
         plan: plan,
         exercise: exercise,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       _expectAllResolved(rendered, tokens);

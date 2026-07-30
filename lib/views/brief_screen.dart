@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:markdown_widget/markdown_widget.dart';
+import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/app_user_role.dart';
@@ -152,7 +153,7 @@ class _BriefScreenState extends State<BriefScreen> {
       plan: plan,
       exercise: exercise,
       audience: _audience,
-      l10n: l10n,
+      l10n: l10n.brief,
       wideTocSidebar: _wideTocSidebar,
     );
   }

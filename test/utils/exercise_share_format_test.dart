@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/l10n/app_localizations_en.dart';
 import 'package:ringdrill/l10n/app_localizations_nb.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -13,7 +14,10 @@ void main() {
       // itself is locked to the historical manual template observers
       // paste into Slack/Teams today.
       final exercise = _exerciseTwo();
-      final actual = formatExerciseForShare(exercise, AppLocalizationsNb());
+      final actual = formatExerciseForShare(
+        exercise,
+        AppLocalizationsNb().brief,
+      );
 
       const expected =
           'Øvelse 2\n'
@@ -42,7 +46,10 @@ void main() {
 
     test('marks last round with rotationShareReturn, others with next', () {
       final exercise = _exerciseTwo();
-      final actual = formatExerciseForShare(exercise, AppLocalizationsNb());
+      final actual = formatExerciseForShare(
+        exercise,
+        AppLocalizationsNb().brief,
+      );
 
       expect(actual, contains('Runde 6: 1200 | 1215 | 1225 (retur)'));
       expect(actual, contains('Runde 1: 0930 | 0945 | 0955 (neste)'));
@@ -52,7 +59,10 @@ void main() {
 
     test('English locale uses translated meta, headers and suffixes', () {
       final exercise = _exerciseTwo();
-      final actual = formatExerciseForShare(exercise, AppLocalizationsEn());
+      final actual = formatExerciseForShare(
+        exercise,
+        AppLocalizationsEn().brief,
+      );
 
       expect(actual.startsWith('Øvelse 2\n'), isTrue);
       expect(actual, contains('6 rounds | 3 teams | 3 stations'));
@@ -75,7 +85,10 @@ void main() {
 
     test('does not end with a trailing newline', () {
       final exercise = _exerciseTwo();
-      final actual = formatExerciseForShare(exercise, AppLocalizationsNb());
+      final actual = formatExerciseForShare(
+        exercise,
+        AppLocalizationsNb().brief,
+      );
 
       // Chat clients show a dangling empty line when the pasted text
       // ends in \n, which observers found ugly in early prototypes.
@@ -84,7 +97,10 @@ void main() {
 
     test('station list numbers from 1 and uses station.name verbatim', () {
       final exercise = _exerciseTwo();
-      final actual = formatExerciseForShare(exercise, AppLocalizationsNb());
+      final actual = formatExerciseForShare(
+        exercise,
+        AppLocalizationsNb().brief,
+      );
 
       // The shared text lists stations in declaration order, one per
       // line, with no coordinates. Confirms the deliberate omission
@@ -106,7 +122,7 @@ void main() {
         );
         final actual = formatExerciseForShare(
           exercise,
-          AppLocalizationsNb(),
+          AppLocalizationsNb().brief,
           variables: const {'frekvens': 'Kanal 8'},
         );
 
@@ -118,7 +134,10 @@ void main() {
 
     test('leaves a token as-is when no variables map is given', () {
       final exercise = _exerciseTwo().copyWith(name: 'Øvelse {{var.frekvens}}');
-      final actual = formatExerciseForShare(exercise, AppLocalizationsNb());
+      final actual = formatExerciseForShare(
+        exercise,
+        AppLocalizationsNb().brief,
+      );
 
       expect(actual.startsWith('Øvelse {{var.frekvens}}\n'), isTrue);
     });
@@ -135,7 +154,10 @@ void main() {
           Station(index: 6, name: 'Stasjon G'),
         ],
       );
-      final actual = formatExerciseForShare(exercise, AppLocalizationsEn());
+      final actual = formatExerciseForShare(
+        exercise,
+        AppLocalizationsEn().brief,
+      );
 
       expect(
         actual,

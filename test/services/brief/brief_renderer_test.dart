@@ -1,7 +1,7 @@
-import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/services/brief/brief_template_source.dart';
+import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/l10n/app_localizations_en.dart';
 import 'package:ringdrill/l10n/app_localizations_nb.dart';
 import 'package:ringdrill/models/staff.dart';
@@ -120,13 +120,19 @@ Plan _designPlan() => _emptyPlan().copyWith(
 final _l10n = AppLocalizationsNb();
 final _l10nEn = AppLocalizationsEn();
 
-/// An [AssetBundle] whose [load] always fails the way the real bundle does
-/// when an asset is absent from the running build's manifest. Used to exercise
-/// the renderer's [BriefTemplateException] wrapping.
-class _ThrowingAssetBundle extends AssetBundle {
+/// A [BriefTemplateSource] whose [load] always fails, to exercise the renderer's
+/// [BriefTemplateException] wrapping.
+///
+/// Was an AssetBundle double before the templates moved off the asset bundle
+/// (DESIGN-014's amendment to ADR-0048). The behaviour under test is unchanged:
+/// the renderer must wrap whatever the source throws, naming the template it
+/// could not load.
+class _ThrowingTemplateSource extends BriefTemplateSource {
+  const _ThrowingTemplateSource();
+
   @override
-  Future<ByteData> load(String key) async {
-    throw FlutterError('Unable to load asset: "$key".');
+  Future<String> load(String assetPath) async {
+    throw StateError('Unable to load asset: "$assetPath".');
   }
 }
 
@@ -154,7 +160,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.director,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
       final normalized = _normalizeLines(result);
 
@@ -225,7 +231,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       // Staff PII must be absent
@@ -248,7 +254,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.instructor,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       // Director notes must be present
@@ -288,7 +294,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(result, contains(expectedUtm));
@@ -310,7 +316,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(result, contains('Velkommen til Vinterøvelse Nordland.'));
@@ -344,7 +350,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(
@@ -390,7 +396,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(
@@ -442,7 +448,7 @@ void main() {
         final result = await renderer.render(
           plan: plan,
           audience: BriefAudience.director,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
 
         expect(
@@ -482,7 +488,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       expect(result, contains('#### Situasjon'));
@@ -523,7 +529,7 @@ void main() {
         final result = await BriefRenderer().render(
           plan: planWithDescription('Åpent jorde ved elva.'),
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         );
         final normalized = _normalizeLines(result);
 
@@ -543,7 +549,7 @@ void main() {
         final result = await BriefRenderer().render(
           plan: planWithDescription('Open field by the river.'),
           audience: BriefAudience.participant,
-          l10n: _l10nEn,
+          l10n: _l10nEn.brief,
         );
         final normalized = _normalizeLines(result);
 
@@ -564,7 +570,7 @@ void main() {
           position: position,
         ),
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
       expect(result, isNot(contains('{{station.position}}')));
       expect(result, contains('IPP er ved `$expectedUtm`.'));
@@ -575,7 +581,7 @@ void main() {
       final result = await BriefRenderer().render(
         plan: planWithDescription(null),
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
       final normalized = _normalizeLines(result);
       final headingIndex = normalized.indexOf('### 1.1 – Post');
@@ -596,7 +602,7 @@ void main() {
       final result = await BriefRenderer().render(
         plan: planWithDescription(''),
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
       expect(result, isNot(contains('#### Postbeskrivelse')));
     });
@@ -628,7 +634,7 @@ void main() {
       final result = await renderer.render(
         plan: planWithComms,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       // Exercise token must appear (in station Samband)
@@ -670,7 +676,7 @@ void main() {
       final result = await renderer.render(
         plan: planWithComms,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
       expect(result, contains('PROG COMMS'));
     });
@@ -703,13 +709,13 @@ void main() {
         plan: planA,
         exercise: exerciseWithTemplate,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
       final resultB = await renderer.render(
         plan: planB,
         exercise: exerciseNoTemplate,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
 
       // Same template used — structural output is equivalent after stripping uuid-derived anchors
@@ -726,7 +732,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
         wideTocSidebar: false,
       );
       expect(result, contains('## Innholdsfortegnelse'));
@@ -738,7 +744,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
         wideTocSidebar: true,
       );
       expect(result, isNot(contains('## Innholdsfortegnelse')));
@@ -766,7 +772,7 @@ void main() {
           plan: plan,
           exercise: exercise,
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
           wideTocSidebar: false,
         );
 
@@ -812,7 +818,7 @@ void main() {
       final result = await renderer.render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
         wideTocSidebar: false,
       );
 
@@ -856,7 +862,10 @@ void main() {
         stations: const [],
         schedule: const [],
       );
-      expect(BriefRenderer.exerciseDurationLabel(single, _l10n), '2 timer');
+      expect(
+        BriefRenderer.exerciseDurationLabel(single, _l10n.brief),
+        '2 timer',
+      );
     });
 
     test('exerciseDurationLabel — multi-round, exact hours', () {
@@ -875,7 +884,7 @@ void main() {
         schedule: const [],
       );
       expect(
-        BriefRenderer.exerciseDurationLabel(ex, _l10n),
+        BriefRenderer.exerciseDurationLabel(ex, _l10n.brief),
         '2 timer (60 min pr oppdrag)',
       );
     });
@@ -896,7 +905,7 @@ void main() {
         schedule: const [],
       );
       expect(
-        BriefRenderer.exerciseDurationLabel(ex, _l10n),
+        BriefRenderer.exerciseDurationLabel(ex, _l10n.brief),
         '90 min (30 min pr oppdrag)',
       );
     });
@@ -961,7 +970,7 @@ void main() {
       final result = await BriefRenderer().render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
       expect(result, contains('### 1.1 – Alpha'));
       expect(result, contains('### 1.2 – Beta'));
@@ -977,7 +986,7 @@ void main() {
       final result = await BriefRenderer().render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
       expect(result, contains('[1.1 – Alpha]'));
       expect(result, contains('[1.2 – Beta]'));
@@ -991,7 +1000,7 @@ void main() {
       final result = await BriefRenderer().render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
       expect(result, contains('### 1a – Alpha'));
       expect(result, contains('### 1b – Beta'));
@@ -1007,7 +1016,7 @@ void main() {
       final result = await BriefRenderer().render(
         plan: plan,
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
       expect(result, contains('[1a – Alpha]'));
       expect(result, contains('[1b – Beta]'));
@@ -1023,7 +1032,7 @@ void main() {
         final result = await BriefRenderer().render(
           plan: plan,
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
           wideTocSidebar: false,
         );
         // The dot in "1.1" is stripped by _toAnchor, so the expected anchor is
@@ -1035,15 +1044,17 @@ void main() {
     );
   });
 
-  group('BriefRenderer — missing template asset', () {
+  group('BriefRenderer — missing template source', () {
     test('wraps a bundle load failure in BriefTemplateException', () async {
-      final renderer = BriefRenderer(bundle: _ThrowingAssetBundle());
+      final renderer = BriefRenderer(
+        templates: const _ThrowingTemplateSource(),
+      );
 
       await expectLater(
         renderer.render(
           plan: _emptyPlan(),
           audience: BriefAudience.participant,
-          l10n: _l10n,
+          l10n: _l10n.brief,
         ),
         throwsA(
           isA<BriefTemplateException>()
@@ -1063,13 +1074,15 @@ void main() {
     });
 
     test('locale picks the en asset path in the wrapped exception', () async {
-      final renderer = BriefRenderer(bundle: _ThrowingAssetBundle());
+      final renderer = BriefRenderer(
+        templates: const _ThrowingTemplateSource(),
+      );
 
       await expectLater(
         renderer.render(
           plan: _emptyPlan(),
           audience: BriefAudience.participant,
-          l10n: _l10nEn,
+          l10n: _l10nEn.brief,
         ),
         throwsA(
           isA<BriefTemplateException>().having(
@@ -1088,7 +1101,7 @@ void main() {
       final result = await BriefRenderer().render(
         plan: plan,
         audience: BriefAudience.director,
-        l10n: _l10nEn,
+        l10n: _l10nEn.brief,
       );
       expect(result, contains('## Table of contents'));
       expect(result, contains('#### Time'));
@@ -1108,7 +1121,7 @@ void main() {
       final result = await BriefRenderer().render(
         plan: _designPlan(),
         audience: BriefAudience.participant,
-        l10n: _l10n,
+        l10n: _l10n.brief,
       );
       expect(result, contains('## Innholdsfortegnelse'));
       expect(result, contains('#### Metode'));

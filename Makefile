@@ -1,5 +1,5 @@
 .PHONY: \
-	build watch i18n labels format format-check cli-check release patch publish \
+	build watch i18n labels templates format format-check cli-check release patch publish \
 	build-web build-web-js upload-symbols-web strip-source-maps-web release-web \
 	release-android patch-android \
 	release-ios patch-ios \
@@ -52,7 +52,7 @@ DART_DEFINE_GIT  := --dart-define=GIT_COMMIT=$(GIT_COMMIT)$(GIT_DIRTY) --dart-de
 MIGRATION_DISABLED ?=
 DART_DEFINE_MIGRATION := $(if $(MIGRATION_DISABLED),--dart-define=MIGRATION_DISABLED=$(MIGRATION_DISABLED),)
 
-build: labels
+build: labels templates
 	echo "Run code generation..."
 	dart run build_runner build
 
@@ -81,6 +81,16 @@ i18n: labels
 labels:
 	echo "Generate headless ARB labels..."
 	dart run tools/generate_headless_labels.dart
+
+# Bake assets/templates/*.mustache into Dart, for the same reason as `labels`:
+# BriefRenderer used to load them through the Flutter asset bundle, which the
+# CLI's `render` cannot reach (DESIGN-014, the ADR-0048 amendment). Reading from
+# disk would work under `dart run` but not from an installed CLI, which has no
+# assets/ directory beside it. test/services/brief/brief_templates_sync_test.dart
+# is the backstop if this is skipped.
+templates:
+	echo "Bake brief templates into Dart..."
+	dart run tools/generate_brief_templates.dart
 
 # Apply Dart's default formatting across the tree.
 #

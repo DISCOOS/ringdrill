@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -105,7 +106,7 @@ String? resolveScopedField(
   return resolver.resolveField(
     content,
     vars: vars,
-    l10n: l10n,
+    l10n: l10n.brief,
     refContext: refContext,
     scenarioStation: scenarioStation,
     chips: const resolver.ActionChipFormatter(),
@@ -176,7 +177,7 @@ String? resolveModelField(
   return resolver.resolveField(
     content,
     vars: vars,
-    l10n: l10n,
+    l10n: l10n.brief,
     refContext: refContext,
     scenarioStation: scenarioStation,
     chips: const resolver.ActionChipFormatter(),
@@ -199,7 +200,7 @@ Map<String, dynamic> _exerciseFacets(Exercise exercise, AppLocalizations l10n) {
     'evaluationTime': exercise.evaluationTime,
     'rotationTime': exercise.rotationTime,
     'timeLabel': exerciseTimeLabel(exercise),
-    'durationLabel': exerciseDurationLabel(exercise, l10n),
+    'durationLabel': exerciseDurationLabel(exercise, l10n.brief),
     'phaseBreakdown': rotationPhaseBreakdown(exercise),
   };
 }

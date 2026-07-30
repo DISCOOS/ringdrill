@@ -1,4 +1,4 @@
-import 'package:ringdrill/utils/locale_utils.dart';
+import 'package:ringdrill/utils/language_tags.dart';
 
 /// A registered brief template. Identified by [id]. Loaded from [assetPath]
 /// via the Flutter asset bundle.

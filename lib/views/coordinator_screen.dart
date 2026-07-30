@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
@@ -1358,7 +1359,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   ) async {
     final text = formatExerciseForShare(
       exercise,
-      localizations,
+      localizations.brief,
       variables: _overridesFor(exercise),
     );
     await Clipboard.setData(ClipboardData(text: text));

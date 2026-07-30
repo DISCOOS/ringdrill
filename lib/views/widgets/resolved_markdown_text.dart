@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
@@ -42,7 +43,7 @@ class ResolvedMarkdownText extends StatelessWidget {
   /// this widget and any caller that needs the resolved string (not just a
   /// widget) should use.
   static String resolve(Plan plan, String content, AppLocalizations l10n) =>
-      BriefRenderer.resolvePlanScopeText(plan, content, l10n);
+      BriefRenderer.resolvePlanScopeText(plan, content, l10n.brief);
 
   @override
   Widget build(BuildContext context) {
