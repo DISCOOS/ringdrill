@@ -1,4 +1,4 @@
-import { corsPreflight, withCors, nowIso } from "./_shared.js";
+import { corsPreflight, withCors, nowIso } from "./lib/shared.js";
 
 // Catch-all for unknown /api/* paths. Without this, unmatched /api/ requests
 // fall through netlify.toml to the SPA rewrite (`/* -> /index.html`) and the

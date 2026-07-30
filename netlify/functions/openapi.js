@@ -1,4 +1,4 @@
-import { corsPreflight, withCors } from "./_shared.js";
+import { corsPreflight, withCors } from "./lib/shared.js";
 
 // OpenAPI 3.0 description of the public + admin API. Served at
 // /api/openapi.json (see netlify.toml) and consumed by the interactive

@@ -294,9 +294,9 @@ Two constraints worth knowing before touching it:
   `[functions]` table applies to every function, copied the 700 KB bundle into all
   sixteen deployment packages. A subdirectory is how Netlify is told "not a
   function", and `[functions."mcp"]` is how the data file is scoped to the one that
-  needs it. (`_shared.js` and `_drill_pii.js` predate this and still sit at the top
-  level, so they are still built as functions — pre-existing, and worth tidying
-  separately.)
+  needs it. The same applied to `_shared.js` and `_drill_pii.js`, which predated
+  this and were live in production as functions returning 502; they moved to
+  `lib/shared.js` and `lib/drill-pii.js` for the same reason.
 
 ## The raw protocol
 

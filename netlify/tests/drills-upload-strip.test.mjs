@@ -1,5 +1,5 @@
 /**
- * Tests for the PII strip and schema gate in `_drill_pii.js`.
+ * Tests for the PII strip and schema gate in `lib/drill-pii.js`.
  *
  * These import the real functions. They used to re-implement them — "copied
  * verbatim from drills-upload.js", by the old comment — so the one test guarding
@@ -20,7 +20,7 @@ import {
     compareSchemas,
     isSchemaTooNew,
     stripPiiFolders,
-} from "../functions/_drill_pii.js";
+} from "../functions/lib/drill-pii.js";
 
 /**
  * The handler's own sequence: unzip, reject a too-new schema, strip the PII

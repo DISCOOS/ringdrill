@@ -27,7 +27,7 @@
 // A requirement of ADR-0060, not an implementation note: a plan can be marked
 // staff-only. This function reads a request, compiles it and answers. There is no
 // write path, and the only storage touched is a read of the public catalog.
-import { corsPreflight, withCors } from "./_shared.js";
+import { corsPreflight, withCors } from "./lib/shared.js";
 import { createCompilerBackend } from "./lib/mcp-backend.js";
 import { handleMessage, PROTOCOL_VERSION, toolsFor } from "../../mcp/tools.mjs";
 

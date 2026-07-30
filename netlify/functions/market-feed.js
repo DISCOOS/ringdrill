@@ -1,4 +1,4 @@
-import {getDrillsStore as _getDrillsStore, nowIso, corsPreflight, withCors, metaToFeedItem} from "./_shared.js";
+import {getDrillsStore as _getDrillsStore, nowIso, corsPreflight, withCors, metaToFeedItem} from "./lib/shared.js";
 
 export function createHandler({ getDrillsStore = _getDrillsStore } = {}) {
     return async function (request) {

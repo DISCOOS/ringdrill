@@ -3,7 +3,7 @@
  *
  * We import createHandler directly and inject a fake drills store, the same
  * way drills-preview.test.mjs fakes getSlugRecord/readJson. This avoids ever
- * touching @netlify/blobs, which is safe because _shared.js only calls
+ * touching @netlify/blobs, which is safe because lib/shared.js only calls
  * getStore() lazily.
  */
 import { test } from "node:test";

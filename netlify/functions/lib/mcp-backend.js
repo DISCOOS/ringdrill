@@ -24,7 +24,7 @@ import {
     metaToFeedItem,
     readBinary as _readBinary,
     readJson as _readJson,
-} from "../_shared.js";
+} from "./shared.js";
 import { invoke as _invoke } from "./mcp-compiler.js";
 
 /// Largest source document accepted, in characters.

@@ -5,8 +5,8 @@ import {
     writeJsonConditional, writeBinaryConditional, getBlobEtag,
     nowIso,
     corsPreflight, withCors
-} from "./_shared.js";
-import { getDrillsStore } from "./_shared.js";
+} from "./lib/shared.js";
+import { getDrillsStore } from "./lib/shared.js";
 
 export default async function (request) {
     const preflight = corsPreflight(request);

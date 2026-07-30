@@ -1,7 +1,7 @@
 /**
  * Tests for catalog name/description/tags resolution in drills-upload.js.
  *
- * These import the pure helpers directly. That is safe because _shared.js only
+ * These import the pure helpers directly. That is safe because lib/shared.js only
  * calls getStore() lazily (inside the store getters), never at module load, so
  * importing drills-upload.js does not require a Netlify blobs context.
  */
@@ -16,7 +16,7 @@ import {
     resolvePublishPolicy,
     stripActorsAndValidate,
 } from "../functions/drills-upload.js";
-import { reportLegacyProgramIdUsage } from "../functions/_shared.js";
+import { reportLegacyProgramIdUsage } from "../functions/lib/shared.js";
 
 const enc = (obj) => new TextEncoder().encode(JSON.stringify(obj));
 

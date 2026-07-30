@@ -6,7 +6,7 @@ import {
     sha256Hex, toStrongEtag,
     latestVersionEntry,
     corsPreflight, withCors
-} from "./_shared.js";
+} from "./lib/shared.js";
 
 export default async function (request) {
     const preflight = corsPreflight(request);

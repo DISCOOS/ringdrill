@@ -4,7 +4,7 @@
  * We import createHandler, pickLocale and renderHtml directly from the
  * function module. The handler is instantiated with injected fake store
  * functions so @netlify/blobs is never actually called; the import is safe
- * because _shared.js only calls getStore() lazily (inside getDrillsStore /
+ * because lib/shared.js only calls getStore() lazily (inside getDrillsStore /
  * getSlugRecord), never at module load time.
  */
 import { test } from "node:test";

@@ -14,7 +14,7 @@
   "name": "functions",
   "version": "1.0.0",
   "description": "",
-  "main": "netlify/functions/_shared.js",
+  "main": "netlify/functions/lib/shared.js",
   "scripts": {
     "test": "node --test --test-concurrency=1 netlify/tests/**/*.test.mjs mcp/tests/*.test.mjs",
     "//test": "--test-concurrency=1 is required, not tuning: both suites shell out to `dart run`, which shares .dart_tool state, and concurrent files intermittently fail one of the Dart invocations.",

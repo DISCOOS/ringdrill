@@ -171,7 +171,7 @@ adapter and a login-UI entry, no model change.
 ### Storage layout (Netlify Blobs)
 
 Three new stores alongside the existing `drills` and `slug-index` stores
-([`_shared.js`](../../netlify/functions/_shared.js)):
+([`_shared.js`](../../netlify/functions/lib/shared.js)):
 
 | Store          | Key                     | Value                                |
 |----------------|-------------------------|--------------------------------------|

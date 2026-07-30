@@ -4,7 +4,7 @@ import {
     keysFor,
     corsPreflight,
     withCors,
-} from "./_shared.js";
+} from "./lib/shared.js";
 
 const STRINGS = {
     nb: {

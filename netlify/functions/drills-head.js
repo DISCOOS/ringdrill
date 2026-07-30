@@ -6,7 +6,7 @@ import {
     latestVersionEntry,
     corsPreflight,
     withCors,
-} from "./_shared.js";
+} from "./lib/shared.js";
 
 export function createHandler({ getSlugRecord = _getSlugRecord, readJson = _readJson } = {}) {
     return async function (request) {

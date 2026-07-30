@@ -5,12 +5,12 @@ import {
     toStrongEtag, nowIso, originFromRequest, readDrillBytes,
     writeBinaryConditional, writeJsonConditional,
     corsPreflight, withCors, reportLegacyProgramIdUsage
-} from "./_shared.js";
+} from "./lib/shared.js";
 // The PII strip and the schema gate live in their own module so their tests can
-// import the real code rather than a copy — see _drill_pii.js.
+// import the real code rather than a copy — see lib/drill-pii.js.
 import {
     KNOWN_SCHEMA_MAX, isSchemaTooNew, stripPiiFolders
-} from "./_drill_pii.js";
+} from "./lib/drill-pii.js";
 
 
 // Parse every top-level exercises/<uuid>.json entry once, returning both the
@@ -263,7 +263,7 @@ export function stripActorsAndValidate(request, bytes) {
     const program = programInfoFromArchive(files);
     program.languageCode = languageCode;
 
-    // Never published to catalog — see PII_FOLDERS in _drill_pii.js.
+    // Never published to catalog — see PII_FOLDERS in lib/drill-pii.js.
     return {
         strippedBytes: Buffer.from(zipSync(stripPiiFolders(files))),
         program,

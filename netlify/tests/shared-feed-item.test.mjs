@@ -1,11 +1,11 @@
 /**
- * Tests for metaToFeedItem in _shared.js — the shared meta.json → catalog
+ * Tests for metaToFeedItem in lib/shared.js — the shared meta.json → catalog
  * item projection (ADR-0040), reused by market-feed.js and (later) the
  * ADR-0044 per-slug meta endpoint.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { metaToFeedItem, latestVersionEntry } from "../functions/_shared.js";
+import { metaToFeedItem, latestVersionEntry } from "../functions/lib/shared.js";
 
 const ORIGIN = "https://api.ringdrill.app";
 
