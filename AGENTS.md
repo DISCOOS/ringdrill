@@ -27,6 +27,10 @@ make patch-android                             # Shorebird OTA patch
 make release-tag VERSION=X.Y.Z+N               # bump pubspec, prepend CHANGELOG.md, commit, annotated tag
 dart pub global activate -s path .             # install CLI from this checkout
 ringdrill -h                                   # CLI usage (needs RINGDRILL_ADMIN_TOKEN)
+make cli-check                                 # verify the CLI builds without Flutter (rule 7)
+make templates                                 # bake brief templates into Dart for the CLI
+ringdrill create --name="…"                    # scaffold a source document (DESIGN-014)
+ringdrill build|analyze|render|decompile|schema # the source-format commands
 skills/flutter-widget-preview/run_preview.sh   # render a widget to a PNG headlessly (no browser)
 ```
 
@@ -44,7 +48,7 @@ These are non-negotiable unless the maintainer says otherwise.
 4. **Localize every user-visible string.** No raw English text in widgets. Add the key to `app_en.arb` and `app_nb.arb` together. If you do not know the Norwegian translation, copy the English string and flag it for review in the PR description.
 5. **Respect the analytics consent gate.** Do not call Sentry, analytics or any network telemetry outside the consent check in `lib/main.dart`. The default is opt-out.
 6. **Use `SimpleTimeOfDay` for stored times.** `TimeOfDay` only inside Flutter widgets. The CLI and any code under `lib/data/` or `lib/models/` must use `SimpleTimeOfDay`.
-7. **CLI must stay Flutter-free.** `bin/ringdrill.dart` and anything it imports (currently only `lib/data/drill_client.dart`) must not import `package:flutter/*`. Adding a Flutter import here will break `dart pub global activate`.
+7. **CLI must stay Flutter-free.** `bin/ringdrill.dart` and anything it imports must not import `package:flutter/*`. Adding a Flutter import here will break `dart pub global activate`. The closure is no longer small — since DESIGN-014 it reaches `lib/data/source/`, the models, the schedule derivation, the headless labels and the whole brief layer — so there are two guards: `test/bin/cli_flutter_free_test.dart` (fast, names the offending import chain) and `make cli-check` (`dart build cli`, authoritative). Run the test with your targeted tests when you touch anything under `lib/data/`, `lib/models/`, `lib/utils/` or `lib/services/brief/`.
 8. **Drill file format is versioned.** `DrillFile.drillSchema1_0` is the current schema. Bumping it requires updating the import code in `lib/data/drill_file.dart`, the Netlify upload handler, and a migration path for existing files. Do not change the schema string without coordinating.
    * **Catalog `tags` are sourced from `program.json` and overwritten on publish** (ADR-0043; previously union-merged from `?tags=`). Missing key → `[]`. The publish query string carries only operation params (`ownerId`, `planId`, `version`, `slug`, `published`). `planId` accepts the legacy `programId` name as a fallback and every client-facing response/header carries both, tracked via Sentry until it's safe to drop (ADR-0055) — do not remove the `programId` fallback without checking that telemetry first.
 9. **Verify before claiming green — but do not thrash the test suite.** During a task, per commit run only `flutter analyze` (fast) and the *targeted* tests for what you touched (`flutter test test/<dir>/` or a single file), and run codegen (`make build` / `make i18n`) only when that step actually changed a `@freezed` / `@JsonValue` / `.arb` source, batched — not per file. Run the full `flutter test` (and `dart build cli` / any full build) **once, at the end**, as the final gate — not before every commit. A clean full run is the expected baseline (the stale default-template `test/widget_test.dart` has been removed). If a test fails, fix it or flag it rather than asserting all tests pass. Implementation prompts must encode this loop discipline, not gate every commit on the full suite.

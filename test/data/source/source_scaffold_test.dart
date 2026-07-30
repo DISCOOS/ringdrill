@@ -76,7 +76,7 @@ void main() {
         expect(
           exercises[i].startTime.inMinutes,
           greaterThanOrEqualTo(exercises[i - 1].endTime.inMinutes),
-          reason: 'exercise ${i + 1} starts before ${i} ends',
+          reason: 'exercise ${i + 1} starts before $i ends',
         );
       }
     });

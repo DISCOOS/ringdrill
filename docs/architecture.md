@@ -33,13 +33,18 @@ Owner: DISCOOS (`github.com/DISCOOS/ringdrill`). Distribution channels: Google P
 lib/
   main.dart                  app bootstrap, themes, Sentry/consent gating
   data/                      drill file format + HTTP client + repository
+  data/source/               DESIGN-014 source format: field table, parser,
+                             builder, decompiler, analyzer, JSON Schema, scaffold
   models/                    freezed/JSON models (program, exercise, station, team)
   services/                  long-lived runtime services (exercise, notifications, program, file channel)
   views/                     all UI screens and widgets (flat folder, no feature grouping)
   web/                       web-only widgets and PWA update handling
   utils/                     pure-Dart helpers (projection, time, config, sentry)
   l10n/                      .arb sources + generated AppLocalizations
-bin/ringdrill.dart           admin CLI
+bin/ringdrill.dart           admin CLI + the source-format commands
+                             (create/build/decompile/analyze/render/schema)
+mcp/                         MCP server wrapping the CLI, for agent authoring
+skills/                      agent skills (widget preview, plan authoring)
 netlify/functions/           Node.js backend (drill upload/head, deep links, admin, market feed) — api.ringdrill.app
 site/                        static Astro site (ringdrill.app), deployed to Cloudflare Pages
 workers/apex-proxy/          Cloudflare Worker reverse-proxying dynamic apex paths to the API (ADR-0039)
@@ -118,6 +123,28 @@ The backend runtime, hosting topology (the three ADR-0039 origins) and local dev
 ## Drill file format
 
 The `.drill` file format and the drill library bundle format live in [`drill-file-format.md`](./drill-file-format.md).
+
+## Source format and the plan compiler
+
+A drill plan can be authored as one YAML **source document** and compiled to a
+`.drill` by the CLI: `ringdrill create | build | decompile | analyze | render |
+schema`. The compiler is pure Dart in `lib/data/source/`, so the app can reuse it
+and the CLI stays free of Flutter, and the format is described exactly once — the
+field table in `source_fields.dart` drives all six commands plus the generated
+JSON Schema. The contract is that `build(decompile(d))` preserves `d`'s
+`contentHash`.
+
+The design is [DESIGN-014](./design/014-source-format-and-plan-compiler.md) with
+[ADR-0058](./adrs/0058-source-format-and-plan-compiler.md); legacy normalization
+is the migration ladder of
+[ADR-0059](./adrs/0059-drill-schema-migration-ladder.md). The agent-facing
+deployment is [`mcp/`](../mcp/README.md) plus the
+[`ringdrill-plan-authoring` skill](../skills/ringdrill-plan-authoring/SKILL.md).
+
+Two generated files exist because the CLI cannot reach Flutter assets:
+`lib/l10n/headless_labels.g.dart` (`make labels`) and
+`lib/services/brief/brief_templates.g.dart` (`make templates`). Both are
+prerequisites of `make build`, and both have sync tests.
 
 ## Briefs, templates and variables
 

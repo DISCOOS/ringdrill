@@ -112,6 +112,7 @@ void main() {
   buf.writeln('};');
 
   File('lib/l10n/headless_labels.g.dart').writeAsStringSync(buf.toString());
+  _format('lib/l10n/headless_labels.g.dart');
   stdout.writeln(
     'Wrote lib/l10n/headless_labels.g.dart '
     '(${headlessKeys.length} messages × ${locales.length} locales)',
@@ -187,4 +188,18 @@ String _literal(String value) {
       .replaceAll(r'$', r'\$')
       .replaceAll('\n', r'\n');
   return "'$escaped'";
+}
+
+/// Runs `dart format` on [path].
+///
+/// Without this the generated file is written unformatted, so `make format`
+/// rewrites it and the next regeneration undoes that — an endless one-line diff
+/// that shows up in every unrelated commit. A generator that does not produce
+/// formatted output is a generator whose output is never actually stable.
+void _format(String path) {
+  final result = Process.runSync('dart', ['format', path]);
+  if (result.exitCode != 0) {
+    stderr.writeln('dart format failed for $path: ${result.stderr}');
+    exit(result.exitCode);
+  }
 }

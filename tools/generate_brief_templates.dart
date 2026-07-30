@@ -18,7 +18,11 @@ import 'dart:io';
 void main() {
   final dir = Directory('assets/templates');
   final files =
-      dir.listSync().whereType<File>().where((f) => f.path.endsWith('.mustache')).toList()
+      dir
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.mustache'))
+          .toList()
         ..sort((a, b) => a.path.compareTo(b.path));
 
   if (files.isEmpty) {
@@ -29,15 +33,21 @@ void main() {
   final buf = StringBuffer()
     ..writeln('// GENERATED FILE — DO NOT EDIT.')
     ..writeln('//')
-    ..writeln('// Regenerate with: dart run tools/generate_brief_templates.dart')
+    ..writeln(
+      '// Regenerate with: dart run tools/generate_brief_templates.dart',
+    )
     ..writeln('// Source: assets/templates/*.mustache')
     ..writeln('//')
-    ..writeln('// See tools/generate_brief_templates.dart for why the templates')
+    ..writeln(
+      '// See tools/generate_brief_templates.dart for why the templates',
+    )
     ..writeln('// are baked in rather than loaded from the asset bundle.')
     ..writeln()
     ..writeln('/// Brief template sources, keyed by their asset path.')
     ..writeln('///')
-    ..writeln('/// The key is [BriefTemplate.assetPath], so the app and the CLI')
+    ..writeln(
+      '/// The key is [BriefTemplate.assetPath], so the app and the CLI',
+    )
     ..writeln('/// look a template up by exactly the same identifier.')
     ..writeln('const briefTemplateSources = <String, String>{');
 
@@ -56,8 +66,23 @@ void main() {
   File(
     'lib/services/brief/brief_templates.g.dart',
   ).writeAsStringSync(buf.toString());
+  _format('lib/services/brief/brief_templates.g.dart');
   stdout.writeln(
     'Wrote lib/services/brief/brief_templates.g.dart '
     '(${files.length} templates)',
   );
+}
+
+/// Runs `dart format` on [path].
+///
+/// Without this the generated file is written unformatted, so `make format`
+/// rewrites it and the next regeneration undoes that — an endless one-line diff
+/// that shows up in every unrelated commit. A generator that does not produce
+/// formatted output is a generator whose output is never actually stable.
+void _format(String path) {
+  final result = Process.runSync('dart', ['format', path]);
+  if (result.exitCode != 0) {
+    stderr.writeln('dart format failed for $path: ${result.stderr}');
+    exit(result.exitCode);
+  }
 }

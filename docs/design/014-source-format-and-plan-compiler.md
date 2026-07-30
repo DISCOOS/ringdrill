@@ -323,7 +323,10 @@ staff/PII stripped on decompile. Beyond those:
 
 ## Implementation notes
 
-Staged, each a separate PR; all additive, no schema bump.
+Staged, each a separate PR; all additive, no schema bump. **All five stages have
+landed** (branch `design-014`), plus a `create` scaffold that was not in the
+original plan — see the branch's commits for what each stage actually did and
+where it deviated.
 
 1. **Source model + `build`.** Define the source document parse/emit against the
    current model, fill the derived fields, `DrillFile.fromPlan`. Rather than a
