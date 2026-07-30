@@ -12,6 +12,20 @@ Efficient station-based training. Organize, run and track drills with ease.
 
 Live web-version is available on https://web.ringdrill.app
 
+## Authoring plans with an AI assistant
+
+A drill plan can be written as a single YAML **source document** and compiled to a
+`.drill` by the CLI — `ringdrill create | build | analyze | render | decompile |
+schema` — and an **MCP server** exposes those commands to an AI assistant, so it
+can read the published catalog, draft a plan, check it and render the brief.
+
+Run it locally with `make mcp`. Setup, per-client configuration and what the
+assistant can and cannot do live in [`mcp/README.md`](mcp/README.md); the format
+itself is [DESIGN-014](docs/design/014-source-format-and-plan-compiler.md).
+
+Publishing is never done by the assistant — the catalog is shared, so that stays a
+human step.
+
 ## Documentation
 
 * [`docs/architecture.md`](docs/architecture.md): project overview, tech stack, repo layout, conventions, backend contract, and where to look first when navigating the code.
@@ -19,6 +33,8 @@ Live web-version is available on https://web.ringdrill.app
 * [`AGENTS.md`](AGENTS.md): operating guide for AI coding agents (Claude Code, Codex, Cursor, etc.) and a quick orientation for human contributors. Read this before letting an agent change code.
 * [`CLAUDE.md`](CLAUDE.md): short pointer file read by Claude Code on startup, defers to `AGENTS.md`.
 * [`docs/feature-flags.md`](docs/feature-flags.md): living index of every build-time dart-define flag, its purpose and its sunset criterion. Updated in the same commit as a flag is added, changed or removed.
+* [`mcp/README.md`](mcp/README.md): the MCP server that exposes the plan compiler to an AI assistant — tools, local setup, and how to configure each client.
+* [`skills/ringdrill-plan-authoring/SKILL.md`](skills/ringdrill-plan-authoring/SKILL.md): the authoring knowledge that goes with it — the source format's vocabulary and the rules that are not obvious from its schema.
 
 ## Getting Started
 To get started with developing for RingDrill using Flutter, follow these steps:

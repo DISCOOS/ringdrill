@@ -94,9 +94,21 @@ would couple the backend's dependency tree to an agent-tooling concern.
 
 ## Configuring a client
 
-A checkout already carries [`.mcp.json`](../.mcp.json) at the repo root, so in
-Claude Code the server is offered on approval with nothing to edit and no absolute
-path to paste:
+Every client below runs the server the same way — `node mcp/ringdrill-mcp.mjs` — and
+differs only in where the configuration lives and what it calls the keys. Get the
+absolute path from `make mcp`.
+
+Two things apply everywhere. **Absolute paths are the safe default**: only Claude
+Code resolves a relative one, and Claude Desktop's own troubleshooting says paths
+must be absolute. And **the server's diagnostics go to stderr** — which CLI it
+resolved, a rejected binary, a stale build — so that is where to look when a tool
+misbehaves; in Claude Desktop it lands in
+`~/Library/Logs/Claude/mcp-server-ringdrill.log`.
+
+### Claude Code
+
+Nothing to do. A checkout carries [`.mcp.json`](../.mcp.json) at the repo root, so
+the server is offered on approval:
 
 ```json
 {
@@ -117,8 +129,70 @@ working directory the client launches with. If the relative form fails to resolv
 use an absolute path, or `${CLAUDE_PROJECT_DIR}/mcp/ringdrill-mcp.mjs` if your
 client expands that.
 
-For a client configured by hand, `make mcp` prints the block with the absolute path
-filled in.
+### Claude Desktop
+
+`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS,
+`%APPDATA%\Claude\claude_desktop_config.json` on Windows. Restart the app fully
+after editing — it only reads this at launch.
+
+```json
+{
+  "mcpServers": {
+    "ringdrill": {
+      "command": "node",
+      "args": ["/absolute/path/to/ringdrill/mcp/ringdrill-mcp.mjs"]
+    }
+  }
+}
+```
+
+### Codex CLI
+
+`~/.codex/config.toml`, or a project-scoped `.codex/config.toml` in a trusted
+directory. `codex mcp add` does it interactively.
+
+```toml
+[mcp_servers.ringdrill]
+command = "node"
+args = ["/absolute/path/to/ringdrill/mcp/ringdrill-mcp.mjs"]
+```
+
+If it fails to start, the usual cause is `node` not being on the PATH Codex
+inherits — give an absolute path to the node binary too.
+
+### VS Code (GitHub Copilot)
+
+`.vscode/mcp.json` in the workspace. Note the top-level key is `servers`, not
+`mcpServers`:
+
+```json
+{
+  "servers": {
+    "ringdrill": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["mcp/ringdrill-mcp.mjs"]
+    }
+  }
+}
+```
+
+Not committed here, since `.vscode/` is a matter of personal preference.
+
+### ChatGPT — not yet
+
+ChatGPT's MCP connectors take a **remote HTTPS endpoint**; a local stdio server is
+not something it can launch. Until the hosted endpoint of
+[ADR-0060](../docs/adrs/0060-remote-mcp-server.md) exists, the options are to
+bridge this server to a URL yourself (`mcp-remote` over a tunnel) or to use one of
+the clients above.
+
+### Cowork
+
+A local server reaches a Cowork session only through the desktop app, and not at all
+in a remote one — see [the constraint below](#cowork-and-why-a-local-server-is-not-enough).
+
+### Environment overrides
 
 `RINGDRILL_CLI` overrides the resolution above — pin a specific binary, or force
 `dart run` when you want to skip the rebuild step:
@@ -133,7 +207,7 @@ that form works.
 `RINGDRILL_BASE_URL` is read by the CLI itself and points the catalog tools at a
 different backend — see [`docs/api.md`](../docs/api.md).
 
-### Cowork, and why a local server is not enough
+## Cowork, and why a local server is not enough
 
 A stdio server does **not** run inside the Cowork sandbox. A server configured in
 the desktop app's own config is bridged into the session by the desktop app and runs
@@ -150,6 +224,24 @@ consequences worth knowing before you rely on it:
 This is the second, independent reason the stdio server cannot reach a
 non-developer — the first being the toolchain requirement — and both are why
 [ADR-0060](../docs/adrs/0060-remote-mcp-server.md) accepts remote hosting.
+
+## When the hosted endpoint lands
+
+ADR-0060 is accepted but not built. Everything above describes the local server, so
+when the hosted one exists these need revisiting together — it is easy to add a URL
+somewhere and leave five pages describing a world where only stdio exists:
+
+* **This file** — a hosted section alongside `Running it locally`, the ChatGPT entry
+  replaced with the real endpoint, and each client's config gaining the remote form.
+* **The root [`README.md`](../README.md)** — its authoring section currently says
+  "run it locally".
+* **[`skills/ringdrill-plan-authoring/SKILL.md`](../skills/ringdrill-plan-authoring/SKILL.md)**
+  — it tells the agent which tools to call, not where they run, so it should need no
+  change. Worth confirming rather than assuming.
+* **The privacy statement.** ADR-0060 requires that the hosted server not persist
+  documents. That has to be visible to the person deciding whether to paste a
+  staff-only plan into it, which means here and in the root README — not only in an
+  ADR nobody reads first.
 
 ## The raw protocol
 
