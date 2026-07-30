@@ -121,7 +121,7 @@ void main() {
 
       const baseStyle = TextStyle(color: Colors.black);
       final controller = TokenTextEditingController(
-        text: 'UTM: {{station.position.utm}}',
+        text: 'UTM: {{station.position}}',
       );
       final span = controller.buildTextSpan(
         context: ctx,
@@ -132,7 +132,7 @@ void main() {
       // No {{var.*}} match at all: the whole text collapses into a single
       // unstyled-beyond-base span, no children/chip runs.
       expect(span.children, isNull);
-      expect(span.text, 'UTM: {{station.position.utm}}');
+      expect(span.text, 'UTM: {{station.position}}');
       expect(span.style, baseStyle);
     },
   );
@@ -140,7 +140,7 @@ void main() {
   test(
     'controller.text stays the raw string with literal {{...}} after rendering',
     () {
-      const raw = 'Kanal {{var.frekvens}} ved {{station.position.utm}}';
+      const raw = 'Kanal {{var.frekvens}} ved {{station.position}}';
       final controller = TokenTextEditingController(
         text: raw,
         variables: const [
@@ -253,7 +253,7 @@ void main() {
 
         List<String>? capturedFacets;
         final controller = TokenTextEditingController(
-          text: '{{var.freq}} at {{station.loc.lkp.utm}}',
+          text: '{{var.freq}} at {{station.loc.lkp.position}}',
           variables: const [
             VariableToken(name: 'freq', effectiveValue: 'Kanal 6'),
           ],
@@ -269,13 +269,13 @@ void main() {
           withComposing: false,
         );
 
-        expect(capturedFacets, ['utm']);
+        expect(capturedFacets, ['position']);
         expect(
           _chipFor(span, '{{var.freq}}').style?.color,
           Colors.blue.shade800,
         );
         expect(
-          _chipFor(span, '{{station.loc.lkp.utm}}').style?.color,
+          _chipFor(span, '{{station.loc.lkp.position}}').style?.color,
           Colors.blue.shade800,
         );
       },

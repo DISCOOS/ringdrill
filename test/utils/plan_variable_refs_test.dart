@@ -282,17 +282,17 @@ void main() {
 
   group('renameVariable', () {
     test('carries a facet path over unchanged (DESIGN-008 follow-up 11): '
-        '{{var.old.utm}} becomes {{var.new.utm}}, never a bare token', () {
+        '{{var.old.position}} becomes {{var.new.position}}, never a bare token', () {
       final plan = _emptyPlan().copyWith(
         variables: const [
           DrillVariable(name: 'oppmote', type: VariableType.location),
         ],
-        briefIntroMd: 'Møt på {{var.oppmote.utm}} ({{var.oppmote.place}})',
+        briefIntroMd: 'Møt på {{var.oppmote.position}} ({{var.oppmote.place}})',
       );
       final renamed = renameVariable(plan, 'oppmote', 'moetested');
       expect(
         renamed.briefIntroMd,
-        'Møt på {{var.moetested.utm}} ({{var.moetested.place}})',
+        'Møt på {{var.moetested.position}} ({{var.moetested.place}})',
       );
     });
 
