@@ -179,6 +179,44 @@ test("analyze reports a bad reference as a result, flagged", async () => {
     assert.match(result.diagnostics[0].message, /no variable named "nope"/);
 });
 
+test("build_plan keeps a key's type across outcomes", async () => {
+    // `diagnostics` is the array, `errors`/`warnings` are counts — in both the
+    // success and the refusal path, and the same for analyze_plan. A tool whose
+    // key changes type with its outcome forces a caller to branch on success
+    // before it can read the result.
+    const stale = DOCUMENT.replace(
+        '"Noe skjer."',
+        '"Sist sett {{station.loc.lkp.utm}}."',
+    ).replace(
+        '      - name: "Post 1"',
+        '      - name: "Post 1"\n        locations: [{slug: lkp, label: "LKP", position: {lat: 59.1, lng: 10.4}}]',
+    );
+
+    const call = async (args) =>
+        payload(
+            (
+                await rpc(handlerWith(), {
+                    jsonrpc: "2.0",
+                    id: 1,
+                    method: "tools/call",
+                    params: { name: "build_plan", arguments: args },
+                })
+            ).body,
+        );
+
+    const ok = await call({ document: stale });
+    assert.equal(typeof ok.errors, "number");
+    assert.equal(typeof ok.warnings, "number");
+    assert.ok(Array.isArray(ok.diagnostics));
+    assert.ok(ok.warnings > 0, "a removed facet is a warning, not silence");
+
+    const refused = await call({ document: stale, strict: true });
+    assert.equal(typeof refused.errors, "number");
+    assert.equal(typeof refused.warnings, "number");
+    assert.ok(Array.isArray(refused.diagnostics));
+    assert.ok(!refused.drillBase64, "strict refuses rather than returning an archive");
+});
+
 test("schema is the schema itself, not a wrapper", async () => {
     // The CLI prints the schema directly, so the hosted tool has to unwrap the
     // bundle's {ok, schema} envelope or the two would return different shapes for

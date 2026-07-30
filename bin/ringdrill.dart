@@ -553,14 +553,12 @@ void _runBuild(List<String> args, ArgResults res, bool jsonOut) {
         'rolePlays': result.plan.rolePlays.length,
         'contentHash': result.plan.contentHash,
         'size': result.drillFile.content.length,
-        'warnings': reviewed
-            .where((d) => !d.isError)
-            .map((d) => d.toJson())
-            .toList(),
-        'errors': reviewed
-            .where((d) => d.isError)
-            .map((d) => d.toJson())
-            .toList(),
+        // Same vocabulary as `analyze` and as the refusal path: counts under
+        // `errors`/`warnings`, the diagnostics themselves under `diagnostics`.
+        // One tool must not change a key's *type* with its outcome.
+        'errors': reviewed.where((d) => d.isError).length,
+        'warnings': reviewed.where((d) => !d.isError).length,
+        'diagnostics': reviewed.map((d) => d.toJson()).toList(),
       }),
     );
     return;

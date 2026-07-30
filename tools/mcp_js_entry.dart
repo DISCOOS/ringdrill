@@ -149,11 +149,12 @@ Map<String, dynamic> _build(Map<String, dynamic> json) {
     'rolePlays': plan.rolePlays.length,
     'contentHash': plan.contentHash,
     'size': result.drillFile.content.length,
-    'warnings': reviewed
-        .where((d) => !d.isError)
-        .map((d) => d.toJson())
-        .toList(),
-    'errors': reviewed.where((d) => d.isError).map((d) => d.toJson()).toList(),
+    // Counts under `errors`/`warnings`, diagnostics under `diagnostics` — the
+    // shape `_analyze` and `_diagnosticsOnly` already use. A caller must not
+    // have to check the outcome to know a key's type.
+    'errors': reviewed.where((d) => d.isError).length,
+    'warnings': reviewed.where((d) => !d.isError).length,
+    'diagnostics': reviewed.map((d) => d.toJson()).toList(),
     'drillBase64': base64Encode(result.drillFile.content),
   };
 }
