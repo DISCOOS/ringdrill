@@ -78,12 +78,61 @@ class PlanFieldTokens {
         'roleplay.position': l.positionUtm,
       });
 
-  /// Pairs [PlanFieldNames.of] with [labels], asserting the two agree.
+  /// One line per facet, saying what it resolves to (ADR-0067). Keyed by facet
+  /// name and asserted complete by [_labelled], so a facet added to
+  /// `PlanFieldNames` cannot reach the browser unexplained.
+  static Map<String, String> _descriptions(AppLocalizations l) => {
+    'plan.name': l.tokenDescPlanName,
+    'plan.description': l.tokenDescPlanDescription,
+    'plan.exerciseCount': l.tokenDescPlanExerciseCount,
+    'plan.teamCount': l.tokenDescPlanTeamCount,
+    'plan.stationCount': l.tokenDescPlanStationCount,
+    'exercise.name': l.tokenDescExerciseName,
+    'exercise.numberOfTeams': l.tokenDescExerciseNumberOfTeams,
+    'exercise.numberOfRounds': l.tokenDescExerciseNumberOfRounds,
+    'exercise.startTime': l.tokenDescExerciseStartTime,
+    'exercise.endTime': l.tokenDescExerciseEndTime,
+    'exercise.timeLabel': l.tokenDescExerciseTimeLabel,
+    'exercise.durationLabel': l.tokenDescExerciseDurationLabel,
+    'exercise.executionTime': l.tokenDescExerciseExecutionTime,
+    'exercise.evaluationTime': l.tokenDescExerciseEvaluationTime,
+    'exercise.rotationTime': l.tokenDescExerciseRotationTime,
+    'exercise.phaseBreakdown': l.tokenDescExercisePhaseBreakdown,
+    'exercise.roundTable': l.tokenDescExerciseRoundTable,
+    'station.name': l.tokenDescStationName,
+    'station.stationCode': l.tokenDescStationCode,
+    'station.position': l.tokenDescStationPosition,
+    'station.variantSuffix': l.tokenDescStationVariantSuffix,
+    'station.duration': l.tokenDescStationDuration,
+    'roleplay.name': l.tokenDescRoleplayName,
+    'roleplay.age': l.tokenDescRoleplayAge,
+    'roleplay.description': l.tokenDescRoleplayDescription,
+    'roleplay.position': l.tokenDescRoleplayPosition,
+  };
+
+  /// What a facet produces, for the rows whose live value can come back empty.
   ///
-  /// The names are the contract (they are what the renderer resolves and what
-  /// `analyze` validates); the labels are presentation. Building the list from
-  /// the names rather than restating them means a facet cannot exist in the
-  /// picker without existing in the validator.
+  /// Deliberately partial — only a facet that can show nothing needs one — and
+  /// deliberately untranslated: every one of these is a shape rather than a
+  /// sentence. `roundTable` is the case that forced this to exist at all, since
+  /// the editor never holds it: it is assembled when the brief renders.
+  static const _examples = <String, String>{
+    'exercise.roundTable':
+        '| Runde | Øving | Evaluering | Rullering |  |\n'
+        '|---|---|---|---|---|\n'
+        '| 1 | 0900 | 0915 | 0925 | neste |\n'
+        '| 2 | 0930 | 0945 | 0955 | retur |',
+    'exercise.phaseBreakdown': '15 | 10 | 5',
+    'exercise.timeLabel': '0900–1130',
+    'exercise.durationLabel': '2 t (30 min pr oppdrag)',
+    'exercise.endTime': '1130',
+    'station.position': '32V 0580465E 6551894N',
+    'station.stationCode': '1c',
+    'station.variantSuffix': 'A',
+    'station.duration': '30 min (15 | 10 | 5)',
+    'roleplay.position': '32V 0580414E 6552008N',
+  };
+
   /// Which scope a token reads from, shown as the muted hint on its entry.
   ///
   /// The scope nouns the app already has, lowercased to match the hint's muted,
@@ -97,6 +146,13 @@ class PlanFieldTokens {
         PlanFieldScope.roleplay => l.roleplay(1),
       }.toLowerCase();
 
+  /// Pairs [PlanFieldNames.of] with [labels] and [_descriptions], asserting all
+  /// three agree.
+  ///
+  /// The names are the contract (they are what the renderer resolves and what
+  /// `analyze` validates); the labels and descriptions are presentation. Building
+  /// the list from the names rather than restating them means a facet cannot exist
+  /// in the picker without existing in the validator.
   static List<PlanFieldToken> _labelled(
     AppLocalizations l,
     PlanFieldScope scope,
@@ -118,10 +174,26 @@ class PlanFieldTokens {
       'PlanFieldNames.${scope.name} facets with no label here: '
       '${names.toSet().difference(labels.keys.toSet())}',
     );
+    final descriptions = _descriptions(l);
+    // Same check again for the descriptions, for the same reason: a facet with no
+    // description would reach the browser as a row that explains nothing, which is
+    // the whole thing the browser exists to fix.
+    assert(
+      names.toSet().difference(descriptions.keys.toSet()).isEmpty,
+      'PlanFieldNames.${scope.name} facets with no description here: '
+      '${names.toSet().difference(descriptions.keys.toSet())}',
+    );
     final hint = _scopeHint(l, scope);
     return [
       for (final name in names)
-        PlanFieldToken(name: name, label: labels[name] ?? name, hint: hint),
+        PlanFieldToken(
+          name: name,
+          label: labels[name] ?? name,
+          scope: scope,
+          description: descriptions[name] ?? '',
+          example: _examples[name],
+          hint: hint,
+        ),
     ];
   }
 }

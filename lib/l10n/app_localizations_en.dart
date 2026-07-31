@@ -2137,6 +2137,150 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tokenMenuEmpty => 'No matches';
 
   @override
+  String get tokenDescPlanName =>
+      'The plan\'s name, as it reads in the plan list and in the brief\'s title.';
+
+  @override
+  String get tokenDescPlanDescription =>
+      'The plan\'s own description, from the plan editor.';
+
+  @override
+  String get tokenDescPlanExerciseCount => 'How many exercises the plan has.';
+
+  @override
+  String get tokenDescPlanTeamCount => 'How many teams the plan has.';
+
+  @override
+  String get tokenDescPlanStationCount =>
+      'How many stations the plan has in total, across every exercise.';
+
+  @override
+  String get tokenDescExerciseName =>
+      'The exercise\'s name. The number in front of it is rendered by the app.';
+
+  @override
+  String get tokenDescExerciseNumberOfTeams =>
+      'How many teams rotate through this exercise.';
+
+  @override
+  String get tokenDescExerciseNumberOfRounds =>
+      'How many rounds the rotation runs.';
+
+  @override
+  String get tokenDescExerciseStartTime => 'Clock time the first round starts.';
+
+  @override
+  String get tokenDescExerciseEndTime =>
+      'Clock time the last round ends. Derived from the start time and the three phase lengths.';
+
+  @override
+  String get tokenDescExerciseTimeLabel =>
+      'Start and end time as one expression.';
+
+  @override
+  String get tokenDescExerciseDurationLabel =>
+      'Total duration, with the per-round length in parentheses.';
+
+  @override
+  String get tokenDescExerciseExecutionTime =>
+      'Minutes a team spends drilling at a station, per round.';
+
+  @override
+  String get tokenDescExerciseEvaluationTime =>
+      'Minutes set aside for evaluation, per round.';
+
+  @override
+  String get tokenDescExerciseRotationTime =>
+      'Minutes set aside for moving on to the next station.';
+
+  @override
+  String get tokenDescExercisePhaseBreakdown =>
+      'The three phase lengths in minutes, separated by vertical bars.';
+
+  @override
+  String get tokenDescExerciseRoundTable =>
+      'The whole rotation as a table: one row per round, with each phase\'s clock time. Built when the brief renders.';
+
+  @override
+  String get tokenDescStationName =>
+      'The station\'s name. The code in front of it is rendered by the app.';
+
+  @override
+  String get tokenDescStationCode =>
+      'The station\'s code, derived from where it sits in the exercise.';
+
+  @override
+  String get tokenDescStationPosition =>
+      'The station\'s own position, as a coordinate the reader can tap. Empty until the station is placed on the map.';
+
+  @override
+  String get tokenDescStationVariantSuffix =>
+      'The letter that tells apart two stations sharing a number.';
+
+  @override
+  String get tokenDescStationDuration =>
+      'How long a team gets at this station, with the phase breakdown.';
+
+  @override
+  String get tokenDescRoleplayName => 'The role\'s name.';
+
+  @override
+  String get tokenDescRoleplayAge => 'The role\'s age.';
+
+  @override
+  String get tokenDescRoleplayDescription => 'The role\'s short description.';
+
+  @override
+  String get tokenDescRoleplayPosition =>
+      'Where the role is placed, as a coordinate the reader can tap.';
+
+  @override
+  String get tokenBrowserTitle => 'Insert token';
+
+  @override
+  String get tokenBrowserBrowseAll => 'Browse all tokens …';
+
+  @override
+  String get tokenBrowserSearchHint => 'Search names and descriptions';
+
+  @override
+  String get tokenBrowserExample => 'EXAMPLE';
+
+  @override
+  String get tokenBrowserFilterAll => 'All';
+
+  @override
+  String get tokenBrowserCategoryLocation => 'Location';
+
+  @override
+  String get tokenBrowserCategoryPerson => 'Person';
+
+  @override
+  String get tokenBrowserCategoryVariable => 'Variable';
+
+  @override
+  String get tokenBrowserNoVariables =>
+      'No variables declared in this plan. Declare one in the plan\'s variables section.';
+
+  @override
+  String get tokenBrowserNoLocations => 'This station owns no locations yet.';
+
+  @override
+  String get tokenBrowserNoPersons => 'This station owns no persons yet.';
+
+  @override
+  String get tokenBrowserVariableDescription =>
+      'Declared on the plan; exercises and stations may override the value.';
+
+  @override
+  String get tokenBrowserLocationDescription =>
+      'Name and position. Add .place, .label or .position for one part alone.';
+
+  @override
+  String get tokenBrowserPersonDescription =>
+      'Name and age. Add .age, .description or .loc.* for one part alone.';
+
+  @override
   String get tokenMenuPlanFieldHint => 'planfelt';
 
   @override

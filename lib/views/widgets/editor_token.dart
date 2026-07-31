@@ -1,3 +1,5 @@
+import 'package:ringdrill/utils/plan_field_names.dart';
+
 /// A view-layer projection of one declared plan variable (ADR-0046) — just
 /// enough for [TokenTextEditingController] to resolve a `{{var.<name>}}`
 /// chip's state and for the insertion menu to show its effective value.
@@ -28,13 +30,41 @@ class VariableToken {
 /// — it never participates in the `var.*` registry or its validation
 /// (ADR-0046), so it is never chipped or shown red.
 class PlanFieldToken {
-  const PlanFieldToken({required this.name, required this.label, this.hint});
+  const PlanFieldToken({
+    required this.name,
+    required this.label,
+    required this.scope,
+    required this.description,
+    this.example,
+    this.hint,
+  });
 
   /// The mustache path, e.g. `plan.name` or `exercise.name`.
   final String name;
 
   /// Localized label shown in the picker.
   final String label;
+
+  /// Which scope the facet reads from. Carried rather than parsed off [name]:
+  /// the token browser groups and filters by it (ADR-0067), and `_labelled`
+  /// already knows it.
+  final PlanFieldScope scope;
+
+  /// One line saying what the token resolves to — the thing the caret menu's
+  /// three-slot row has never had space for (ADR-0067). Required, so a facet
+  /// cannot reach the browser unexplained.
+  final String description;
+
+  /// What this token produces, for a row whose live value has nothing to show.
+  ///
+  /// Three cases need it: a facet built at render time and not held by the editor
+  /// (`exercise.roundTable` is a whole GFM table), a derived facet whose inputs are
+  /// missing, and a facet that is simply empty. The row's question is "what shape
+  /// of thing does this produce", and an empty box answers nothing.
+  ///
+  /// Structural, so mostly untranslated — a coordinate and a table look the same
+  /// in every language.
+  final String? example;
 
   /// Optional extra detail shown in the picker instead of a value — a plan
   /// field never shows a resolved value, it shows which scope it comes from

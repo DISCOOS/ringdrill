@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
+import 'package:ringdrill/views/widgets/token_browser.dart';
+import 'package:ringdrill/views/widgets/token_browser_registry.dart';
 
 /// One entry in the flat DESIGN-008 insertion-menu list. A single list, no
 /// group headers: variable entries show their effective value, plan-field
@@ -37,7 +39,20 @@ class StationPersonMenuEntry extends TokenMenuEntry {
   final StationPersonToken token;
 }
 
-class CreateVariableMenuEntry extends TokenMenuEntry {
+/// Marks the three "Create …" entries, so "did anything actually match?" can be
+/// asked without naming each of them (and without a fourth being forgotten).
+mixin _CreateEntry {}
+
+/// "Browse all tokens …" — the persistent last row (ADR-0067).
+///
+/// Present whatever the filter matches, including when it matches nothing: there
+/// the alternative is "no matches", which tells the author their guess failed and
+/// nothing about what would have worked.
+class BrowseTokensMenuEntry extends TokenMenuEntry {
+  const BrowseTokensMenuEntry();
+}
+
+class CreateVariableMenuEntry extends TokenMenuEntry with _CreateEntry {
   const CreateVariableMenuEntry(this.name);
   final String name;
 }
@@ -45,14 +60,14 @@ class CreateVariableMenuEntry extends TokenMenuEntry {
 /// "Create location «x»" (ADR-0047, DESIGN-009 follow-up 4) — offered only
 /// when [TokenInsertionMenu.onCreateLocation] is supplied, i.e. only in a
 /// field with a `StationScope` (a station needs to own the new [Location]).
-class CreateLocationMenuEntry extends TokenMenuEntry {
+class CreateLocationMenuEntry extends TokenMenuEntry with _CreateEntry {
   const CreateLocationMenuEntry(this.label);
   final String label;
 }
 
 /// "Create person «x»", the [StationPersonToken] counterpart of
 /// [CreateLocationMenuEntry].
-class CreatePersonMenuEntry extends TokenMenuEntry {
+class CreatePersonMenuEntry extends TokenMenuEntry with _CreateEntry {
   const CreatePersonMenuEntry(this.label);
   final String label;
 }
@@ -309,6 +324,20 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
   void initState() {
     super.initState();
     widget.controller.addListener(_onChanged);
+    // The section editor's ⋮ opens the browser for whichever token-aware field has
+    // focus (ADR-0067), and only this widget knows how. Registration follows focus
+    // rather than mounting: several of these are alive in one section form, and the
+    // ⋮ has to mean the field the caret is in.
+    widget.focusNode.addListener(_onFocusChanged);
+    if (widget.focusNode.hasFocus) TokenBrowserRegistry().register(_browse);
+  }
+
+  void _onFocusChanged() {
+    if (widget.focusNode.hasFocus) {
+      TokenBrowserRegistry().register(_browse);
+    } else {
+      TokenBrowserRegistry().unregister(_browse);
+    }
   }
 
   @override
@@ -317,6 +346,11 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_onChanged);
       widget.controller.addListener(_onChanged);
+    }
+    if (oldWidget.focusNode != widget.focusNode) {
+      oldWidget.focusNode.removeListener(_onFocusChanged);
+      widget.focusNode.addListener(_onFocusChanged);
+      _onFocusChanged();
     }
     // Refreshes the open menu's content (e.g. a variable's effective value)
     // against this widget's latest data. Deferred to a post-frame callback,
@@ -339,6 +373,8 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
   @override
   void dispose() {
     widget.controller.removeListener(_onChanged);
+    widget.focusNode.removeListener(_onFocusChanged);
+    TokenBrowserRegistry().unregister(_browse);
     _entry?.remove();
     super.dispose();
   }
@@ -520,6 +556,10 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
         entries.add(CreatePersonMenuEntry(trimmed));
       }
     }
+    // Last, always. It is not a match for anything the author typed, so it does
+    // not belong among the results — it belongs after them, which is also where a
+    // "no matches" message would have been.
+    entries.add(const BrowseTokensMenuEntry());
     return entries;
   }
 
@@ -659,11 +699,18 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
   }
 
   void _select(TokenMenuEntry entry) {
+    // Not an insertion of its own — it opens the browser, which produces one
+    // (ADR-0067).
+    if (entry is BrowseTokensMenuEntry) {
+      _browse();
+      return;
+    }
     final trigger = _trigger;
     if (trigger == null) return;
-    final caret = widget.controller.selection.baseOffset;
-    final text = widget.controller.text;
     final token = switch (entry) {
+      // Unreachable: returned above. The arm exists because [TokenMenuEntry] is
+      // sealed, so the switch has to name every subclass.
+      BrowseTokensMenuEntry() => '',
       VariableMenuEntry(token: final v) => '{{var.${v.name}}}',
       PlanFieldMenuEntry(token: final f) => '{{${f.name}}}',
       StationLocationMenuEntry(token: final l) => '{{station.loc.${l.slug}}}',
@@ -684,16 +731,58 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
       CreatePersonMenuEntry(label: final label) =>
         '{{station.person.${widget.onCreatePerson!(label)}}}',
     };
-    final end = _replacementEnd(text, caret, trigger);
-    final newText = text.replaceRange(trigger.start, end, token);
-    widget.controller.value = TextEditingValue(
-      text: newText,
-      selection: TextSelection.collapsed(offset: trigger.start + token.length),
-    );
+    _insert(token, trigger: trigger);
     if (entry is CreateVariableMenuEntry) {
       widget.onCreateVariable?.call(entry.name);
     }
     _hideMenu();
+  }
+
+  /// Puts [token] in the field, and leaves the caret after it.
+  ///
+  /// The one implementation of "what text does an entry produce", shared by the
+  /// caret menu and the browser (ADR-0067) so the two cannot drift on the part
+  /// that is easy to get subtly wrong — which range gets replaced.
+  ///
+  /// With no [trigger] there is nothing to replace and the token is inserted at
+  /// the caret: that is the browser opened from the section editor's own menu,
+  /// where the author never typed a trigger character.
+  void _insert(String token, {_Trigger? trigger}) {
+    final text = widget.controller.text;
+    final caret = widget.controller.selection.baseOffset;
+    final start = trigger?.start ?? (caret < 0 ? text.length : caret);
+    final end = trigger == null ? start : _replacementEnd(text, caret, trigger);
+    widget.controller.value = TextEditingValue(
+      text: text.replaceRange(start, end, token),
+      selection: TextSelection.collapsed(offset: start + token.length),
+    );
+  }
+
+  /// Opens the token browser and inserts whatever it returns.
+  ///
+  /// The entries are built here, not in the picker's builder: the picker mounts on
+  /// a modal route, a sibling of this subtree rather than a descendant, so
+  /// `PlanScope` and the other scopes are out of reach from inside it (DESIGN-008
+  /// follow-up 11). This context has them, so the live values are resolved before
+  /// the sheet opens.
+  ///
+  /// The trigger is captured before the menu closes, because closing clears it and
+  /// the author's `/` or `{{` still has to be replaced rather than left in the
+  /// text beside the token.
+  Future<void> _browse() async {
+    final trigger = _trigger;
+    final entries = buildTokenBrowserEntries(
+      context,
+      planFields: widget.planFields,
+      variables: widget.variables,
+      stationLocations: widget.stationLocations,
+      stationPersons: widget.stationPersons,
+    );
+    _hideMenu();
+    final token = await showTokenBrowser(context: context, entries: entries);
+    if (token == null || !mounted) return;
+    _insert(token, trigger: trigger);
+    widget.focusNode.requestFocus();
   }
 
   Widget _buildOverlay(BuildContext context) {
@@ -737,7 +826,15 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
           child: _TokenMenuCard(
             entries: entries,
             width: width,
-            emptyLabel: l10n.tokenMenuEmpty,
+            // "No matches" used to be the whole card when nothing matched. Now the
+            // browse row is always there, so it is a muted line *above* the things
+            // the author can still do — which is what it was always trying to say.
+            emptyLabel:
+                entries.every(
+                  (e) => e is BrowseTokensMenuEntry || e is _CreateEntry,
+                )
+                ? l10n.tokenMenuEmpty
+                : null,
             onSelect: _select,
           ),
         ),
@@ -784,7 +881,9 @@ class _TokenMenuCard extends StatelessWidget {
   /// The width the overlay settled on, so the value cap tracks it.
   final double width;
 
-  final String emptyLabel;
+  /// Shown as a muted first row when nothing the author typed matched. Null when
+  /// something did.
+  final String? emptyLabel;
   final ValueChanged<TokenMenuEntry> onSelect;
 
   @override
@@ -795,21 +894,23 @@ class _TokenMenuCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: width, maxHeight: 240),
-        child: entries.isEmpty
-            ? Padding(
-                padding: const EdgeInsets.all(12),
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          children: [
+            if (emptyLabel != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: Text(
-                  emptyLabel,
-                  style: Theme.of(context).textTheme.bodySmall,
+                  emptyLabel!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              )
-            : ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                children: [
-                  for (final entry in entries) _tile(context, l10n, entry),
-                ],
               ),
+            for (final entry in entries) _tile(context, l10n, entry),
+          ],
+        ),
       ),
     );
   }
@@ -901,6 +1002,12 @@ class _TokenMenuCard extends StatelessWidget {
           size: 18,
         ),
         title: title(label),
+        onTap: () => onSelect(entry),
+      ),
+      BrowseTokensMenuEntry() => ListTile(
+        dense: true,
+        leading: const Icon(Icons.manage_search, size: 18),
+        title: title(l10n.tokenBrowserBrowseAll),
         onTap: () => onSelect(entry),
       ),
       CreateVariableMenuEntry(name: final name) => ListTile(

@@ -3656,6 +3656,246 @@ abstract class AppLocalizations {
   /// **'No matches'**
   String get tokenMenuEmpty;
 
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'The plan\'s name, as it reads in the plan list and in the brief\'s title.'**
+  String get tokenDescPlanName;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'The plan\'s own description, from the plan editor.'**
+  String get tokenDescPlanDescription;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'How many exercises the plan has.'**
+  String get tokenDescPlanExerciseCount;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'How many teams the plan has.'**
+  String get tokenDescPlanTeamCount;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'How many stations the plan has in total, across every exercise.'**
+  String get tokenDescPlanStationCount;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'The exercise\'s name. The number in front of it is rendered by the app.'**
+  String get tokenDescExerciseName;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'How many teams rotate through this exercise.'**
+  String get tokenDescExerciseNumberOfTeams;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'How many rounds the rotation runs.'**
+  String get tokenDescExerciseNumberOfRounds;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock time the first round starts.'**
+  String get tokenDescExerciseStartTime;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock time the last round ends. Derived from the start time and the three phase lengths.'**
+  String get tokenDescExerciseEndTime;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'Start and end time as one expression.'**
+  String get tokenDescExerciseTimeLabel;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'Total duration, with the per-round length in parentheses.'**
+  String get tokenDescExerciseDurationLabel;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'Minutes a team spends drilling at a station, per round.'**
+  String get tokenDescExerciseExecutionTime;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'Minutes set aside for evaluation, per round.'**
+  String get tokenDescExerciseEvaluationTime;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'Minutes set aside for moving on to the next station.'**
+  String get tokenDescExerciseRotationTime;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'The three phase lengths in minutes, separated by vertical bars.'**
+  String get tokenDescExercisePhaseBreakdown;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole rotation as a table: one row per round, with each phase\'s clock time. Built when the brief renders.'**
+  String get tokenDescExerciseRoundTable;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'The station\'s name. The code in front of it is rendered by the app.'**
+  String get tokenDescStationName;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'The station\'s code, derived from where it sits in the exercise.'**
+  String get tokenDescStationCode;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'The station\'s own position, as a coordinate the reader can tap. Empty until the station is placed on the map.'**
+  String get tokenDescStationPosition;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'The letter that tells apart two stations sharing a number.'**
+  String get tokenDescStationVariantSuffix;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'How long a team gets at this station, with the phase breakdown.'**
+  String get tokenDescStationDuration;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'The role\'s name.'**
+  String get tokenDescRoleplayName;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'The role\'s age.'**
+  String get tokenDescRoleplayAge;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'The role\'s short description.'**
+  String get tokenDescRoleplayDescription;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'Where the role is placed, as a coordinate the reader can tap.'**
+  String get tokenDescRoleplayPosition;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert token'**
+  String get tokenBrowserTitle;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse all tokens …'**
+  String get tokenBrowserBrowseAll;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'Search names and descriptions'**
+  String get tokenBrowserSearchHint;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'EXAMPLE'**
+  String get tokenBrowserExample;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get tokenBrowserFilterAll;
+
+  /// Token browser (ADR-0067): a filter chip and section header naming one category of token. Singular — it names a kind, it does not count one.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get tokenBrowserCategoryLocation;
+
+  /// Token browser (ADR-0067): a filter chip and section header naming one category of token. Singular — it names a kind, it does not count one.
+  ///
+  /// In en, this message translates to:
+  /// **'Person'**
+  String get tokenBrowserCategoryPerson;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'Variable'**
+  String get tokenBrowserCategoryVariable;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'No variables declared in this plan. Declare one in the plan\'s variables section.'**
+  String get tokenBrowserNoVariables;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'This station owns no locations yet.'**
+  String get tokenBrowserNoLocations;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'This station owns no persons yet.'**
+  String get tokenBrowserNoPersons;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'Declared on the plan; exercises and stations may override the value.'**
+  String get tokenBrowserVariableDescription;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'Name and position. Add .place, .label or .position for one part alone.'**
+  String get tokenBrowserLocationDescription;
+
+  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  ///
+  /// In en, this message translates to:
+  /// **'Name and age. Add .age, .description or .loc.* for one part alone.'**
+  String get tokenBrowserPersonDescription;
+
   /// Muted hint shown instead of a value next to a derived plan-field entry in the token insertion menu (e.g. exercise.name), distinguishing it from a variable entry which shows its effective value. DESIGN-008 calls this term out explicitly for both languages.
   ///
   /// In en, this message translates to:

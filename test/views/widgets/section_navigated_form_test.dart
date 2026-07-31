@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
+import 'package:ringdrill/views/widgets/token_browser_registry.dart';
 
 /// DESIGN-008 follow-up 02 — prev/next section commands on
 /// [SectionNavigatedForm], exercised directly (no [Plan]/flag needed;
@@ -455,4 +456,93 @@ void main() {
       );
     },
   );
+
+  group('the ⋮ menu offers the token browser (ADR-0067)', () {
+    // The browser's second way in, so the sheet is reachable without typing a
+    // trigger character. The action comes from whichever token-aware field has
+    // focus, via `TokenBrowserRegistry` — an `InheritedWidget` cannot carry it
+    // upwards from the field to the chrome above it.
+    tearDown(() => TokenBrowserRegistry().unregister(_noop));
+
+    testWidgets('nothing registered: the ⋮ is unchanged', (tester) async {
+      // A removable section, so the menu opens at all and the contrast is
+      // visible: the action it always had, and not the new one.
+      final l = await _pump(
+        tester,
+        sections: [
+          FormSection(
+            id: 'a',
+            label: 'Section A',
+            icon: Icons.description_outlined,
+            removable: true,
+            builder: (_) => const Text('Body A'),
+          ),
+        ],
+      );
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l.formSectionRemoveAction), findsOne);
+      expect(find.text(l.tokenBrowserBrowseAll), findsNothing);
+    });
+
+    testWidgets('a focused token field puts the action in the menu', (
+      tester,
+    ) async {
+      TokenBrowserRegistry().register(_noop);
+      final l = await _pump(tester, sections: _sections());
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l.tokenBrowserBrowseAll), findsOne);
+    });
+
+    testWidgets('a base section gets a ⋮ it never had before', (tester) async {
+      // "Remove" was the only action there had ever been, so an unremovable
+      // section showed no ⋮ at all. Its fields still take tokens.
+      TokenBrowserRegistry().register(_noop);
+      final l = await _pump(
+        tester,
+        sections: [
+          FormSection(
+            id: 'base',
+            label: 'Base',
+            icon: Icons.description_outlined,
+            removable: false,
+            builder: (_) => const Text('Body'),
+          ),
+        ],
+      );
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l.tokenBrowserBrowseAll), findsOne);
+      expect(
+        find.text(l.formSectionRemoveAction),
+        findsNothing,
+        reason: 'a base section is still not removable',
+      );
+    });
+
+    testWidgets('choosing it opens the registered field browser', (
+      tester,
+    ) async {
+      var opened = 0;
+      Future<void> action() async => opened++;
+      TokenBrowserRegistry().register(action);
+      addTearDown(() => TokenBrowserRegistry().unregister(action));
+
+      final l = await _pump(tester, sections: _sections());
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l.tokenBrowserBrowseAll));
+      await tester.pumpAndSettle();
+
+      expect(opened, 1);
+    });
+  });
 }
+
+Future<void> _noop() async {}

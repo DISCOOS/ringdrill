@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart';
+import 'package:ringdrill/utils/plan_field_names.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
+import 'package:ringdrill/views/widgets/token_browser_registry.dart';
 import 'package:ringdrill/views/widgets/token_insertion_menu.dart';
 
 /// Types [text] (typically ending in a trigger) and pumps twice: the menu
@@ -133,6 +135,8 @@ Future<TextEditingController> _pump(
             PlanFieldToken(
               name: 'exercise.name',
               label: 'Øvelsesnavn',
+              scope: PlanFieldScope.exercise,
+              description: 'Navnet på øvelsen.',
               hint: 'øvelse',
             ),
           ],
@@ -902,6 +906,60 @@ void main() {
 
       expect(find.text('Øvelsesnavn'), findsOneWidget);
       expect(find.text('øvelse'), findsOneWidget);
+    });
+
+    group('the browse row (ADR-0067)', () {
+      testWidgets('is the last row whatever the filter matches', (
+        tester,
+      ) async {
+        await _pump(tester);
+        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+        await _typeAndOpen(tester, '/');
+        expect(find.text(l10n.tokenBrowserBrowseAll), findsOne);
+
+        await _typeAndOpen(tester, '/frek');
+        expect(find.text(l10n.tokenBrowserBrowseAll), findsOne);
+      });
+
+      testWidgets('replaces the dead end when nothing matches', (tester) async {
+        // "No matches" told the author their guess failed and nothing about what
+        // would have worked. It is now a muted line above something to do.
+        await _pump(tester);
+        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+        await _typeAndOpen(tester, '{{zzzz');
+
+        expect(find.text(l10n.tokenMenuEmpty), findsOne);
+        expect(find.text(l10n.tokenBrowserBrowseAll), findsOne);
+      });
+
+      testWidgets('the empty line is absent while something still matches', (
+        tester,
+      ) async {
+        await _pump(tester);
+        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+        await _typeAndOpen(tester, '/frek');
+
+        expect(find.text(l10n.tokenMenuEmpty), findsNothing);
+      });
+
+      testWidgets('registers itself for the section editor while focused', (
+        tester,
+      ) async {
+        // The ⋮ sits above the field, so an InheritedWidget cannot carry the
+        // action upwards; the field registers instead. Registration follows focus,
+        // because "insert a token here" needs a "here".
+        expect(TokenBrowserRegistry().hasAction, isFalse);
+        await _pump(tester);
+        expect(TokenBrowserRegistry().hasAction, isTrue);
+
+        // Unmounting has to give the slot back, or the ⋮ keeps offering to insert
+        // into a field that is gone.
+        await tester.pumpWidget(const SizedBox.shrink());
+        expect(TokenBrowserRegistry().hasAction, isFalse);
+      });
     });
 
     testWidgets('dismisses on Escape', (tester) async {

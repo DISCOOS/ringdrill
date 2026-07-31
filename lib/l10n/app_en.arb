@@ -2294,6 +2294,166 @@
   "@tokenMenuEmpty": {
     "description": "Empty-state text in the DESIGN-008 Stage 4 token insertion menu (the `/` command menu and `{{` autocomplete) when no variable or plan field matches the typed filter."
   },
+  "tokenDescPlanName": "The plan's name, as it reads in the plan list and in the brief's title.",
+  "@tokenDescPlanName": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescPlanDescription": "The plan's own description, from the plan editor.",
+  "@tokenDescPlanDescription": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescPlanExerciseCount": "How many exercises the plan has.",
+  "@tokenDescPlanExerciseCount": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescPlanTeamCount": "How many teams the plan has.",
+  "@tokenDescPlanTeamCount": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescPlanStationCount": "How many stations the plan has in total, across every exercise.",
+  "@tokenDescPlanStationCount": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescExerciseName": "The exercise's name. The number in front of it is rendered by the app.",
+  "@tokenDescExerciseName": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescExerciseNumberOfTeams": "How many teams rotate through this exercise.",
+  "@tokenDescExerciseNumberOfTeams": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescExerciseNumberOfRounds": "How many rounds the rotation runs.",
+  "@tokenDescExerciseNumberOfRounds": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescExerciseStartTime": "Clock time the first round starts.",
+  "@tokenDescExerciseStartTime": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescExerciseEndTime": "Clock time the last round ends. Derived from the start time and the three phase lengths.",
+  "@tokenDescExerciseEndTime": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescExerciseTimeLabel": "Start and end time as one expression.",
+  "@tokenDescExerciseTimeLabel": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescExerciseDurationLabel": "Total duration, with the per-round length in parentheses.",
+  "@tokenDescExerciseDurationLabel": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescExerciseExecutionTime": "Minutes a team spends drilling at a station, per round.",
+  "@tokenDescExerciseExecutionTime": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescExerciseEvaluationTime": "Minutes set aside for evaluation, per round.",
+  "@tokenDescExerciseEvaluationTime": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescExerciseRotationTime": "Minutes set aside for moving on to the next station.",
+  "@tokenDescExerciseRotationTime": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescExercisePhaseBreakdown": "The three phase lengths in minutes, separated by vertical bars.",
+  "@tokenDescExercisePhaseBreakdown": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescExerciseRoundTable": "The whole rotation as a table: one row per round, with each phase's clock time. Built when the brief renders.",
+  "@tokenDescExerciseRoundTable": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescStationName": "The station's name. The code in front of it is rendered by the app.",
+  "@tokenDescStationName": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescStationCode": "The station's code, derived from where it sits in the exercise.",
+  "@tokenDescStationCode": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescStationPosition": "The station's own position, as a coordinate the reader can tap. Empty until the station is placed on the map.",
+  "@tokenDescStationPosition": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescStationVariantSuffix": "The letter that tells apart two stations sharing a number.",
+  "@tokenDescStationVariantSuffix": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescStationDuration": "How long a team gets at this station, with the phase breakdown.",
+  "@tokenDescStationDuration": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescRoleplayName": "The role's name.",
+  "@tokenDescRoleplayName": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescRoleplayAge": "The role's age.",
+  "@tokenDescRoleplayAge": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescRoleplayDescription": "The role's short description.",
+  "@tokenDescRoleplayDescription": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenDescRoleplayPosition": "Where the role is placed, as a coordinate the reader can tap.",
+  "@tokenDescRoleplayPosition": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenBrowserTitle": "Insert token",
+  "@tokenBrowserTitle": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenBrowserBrowseAll": "Browse all tokens …",
+  "@tokenBrowserBrowseAll": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenBrowserSearchHint": "Search names and descriptions",
+  "@tokenBrowserSearchHint": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenBrowserExample": "EXAMPLE",
+  "@tokenBrowserExample": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenBrowserFilterAll": "All",
+  "@tokenBrowserFilterAll": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenBrowserCategoryLocation": "Location",
+  "@tokenBrowserCategoryLocation": {
+    "description": "Token browser (ADR-0067): a filter chip and section header naming one category of token. Singular — it names a kind, it does not count one."
+  },
+  "tokenBrowserCategoryPerson": "Person",
+  "@tokenBrowserCategoryPerson": {
+    "description": "Token browser (ADR-0067): a filter chip and section header naming one category of token. Singular — it names a kind, it does not count one."
+  },
+  "tokenBrowserCategoryVariable": "Variable",
+  "@tokenBrowserCategoryVariable": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenBrowserNoVariables": "No variables declared in this plan. Declare one in the plan's variables section.",
+  "@tokenBrowserNoVariables": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenBrowserNoLocations": "This station owns no locations yet.",
+  "@tokenBrowserNoLocations": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenBrowserNoPersons": "This station owns no persons yet.",
+  "@tokenBrowserNoPersons": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenBrowserVariableDescription": "Declared on the plan; exercises and stations may override the value.",
+  "@tokenBrowserVariableDescription": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenBrowserLocationDescription": "Name and position. Add .place, .label or .position for one part alone.",
+  "@tokenBrowserLocationDescription": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
+  "tokenBrowserPersonDescription": "Name and age. Add .age, .description or .loc.* for one part alone.",
+  "@tokenBrowserPersonDescription": {
+    "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
+  },
   "tokenMenuPlanFieldHint": "planfelt",
   "@tokenMenuPlanFieldHint": {
     "description": "Muted hint shown instead of a value next to a derived plan-field entry in the token insertion menu (e.g. exercise.name), distinguishing it from a variable entry which shows its effective value. DESIGN-008 calls this term out explicitly for both languages."

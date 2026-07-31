@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/views/widgets/token_browser_registry.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
@@ -369,22 +370,40 @@ class _CompactBottomBar extends StatelessWidget {
             tooltip: l10n.formSectionNext,
             onPressed: hasNext ? onNext : null,
           ),
+          // Two actions now, and the ⋮ is enabled whenever *either* applies: a
+          // base section is not removable but its fields still take tokens
+          // (ADR-0067). "Browse all tokens" appears only while a token-aware
+          // field has focus, which is what makes "insert here" mean something.
           PopupMenuButton<String>(
-            enabled: current.removable,
+            enabled: current.removable || TokenBrowserRegistry().hasAction,
             icon: const Icon(Icons.more_vert),
-            onSelected: (_) => onRemove(),
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                value: 'remove',
-                child: Text(l10n.formSectionRemoveAction),
-              ),
-            ],
+            onSelected: (value) => value == _sectionMenuBrowseTokens
+                ? TokenBrowserRegistry().open()
+                : onRemove(),
+            itemBuilder: (_) => _sectionMenuItems(l10n, current.removable),
           ),
         ],
       ),
     );
   }
 }
+
+const _sectionMenuBrowseTokens = 'browse-tokens';
+
+/// The section ⋮ menu's items, shared by the compact header and the wide pane's
+/// overlaid button so the two cannot offer different things.
+List<PopupMenuEntry<String>> _sectionMenuItems(
+  AppLocalizations l10n,
+  bool removable,
+) => [
+  if (TokenBrowserRegistry().hasAction)
+    PopupMenuItem(
+      value: _sectionMenuBrowseTokens,
+      child: Text(l10n.tokenBrowserBrowseAll),
+    ),
+  if (removable)
+    PopupMenuItem(value: 'remove', child: Text(l10n.formSectionRemoveAction)),
+];
 
 /// The compact section switcher, rendered inside [showRingdrillActionSheet].
 /// A flat list of active sections, then (if any exist) a "Legg til seksjon"
@@ -513,20 +532,21 @@ class _WideBody extends StatelessWidget {
           child: Stack(
             children: [
               Positioned.fill(child: current.builder(context)),
-              if (current.removable)
+              // Overlaid only when the ⋮ has something to offer, which is now
+              // also true for a base section whose field takes tokens
+              // (ADR-0067) — the reason the corner stayed empty before was that
+              // "remove" was the only action there had ever been.
+              if (current.removable || TokenBrowserRegistry().hasAction)
                 Positioned(
                   top: 0,
                   right: 4,
                   child: PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
-                    tooltip: l10n.formSectionRemoveAction,
-                    onSelected: (_) => onRemove(),
-                    itemBuilder: (_) => [
-                      PopupMenuItem(
-                        value: 'remove',
-                        child: Text(l10n.formSectionRemoveAction),
-                      ),
-                    ],
+                    onSelected: (value) => value == _sectionMenuBrowseTokens
+                        ? TokenBrowserRegistry().open()
+                        : onRemove(),
+                    itemBuilder: (_) =>
+                        _sectionMenuItems(l10n, current.removable),
                   ),
                 ),
             ],

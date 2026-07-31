@@ -2133,6 +2133,151 @@ class AppLocalizationsNb extends AppLocalizations {
   String get tokenMenuEmpty => 'Ingen treff';
 
   @override
+  String get tokenDescPlanName =>
+      'Navnet på planen, slik det står i planlista og i tittelen på briefen.';
+
+  @override
+  String get tokenDescPlanDescription =>
+      'Planens egen beskrivelse, fra planredigeringen.';
+
+  @override
+  String get tokenDescPlanExerciseCount => 'Hvor mange øvelser planen har.';
+
+  @override
+  String get tokenDescPlanTeamCount => 'Hvor mange lag planen har.';
+
+  @override
+  String get tokenDescPlanStationCount =>
+      'Hvor mange poster planen har i alt, på tvers av alle øvelsene.';
+
+  @override
+  String get tokenDescExerciseName =>
+      'Navnet på øvelsen. Nummeret foran settes av appen.';
+
+  @override
+  String get tokenDescExerciseNumberOfTeams =>
+      'Hvor mange lag som rullerer gjennom øvelsen.';
+
+  @override
+  String get tokenDescExerciseNumberOfRounds =>
+      'Hvor mange runder rulleringen går.';
+
+  @override
+  String get tokenDescExerciseStartTime =>
+      'Klokkeslettet den første runden starter.';
+
+  @override
+  String get tokenDescExerciseEndTime =>
+      'Klokkeslettet siste runde slutter. Beregnet ut fra starttid og de tre faselengdene.';
+
+  @override
+  String get tokenDescExerciseTimeLabel => 'Start og slutt som ett uttrykk.';
+
+  @override
+  String get tokenDescExerciseDurationLabel =>
+      'Total varighet, med rundelengden i parentes.';
+
+  @override
+  String get tokenDescExerciseExecutionTime =>
+      'Minutter et lag øver på en post, per runde.';
+
+  @override
+  String get tokenDescExerciseEvaluationTime =>
+      'Minutter satt av til evaluering, per runde.';
+
+  @override
+  String get tokenDescExerciseRotationTime =>
+      'Minutter satt av til å rullere til neste post.';
+
+  @override
+  String get tokenDescExercisePhaseBreakdown =>
+      'De tre faselengdene i minutter, skilt med loddrette streker.';
+
+  @override
+  String get tokenDescExerciseRoundTable =>
+      'Hele rulleringen som tabell: én rad per runde, med klokkeslett for hver fase. Bygges når briefen genereres.';
+
+  @override
+  String get tokenDescStationName =>
+      'Navnet på posten. Koden foran settes av appen.';
+
+  @override
+  String get tokenDescStationCode =>
+      'Postens kode, beregnet ut fra hvor den ligger i øvelsen.';
+
+  @override
+  String get tokenDescStationPosition =>
+      'Postens egen posisjon, som en koordinat leseren kan trykke på. Tom til posten er plassert i kartet.';
+
+  @override
+  String get tokenDescStationVariantSuffix =>
+      'Bokstaven som skiller to poster som deler nummer.';
+
+  @override
+  String get tokenDescStationDuration =>
+      'Hvor lang tid et lag får på posten, med faseinndelingen.';
+
+  @override
+  String get tokenDescRoleplayName => 'Navnet på rollen.';
+
+  @override
+  String get tokenDescRoleplayAge => 'Alderen på rollen.';
+
+  @override
+  String get tokenDescRoleplayDescription =>
+      'Den korte beskrivelsen av rollen.';
+
+  @override
+  String get tokenDescRoleplayPosition =>
+      'Hvor rollen står, som en koordinat leseren kan trykke på.';
+
+  @override
+  String get tokenBrowserTitle => 'Sett inn token';
+
+  @override
+  String get tokenBrowserBrowseAll => 'Utforsk alle token …';
+
+  @override
+  String get tokenBrowserSearchHint => 'Søk i navn og beskrivelser';
+
+  @override
+  String get tokenBrowserExample => 'EKSEMPEL';
+
+  @override
+  String get tokenBrowserFilterAll => 'Alle';
+
+  @override
+  String get tokenBrowserCategoryLocation => 'Sted';
+
+  @override
+  String get tokenBrowserCategoryPerson => 'Person';
+
+  @override
+  String get tokenBrowserCategoryVariable => 'Variabel';
+
+  @override
+  String get tokenBrowserNoVariables =>
+      'Ingen variabler er deklarert i denne planen. Deklarer en i variabelseksjonen i planen.';
+
+  @override
+  String get tokenBrowserNoLocations => 'Denne posten har ingen steder ennå.';
+
+  @override
+  String get tokenBrowserNoPersons => 'Denne posten har ingen personer ennå.';
+
+  @override
+  String get tokenBrowserVariableDescription =>
+      'Deklarert på planen; øvelser og poster kan overstyre verdien.';
+
+  @override
+  String get tokenBrowserLocationDescription =>
+      'Navn og posisjon. Legg til .place, .label eller .position for én del alene.';
+
+  @override
+  String get tokenBrowserPersonDescription =>
+      'Navn og alder. Legg til .age, .description eller .loc.* for én del alene.';
+
+  @override
   String get tokenMenuPlanFieldHint => 'planfelt';
 
   @override
