@@ -14,6 +14,7 @@ library;
 
 import 'package:ringdrill/data/source/source_field.dart';
 import 'package:ringdrill/data/source/source_fields.dart';
+import 'package:ringdrill/utils/plan_field_names.dart';
 
 /// Renders the JSON Schema.
 class SourceSchema {
@@ -33,6 +34,7 @@ class SourceSchema {
     'type': 'object',
     'required': ['plan'],
     'additionalProperties': false,
+    'x-ringdrill-tokens': _tokens(),
     'properties': {
       SourceDocumentKeys.sourceFormat: {
         'type': 'string',
@@ -83,6 +85,33 @@ class SourceSchema {
           },
         ],
       },
+    },
+  };
+
+  /// The cross-reference tokens a markdown field may contain, by the scope the
+  /// field belongs to — cascade included, so `station` lists the `plan.*` and
+  /// `exercise.*` facets that also resolve there.
+  ///
+  /// An extension keyword rather than a `description`, because it is a list a
+  /// client should be able to read rather than prose it has to parse. It exists
+  /// because both the skill and the MCP instructions tell an agent to call
+  /// `schema` for the token list — and until this, there was no list to find.
+  /// The names come from `PlanFieldNames`, the same source `analyze` validates a
+  /// reference against, so the schema cannot advertise a token that fails
+  /// analysis or omit one that passes.
+  ///
+  /// `{{var.<slug>}}` and the `{{station.loc.*}}`/`{{station.person.*}}`
+  /// namespaces are not here: those are per-document, named by what the document
+  /// itself declares, so a static schema has nothing to enumerate.
+  static Map<String, dynamic> _tokens() => {
+    'description':
+        'Tokens resolvable inside a markdown field, by scope. Written '
+        'literally as {{<name>}} and resolved at render, never while '
+        'authoring. Prefer one over typing the value it derives: a hand-typed '
+        'rotation table or duration is correct until a start time changes.',
+    'resolvableAt': {
+      for (final scope in PlanFieldScope.values)
+        scope.name: [...PlanFieldNames.resolvableAt(scope)]..sort(),
     },
   };
 

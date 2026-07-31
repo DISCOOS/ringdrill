@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/data/source/source_field.dart';
 import 'package:ringdrill/data/source/source_fields.dart';
 import 'package:ringdrill/data/source/source_schema.dart';
+import 'package:ringdrill/utils/plan_field_names.dart';
 
 Map<String, dynamic> _defs(Map<String, dynamic> schema) =>
     schema[r'$defs'] as Map<String, dynamic>;
@@ -178,5 +179,53 @@ void main() {
 
   test('only plan is required at the document root', () {
     expect(schema['required'], ['plan']);
+  });
+
+  group('the token inventory', () {
+    // Both the skill and the MCP instructions tell an agent to call `schema` for
+    // the list of tokens to use instead of typing a derived value. That was a
+    // dangling promise until the schema carried one, so the point of this group
+    // is that the promise stays kept.
+    Map<String, dynamic> tokens() =>
+        schema['x-ringdrill-tokens'] as Map<String, dynamic>;
+
+    test('every scope publishes what analyze resolves there, cascade and '
+        'all', () {
+      final resolvable = tokens()['resolvableAt'] as Map<String, dynamic>;
+      expect(resolvable.keys, PlanFieldScope.values.map((s) => s.name));
+      for (final scope in PlanFieldScope.values) {
+        expect(
+          (resolvable[scope.name] as List).cast<String>().toSet(),
+          PlanFieldNames.resolvableAt(scope),
+          reason:
+              'a token the schema advertises must pass analysis, and one '
+              'that passes must be advertised',
+        );
+      }
+    });
+
+    test('the cascade is published, not just each scope own facets', () {
+      final station = (tokens()['resolvableAt'] as Map)['station'] as List;
+      expect(station, contains('plan.name'));
+      expect(station, contains('exercise.roundTable'));
+      expect(station, contains('station.duration'));
+    });
+
+    test('the derived-value tokens the first converted plan needed are '
+        'there', () {
+      // Every one of these was hand-typed into prose in the 2026 LSOR
+      // conversion, which is why it exists.
+      final exercise = (tokens()['resolvableAt'] as Map)['exercise'] as List;
+      expect(exercise, contains('exercise.roundTable'));
+      expect(exercise, contains('exercise.phaseBreakdown'));
+      final plan = (tokens()['resolvableAt'] as Map)['plan'] as List;
+      expect(plan, contains('plan.exerciseCount'));
+      expect(plan, contains('plan.teamCount'));
+      expect(plan, contains('plan.stationCount'));
+    });
+
+    test('says tokens are written literally, not resolved while authoring', () {
+      expect(tokens()['description'], contains('literally'));
+    });
   });
 }
