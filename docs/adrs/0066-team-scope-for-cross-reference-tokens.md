@@ -1,12 +1,12 @@
 ---
-status: proposed
+status: rejected
 date: 2026-07-31
 deciders: ["kengu"]
 consulted: []
 informed: []
 ---
 
-# ADR-0066: Give the token model a team scope, and decide what "the team" means in a brief
+# ADR-0066: A team scope for cross-reference tokens
 
 ## Context and problem statement
 
@@ -79,55 +79,71 @@ which round, since that is what `schedule` derives; nothing needs inventing to
   the rotation, so a station section renders once per visiting team.
 * **Option E — Author-declared recipients.** A station field declares which team
   it addresses, and the token resolves from that declaration.
+* **Option F — A plan variable, plus guidance that points authors at it.** No new
+  scope and no new token. The author declares `{{var.lag}}` in the plan's
+  variables section (ADR-0046) and references it; the skill and the MCP
+  instructions tell an agent to promote a repeated literal into one.
 
 ## Decision outcome
 
-**Recommended: Option B now, Option C as a separate decision when the product
-wants it.** Not chosen here — Option C changes what `render` produces and how many
-documents a course day involves, which is a UI/UX question in the same class as
-ADR-0062's, and it should be decided with the app's brief-sharing flow in view
-rather than as a side effect of adding a token.
+**Rejected, in favour of Option F.**
 
-Option B is the part that is safe to do independently and that fixes the
-observed damage. `{{team.label}}` gives the LSOR author the thing they were
-reaching for: "**{{team.label}}**: stisøk fra IPP …" renders as "Laget: stisøk fra
-IPP …", correct for every reader of that station, in every round, forever. It
-needs no team in context, so it resolves at plan, exercise, station and role-play
-scope alike, and it is one localized label rather than a lookup.
+Option B — a `team` scope holding one facet, `{{team.label}}`, resolving to a
+role-neutral phrase — does not pay for itself. Read plainly, that facet is a
+string the author wants to write once and use in many places, which is the
+definition of a plan variable (ADR-0046). The format already has that mechanism,
+it already resolves at every scope, and `analyze` already validates a reference to
+it.
 
-It also unlocks the `analyze` half. Once a correct alternative exists, a station
-field containing a literal team name — matched against `plan.teams[*].name`, the
-way the derived-schedule check matches round starts — can be warned about with a
-hint that names the token. Without Option B there is nothing to suggest, and a
-warning with no remedy is noise.
+The deciding argument is where it would be **edited**. Every other token resolves
+from something the author edits somewhere: a plan's name in the plan editor, a
+station's code in the station editor, a variable's value in the plan's variables
+section. `{{team.label}}` resolves from a hardcoded localized string with no
+editing surface at all — and "laget" is exactly the kind of word a course wants to
+choose for itself ("laget", "patruljen", "mannskapet", "Lag 2.X"). Giving it a
+token would mean either shipping a word the author cannot change, or inventing an
+editing surface for a single string, and the only sensible home for that surface is
+the variables section — which is to say, it is a variable.
 
-What Option B deliberately does not do is let a document address one team
-specifically. If a plan genuinely needs that — a plan where teams do different
-things, which is also ADR-0062's territory — Option C or E is the answer, and both
-should wait for that need to be real rather than anticipated.
+So the LSOR booklet's 39 occurrences of `Lag 2.X` are already fixable today, with
+no format change: declare a variable and reference it. The wildcard even survives
+honestly — a variable has a default the author sets on the day, which is what
+`2.X` was standing in for.
+
+What was actually missing is not a token but **advice**. An agent transcribing a
+document has no instinct for "this literal repeats, promote it", so it writes the
+literal 39 times, and nothing in the skill or the MCP instructions tells it
+otherwise. The derived-value guidance added alongside this ADR covers values the
+*format* computes; it says nothing about values the *document* repeats. That gap is
+the real finding here, and it is a paragraph of guidance rather than a scope.
+
+Options C, D and E are not decided by this rejection. If a plan ever genuinely needs
+to address one team specifically — a plan where teams do different things, which is
+ADR-0062's territory — that is a per-team rendering decision and deserves its own
+ADR. The analysis of them above stands as the record for whoever writes it.
 
 ### Consequences
 
-* Good: the one gap in the token model closes, and the most-repeated literal in
-  the first converted plan gets a correct form.
-* Good: no rendering-surface change. One brief per audience, as today.
-* Good: `analyze` gains a check it cannot currently justify.
-* Good: works at every scope, so an author never has to ask whether a team is in
-  context here.
-* Bad: `{{team.label}}` is a *label*, not a reference — it names no specific team,
-  which will read as a half-measure to anyone who expected `{{team.name}}`. The
-  name should therefore not be `team.name`: reserving that for the per-team case
-  keeps Option C available without a rename, and makes the difference visible at
-  the call site.
-* Bad: a scope with exactly one facet looks odd in the table and in the picker.
-  Accepted: the alternative is a facet in the `plan` scope, which would be lying
-  about what it refers to.
-* Bad: it does not help a plan that assigns different tasks to different teams.
-  That is real and out of scope; see ADR-0062.
-* Bad: the LSOR document's `2.X` carries information Option B drops — the "2."
-  prefix is that course's team-numbering convention. Nothing is lost that the plan
-  knows, since the plan's own team names carry it, but an author converting such a
-  booklet has to accept a generic label where the paper had a half-specific one.
+* Good: no new scope, no new facet, no new editing surface. The token model stays
+  the size it is.
+* Good: the author gets a word they choose and can change, in the place they
+  already change such words.
+* Good: nothing blocks. The LSOR conversion's literals can be fixed with today's
+  format.
+* Good: the guidance generalises past teams. "Promote a repeated literal into a
+  variable" covers a talegruppe, a duty phone number, a meeting place and a team
+  designation with one rule, where a `team` scope would have covered exactly one.
+* Bad: it stays the author's job to notice the repetition. A variable is only
+  reached for by someone who thought of it, and guidance raises the odds without
+  guaranteeing anything — which is why this is advisory and not a check.
+* Bad: `analyze` cannot flag a hand-typed team name any more, because there is no
+  single correct token to suggest. A repeated-literal detector is possible and
+  deliberately not built here: the threshold for "worth a variable" is a judgement
+  about the document, and a warning that fires on any thrice-repeated word would be
+  noise. Left as a possible follow-up if the advisory version proves too weak.
+* Bad: teams remain the one entity a markdown field cannot name. Accepted: naming a
+  *specific* team is Option C's problem and needs the rendering decision first, and
+  naming teams *generically* is a variable.
 
 ## Pros and cons of the options
 
@@ -162,9 +178,22 @@ should wait for that need to be real rather than anticipated.
   derived schedule — the class of duplication ADR-0059 forbids a migration from
   creating and this whole line of work has been removing.
 
+### Option F — A plan variable, plus guidance
+* Good: zero format change; the mechanism, the validation and the editing surface
+  all exist already.
+* Good: the author owns the word, so a course can call its teams what it calls
+  them.
+* Good: one rule covers every repeated literal, not just teams.
+* Bad: advisory only — nothing enforces it, and an author who never thinks of it
+  keeps typing the literal.
+* Bad: a variable is per-plan, so the same word has to be declared again in the
+  next plan. A token would have been free everywhere. Cheap enough against the
+  cost of a scope that cannot be edited.
+
 ## Links
 
-* Related ADRs: [ADR-0062](./0062-authored-rounds-for-non-uniform-exercises.md),
+* Related ADRs: [ADR-0046](./0046-plan-variables.md) — the mechanism this ADR was
+  reinventing, [ADR-0062](./0062-authored-rounds-for-non-uniform-exercises.md),
   [ADR-0059](./0059-drill-schema-migration-ladder.md),
   [ADR-0063](./0063-per-field-brief-visibility.md),
   [ADR-0044](./0044-render-preview-on-site.md)

@@ -1,5 +1,5 @@
 ---
-status: proposed            # proposed | accepted | deprecated | superseded by ADR-NNNN
+status: proposed            # proposed | accepted | rejected | deprecated | superseded by ADR-NNNN
 date: YYYY-MM-DD            # date of the decision
 deciders: ["name1", "name2"]  # who signed off
 consulted: []               # who was asked for input
