@@ -20,6 +20,7 @@
 // code than the dependency would be — and this repo's package.json is the Netlify
 // functions package, so adding one there would couple the backend's dependency
 // tree to an agent-tooling concern.
+import { readFile } from 'node:fs/promises';
 import { createInterface } from 'node:readline';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,6 +39,14 @@ const log = (message) => process.stderr.write(`ringdrill-mcp: ${message}\n`);
 const resolved = resolveCli(repoRoot, { log });
 log(`using CLI from ${resolved.source}`);
 warnIfStale(repoRoot, resolved, log);
+
+/// Reads a guide resource out of the checkout this server runs from (ADR-0065).
+///
+/// `mcp/` sits one level under the repo root, so the skill files are a fixed hop
+/// away — no configuration, and it is the same tree the CLI was built from.
+async function readResource(resource) {
+    return readFile(new URL(`../${resource.file}`, import.meta.url), 'utf8');
+}
 
 const tools = toolsFor(
     createCliBackend({ cli: resolved.command, cwd: repoRoot }),
@@ -77,7 +86,7 @@ for await (const line of lines) {
         );
         continue;
     }
-    const response = await handleMessage(message, tools);
+    const response = await handleMessage(message, tools, { readResource });
     // Null for a notification, which takes no reply.
     if (response) process.stdout.write(`${JSON.stringify(response)}\n`);
 }

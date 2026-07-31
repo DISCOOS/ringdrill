@@ -355,6 +355,80 @@ The full conventions ship as the ringdrill-plan-authoring skill.`;
 /// What `initialize` reports.
 export const SERVER_INFO = { name: 'ringdrill', version: '1.0.0' };
 
+/// The authoring guide, exposed as MCP resources (ADR-0065).
+///
+/// Served from the skill's own markdown so there is one source: a convention cannot
+/// be right in the skill and stale in the server. `instructions` carries the rules
+/// that must be seen; these carry the reasoning, which is far too long to put in
+/// front of every request — and a resource is fetched once per session rather than
+/// pasted per call, so it does not reintroduce ADR-0064's problem.
+///
+/// `file` is repo-relative. Resolving it is the transport's job: the stdio server
+/// reads from the checkout, the hosted one from files bundled with the function.
+export const RESOURCES = [
+    {
+        uri: 'ringdrill://guide/authoring',
+        name: 'Authoring a RingDrill plan',
+        description:
+            'The conventions the schema cannot express: what to write, in what ' +
+            'order, and the mistakes that build cleanly and then read badly. ' +
+            'Read this before writing a plan.',
+        mimeType: 'text/markdown',
+        file: 'skills/ringdrill-plan-authoring/SKILL.md',
+    },
+    {
+        uri: 'ringdrill://guide/format',
+        name: 'The source format — vocabulary and shape',
+        description:
+            'What the entities mean and why the shape is what it is: the ' +
+            'rotation and what it cannot express, every markdown field and which ' +
+            'audiences see it, the token grammar, coordinates.',
+        mimeType: 'text/markdown',
+        file: 'skills/ringdrill-plan-authoring/reference/format.md',
+    },
+];
+
+/// The workflow, offered as a prompt for clients that surface them (ADR-0065).
+///
+/// A convenience, not a guarantee: a prompt is user-triggered, so an agent that
+/// never lists them loses nothing it had. Self-contained rather than reading the
+/// guide, so it behaves the same on a transport whose resources are unavailable.
+export const PROMPTS = [
+    {
+        name: 'author_plan',
+        description:
+            'Draft or extend a RingDrill drill plan, in the order that works and ' +
+            'with the rules that are not in the schema.',
+        arguments: [
+            {
+                name: 'brief',
+                description:
+                    'What the exercise should train, and anything already ' +
+                    'decided — audience, duration, terrain, how many teams.',
+                required: false,
+            },
+        ],
+    },
+];
+
+/// The message body for [PROMPTS]'s `author_plan`.
+export function authorPlanPrompt(brief) {
+    return (
+        `${INSTRUCTIONS}\n\n` +
+        'Read ringdrill://guide/authoring and ringdrill://guide/format first if ' +
+        'this client can read resources; they carry the reasoning behind the ' +
+        'rules above.\n\n' +
+        'Then: call schema, read one published plan with search_catalog and ' +
+        'get_plan to see how much prose a station really carries, scaffold with ' +
+        'create_plan, write the content, and run analyze_plan until it is clean. ' +
+        'Render the brief and read it — a plan can be structurally perfect and ' +
+        'train nothing. Build only when it is right.\n\n' +
+        (brief
+            ? `What this plan is for:\n${brief}`
+            : 'Ask what the exercise is for before inventing learning goals.')
+    );
+}
+
 /// Handles one JSON-RPC message against [tools], returning the response object —
 /// or null for a notification, which takes no reply.
 ///
@@ -362,7 +436,7 @@ export const SERVER_INFO = { name: 'ringdrill', version: '1.0.0' };
 /// the Netlify function as a response body, and neither needs to know how the
 /// other frames it. That is what keeps `initialize`/`tools/list`/`tools/call`
 /// behaving identically whichever way a client reaches us.
-export async function handleMessage(message, tools) {
+export async function handleMessage(message, tools, { readResource } = {}) {
     const { id, method, params } = message;
     if (id === undefined || id === null) return null;
 
@@ -377,10 +451,79 @@ export async function handleMessage(message, tools) {
         case 'initialize':
             return reply({
                 protocolVersion: PROTOCOL_VERSION,
-                capabilities: { tools: {} },
+                // Resources only when the transport can actually read them: a
+                // capability advertised and then failing is worse than one absent.
+                capabilities: {
+                    tools: {},
+                    prompts: {},
+                    ...(readResource ? { resources: {} } : {}),
+                },
                 serverInfo: SERVER_INFO,
                 instructions: INSTRUCTIONS,
             });
+
+        case 'resources/list':
+            return reply({
+                resources: RESOURCES.map(
+                    ({ uri, name, description, mimeType }) => ({
+                        uri,
+                        name,
+                        description,
+                        mimeType,
+                    }),
+                ),
+            });
+
+        case 'resources/read': {
+            const uri = params?.uri;
+            const resource = RESOURCES.find((r) => r.uri === uri);
+            if (!resource) {
+                return fail(
+                    -32602,
+                    `Unknown resource "${uri}". Have: ` +
+                        `${RESOURCES.map((r) => r.uri).join(', ')}.`,
+                );
+            }
+            if (!readResource) {
+                return fail(-32603, 'This server cannot read resources.');
+            }
+            try {
+                const text = await readResource(resource);
+                return reply({
+                    contents: [
+                        { uri, mimeType: resource.mimeType, text },
+                    ],
+                });
+            } catch (e) {
+                return fail(-32603, `Cannot read ${uri}: ${e.message}`);
+            }
+        }
+
+        case 'prompts/list':
+            return reply({ prompts: PROMPTS });
+
+        case 'prompts/get': {
+            const name = params?.name;
+            if (!PROMPTS.some((p) => p.name === name)) {
+                return fail(
+                    -32602,
+                    `Unknown prompt "${name}". Have: ` +
+                        `${PROMPTS.map((p) => p.name).join(', ')}.`,
+                );
+            }
+            return reply({
+                description: PROMPTS[0].description,
+                messages: [
+                    {
+                        role: 'user',
+                        content: {
+                            type: 'text',
+                            text: authorPlanPrompt(params?.arguments?.brief),
+                        },
+                    },
+                ],
+            });
+        }
 
         case 'tools/list':
             return reply({

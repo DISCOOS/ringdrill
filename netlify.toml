@@ -72,7 +72,15 @@
 # applied to *every* function, and Netlify copied the 706 KB bundle into all sixteen
 # deployment packages.
 [functions."mcp"]
-    included_files = ["netlify/functions/lib/mcp-compiler-bundle.js"]
+    # The cross-compiled compiler, plus the authoring guide the server exposes as
+    # MCP resources (ADR-0065). Scoped to this function on purpose: under the global
+    # [functions] table, included_files applies to every function, which copied the
+    # 700 KB bundle into all sixteen deployment packages.
+    included_files = [
+        "netlify/functions/lib/mcp-compiler-bundle.js",
+        "skills/ringdrill-plan-authoring/SKILL.md",
+        "skills/ringdrill-plan-authoring/reference/format.md",
+    ]
 
 # Public API aliases.
 #

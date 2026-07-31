@@ -27,6 +27,8 @@
 // A requirement of ADR-0060, not an implementation note: a plan can be marked
 // staff-only. This function reads a request, compiles it and answers. There is no
 // write path, and the only storage touched is a read of the public catalog.
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { corsPreflight, withCors } from "./lib/shared.js";
 import { createCompilerBackend } from "./lib/mcp-backend.js";
 import { handleMessage, PROTOCOL_VERSION, toolsFor } from "../../mcp/tools.mjs";
@@ -37,6 +39,17 @@ import { handleMessage, PROTOCOL_VERSION, toolsFor } from "../../mcp/tools.mjs";
 /// its JSON-RPC envelope, and low enough that a body this size is refused before
 /// anything parses it.
 const MAX_BODY_BYTES = 1024 * 1024;
+
+/// Reads a guide resource from the files bundled with this function (ADR-0065).
+///
+/// The markdown ships via `[functions."mcp"] included_files` in netlify.toml, the
+/// same mechanism the compiler bundle uses — scoped to this function, because the
+/// unscoped form copied the bundle into every deployment package. Netlify preserves
+/// the repo-relative path inside the package, so the file is found at the same path
+/// it has in the tree, resolved from the process working directory.
+async function readResource(resource) {
+    return readFile(join(process.cwd(), resource.file), "utf8");
+}
 
 export function createHandler({ backend = createCompilerBackend() } = {}) {
     const tools = toolsFor(backend);
@@ -104,7 +117,9 @@ export function createHandler({ backend = createCompilerBackend() } = {}) {
 
         const responses = [];
         for (const message of messages) {
-            const response = await handleMessage(message, tools);
+            const response = await handleMessage(message, tools, {
+                readResource,
+            });
             if (response) responses.push(response);
         }
 

@@ -128,6 +128,8 @@ test("initialize answers with the shared protocol version and server info", asyn
     assert.equal(status, 200);
     assert.equal(body.result.serverInfo.name, "ringdrill");
     assert.ok(body.result.capabilities.tools);
+    assert.ok(body.result.capabilities.prompts);
+    assert.ok(body.result.capabilities.resources);
     // The one channel most clients inject into the system prompt (ADR-0065), so
     // it is the only guidance certain to reach an MCP-only client.
     assert.match(body.result.instructions, /sentence ends/);
@@ -379,6 +381,73 @@ test("an unknown or expired hash asks for a resend, and does not linger", async 
     assert.equal(expired.isError, true);
     assert.match(expired.content[0].text, /expired/);
     assert.equal(store.size, 0, "an expired entry is deleted when read");
+});
+
+test("the authoring guide is served as resources, from the skill itself", async () => {
+    // ADR-0065: the resources are the skill's own markdown, so a convention cannot
+    // be right in the skill and stale in the server.
+    const list = await rpc(handlerWith(), {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "resources/list",
+    });
+    const uris = list.body.result.resources.map((r) => r.uri);
+    assert.deepEqual(uris, [
+        "ringdrill://guide/authoring",
+        "ringdrill://guide/format",
+    ]);
+
+    const read = await rpc(handlerWith(), {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "resources/read",
+        params: { uri: "ringdrill://guide/authoring" },
+    });
+    const text = read.body.result.contents[0].text;
+    assert.match(text, /# Authoring a RingDrill plan/);
+    assert.match(text, /sentence end/i);
+
+    const unknown = await rpc(handlerWith(), {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "resources/read",
+        params: { uri: "ringdrill://guide/nope" },
+    });
+    assert.match(unknown.body.error.message, /Unknown resource/);
+});
+
+test("the workflow is offered as a prompt, carrying the rules", async () => {
+    const list = await rpc(handlerWith(), {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "prompts/list",
+    });
+    assert.deepEqual(
+        list.body.result.prompts.map((p) => p.name),
+        ["author_plan"],
+    );
+
+    const got = await rpc(handlerWith(), {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "prompts/get",
+        params: {
+            name: "author_plan",
+            arguments: { brief: "Ledelse under henteoppdrag." },
+        },
+    });
+    const text = got.body.result.messages[0].content.text;
+    // Self-contained: it carries the rules rather than assuming resources work.
+    assert.match(text, /sentence ends/);
+    assert.match(text, /Ledelse under henteoppdrag\./);
+
+    const unknown = await rpc(handlerWith(), {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "prompts/get",
+        params: { name: "nope" },
+    });
+    assert.match(unknown.body.error.message, /Unknown prompt/);
 });
 
 test("schema is the schema itself, not a wrapper", async () => {
