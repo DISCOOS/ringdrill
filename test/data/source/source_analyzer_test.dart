@@ -423,6 +423,76 @@ teams:
     });
   });
 
+  group('derived values in prose', () {
+    String docWith(String tips) =>
+        '''
+plan:
+  name: "Test"
+exercises:
+  - name: "Ex"
+    startTime: "17:00"
+    numberOfTeams: 2
+    numberOfRounds: 4
+    executionTime: 15
+    evaluationTime: 10
+    rotationTime: 5
+    execution_tips: |
+$tips
+    stations:
+      - name: "Post A"
+      - name: "Post B"
+''';
+
+    test('a hand-rolled rotation table warns and names the token', () {
+      // The exact mistake made converting the first real booklet: the derived round
+      // starts (1700, 1730, 1800, 1830) typed into execution_tips, where they are
+      // correct only until someone edits startTime or a duration.
+      final warnings = _warnings(
+        docWith(
+          '      | Runde | Klokke |\n'
+          '      |---|---|\n'
+          '      | 1 | 1700 |\n'
+          '      | 2 | 1730 |\n'
+          '      | 3 | 1800 |\n'
+          '      | 4 | 1830 |',
+        ),
+      );
+      expect(warnings.single.message, contains('restates every round start'));
+      expect(warnings.single.hint, contains('{{exercise.roundTable}}'));
+      expect(warnings.single.path, endsWith('execution_tips'));
+    });
+
+    test('the colon notation is caught too', () {
+      final warnings = _warnings(
+        docWith('      Rundene starter 17:00, 17:30, 18:00 og 18:30.'),
+      );
+      expect(warnings.single.message, contains('restates every round start'));
+    });
+
+    test('mentioning one round start is not a copy', () {
+      // A sentence saying when the exercise begins is ordinary prose.
+      expect(_warnings(docWith('      Moet opp 1700 ved Malerstua.')), isEmpty);
+    });
+
+    test('times that disagree with the derived schedule stay silent', () {
+      // The legitimate case: recording that the source document's own clock
+      // contradicts what the plan computes. Those times cannot all match, which is
+      // why the check requires *every* round start before it fires.
+      expect(
+        _warnings(
+          docWith(
+            '      Heftet oppgir 1700, 1735, 1810 og 1845, altsaa 20 min runder.',
+          ),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('the token itself is silent', () {
+      expect(_warnings(docWith('      {{exercise.roundTable}}')), isEmpty);
+    });
+  });
+
   group('review', () {
     test('layers the analysis on the seed, keeping both', () {
       // `build --strict` refuses on any diagnostic, so it has to see the

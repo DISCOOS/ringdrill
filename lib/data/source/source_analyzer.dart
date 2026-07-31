@@ -61,6 +61,7 @@ class SourceAnalyzer {
       _checkFacetTokens(field, diagnostics);
     }
 
+    _checkDerivedSchedule(plan, diagnostics);
     _checkOverrides(plan, declared, diagnostics);
     _checkUnusedVariables(plan, diagnostics);
     _checkPersonLocRefs(plan, diagnostics);
@@ -84,6 +85,63 @@ class SourceAnalyzer {
     final sink = DiagnosticSink()..addAll(seed);
     analyze(plan, sink);
     return sink.items;
+  }
+
+  /// An exercise-scope field that restates the rotation times the compiler derives.
+  ///
+  /// The trap this catches is specific to transcribing a document: a course booklet
+  /// prints its rotation table because paper cannot compute, so it reads as content
+  /// and gets typed into `execution_tips`. It is a copy — correct until someone edits
+  /// `startTime` or a duration, and then a confident lie in the brief. Converting the
+  /// first real booklet into this format produced five of them.
+  ///
+  /// Deliberately narrow: it fires only when **every** derived round start appears in
+  /// one field, which means the field carries the whole table rather than mentioning
+  /// a time. That keeps the legitimate case silent — a note recording that the source
+  /// document's own clock *disagrees* with the computed one quotes times that by
+  /// definition do not all match.
+  static void _checkDerivedSchedule(Plan plan, DiagnosticSink diagnostics) {
+    for (var e = 0; e < plan.exercises.length; e++) {
+      final exercise = plan.exercises[e];
+      final starts = [
+        for (final round in exercise.schedule)
+          if (round.isNotEmpty) round.first,
+      ];
+      if (starts.length < 2) continue;
+
+      final fields = <String, String?>{
+        'method': exercise.methodMd,
+        'learning_goals': exercise.learningGoalsMd,
+        'training_focus': exercise.trainingFocusMd,
+        'order_format': exercise.orderFormatMd,
+        'execution_tips': exercise.executionTipsMd,
+        'comms': exercise.commsMd,
+      };
+
+      for (final entry in fields.entries) {
+        final content = entry.value;
+        if (content == null || content.isEmpty) continue;
+        // Both notations, because prose uses either: "1700" in a rotation block,
+        // "17:00" in a sentence.
+        final all = starts.every((t) {
+          final colon = t.toString();
+          final bare = colon.replaceAll(':', '');
+          return content.contains(colon) || content.contains(bare);
+        });
+        if (!all) continue;
+        diagnostics.warn(
+          'exercises[$e].${entry.key}',
+          'restates every round start the rotation already derives',
+          hint:
+              'these times come from startTime and the three durations, so a copy '
+              'here goes stale as soon as one of them changes. The brief renders '
+              'the rotation in its own Organisering block; write '
+              '{{exercise.roundTable}} if a section has to show it inline. Keep a '
+              'literal only to record that the source document disagrees with what '
+              'the plan computes.',
+        );
+      }
+    }
   }
 
   /// `{{var.<name>}}` naming an undeclared variable.
