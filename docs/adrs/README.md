@@ -73,6 +73,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0063 | [Give every staff role its own brief audience, and declare each field's audiences on the field](./0063-per-field-brief-visibility.md) | Accepted |
 | ADR-0064 | [Cut the document out of the authoring loop, and stop over-answering](./0064-mcp-payload-economy.md) | Accepted |
 | ADR-0065 | [Ship the authoring conventions over MCP, not only as a local skill](./0065-authoring-guidance-over-mcp.md) | Accepted |
+| ADR-0066 | [Give the token model a team scope, and decide what "the team" means in a brief](./0066-team-scope-for-cross-reference-tokens.md) | Proposed |
 
 ## When to write an ADR
 
