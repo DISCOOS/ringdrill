@@ -753,7 +753,7 @@ void main() {
     testWidgets('a long value lays out instead of consuming the whole tile', (
       tester,
     ) async {
-      // The bug this guards is not cosmetic. The card is 280 wide and `ListTile`
+      // The bug this guards is not cosmetic. The card is 360 wide and `ListTile`
       // lays its trailing out at whatever width the text wants, giving the title
       // the remainder — so a value like "RK-VFOLD-ØV4 / DMO-ANDRE-1" (a real
       // talegruppe from the LSOR plan) took the entire tile and `ListTile`
@@ -791,7 +791,7 @@ void main() {
       );
       expect(
         tester.getSize(value).width,
-        lessThanOrEqualTo(120),
+        lessThanOrEqualTo(360 * 0.42),
         reason: 'the value is the capped side',
       );
     });

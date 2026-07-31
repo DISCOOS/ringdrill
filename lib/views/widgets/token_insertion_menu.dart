@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
@@ -226,9 +228,19 @@ class TokenInsertionMenu extends StatefulWidget {
 /// Public (not the usual `_State` convention) so a widget test can inspect
 /// [isMenuOpen] via `tester.state<TokenInsertionMenuState>(...)`.
 class TokenInsertionMenuState extends State<TokenInsertionMenu> {
-  static const _menuWidth = 280.0;
+  /// Card width, and the width it settles for on a narrow viewport.
+  ///
+  /// 280 was too tight once entries carried both a name and a value: a talegruppe
+  /// like `RK-VFOLD-ØV4 / DMO-ANDRE-1` beside `talegruppe_ovelse` left both
+  /// ellipsised. The card takes [_menuMaxWidth] where there is room and shrinks to
+  /// fit where there is not, so a phone still gets a card inside its margins
+  /// rather than one clipped by the screen edge.
+  static const _menuMaxWidth = 360.0;
   static const _menuMaxHeight = 240.0;
   static const _gap = 4.0;
+
+  /// Breathing room between the card and the screen edge.
+  static const _edgeMargin = 8.0;
 
   OverlayEntry? _entry;
   _Trigger? _trigger;
@@ -656,12 +668,16 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
     final screenSize = MediaQuery.sizeOf(context);
     final caretRect = _caretRect ?? Rect.zero;
     final estimatedHeight = entries.isEmpty ? 48.0 : _menuMaxHeight;
+    final width = math.min(
+      _menuMaxWidth,
+      math.max(0.0, screenSize.width - _edgeMargin * 2),
+    );
 
     var left = caretRect.left;
-    if (left + _menuWidth > screenSize.width) {
-      left = screenSize.width - _menuWidth;
+    if (left + width > screenSize.width - _edgeMargin) {
+      left = screenSize.width - _edgeMargin - width;
     }
-    left = left.clamp(0.0, screenSize.width);
+    left = left.clamp(_edgeMargin, math.max(_edgeMargin, screenSize.width));
 
     // Prefer just below the caret line; flip above it if there is not
     // enough room below (e.g. typing on the last visible line of a
@@ -683,9 +699,10 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
         Positioned(
           left: left,
           top: top,
-          width: _menuWidth,
+          width: width,
           child: _TokenMenuCard(
             entries: entries,
+            width: width,
             emptyLabel: l10n.tokenMenuEmpty,
             onSelect: _select,
           ),
@@ -711,20 +728,28 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
   }
 }
 
-/// Cap on the value shown beside a token's name, out of the card's 280.
+/// Share of the card's width a value may take, leaving the rest to the name.
 ///
-/// Leaves the name roughly 100px after the leading icon and the tile's padding
-/// — enough for a name to stay readable while a long value ellipsises.
-const _menuValueMaxWidth = 120.0;
+/// A fraction rather than a fixed cap so it holds at whatever width the card
+/// settled on. It also has to keep `ListTile`'s trailing from consuming the tile:
+/// the leading icon, the title gap and the content padding come to about 66, so
+/// any fraction well under 1 leaves the title real space at every width a screen
+/// can produce.
+const _menuValueWidthFraction = 0.42;
 
 class _TokenMenuCard extends StatelessWidget {
   const _TokenMenuCard({
     required this.entries,
+    required this.width,
     required this.emptyLabel,
     required this.onSelect,
   });
 
   final List<TokenMenuEntry> entries;
+
+  /// The width the overlay settled on, so the value cap tracks it.
+  final double width;
+
   final String emptyLabel;
   final ValueChanged<TokenMenuEntry> onSelect;
 
@@ -735,7 +760,7 @@ class _TokenMenuCard extends StatelessWidget {
       elevation: 8,
       borderRadius: BorderRadius.circular(8),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 280, maxHeight: 240),
+        constraints: BoxConstraints(maxWidth: width, maxHeight: 240),
         child: entries.isEmpty
             ? Padding(
                 padding: const EdgeInsets.all(12),
@@ -781,7 +806,7 @@ class _TokenMenuCard extends StatelessWidget {
     // value is capped: an ellipsised value is still recognisable, an ellipsised
     // name is not.
     Widget trailing(String text, {TextStyle? style}) => ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: _menuValueMaxWidth),
+      constraints: BoxConstraints(maxWidth: width * _menuValueWidthFraction),
       child: Text(
         text,
         maxLines: 1,
