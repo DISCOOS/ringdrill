@@ -70,6 +70,8 @@ The server is **unauthenticated**, consistent with the catalog feed it reads, wh
 
 The remote server is an addition, not a replacement, and the two share one tool table. Stdio remains the path for development, for offline work, and — most importantly — for an author who does not want a staff-only plan leaving their machine. The hosted server **must not persist documents**: it compiles what it is sent and returns the result. That is a requirement of this decision, not an implementation detail, and it belongs in the server's own documentation where a user will see it.
 
+> **Amended by [ADR-0064](./0064-mcp-payload-economy.md).** The requirement now reads: the hosted server does not retain what it is sent **unless the caller asks it to**, in which case it holds that document under its own content hash for a stated and short period. Retention stays off by default, so this paragraph still describes what every caller gets who does not opt in. ADR-0064 records why the trade is worth making — large plans are the normal case for the users who matter — and what consent plus a TTL does not fix.
+
 ### Consequences
 
 * Good: the feature reaches people without a toolchain, which is the entire point of stage 4.

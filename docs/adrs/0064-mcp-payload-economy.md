@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-07-31
 deciders: ["kengu"]
 consulted: []
@@ -274,7 +274,7 @@ on will exist.
   owned drafts (Option B3) once account-aware publishing provides the identity to
   attribute one to
 * Amends: ADR-0060's "must not persist documents" requirement, which becomes
-  "does not retain unless asked, by content hash, for a stated short period". If
-  this ADR is accepted, that section of ADR-0060 gets a pointer here.
+  "does not retain unless asked, by content hash, for a stated short period".
+  ADR-0060's *Transport and statelessness* section carries a pointer here.
 * Origin: authoring the converted 2026 LSOR booklet, where an 84 KB source document
   and a 75 KB brief made the CLI the only practical loop.

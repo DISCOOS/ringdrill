@@ -71,7 +71,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0061 | [Accept a UTM string wherever the source format takes a position](./0061-utm-coordinate-input-in-source-format.md) | Accepted |
 | ADR-0062 | [Author an exercise's rounds explicitly when they are not uniform](./0062-authored-rounds-for-non-uniform-exercises.md) | Proposed |
 | ADR-0063 | [Give every staff role its own brief audience, and declare each field's audiences on the field](./0063-per-field-brief-visibility.md) | Accepted |
-| ADR-0064 | [Cut the document out of the authoring loop, and stop over-answering](./0064-mcp-payload-economy.md) | Proposed |
+| ADR-0064 | [Cut the document out of the authoring loop, and stop over-answering](./0064-mcp-payload-economy.md) | Accepted |
 
 ## When to write an ADR
 
