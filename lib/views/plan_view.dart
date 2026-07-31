@@ -200,6 +200,10 @@ class _PlanViewState extends State<PlanView> {
     // Build a row for a given exercise. [reordering] drives gesture
     // suspension; [dragHandle] is passed as ExerciseCard.trailing in
     // reorder mode and ignored in default mode.
+    /// Whether [exercise] is the one the detail pane is showing.
+    bool isSelectedExercise(ContextSheetTarget? target, Exercise exercise) =>
+        target is ExerciseSheetTarget && target.exerciseUuid == exercise.uuid;
+
     Widget buildExerciseRow(
       BuildContext context,
       Exercise exercise,
@@ -219,69 +223,81 @@ class _PlanViewState extends State<PlanView> {
             _planService.activePlan?.stationNumberFormat ??
             StationNumberFormat.dotted,
       );
-      final selectedTarget = targetNotifier?.value;
-      final isSelected =
-          selectedTarget is ExerciseSheetTarget &&
-          selectedTarget.exerciseUuid == exercise.uuid;
+      Widget row(bool isSelected) {
+        if (reordering) {
+          // Drag-handle variant: trailing is the handle; row body gestures
+          // suspended (no onOpen, onLongPress, onToggle).
+          return ExerciseCard(
+            exercise: exercise,
+            plan: _planService.activePlan,
+            exerciseNumber: index + 1,
+            localizations: l10n,
+            markers: markers,
+            liveEvent: _liveEvent,
+            selected: isSelected,
+            trailing: dragHandle,
+            // allowExpand: false suppresses the chevron; the drag handle is
+            // the only trailing affordance in reorder mode.
+            allowExpand: false,
+          );
+        }
 
-      if (reordering) {
-        // Drag-handle variant: trailing is the handle; row body gestures
-        // suspended (no onOpen, onLongPress, onToggle).
-        return ExerciseCard(
-          exercise: exercise,
-          plan: _planService.activePlan,
-          exerciseNumber: index + 1,
-          localizations: l10n,
-          markers: markers,
-          liveEvent: _liveEvent,
-          selected: isSelected,
-          trailing: dragHandle,
-          // allowExpand: false suppresses the chevron; the drag handle is
-          // the only trailing affordance in reorder mode.
-          allowExpand: false,
+        // Default mode: swipe- and long-press-to-edit, gated on the role
+        // (ADR-0057) — an exercise is director-only, and frozen while it runs.
+        return EditableRow(
+          target: EditTarget.exercise,
+          exerciseUuid: exercise.uuid,
+          dismissKey: ValueKey(exercise.uuid),
+          label: l10n.editExercise,
+          onEdit: () => _openExerciseForm(context, l10n, exercise),
+          builder: (context, onLongPress) => ExerciseCard(
+            exercise: exercise,
+            plan: _planService.activePlan,
+            exerciseNumber: index + 1,
+            localizations: l10n,
+            markers: markers,
+            liveEvent: _liveEvent,
+            selected: isSelected,
+            // trailing: null → ExpandableTile shows its own expand chevron.
+            expanded: _expandedExerciseUuid == exercise.uuid,
+            onToggle: () {
+              setState(() {
+                _expandedExerciseUuid = _expandedExerciseUuid == exercise.uuid
+                    ? null
+                    : exercise.uuid;
+              });
+            },
+            onLongPress: onLongPress,
+            // V1: live card opens the DrillPlayer sheet (DESIGN-001).
+            // All other cards keep the ContextSheet flow.
+            // openContextTarget owns the live-vs-planning split (ADR-0056):
+            // a running exercise opens in the player, anything else in the
+            // ordinary sheet. This used to branch here and push a bare
+            // CoordinatorScreen with no ContextSheet above it, so the player's
+            // own mini bar mutated the shell's detail pane behind it.
+            onOpen: () => unawaited(
+              openContextTarget(
+                context,
+                ExerciseSheetTarget(exerciseUuid: exercise.uuid),
+              ),
+            ),
+          ),
         );
       }
 
-      // Default mode: swipe- and long-press-to-edit, gated on the role
-      // (ADR-0057) — an exercise is director-only, and frozen while it runs.
-      return EditableRow(
-        target: EditTarget.exercise,
-        exerciseUuid: exercise.uuid,
-        dismissKey: ValueKey(exercise.uuid),
-        label: l10n.editExercise,
-        onEdit: () => _openExerciseForm(context, l10n, exercise),
-        builder: (context, onLongPress) => ExerciseCard(
-          exercise: exercise,
-          plan: _planService.activePlan,
-          exerciseNumber: index + 1,
-          localizations: l10n,
-          markers: markers,
-          liveEvent: _liveEvent,
-          selected: isSelected,
-          // trailing: null → ExpandableTile shows its own expand chevron.
-          expanded: _expandedExerciseUuid == exercise.uuid,
-          onToggle: () {
-            setState(() {
-              _expandedExerciseUuid = _expandedExerciseUuid == exercise.uuid
-                  ? null
-                  : exercise.uuid;
-            });
-          },
-          onLongPress: onLongPress,
-          // V1: live card opens the DrillPlayer sheet (DESIGN-001).
-          // All other cards keep the ContextSheet flow.
-          // openContextTarget owns the live-vs-planning split (ADR-0056):
-          // a running exercise opens in the player, anything else in the
-          // ordinary sheet. This used to branch here and push a bare
-          // CoordinatorScreen with no ContextSheet above it, so the player's
-          // own mini bar mutated the shell's detail pane behind it.
-          onOpen: () => unawaited(
-            openContextTarget(
-              context,
-              ExerciseSheetTarget(exerciseUuid: exercise.uuid),
-            ),
-          ),
-        ),
+      // Subscribed, not just read. `MasterDetailScope.maybeOf` uses
+      // `getElementForInheritedWidgetOfExactType`, which deliberately creates no
+      // dependency — so reading `.value` computed `selected` once at first build
+      // and never again, and opening an exercise in the detail pane left the master
+      // list showing nothing selected. `roleplay_list_view.dart` subscribes around
+      // its whole list; wrapping the row instead means a selection change rebuilds
+      // the two cards that changed rather than every row in the plan.
+      final notifier = targetNotifier;
+      if (notifier == null) return row(false);
+      return ValueListenableBuilder<ContextSheetTarget?>(
+        valueListenable: notifier,
+        builder: (context, target, _) =>
+            row(isSelectedExercise(target, exercise)),
       );
     }
 

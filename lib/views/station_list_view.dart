@@ -257,11 +257,10 @@ class _StationListViewState extends State<StationListView> {
           exercise.uuid,
           station.index,
         ));
-        final selectedTarget = targetNotifier?.value;
-        final isSelected =
-            selectedTarget is StationSheetTarget &&
-            selectedTarget.exerciseUuid == exercise.uuid &&
-            selectedTarget.stationIndex == station.index;
+        bool selectedFor(ContextSheetTarget? target) =>
+            target is StationSheetTarget &&
+            target.exerciseUuid == exercise.uuid &&
+            target.stationIndex == station.index;
         // The badge sub-index must restart at the first station of each
         // exercise (1a, 1b … 2a, 2b …), not run continuously across the
         // flat list. Rows are grouped contiguously by exercise, so the
@@ -275,7 +274,7 @@ class _StationListViewState extends State<StationListView> {
         final localIndex = exerciseStart < 0
             ? position
             : position - exerciseStart;
-        return _buildStationRow(
+        Widget buildRow(bool selected) => _buildStationRow(
           context,
           localizations,
           exerciseNumber: exerciseNumber,
@@ -283,9 +282,20 @@ class _StationListViewState extends State<StationListView> {
           station: station,
           rowIndex: localIndex,
           hasRoles: hasRoles,
-          selected: isSelected,
+          selected: selected,
           reordering: reordering,
           dragHandle: dragHandle,
+        );
+
+        // Subscribed, not just read: `MasterDetailScope.maybeOf` creates no
+        // dependency (it uses `getElementForInheritedWidgetOfExactType`), so
+        // reading `.value` computed `selected` once at first build and the master
+        // list never marked the station the detail pane was showing.
+        final notifier = targetNotifier;
+        if (notifier == null) return buildRow(false);
+        return ValueListenableBuilder<ContextSheetTarget?>(
+          valueListenable: notifier,
+          builder: (context, target, _) => buildRow(selectedFor(target)),
         );
       }
 
