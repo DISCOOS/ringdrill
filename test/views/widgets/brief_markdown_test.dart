@@ -61,7 +61,7 @@ void main() {
   setUp(() => controller = BriefMarkdownController());
   tearDown(() => controller.dispose());
 
-  Widget buildWidget({String? data}) {
+  Widget buildWidget({String? data, double width = 600}) {
     return MaterialApp(
       // _CodeChip pulls AppLocalizations for the snackbar message and the
       // copy-icon tooltip, so the test app needs localization delegates.
@@ -72,7 +72,7 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: SizedBox(
-          width: 600,
+          width: width,
           height: 800,
           child: BriefMarkdown(
             data: data ?? fixture,
@@ -412,5 +412,60 @@ void main() {
         expect(find.byIcon(Icons.content_copy), findsNothing);
       },
     );
+  });
+
+  group('BriefMarkdown — tables', () {
+    const table =
+        '| Rolle | Talegruppe |\n'
+        '|---|---|\n'
+        '| LSOR Deltakere | RK-VFOLD-ØV4 / DMO-ANDRE-1 |\n'
+        '| LSOR Stab | RK-VFOLD-ØV5 / DMO-ANDRE-2 |\n';
+
+    testWidgets('a wide table scrolls horizontally instead of overflowing', (
+      tester,
+    ) async {
+      // 320 px is narrower than this table's intrinsic width, which is the case
+      // that used to clip: TableNode puts the built Table straight into a
+      // WidgetSpan with no scroll of its own.
+      await tester.pumpWidget(buildWidget(data: table, width: 320));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Table), findsOneWidget);
+      expect(
+        find.text('Rolle', findRichText: true),
+        findsOneWidget,
+        reason: 'header cell',
+      );
+      expect(
+        find.text('LSOR Deltakere', findRichText: true),
+        findsOneWidget,
+        reason: 'body cell',
+      );
+
+      // The table sits inside a horizontal Scrollable — the fix — and rendering
+      // raised no overflow.
+      final scrollables = tester
+          .widgetList<Scrollable>(
+            find.ancestor(
+              of: find.byType(Table),
+              matching: find.byType(Scrollable),
+            ),
+          )
+          .toList();
+      expect(
+        scrollables.any((s) => s.axisDirection == AxisDirection.right),
+        isTrue,
+        reason: 'a horizontal scroll view wraps the table',
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a table that fits is unaffected', (tester) async {
+      await tester.pumpWidget(buildWidget(data: table, width: 900));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Table), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

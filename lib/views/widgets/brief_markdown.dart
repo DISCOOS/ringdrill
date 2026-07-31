@@ -616,6 +616,21 @@ MarkdownConfig _briefMarkdownConfig(
           fontWeight: FontWeight.bold,
         ),
         bodyStyle: TextStyle(color: t.text.body),
+        // A table wider than its slot scrolls rather than overflowing. Without
+        // this, `TableNode` puts the built `Table` straight into a `WidgetSpan`
+        // with no scroll of its own, so a plan's "Talegrupper" table is fine on a
+        // desktop brief and clipped with a yellow stripe on a phone — or in the
+        // plan overview card at any width.
+        //
+        // Safe inside a `WidgetSpan`: the package already defaults
+        // `defaultColumnWidth` to `IntrinsicColumnWidth`, so the table sizes to its
+        // content under the scroll view's unbounded width. A `FlexColumnWidth`
+        // default would assert instead, which is why this comment names the
+        // dependency.
+        wrapper: (table) => SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: table,
+        ),
       ),
       // Horizontal rules
       HrConfig(color: t.borders.subtle, height: 1),
