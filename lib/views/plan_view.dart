@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ringdrill/views/widgets/brief_theme.dart';
+import 'package:ringdrill/views/widgets/brief_markdown.dart';
+import 'package:ringdrill/utils/markdown_text.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
@@ -706,20 +709,28 @@ class _PlanOverview extends StatelessWidget {
     // empty space above the segmented switcher into a discoverable
     // entry point for the PlanFormScreen.
     final description = plan?.description.trim() ?? '';
-    final briefIntro = plan == null
+    // Resolved markdown per section: what the expanded state renders, and what the
+    // teaser is derived from. Resolution first, so the teaser measures the text a
+    // reader will actually see rather than the raw tokens.
+    final briefIntroMd = plan == null
         ? null
-        : _firstParagraphText(_resolvePlanText(plan, plan.briefIntroMd, l10n));
-    final comms = plan == null
+        : _resolvePlanText(plan, plan.briefIntroMd, l10n);
+    final commsMd = plan == null
         ? null
-        : _firstParagraphText(_resolvePlanText(plan, plan.commsMd, l10n));
-    final beforeRound = plan == null
+        : _resolvePlanText(plan, plan.commsMd, l10n);
+    final beforeRoundMd = plan == null
         ? null
-        : _firstParagraphText(_resolvePlanText(plan, plan.beforeRoundMd, l10n));
+        : _resolvePlanText(plan, plan.beforeRoundMd, l10n);
+
+    // From the *raw* fields, never from the teasers. A field holding only a table
+    // teases to null (there is no readable one-line form of a table), and deriving
+    // emptiness from that would make the whole card — table included — vanish and
+    // replace itself with the empty-state edit row.
     final hasContent =
         description.isNotEmpty ||
-        briefIntro != null ||
-        comms != null ||
-        beforeRound != null;
+        (plan?.briefIntroMd?.trim().isNotEmpty ?? false) ||
+        (plan?.commsMd?.trim().isNotEmpty ?? false) ||
+        (plan?.beforeRoundMd?.trim().isNotEmpty ?? false);
     if (!hasContent) {
       if (onEdit == null) return const SizedBox.shrink();
       final scheme = Theme.of(context).colorScheme;
@@ -781,12 +792,27 @@ class _PlanOverview extends StatelessWidget {
       color: scheme.onSurfaceVariant,
       fontWeight: FontWeight.w600,
     );
-    final briefSections = <({String label, String text})>[
-      if (briefIntro != null)
-        (label: l10n.briefSectionPlanIntro, text: briefIntro),
-      if (comms != null) (label: l10n.briefSectionPlanComms, text: comms),
-      if (beforeRound != null)
-        (label: l10n.briefSectionPlanBeforeRound, text: beforeRound),
+    // Each section carries both forms: the resolved markdown the expanded state
+    // renders, and the plain teaser the collapsed state measures and shows.
+    final briefSections = <({String label, String md, MarkdownTeaser? teaser})>[
+      if (briefIntroMd != null && briefIntroMd.trim().isNotEmpty)
+        (
+          label: l10n.briefSectionPlanIntro,
+          md: briefIntroMd,
+          teaser: markdownTeaser(briefIntroMd),
+        ),
+      if (commsMd != null && commsMd.trim().isNotEmpty)
+        (
+          label: l10n.briefSectionPlanComms,
+          md: commsMd,
+          teaser: markdownTeaser(commsMd),
+        ),
+      if (beforeRoundMd != null && beforeRoundMd.trim().isNotEmpty)
+        (
+          label: l10n.briefSectionPlanBeforeRound,
+          md: beforeRoundMd,
+          teaser: markdownTeaser(beforeRoundMd),
+        ),
     ];
     final maxLines = expanded ? null : _collapsedLines;
     final overflow = expanded ? TextOverflow.clip : TextOverflow.ellipsis;
@@ -827,36 +853,78 @@ class _PlanOverview extends StatelessWidget {
                 final hiddenWhenCollapsed = hasDescription
                     ? briefSections
                     : briefSections.skip(1).toList();
+                // Also when the promoted teaser is `truncated`: a section whose
+                // first block is a table teases to the block *after* it, or to
+                // nothing at all, and without this there would be no way to reach
+                // the table the card is supposed to be showing.
+                final primaryTruncated =
+                    primaryBrief?.teaser?.truncated ?? false;
+                final primaryUnteasable =
+                    primaryBrief != null && primaryBrief.teaser == null;
                 final toggleVisible =
-                    descriptionOverflows || hiddenWhenCollapsed.isNotEmpty;
+                    descriptionOverflows ||
+                    hiddenWhenCollapsed.isNotEmpty ||
+                    primaryTruncated ||
+                    primaryUnteasable;
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // `.rich` when expanded so the description's own markdown
+                    // renders, `.plain` when collapsed so the three-line teaser
+                    // stays measurable. Note the asymmetry with the sections
+                    // below: the description resolves through `RingDrillText`
+                    // against the ambient `PlanScope`, the sections through
+                    // `_resolvePlanText` with an explicit plan. Those are
+                    // different entry points and swapping one for the other would
+                    // silently change what this card resolves.
                     if (hasDescription)
-                      RingDrillText.plain(
-                        description,
-                        style: textTheme.bodyMedium,
-                        maxLines: maxLines,
-                        overflow: overflow,
-                      )
+                      expanded
+                          // No `style`: `.rich` renders through
+                          // `BriefMarkdownBlock` with the brief theme, which is the
+                          // point — the expanded card reads as the brief does.
+                          ? RingDrillText.rich(description)
+                          : RingDrillText.plain(
+                              description,
+                              style: textTheme.bodyMedium,
+                              maxLines: maxLines,
+                              overflow: overflow,
+                            )
                     else if (primaryBrief != null) ...[
                       Text(primaryBrief.label, style: labelStyle),
                       const SizedBox(height: 2),
-                      Text(
-                        primaryBrief.text,
-                        style: textTheme.bodyMedium,
-                        maxLines: maxLines,
-                        overflow: overflow,
-                      ),
+                      if (expanded)
+                        BriefMarkdownBlock(
+                          data: primaryBrief.md,
+                          theme: BriefTheme.of(context),
+                          gutter: 0,
+                        )
+                      // A section whose only block is a table has no teaser; the
+                      // label alone is what the collapsed card shows, and the
+                      // toggle is what reaches the table.
+                      else if (primaryBrief.teaser != null)
+                        Text(
+                          primaryBrief.teaser!.text,
+                          style: textTheme.bodyMedium,
+                          maxLines: maxLines,
+                          overflow: overflow,
+                        ),
                     ],
+                    // Expanded renders the real thing — tables, bold, lists, copy
+                    // chips — with no first-paragraph truncation. Showing what is
+                    // in the field is the whole point of "Vis mer", and a table as
+                    // the first block has no readable truncated form.
                     if (expanded)
                       for (final section in hiddenWhenCollapsed) ...[
                         const SizedBox(height: 8),
                         Text(section.label, style: labelStyle),
                         const SizedBox(height: 2),
-                        Text(section.text, style: textTheme.bodySmall),
+                        BriefMarkdownBlock(
+                          data: section.md,
+                          theme: BriefTheme.of(context),
+                          gutter: 0,
+                        ),
                       ],
                     if (toggleVisible)
                       Align(
@@ -907,20 +975,6 @@ class _PlanOverview extends StatelessWidget {
   String? _resolvePlanText(Plan plan, String? md, AppLocalizations l10n) {
     if (md == null) return null;
     return ResolvedMarkdownText.resolve(plan, md, l10n);
-  }
-
-  /// Returns the first paragraph of a markdown string stripped of leading
-  /// markers (`#`, `>`, `-`), or null when the input is null or empty.
-  String? _firstParagraphText(String? md) {
-    if (md == null || md.trim().isEmpty) return null;
-    final first = md.trim().split('\n\n').first.trim();
-    // Strip leading markdown markers from each line.
-    final stripped = first
-        .split('\n')
-        .map((l) => l.replaceFirst(RegExp(r'^[#>*-]+\s*'), '').trim())
-        .where((l) => l.isNotEmpty)
-        .join(' ');
-    return stripped.isEmpty ? null : stripped;
   }
 }
 

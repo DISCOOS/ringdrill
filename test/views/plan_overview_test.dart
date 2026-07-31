@@ -225,6 +225,24 @@ class _PlanOverviewHarnessState extends State<_PlanOverviewHarness> {
   }
 }
 
+/// Sets [description]/[commsMd] on the active plan for one test, and restores the
+/// shared fixture afterwards.
+///
+/// Through `replacePlan`, not a prefs re-seed: the markdown fields are
+/// `includeFromJson: false` because they live in `.md` companion files in the
+/// archive (ADR-0022), so writing them into the plan JSON does nothing at all. The
+/// restore keeps these tests from depending on the order they run in.
+Future<void> _withPlanContent({
+  required String description,
+  String? commsMd,
+}) async {
+  final base = PlanService().activePlan!;
+  addTearDown(() => PlanService().replacePlan(base));
+  await PlanService().replacePlan(
+    base.copyWith(description: description, commsMd: commsMd),
+  );
+}
+
 void main() {
   setUpAll(() async {
     SharedPreferences.setMockInitialValues(_prefs());
@@ -412,4 +430,80 @@ void main() {
       );
     },
   );
+
+  group('markdown in the overview card', () {
+    const table =
+        '| Rolle | Talegruppe |\n'
+        '|---|---|\n'
+        '| LSOR Deltakere | RK-VFOLD-ØV4 |\n'
+        '| LSOR Stab | RK-VFOLD-ØV5 |\n';
+
+    testWidgets('a table in commsMd renders as a table once expanded', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _withPlanContent(
+        description: 'Plan description text',
+        commsMd: '$table\nTelefon til KO: 93258930.',
+      );
+
+      final controllers = _HarnessControllers();
+      addTearDown(controllers.dispose);
+      await tester.pumpWidget(_harness(controllers));
+      await tester.pumpAndSettle();
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      // Collapsed: no pipe soup. This is the bug — the table used to arrive
+      // flattened onto one line. Matched on the table's own markup rather than a
+      // bare "|", because an exercise row legitimately reads "08:00 - 08:17 | 17
+      // min | 1 round".
+      expect(find.textContaining('| Rolle |'), findsNothing);
+      expect(find.textContaining('---|'), findsNothing);
+      expect(find.byType(Table), findsNothing);
+
+      await tester.tap(find.text(l10n.showMore));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Table), findsOneWidget);
+      expect(find.text('Rolle', findRichText: true), findsOneWidget);
+      expect(find.text('RK-VFOLD-ØV4', findRichText: true), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a table-only commsMd still renders the card and a toggle', (
+      tester,
+    ) async {
+      // The `hasContent` trap: a table-only field teases to null, and deriving
+      // emptiness from the teaser would replace the whole card with the
+      // empty-state edit row — hiding the very table it should show.
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _withPlanContent(description: '', commsMd: table);
+
+      final controllers = _HarnessControllers();
+      addTearDown(controllers.dispose);
+      await tester.pumpWidget(_harness(controllers));
+      await tester.pumpAndSettle();
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      // The card, not the empty-state row: the section label is shown.
+      expect(find.text(l10n.briefSectionPlanComms), findsOneWidget);
+      expect(find.text(l10n.showMore), findsOneWidget);
+      expect(find.textContaining('| Rolle |'), findsNothing);
+      expect(find.textContaining('---|'), findsNothing);
+
+      await tester.tap(find.text(l10n.showMore));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Table), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

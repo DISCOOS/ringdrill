@@ -10,13 +10,17 @@ import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// The Plan view's collapsed overview card (`_PlanOverview`) is an
-/// independent, ad-hoc preview of `briefIntroMd`/`commsMd`/`beforeRoundMd`
-/// (a stripped first-paragraph extract) that does not go through
-/// `BriefRenderer.render` — it bypasses the DESIGN-008 variable/cross-
-/// reference resolution pipeline entirely, so a `{{var.frekvens}}` or
-/// `{{plan.name}}` token used in one of those fields showed up literally
-/// in this preview even after BriefRenderer itself resolved it correctly.
+/// The Plan view's overview card (`_PlanOverview`) previews
+/// `briefIntroMd`/`commsMd`/`beforeRoundMd` without going through
+/// `BriefRenderer.render`, so it has its own resolution path — which is why a
+/// `{{var.frekvens}}` or `{{plan.name}}` in one of those fields once showed up
+/// literally here even after BriefRenderer resolved it correctly.
+///
+/// Collapsed it is still a plain-text teaser, measured with a `TextPainter` and
+/// therefore necessarily plain. Expanded it is no longer "a stripped
+/// first-paragraph extract": it renders the resolved markdown through
+/// `BriefMarkdownBlock`, so tables, bold and copy chips read as they do in the
+/// brief. Both states must resolve identically — that is what these tests pin.
 
 class _TestPlanController extends PlanPageControllerBase {
   _TestPlanController({
@@ -135,4 +139,42 @@ void main() {
       expect(find.textContaining('{{var.mangler}}'), findsNothing);
     },
   );
+
+  testWidgets('resolution holds through the expanded markdown rendering', (
+    tester,
+  ) async {
+    // Collapsed and expanded take different paths — a plain teaser versus
+    // `BriefMarkdownBlock` — so a token resolved in one could easily be literal in
+    // the other. `findRichText` because the expanded state is a markdown span tree,
+    // not a `Text`.
+    await PlanService().replacePlan(
+      _basePlan(
+        briefIntroMd: 'Samband på kanal {{var.frekvens}}.\n\nAndre avsnitt.',
+        variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+      ),
+    );
+
+    await tester.pumpWidget(_harness());
+    await tester.pumpAndSettle();
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+    expect(find.textContaining('Samband på kanal Kanal 6.'), findsOneWidget);
+
+    await tester.tap(find.text(l10n.showMore));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('Samband på kanal Kanal 6.', findRichText: true),
+      findsWidgets,
+    );
+    expect(
+      find.textContaining('Andre avsnitt.', findRichText: true),
+      findsWidgets,
+      reason: 'expanded shows the whole field, not just its first paragraph',
+    );
+    expect(
+      find.textContaining('{{var.frekvens}}', findRichText: true),
+      findsNothing,
+    );
+  });
 }
