@@ -87,8 +87,17 @@ needs no escaping:
 ```yaml
 situation: |
   Kari Fiskeløs – fine search around the IPP within R25.
-  Last seen {{station.loc.lkp.utm}}.
+  Last seen {{station.loc.lkp.position}}.
 ```
+
+**Break lines only at sentence ends.** A markdown field is prose someone edits in
+the app, in a section editor that honours your newlines and then wraps again at its
+own width — so a line hard-wrapped at 80 columns arrives as a ragged break
+mid-sentence. Wrapping is invisible in the source and in the rendered brief, and
+obvious in the editor, which is the one place it is never looked at while writing.
+One sentence per line reads well in all three. Keep a list item or a table row on a
+single line however long it gets, since a break inside one changes how markdown
+reads it.
 
 The **Renders under** column is the heading the brief puts the field under. It
 matters while writing: a field whose own text opens with that same heading
