@@ -120,6 +120,8 @@ Before typing any time, count, duration or code into prose, check whether the
 | "2 timer (30 min pr oppdrag)" | `{{exercise.durationLabel}}` |
 | the number of rounds or teams | `{{exercise.numberOfRounds}}`, `{{exercise.numberOfTeams}}` |
 | a station's code ("1c") | `{{station.stationCode}}` |
+| "20 min pr post" | `{{station.duration}}` |
+| "sju øvelser", "fire lag", "25 poster" | `{{plan.exerciseCount}}`, `{{plan.teamCount}}`, `{{plan.stationCount}}` |
 | a coordinate you already declared | `{{station.loc.<slug>.position}}` |
 
 Two things worth knowing. The brief already renders the rotation in its

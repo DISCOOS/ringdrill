@@ -348,9 +348,10 @@ Rules the schema cannot express, and that are easy to get wrong:
   breakdown, a duration, a station code. Those go stale the moment a start time or
   duration changes. Write the token instead: {{exercise.roundTable}},
   {{exercise.phaseBreakdown}}, {{exercise.durationLabel}},
-  {{station.stationCode}}. Call \`schema\` for the full list. A source document
-  has such values printed because paper cannot compute — that does not make them
-  content.
+  {{station.stationCode}}, {{station.duration}},
+  {{plan.exerciseCount}}, {{plan.teamCount}}, {{plan.stationCount}}. Call
+  \`schema\` for the full list. A source document has such values printed because
+  paper cannot compute — that does not make them content.
 
 Order of work: schema, read a published plan with get_plan, create_plan, write,
 analyze_plan and fix everything it reports, render_plan and actually read it, then
