@@ -12,6 +12,9 @@ import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/shell/wide_detail_map_split.dart';
 import 'package:ringdrill/views/station_screen.dart';
+import 'package:ringdrill/views/station_form_screen.dart';
+import 'package:ringdrill/views/widgets/position_card.dart';
+import 'package:ringdrill/views/widgets/position_empty_state.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -60,8 +63,33 @@ Exercise _exercise() => Exercise(
   endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
 );
 
-Future<void> _seedAndInit() async {
+/// The same exercise with the station's position removed — the case the Map
+/// segment used to answer with a bare row stretched across the pane.
+Exercise _exerciseWithoutPosition() {
   final ex = _exercise();
+  final station = ex.stations.single;
+  // Rebuilt rather than `copyWith(position: null)`: freezed reads an explicit null
+  // as "leave it alone", so the copy kept its position and the test silently
+  // exercised the wrong case.
+  return ex.copyWith(
+    stations: [
+      Station(
+        index: station.index,
+        name: station.name,
+        description: station.description,
+        persons: station.persons,
+        locations: station.locations,
+      ),
+    ],
+  );
+}
+
+Future<void> _seedAndInit({Exercise? exercise}) async {
+  // The service is a singleton that captures the first SharedPreferences instance,
+  // so without this a re-seed is invisible and every test keeps reading the first
+  // test's data — which is why an unpositioned fixture silently rendered a map.
+  PlanService().reset();
+  final ex = exercise ?? _exercise();
   SharedPreferences.setMockInitialValues({
     'app:activePlan:v1': _planUuid,
     'app:librarySchema:v1': '1',
@@ -96,12 +124,16 @@ Widget _harness(Widget widget) => MaterialApp(
 /// an ancestor `SizedBox` — reproducing "wide window, narrow pane" the way
 /// the coordinator's own pane-local-breakpoint test does, so this proves the
 /// split is driven by the pane's own width, not `MediaQuery`'s window width.
-Future<void> _pumpAtPaneWidth(WidgetTester tester, double paneWidth) async {
+Future<void> _pumpAtPaneWidth(
+  WidgetTester tester,
+  double paneWidth, {
+  Exercise? exercise,
+}) async {
   tester.view.physicalSize = const Size(1200, 800);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
 
-  await _seedAndInit();
+  await _seedAndInit(exercise: exercise);
 
   await tester.pumpWidget(
     MaterialApp(
@@ -381,4 +413,45 @@ void main() {
       expect(find.byIcon(Icons.open_in_full), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'an expanded pane with no position shows the teaching card, not a bare row',
+    (tester) async {
+      // The bug this replaces: `fillHeight` stretched a single "Ingen posisjon"
+      // label across the pane's full height, marooned in an empty half-screen.
+      await _pumpAtPaneWidth(tester, 900, exercise: _exerciseWithoutPosition());
+
+      expect(find.byType(PositionEmptyState), findsOneWidget);
+      expect(find.text(l10n.noPositionTitle), findsOneWidget);
+      expect(find.text(l10n.noPositionStationBody), findsOneWidget);
+      // Same shell as a set position, with "Not set" where the UTM string was.
+      expect(find.byType(PositionCardShell), findsOneWidget);
+      expect(find.text(l10n.positionNotSet), findsOneWidget);
+      // And the old fallback is gone.
+      expect(find.text(l10n.noLocation), findsNothing);
+    },
+  );
+
+  testWidgets('the empty-state CTA opens the form on the position section', (
+    tester,
+  ) async {
+    // `initialSectionId` was 'id', which matches no section in the form, so the
+    // CTA landed at the top instead of on the field it is about.
+    await _pumpAtPaneWidth(tester, 900, exercise: _exerciseWithoutPosition());
+
+    await tester.tap(find.text(l10n.setPosition));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(StationFormScreen), findsOneWidget);
+  });
+
+  testWidgets('the medium Map segment teaches it too', (tester) async {
+    await _pumpAtPaneWidth(tester, 700, exercise: _exerciseWithoutPosition());
+
+    await tester.tap(find.byIcon(Icons.map));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PositionEmptyState), findsOneWidget);
+    expect(find.text(l10n.noPositionTitle), findsOneWidget);
+  });
 }

@@ -6,6 +6,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/widgets/position_card.dart';
 import 'package:ringdrill/views/widgets/station_mini_map.dart';
+import 'package:ringdrill/views/widgets/position_empty_state.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 
 /// docs/prompts/position-panel-read-alignment.md — StationPositionPanel on
@@ -33,12 +34,22 @@ void main() {
     schedule: const [],
   );
 
-  Future<void> pump(WidgetTester tester, Station station) => tester.pumpWidget(
+  Future<void> pump(
+    WidgetTester tester,
+    Station station, {
+    PositionEmptyStyle emptyStyle = PositionEmptyStyle.row,
+    Widget? emptyState,
+  }) => tester.pumpWidget(
     MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: StationPositionPanel(exercise: exercise(), station: station),
+        body: StationPositionPanel(
+          exercise: exercise(),
+          station: station,
+          emptyStyle: emptyStyle,
+          emptyState: emptyState,
+        ),
       ),
     ),
   );
@@ -165,16 +176,54 @@ void main() {
   );
 
   testWidgets(
-    'a station without a position shows the noLocation fallback and no card',
+    'a station without a position shows the one-line row and no card',
     (tester) async {
+      // The default style, for a dense inline slot. The value text is now
+      // "Ikke satt" rather than "Ingen posisjon", so set and unset read as two
+      // states of one field instead of two different sentences.
       final station = Station(index: 0, name: 'Post 1');
       await pump(tester, station);
 
-      expect(find.text(l.noLocation), findsOneWidget);
+      expect(find.text(l.positionNotSet), findsOneWidget);
       expect(find.byType(PositionCardShell), findsNothing);
       expect(find.byIcon(Icons.chevron_right), findsNothing);
     },
   );
+
+  testWidgets('the card style teaches the missing position instead', (
+    tester,
+  ) async {
+    final station = Station(index: 0, name: 'Post 1');
+    await pump(tester, station, emptyStyle: PositionEmptyStyle.card);
+
+    // Same shell as a set position — that is the point of the card variant — with
+    // the teaching state where the map would be, and the bar reading "Ikke satt".
+    expect(find.byType(PositionCardShell), findsOneWidget);
+    expect(find.byType(PositionEmptyState), findsOneWidget);
+    expect(find.text(l.noPositionTitle), findsOneWidget);
+    expect(find.text(l.noPositionStationBody), findsOneWidget);
+    expect(find.text(l.positionNotSet), findsOneWidget);
+  });
+
+  testWidgets('the card style takes a prebuilt empty state from the caller', (
+    tester,
+  ) async {
+    // How the role gate reaches the card without putting permission logic in this
+    // shared panel (ADR-0057).
+    final station = Station(index: 0, name: 'Post 1');
+    await pump(
+      tester,
+      station,
+      emptyStyle: PositionEmptyStyle.card,
+      emptyState: const PositionEmptyState(
+        title: 'Gated title',
+        body: 'Gated body',
+      ),
+    );
+
+    expect(find.text('Gated title'), findsOneWidget);
+    expect(find.text(l.noPositionTitle), findsNothing);
+  });
 
   testWidgets(
     'asCard defaults to false (no nested Card when already inside one, e.g. '

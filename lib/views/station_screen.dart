@@ -47,6 +47,7 @@ import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_description_card.dart';
+import 'package:ringdrill/views/widgets/position_empty_state.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_scenario_map.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
@@ -380,7 +381,48 @@ class _StationScreenState extends State<StationScreen>
       ),
       markers: stationScenarioMarkers(context, exercise, station),
       legend: StationScenarioLegend(exercise: exercise, station: station),
-      onTap: () => _editStation(context, exercise, initialSectionId: 'id'),
+      // 'station' is the section id `station_form_screen.dart` actually declares
+      // for the block holding the position field; 'id' matched nothing, so the CTA
+      // and the bar tap opened the form scrolled to the top instead of to the field
+      // they are about.
+      onTap: () => _editStation(context, exercise, initialSectionId: 'station'),
+      emptyStyle: PositionEmptyStyle.card,
+      emptyState: _buildPositionEmptyState(exercise, station),
+    );
+  }
+
+  /// The teaching state for a station with no position, with the action gated the
+  /// same way the AppBar pencil is (ADR-0057).
+  ///
+  /// The gate lives here rather than in [StationPositionPanel] because it is this
+  /// screen's knowledge: a viewer gets the explanation and no button, and a running
+  /// exercise gets the button disabled with a reason rather than hidden — the same
+  /// distinction the pencil draws a few lines up.
+  Widget _buildPositionEmptyState(Exercise exercise, Station station) {
+    final l10n = AppLocalizations.of(context)!;
+    return IfEditable(
+      target: EditTarget.station,
+      // A viewer cannot set a position, so they get the explanation without a dead
+      // affordance. Without a `replacement` IfEditable collapses to a zero-size
+      // box, which would leave the card's thumbnail slot empty.
+      replacement: PositionEmptyState(
+        title: l10n.noPositionTitle,
+        body: l10n.noPositionStationBody,
+      ),
+      child: PositionEmptyState(
+        title: l10n.noPositionTitle,
+        body: l10n.noPositionStationBody,
+        actionLabel: l10n.setPosition,
+        onAction: _isStarted
+            ? null
+            : () =>
+                  _editStation(context, exercise, initialSectionId: 'station'),
+        disabledTooltip: _isStarted
+            ? l10n.stopExerciseFirst(
+                substitutePlanVariables(exercise.name, _overridesFor(exercise)),
+              )
+            : null,
+      ),
     );
   }
 
@@ -465,15 +507,16 @@ class _StationScreenState extends State<StationScreen>
               _buildPersonsCard(exercise, station),
               _buildLocationsCard(exercise, station),
             ]),
+            // No `position == null` branch: the panel's own card teaches the
+            // empty state now, so the Map segment renders the same widget either
+            // way rather than swapping in a different one.
             _StationDetailView.map => _fillOrScrollMap(
-              station.position == null
-                  ? MapPlaceholder(message: l10n.noLocation)
-                  : _buildMapCard(
-                      exercise,
-                      station,
-                      fillHeight: true,
-                      interactive: true,
-                    ),
+              _buildMapCard(
+                exercise,
+                station,
+                fillHeight: true,
+                interactive: true,
+              ),
             ),
           },
         ),

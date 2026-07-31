@@ -7,7 +7,21 @@ import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/widgets/border_shell.dart';
 import 'package:ringdrill/views/widgets/position_card.dart';
+import 'package:ringdrill/views/widgets/position_empty_state.dart';
 import 'package:ringdrill/views/widgets/station_mini_map.dart';
+
+/// How a panel renders a missing position.
+///
+/// Shared by [StationPositionPanel] and `RolePositionPanel`, which face the same
+/// choice on the same surfaces.
+enum PositionEmptyStyle {
+  /// The one-line `Posisjon … Ikke satt` row. For a dense inline slot with no real
+  /// map height of its own.
+  row,
+
+  /// The full card, with a teaching empty state where the map would be.
+  card,
+}
 
 /// Reusable "position panel" for a single station detail surface
 /// (docs/prompts/position-panel-read-alignment.md).
@@ -23,8 +37,13 @@ import 'package:ringdrill/views/widgets/station_mini_map.dart';
 /// then a no-op). This stays read-only either way — never the
 /// [PositionCard] picker.
 ///
-/// When the station has no [Station.position] the card is omitted
-/// entirely and the row shows the "no location" fallback text instead.
+/// With no [Station.position], [emptyStyle] decides the shape: [PositionEmptyStyle.row]
+/// keeps the one-line fallback (a dense inline call site inside an `ExpansionTile`
+/// body), [PositionEmptyStyle.card] renders the same [PositionCardShell] as a set
+/// position with a teaching empty state in the thumbnail slot. Explicit rather than
+/// derived from [fillHeight], because "owns a real map height" and "flexes to fill
+/// its parent" are different questions and the medium map segment answers them
+/// differently.
 class StationPositionPanel extends StatelessWidget {
   const StationPositionPanel({
     super.key,
@@ -43,6 +62,8 @@ class StationPositionPanel extends StatelessWidget {
     this.withTitle = false,
     this.withBorder = false,
     this.padding = EdgeInsets.zero,
+    this.emptyStyle = PositionEmptyStyle.row,
+    this.emptyState,
   });
 
   final String? label;
@@ -97,13 +118,28 @@ class StationPositionPanel extends StatelessWidget {
   /// page with no ambient card, pass `true`.
   final bool asCard;
 
+  /// How a missing position renders. Defaults to the row every existing call site
+  /// already showed.
+  final PositionEmptyStyle emptyStyle;
+
+  /// The teaching empty state for [PositionEmptyStyle.card], built by the caller.
+  ///
+  /// Prebuilt on purpose: the action is role-gated and disabled while an exercise
+  /// runs, and that is the call site's knowledge (`IfEditable`, `stopExerciseFirst`).
+  /// Threading permission inputs through this widget would put that logic in a
+  /// shared panel used by six surfaces that do not all need it. Null falls back to
+  /// the explanation with no action, which is also the viewer's variant.
+  final Widget? emptyState;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final position = station.position;
     final content = position == null
-        ? _buildNoPositionRow(l10n, theme)
+        ? (emptyStyle == PositionEmptyStyle.card
+              ? _buildEmptyCard(l10n, theme)
+              : _buildNoPositionRow(l10n, theme))
         : _buildPositionCard(l10n, theme, position);
 
     final positioned = withBorder ? BorderShell(child: content) : content;
@@ -145,8 +181,46 @@ class StationPositionPanel extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        Text(l10n.noLocation, style: theme.textTheme.bodyMedium),
+        Text(l10n.positionNotSet, style: theme.textTheme.bodyMedium),
       ],
+    );
+  }
+
+  /// The same shell as a set position, with the teaching state where the map goes.
+  ///
+  /// No `legend`: it labels markers, and there are none. Everything else —
+  /// `thumbnailHeight`, `fillHeight`, `sectionId`, `asCard` — is forwarded
+  /// unchanged, so the card is the same object in both states and the transition
+  /// does not read as two components.
+  PositionCardShell _buildEmptyCard(AppLocalizations l10n, ThemeData theme) {
+    return PositionCardShell(
+      onTap: onTap,
+      asCard: asCard,
+      thumbnail:
+          emptyState ??
+          PositionEmptyState(
+            title: l10n.noPositionTitle,
+            body: l10n.noPositionStationBody,
+            height: fillHeight ? null : mapHeight,
+          ),
+      thumbnailHeight: mapHeight,
+      fillHeight: fillHeight,
+      sectionId: sectionId,
+      barLabel: Text(
+        label ?? l10n.position,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      barChild: Align(
+        alignment: Alignment.centerRight,
+        child: Text(
+          l10n.positionNotSet,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
     );
   }
 
