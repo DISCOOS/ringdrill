@@ -51,6 +51,20 @@ export function createCompilerBackend({
     /// Thrown rather than returned as a diagnostic: this is not a problem with the
     /// author's plan, it is a refusal to try, and conflating the two would have an
     /// agent hunting its document for a mistake that is not there.
+    /// A path is meaningful only to a server on the caller's machine (ADR-0064).
+    ///
+    /// Refused explicitly rather than ignored: falling through to "a source
+    /// document is required" would send an agent hunting for an argument it did
+    /// supply.
+    function rejectPath(documentPath) {
+        if (documentPath === undefined) return;
+        throw new Error(
+            "document_path is meaningful only to a local server: this endpoint " +
+                "has no access to your filesystem. Send `document` instead, or " +
+                "use the stdio server (see mcp/README.md).",
+        );
+    }
+
     function checkDocument(document) {
         if (typeof document !== "string" || document.length === 0) {
             throw new Error("a source document is required");
@@ -84,19 +98,30 @@ export function createCompilerBackend({
                 bare: args.bare,
             }),
 
-        analyze: ({ document, strict }) => {
+        analyze: ({ document, document_path, strict }) => {
+            rejectPath(document_path);
             checkDocument(document);
             return invoke({ op: "analyze", document, strict });
         },
 
-        build: ({ document, strict }) => {
+        build: ({ document, document_path, strict }) => {
+            rejectPath(document_path);
             checkDocument(document);
             return invoke({ op: "build", document, strict, fileName: "plan" });
         },
 
-        render: ({ document, audience, lang, exercise }) => {
-            checkDocument(document);
-            return invoke({ op: "render", document, audience, lang, exercise });
+        render: (args) => {
+            rejectPath(args.document_path);
+            checkDocument(args.document);
+            return invoke({
+                op: "render",
+                document: args.document,
+                audience: args.audience,
+                lang: args.lang,
+                exercise: args.exercise,
+                station: args.station,
+                format: args.format,
+            });
         },
 
         /// The published catalog, projected exactly as `market-feed.js` does.

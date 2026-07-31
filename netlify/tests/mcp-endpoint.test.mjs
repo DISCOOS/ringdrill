@@ -250,6 +250,58 @@ test("build_plan keeps a key's type across outcomes", async () => {
     assert.ok(!refused.drillBase64, "strict refuses rather than returning an archive");
 });
 
+test("document_path is refused with a reason, not ignored", async () => {
+    // A path means nothing to a server with no access to the caller's filesystem
+    // (ADR-0064). Falling through to "a source document is required" would send an
+    // agent hunting for an argument it did supply.
+    const { body } = await rpc(handlerWith(), {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+            name: "analyze_plan",
+            arguments: { document_path: "/tmp/plan.yaml" },
+        },
+    });
+    assert.equal(body.result.isError, true);
+    // A refusal is a plain message, not diagnostics, so it is not JSON — `payload`
+    // would fail to parse it. That is the distinction the message itself draws:
+    // this is not a problem with the document.
+    const text = body.result.content[0].text;
+    assert.match(text, /local server/);
+    assert.match(text, /stdio/);
+});
+
+test("render_plan summary is a fraction of the full brief", async () => {
+    const call = async (args) =>
+        payload(
+            (
+                await rpc(handlerWith(), {
+                    jsonrpc: "2.0",
+                    id: 1,
+                    method: "tools/call",
+                    params: { name: "render_plan", arguments: args },
+                })
+            ).body,
+        );
+
+    const full = await call({ document: DOCUMENT, audience: "director" });
+    const summary = await call({
+        document: DOCUMENT,
+        audience: "director",
+        format: "summary",
+    });
+
+    assert.equal(summary.format, "summary");
+    assert.ok(
+        summary.bytes < full.bytes,
+        `summary ${summary.bytes} should be smaller than full ${full.bytes}`,
+    );
+    // Names the shape without carrying the prose.
+    assert.match(summary.markdown, /Station sections:|Station empty:/);
+    assert.doesNotMatch(summary.markdown, /Noe skjer\./);
+});
+
 test("schema is the schema itself, not a wrapper", async () => {
     // The CLI prints the schema directly, so the hosted tool has to unwrap the
     // bundle's {ok, schema} envelope or the two would return different shapes for

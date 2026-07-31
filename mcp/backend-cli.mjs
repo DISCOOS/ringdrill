@@ -190,6 +190,27 @@ export function createCliBackend({ cli, cwd }) {
         return payload;
     }
 
+    /// Runs `fn(documentPath, scratchDir)` for either input shape (ADR-0064).
+    ///
+    /// With `document_path` the author's own file goes straight to the CLI —
+    /// nothing is copied, so a large document costs a filename rather than its
+    /// own length on every call. A scratch directory is still provided, because
+    /// `build` needs somewhere to write the archive.
+    ///
+    /// The path is not validated here: the CLI reports a missing or unreadable
+    /// file better than this layer could, and reading it is the same capability
+    /// the CLI has always had as this user.
+    async function withDocument(args, fn) {
+        const path = args.document_path;
+        if (!path) return withTempFile(args.document, '.yaml', fn);
+        const dir = await mkdtemp(join(tmpdir(), 'ringdrill-mcp-'));
+        try {
+            return await fn(path, dir);
+        } finally {
+            await rm(dir, { recursive: true, force: true });
+        }
+    }
+
     /** Runs `fn` with a temp file holding `content`, then removes it. */
     async function withTempFile(content, extension, fn) {
         const dir = await mkdtemp(join(tmpdir(), 'ringdrill-mcp-'));
@@ -226,31 +247,33 @@ export function createCliBackend({ cli, cwd }) {
             return { document: start < 0 ? out : out.slice(start) };
         },
 
-        analyze: ({ document, strict }) =>
-            withTempFile(document, '.yaml', (path) =>
-                run(['analyze', path, ...(strict ? ['--strict'] : [])]),
+        analyze: (args) =>
+            withDocument(args, (path) =>
+                run(['analyze', path, ...(args.strict ? ['--strict'] : [])]),
             ),
 
-        build: ({ document, strict }) =>
-            withTempFile(document, '.yaml', async (path, dir) => {
+        build: (args) =>
+            withDocument(args, async (path, dir) => {
                 const out = join(dir, 'plan.drill');
                 const result = await run([
                     'build',
                     path,
                     `--out=${out}`,
-                    ...(strict ? ['--strict'] : []),
+                    ...(args.strict ? ['--strict'] : []),
                 ]);
                 if (result.ok === false) return result;
                 const bytes = await readFile(out);
                 return { ...result, drillBase64: bytes.toString('base64') };
             }),
 
-        render: ({ document, audience, lang, exercise }) =>
-            withTempFile(document, '.yaml', (path) => {
+        render: (args) =>
+            withDocument(args, (path) => {
                 const argv = ['render', path];
-                if (audience) argv.push(`--audience=${audience}`);
-                if (lang) argv.push(`--lang=${lang}`);
-                if (exercise) argv.push(`--exercise=${exercise}`);
+                if (args.audience) argv.push(`--audience=${args.audience}`);
+                if (args.lang) argv.push(`--lang=${args.lang}`);
+                if (args.exercise) argv.push(`--exercise=${args.exercise}`);
+                if (args.station) argv.push(`--station=${args.station}`);
+                if (args.format) argv.push(`--format=${args.format}`);
                 return run(argv);
             }),
 

@@ -16,6 +16,7 @@ import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/brief_labels.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
+import 'package:ringdrill/services/brief/brief_summary.dart';
 import 'package:universal_io/io.dart';
 
 const _defaultBaseUrl = 'https://ringdrill.netlify.app';
@@ -142,6 +143,21 @@ Future<void> main(List<String> argv) async {
       help:
           '1-based exercise number to scope the brief to (render command). '
           'Default: the whole plan.',
+    )
+    ..addOption(
+      'station',
+      help:
+          '1-based station number within the scoped exercise (render command). '
+          'Requires --exercise. Default: every station.',
+    )
+    ..addOption(
+      'format',
+      help:
+          'Brief output (render command): "full" (default) or "summary" — '
+          'headings and which sections each scope carries, without the prose. '
+          'Summary is the cheap way to check that a plan reads, when the brief '
+          'itself is tens of kilobytes (ADR-0064).',
+      defaultsTo: 'full',
     )
     ..addFlag(
       'strict',
@@ -763,7 +779,8 @@ Future<void> _runRender(List<String> args, ArgResults res, bool jsonOut) async {
     _fail(
       'Usage: render <source.yaml|file.drill> '
       '[--audience=participant|actor|instructor|director|other] '
-      '[--lang=<code>] [--exercise=N] [--out=<file>]',
+      '[--lang=<code>] [--exercise=N] [--station=N] '
+      '[--format=full|summary] [--out=<file>]',
     );
   }
   final path = args[0];
@@ -825,6 +842,51 @@ Future<void> _runRender(List<String> args, ArgResults res, bool jsonOut) async {
     exercise = ordered[number - 1];
   }
 
+  // Station scoping filters the station list and keeps each station's own `index`
+  // (ADR-0064). Codes come from that index, not from list position, so the one
+  // station that survives still renders as "1c" rather than being renumbered to
+  // "1a" — which would make a scoped brief disagree with the plan it came from.
+  final stationArg = (res['station'] as String?)?.trim();
+  if (stationArg != null && stationArg.isNotEmpty) {
+    if (exercise == null) {
+      _fail(
+        '--station needs --exercise: a station number is within an exercise.',
+      );
+    }
+    final ordered = exercise.stations.toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+    final number = int.tryParse(stationArg);
+    if (number == null || number < 1 || number > ordered.length) {
+      _fail(
+        'Invalid --station "$stationArg". '
+        'That exercise has ${ordered.length} station(s), numbered from 1.',
+      );
+    }
+    exercise = exercise.copyWith(stations: [ordered[number - 1]]);
+  }
+
+  final format = (res['format'] as String).trim();
+  if (format != 'full' && format != 'summary') {
+    _fail('Unknown --format "$format". Expected "full" or "summary".');
+  }
+  if (format == 'summary') {
+    final summary = renderBriefSummary(
+      plan: plan,
+      audience: audience.first,
+      exercise: exercise,
+    );
+    _emitBrief(
+      summary,
+      source: path,
+      res: res,
+      jsonOut: jsonOut,
+      audience: audience.first,
+      labels: labels,
+      exercise: exercise,
+    );
+    return;
+  }
+
   final markdown = await BriefRenderer().render(
     plan: plan,
     exercise: exercise,
@@ -832,17 +894,43 @@ Future<void> _runRender(List<String> args, ArgResults res, bool jsonOut) async {
     l10n: labels,
   );
 
+  _emitBrief(
+    markdown,
+    source: path,
+    res: res,
+    jsonOut: jsonOut,
+    audience: audience.first,
+    labels: labels,
+    exercise: exercise,
+  );
+}
+
+/// Writes or prints a rendered brief, whichever shape it is.
+///
+/// Shared by the full render and the `--format=summary` one so the two agree on
+/// where output goes and what the JSON envelope looks like — a summary is a brief
+/// with less in it, not a different command.
+void _emitBrief(
+  String markdown, {
+  required String source,
+  required ArgResults res,
+  required bool jsonOut,
+  required BriefAudience audience,
+  required HeadlessBriefLabels labels,
+  Exercise? exercise,
+}) {
   final outPath = res['out'] as String?;
   if (outPath != null) File(outPath).writeAsStringSync(markdown);
 
   if (jsonOut) {
     stdout.writeln(
       jsonEncode({
-        'source': path,
+        'source': source,
         'out': ?outPath,
-        'audience': audience.first.name,
+        'audience': audience.name,
         'lang': labels.localeName,
         'exercise': ?exercise?.name,
+        'format': res['format'],
         'bytes': markdown.length,
         if (outPath == null) 'markdown': markdown,
       }),
@@ -853,10 +941,11 @@ Future<void> _runRender(List<String> args, ArgResults res, bool jsonOut) async {
     stdout.write(markdown);
     return;
   }
-  stdout.writeln('✔ rendered $path → $outPath');
-  stdout.writeln('  audience : ${audience.first.name}');
+  stdout.writeln('✔ rendered $source → $outPath');
+  stdout.writeln('  audience : ${audience.name}');
   stdout.writeln('  language : ${labels.localeName}');
   if (exercise != null) stdout.writeln('  exercise : ${exercise.name}');
+  stdout.writeln('  format   : ${res['format']}');
   stdout.writeln('  size     : ${markdown.length} bytes');
 }
 

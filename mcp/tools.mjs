@@ -11,9 +11,10 @@
 //
 //   schema()                        the JSON Schema
 //   create(args)                    -> {document}
-//   analyze({document, strict})     -> {ok, errors, warnings, diagnostics, …}
-//   build({document, strict})       -> {ok, contentHash, drillBase64, …}
-//   render({document, audience, lang, exercise}) -> {markdown, …}
+//   analyze({document|document_path, strict})  -> {ok, errors, warnings, …}
+//   build({document|document_path, strict})    -> {ok, contentHash, drillBase64, …}
+//   render({document|document_path, audience, lang, exercise, station, format})
+//                                              -> {markdown, …}
 //   searchCatalog({limit, cursor})  -> {items, nextCursor?}
 //   getPlan({slug, version})        -> {document, …}
 //
@@ -27,6 +28,31 @@ const SOURCE_DOCUMENT_ARG = {
         'The source document, as YAML text. Call `schema` for its shape, or ' +
         '`create_plan` for a starting point.',
 };
+
+/// The local alternative to sending the text (ADR-0064).
+///
+/// An authoring loop calls these tools repeatedly on the same document, and a
+/// real plan runs to tens of kilobytes — so resending it spends the agent's
+/// context on text that has not changed. A path spends a filename instead.
+///
+/// Only the stdio server can honour it; the hosted one has no access to the
+/// caller's filesystem and says so rather than guessing.
+const SOURCE_DOCUMENT_PATH_ARG = {
+    type: 'string',
+    description:
+        'Path to the source document on disk, instead of `document`. Local ' +
+        '(stdio) server only — use this while iterating so a large document is ' +
+        'not resent on every call. The hosted server rejects it.',
+};
+
+/// `document` or `document_path`, either one.
+///
+/// Expressed as `anyOf` rather than `required`, because a schema demanding
+/// `document` would make the path form look invalid.
+const DOCUMENT_OR_PATH = [
+    { required: ['document'] },
+    { required: ['document_path'] },
+];
 
 /// The tool surface.
 ///
@@ -158,12 +184,13 @@ export function toolsFor(backend) {
                 type: 'object',
                 properties: {
                     document: SOURCE_DOCUMENT_ARG,
+                    document_path: SOURCE_DOCUMENT_PATH_ARG,
                     strict: {
                         type: 'boolean',
                         description: 'Treat warnings as errors.',
                     },
                 },
-                required: ['document'],
+                anyOf: DOCUMENT_OR_PATH,
             },
             run: (args) => backend.analyze(args),
         },
@@ -178,12 +205,13 @@ export function toolsFor(backend) {
                 type: 'object',
                 properties: {
                     document: SOURCE_DOCUMENT_ARG,
+                    document_path: SOURCE_DOCUMENT_PATH_ARG,
                     strict: {
                         type: 'boolean',
                         description: 'Refuse to build if there are warnings.',
                     },
                 },
-                required: ['document'],
+                anyOf: DOCUMENT_OR_PATH,
             },
             run: (args) => backend.build(args),
         },
@@ -198,6 +226,7 @@ export function toolsFor(backend) {
                 type: 'object',
                 properties: {
                     document: SOURCE_DOCUMENT_ARG,
+                    document_path: SOURCE_DOCUMENT_PATH_ARG,
                     audience: {
                         type: 'string',
                         enum: [
@@ -223,8 +252,25 @@ export function toolsFor(backend) {
                             '1-based exercise number to scope to. Default: whole ' +
                             'plan.',
                     },
+                    station: {
+                        type: 'integer',
+                        description:
+                            '1-based station within the scoped exercise. ' +
+                            'Requires `exercise`. Scoping keeps the station its ' +
+                            'own code, so 1c stays 1c.',
+                    },
+                    format: {
+                        type: 'string',
+                        enum: ['full', 'summary'],
+                        description:
+                            '"summary" returns the brief\'s shape — headings, ' +
+                            'and which sections each scope carries — without the ' +
+                            'prose. Use it while iterating: a real plan\'s brief ' +
+                            'runs to tens of kilobytes, and "does this read" does ' +
+                            'not need all of it. Default full.',
+                    },
                 },
-                required: ['document'],
+                anyOf: DOCUMENT_OR_PATH,
             },
             run: (args) => backend.render(args),
         },

@@ -38,6 +38,7 @@ import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/brief_labels.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
+import 'package:ringdrill/services/brief/brief_summary.dart';
 
 /// The one exported entry point, assigned onto `globalThis` by [main].
 ///
@@ -209,17 +210,52 @@ Future<Map<String, dynamic>> _render(Map<String, dynamic> json) async {
     exercise = ordered[number - 1];
   }
 
-  final markdown = await BriefRenderer().render(
-    plan: plan,
-    exercise: exercise,
-    audience: audience.first,
-    l10n: labels,
-  );
+  // Station scoping keeps each station's own index, so the surviving station still
+  // renders with the code it has in the whole plan (ADR-0064).
+  final stationNumber = (json['station'] as num?)?.toInt();
+  if (stationNumber != null) {
+    if (exercise == null) {
+      return {
+        'ok': false,
+        'error':
+            'station needs exercise: a station number is within an exercise',
+      };
+    }
+    final ordered = exercise.stations.toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+    if (stationNumber < 1 || stationNumber > ordered.length) {
+      return {
+        'ok': false,
+        'error':
+            'invalid station $stationNumber; that exercise has ${ordered.length}',
+      };
+    }
+    exercise = exercise.copyWith(stations: [ordered[stationNumber - 1]]);
+  }
+
+  final format = (json['format'] as String?)?.trim() ?? 'full';
+  if (format != 'full' && format != 'summary') {
+    return {'ok': false, 'error': 'unknown format "$format"'};
+  }
+
+  final markdown = format == 'summary'
+      ? renderBriefSummary(
+          plan: plan,
+          audience: audience.first,
+          exercise: exercise,
+        )
+      : await BriefRenderer().render(
+          plan: plan,
+          exercise: exercise,
+          audience: audience.first,
+          l10n: labels,
+        );
   return {
     'ok': true,
     'audience': audience.first.name,
     'lang': labels.localeName,
     if (exercise != null) 'exercise': exercise.name,
+    'format': format,
     'bytes': markdown.length,
     'markdown': markdown,
   };
