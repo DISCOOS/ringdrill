@@ -24,6 +24,28 @@ import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 /// caller's `itemBuilder`. Items must already be ordered by group. Null (the
 /// default) renders a flat list.
 ///
+/// [filters] narrow the list by *what kind* of item it is, where [searchText]
+/// narrows by what an item is called (ADR-0067). An implicit "all" option comes
+/// first and is selected initially, so a picker that passes filters still opens
+/// showing everything. A filter matching nothing is dimmed rather than removed —
+/// removing it would make the row jump around while the author types — and stays
+/// selectable, since "show me that category, even though it is empty here" is a
+/// reasonable thing to ask; the caller's own entries then say why it is empty.
+///
+/// Two presentations of the one parameter, chosen the same way the surface itself
+/// is: a wrapping chip row under the search field on compact, and a master rail
+/// beside the list on medium/expanded (ADR-0030's wide-screen idiom, the one the
+/// plan tab and the station list already read as). Chips wrap rather than scroll,
+/// because eight categories take two lines on a phone and all of them stay
+/// visible, where a sideways row hides the last few without saying they exist.
+/// Not a `SegmentedButton`: `StaffRoleFilter`'s doc comment is this app's record
+/// of what long Norwegian labels do to one, and a segmented button is view
+/// selection here, not list filtering.
+///
+/// With a single filter active on the wide layout the section headers drop, since
+/// the selected rail entry *is* the header at that point. On compact they stay: a
+/// chip row is not a header.
+///
 /// [footerActions] are appended below the list (e.g. a "+ New person" row).
 /// They are ordinary widgets built by the caller with the caller's own
 /// `context`, so a footer action that needs to dismiss the picker pops via
@@ -40,46 +62,73 @@ Future<T?> showRingdrillPicker<T>({
   String? searchHint,
   int searchThreshold = 8,
   String? Function(T item)? sectionLabel,
+  List<PickerFilter<T>> filters = const [],
+  String? allFilterLabel,
+  String? subtitle,
   List<Widget> footerActions = const [],
 }) {
   final wide = WindowSizeClass.of(context).hasMasterDetail;
   Widget builder(BuildContext context) => _RingdrillPickerBody<T>(
     title: title,
+    subtitle: subtitle,
     items: items,
     itemBuilder: itemBuilder,
     searchText: searchText,
     searchHint: searchHint,
     searchThreshold: searchThreshold,
     sectionLabel: sectionLabel,
+    filters: filters,
+    allFilterLabel: allFilterLabel,
     footerActions: footerActions,
     showCloseButton: wide,
+    wide: wide,
   );
 
   if (wide) {
     return showRingdrillDialogShell<T>(
       context: context,
       builder: builder,
-      maxWidth: 480,
-      maxHeightFraction: 0.7,
+      // The rail needs room beside the list, and a filtered picker is a longer
+      // read than a list of station names.
+      maxWidth: filters.isEmpty ? 480 : 680,
+      maxHeightFraction: filters.isEmpty ? 0.7 : 0.8,
     );
   }
   return showRingdrillActionSheet<T>(context: context, builder: builder);
 }
 
+/// One category an item may belong to, for [showRingdrillPicker]'s `filters`.
+///
+/// A predicate rather than a key, so a caller whose categories do not partition
+/// its items (an item in two of them) needs no special case.
+class PickerFilter<T> {
+  const PickerFilter({required this.label, required this.matches});
+
+  /// Names the category. Singular: a filter names a kind, it does not count one.
+  final String label;
+
+  final bool Function(T item) matches;
+}
+
 class _RingdrillPickerBody<T> extends StatefulWidget {
   const _RingdrillPickerBody({
     required this.title,
+    required this.subtitle,
     required this.items,
     required this.itemBuilder,
     required this.searchText,
     required this.searchHint,
     required this.searchThreshold,
     required this.sectionLabel,
+    required this.filters,
+    required this.allFilterLabel,
     required this.footerActions,
     required this.showCloseButton,
+    required this.wide,
   });
 
   final String title;
+  final String? subtitle;
   final List<T> items;
   final Widget Function(BuildContext context, T item, VoidCallback onTap)
   itemBuilder;
@@ -87,8 +136,11 @@ class _RingdrillPickerBody<T> extends StatefulWidget {
   final String? searchHint;
   final int searchThreshold;
   final String? Function(T item)? sectionLabel;
+  final List<PickerFilter<T>> filters;
+  final String? allFilterLabel;
   final List<Widget> footerActions;
   final bool showCloseButton;
+  final bool wide;
 
   @override
   State<_RingdrillPickerBody<T>> createState() =>
@@ -99,19 +151,34 @@ class _RingdrillPickerBodyState<T> extends State<_RingdrillPickerBody<T>> {
   final _searchController = TextEditingController();
   String _query = '';
 
+  /// Index into `widget.filters`, or null for the implicit "all".
+  int? _filter;
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
-  List<T> get _filtered {
+  /// Items matching the search text, before the category filter.
+  ///
+  /// Kept separate because the filter chips report emptiness against *this* list:
+  /// a category is dimmed when the current search has no hits in it, which is a
+  /// statement about the search and not about the whole picker.
+  List<T> get _searched {
     final searchText = widget.searchText;
     if (searchText == null || _query.isEmpty) return widget.items;
     final q = _query.toLowerCase();
     return widget.items
         .where((item) => searchText(item).toLowerCase().contains(q))
         .toList();
+  }
+
+  List<T> get _filtered {
+    final index = _filter;
+    if (index == null || index >= widget.filters.length) return _searched;
+    final matches = widget.filters[index].matches;
+    return _searched.where(matches).toList();
   }
 
   @override
@@ -133,6 +200,16 @@ class _RingdrillPickerBodyState<T> extends State<_RingdrillPickerBody<T>> {
               Expanded(
                 child: Text(widget.title, style: theme.textTheme.titleMedium),
               ),
+              if (widget.subtitle != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Text(
+                    widget.subtitle!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
               if (widget.showCloseButton)
                 IconButton(
                   key: const Key('ringdrill-picker-close'),
@@ -163,53 +240,151 @@ class _RingdrillPickerBodyState<T> extends State<_RingdrillPickerBody<T>> {
               onChanged: (v) => setState(() => _query = v),
             ),
           ),
-        Flexible(
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: filtered.length,
-            itemBuilder: (context, index) {
-              final item = filtered[index];
-              final row = widget.itemBuilder(
-                context,
-                item,
-                () => Navigator.of(context).pop(item),
-              );
-              final label = widget.sectionLabel?.call(item);
-              // Header on the first row of each group — computed against the
-              // filtered list, so search regroups rather than stranding
-              // headers.
-              final isGroupStart =
-                  label != null &&
-                  (index == 0 ||
-                      widget.sectionLabel?.call(filtered[index - 1]) != label);
-              if (!isGroupStart) return row;
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (index > 0) const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                    child: Text(
-                      label,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                  ),
-                  row,
-                ],
-              );
-            },
+        if (widget.filters.isNotEmpty && !widget.wide) _chips(theme),
+        if (widget.filters.isNotEmpty && widget.wide) ...[
+          const Divider(height: 1),
+          Flexible(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _rail(theme),
+                const VerticalDivider(width: 1),
+                Expanded(child: _list(theme, filtered)),
+              ],
+            ),
           ),
-        ),
+        ] else
+          Flexible(child: _list(theme, filtered)),
         if (widget.footerActions.isNotEmpty) ...[
           const Divider(height: 1),
           ...widget.footerActions,
         ],
       ],
+    );
+  }
+
+  /// Whether a section header should be drawn at all.
+  ///
+  /// On the wide layout with one category selected, the rail entry is already the
+  /// header, and repeating it above the rows says the same word twice. With "all"
+  /// selected the headers are what tells the categories apart, so they stay.
+  bool get _showSectionHeaders =>
+      widget.sectionLabel != null && !(widget.wide && _filter != null);
+
+  Widget _list(ThemeData theme, List<T> filtered) => ListView.builder(
+    shrinkWrap: true,
+    itemCount: filtered.length,
+    itemBuilder: (context, index) {
+      final item = filtered[index];
+      final row = widget.itemBuilder(
+        context,
+        item,
+        () => Navigator.of(context).pop(item),
+      );
+      if (!_showSectionHeaders) return row;
+      final label = widget.sectionLabel?.call(item);
+      // Header on the first row of each group — computed against the filtered
+      // list, so search regroups rather than stranding headers.
+      final isGroupStart =
+          label != null &&
+          (index == 0 ||
+              widget.sectionLabel?.call(filtered[index - 1]) != label);
+      if (!isGroupStart) return row;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (index > 0) const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Text(label, style: _sectionStyle(theme)),
+          ),
+          row,
+        ],
+      );
+    },
+  );
+
+  TextStyle? _sectionStyle(ThemeData theme) =>
+      theme.textTheme.labelSmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.6,
+      );
+
+  /// True when the current search leaves this category nothing to show. Dimmed,
+  /// not removed, and still selectable.
+  bool _isEmpty(int? index) => index == null
+      ? _searched.isEmpty
+      : !_searched.any(widget.filters[index].matches);
+
+  Widget _chips(ThemeData theme) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+    child: Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (var i = -1; i < widget.filters.length; i++)
+          _chip(theme, i < 0 ? null : i),
+      ],
+    ),
+  );
+
+  Widget _chip(ThemeData theme, int? index) {
+    final empty = _isEmpty(index);
+    final label = index == null
+        ? (widget.allFilterLabel ?? '')
+        : widget.filters[index].label;
+    return FilterChip(
+      key: Key('ringdrill-picker-filter-${index ?? 'all'}'),
+      label: Text(label),
+      selected: _filter == index,
+      onSelected: (_) => setState(() => _filter = index),
+      visualDensity: VisualDensity.compact,
+      labelStyle: empty
+          ? TextStyle(color: theme.colorScheme.onSurfaceVariant)
+          : null,
+    );
+  }
+
+  Widget _rail(ThemeData theme) => SizedBox(
+    width: 132,
+    child: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = -1; i < widget.filters.length; i++)
+            _railEntry(theme, i < 0 ? null : i),
+        ],
+      ),
+    ),
+  );
+
+  Widget _railEntry(ThemeData theme, int? index) {
+    final selected = _filter == index;
+    final empty = _isEmpty(index);
+    final label = index == null
+        ? (widget.allFilterLabel ?? '')
+        : widget.filters[index].label;
+    return InkWell(
+      key: Key('ringdrill-picker-filter-${index ?? 'all'}'),
+      onTap: () => setState(() => _filter = index),
+      child: Container(
+        color: selected ? theme.colorScheme.secondaryContainer : null,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: selected ? FontWeight.w700 : null,
+            color: empty && !selected
+                ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
+                : null,
+          ),
+        ),
+      ),
     );
   }
 }

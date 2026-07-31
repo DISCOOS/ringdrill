@@ -32,6 +32,8 @@ Future<void> _open(
   String Function(String)? searchText,
   int searchThreshold = 8,
   List<Widget> footerActions = const [],
+  List<PickerFilter<String>> filters = const [],
+  String? Function(String)? sectionLabel,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -48,6 +50,9 @@ Future<void> _open(
               searchHint: 'Søk',
               searchThreshold: searchThreshold,
               footerActions: footerActions,
+              filters: filters,
+              allFilterLabel: 'Alle',
+              sectionLabel: sectionLabel,
             );
           },
           child: const Text('Open'),
@@ -190,4 +195,142 @@ void main() {
       expect(find.text('Item 0'), findsOneWidget);
     },
   );
+
+  group('filters (ADR-0067)', () {
+    // Text search narrows by what an item is called; a filter narrows by what kind
+    // of thing it is. Two presentations of one parameter, chosen the same way the
+    // surface itself is.
+    final filters = [
+      PickerFilter<String>(
+        label: 'Vokal',
+        matches: (s) => s.startsWith('A') || s.startsWith('E'),
+      ),
+      PickerFilter<String>(label: 'Tom', matches: (s) => false),
+    ];
+    const items = ['Alpha', 'Beta', 'Echo'];
+
+    testWidgets('a picker that passes none looks exactly as it did', (
+      tester,
+    ) async {
+      _setWidth(tester, 1000);
+      await _open(tester, _Captured(), items: items);
+      expect(
+        find.byKey(const Key('ringdrill-picker-filter-all')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('opens on "all", so everything shows until asked otherwise', (
+      tester,
+    ) async {
+      _setWidth(tester, 400);
+      await _open(tester, _Captured(), items: items, filters: filters);
+
+      expect(find.text('Alpha'), findsOne);
+      expect(find.text('Beta'), findsOne);
+      expect(find.text('Echo'), findsOne);
+    });
+
+    testWidgets('selecting one narrows the list to its predicate', (
+      tester,
+    ) async {
+      _setWidth(tester, 400);
+      await _open(tester, _Captured(), items: items, filters: filters);
+
+      await tester.tap(find.byKey(const Key('ringdrill-picker-filter-0')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Alpha'), findsOne);
+      expect(find.text('Echo'), findsOne);
+      expect(find.text('Beta'), findsNothing);
+    });
+
+    testWidgets('an empty filter stays, and selecting it shows nothing', (
+      tester,
+    ) async {
+      // Dimmed rather than removed: a filter that vanishes while the author types
+      // makes the row jump around. Still selectable, because "show me that
+      // category, even though it is empty here" is a reasonable thing to ask —
+      // the caller's own entries then say why it is empty.
+      _setWidth(tester, 400);
+      await _open(tester, _Captured(), items: items, filters: filters);
+
+      expect(find.byKey(const Key('ringdrill-picker-filter-1')), findsOne);
+      await tester.tap(find.byKey(const Key('ringdrill-picker-filter-1')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Alpha'), findsNothing);
+      expect(find.text('Beta'), findsNothing);
+    });
+
+    testWidgets('compact renders chips, expanded renders a rail', (
+      tester,
+    ) async {
+      _setWidth(tester, 400);
+      await _open(tester, _Captured(), items: items, filters: filters);
+      expect(find.byType(FilterChip), findsNWidgets(3));
+    });
+
+    testWidgets('the wide layout is a rail beside the list, not chips', (
+      tester,
+    ) async {
+      // ADR-0030's idiom. Chips there would be a header the list scrolls under;
+      // the rail is the master pane.
+      _setWidth(tester, 1000);
+      await _open(tester, _Captured(), items: items, filters: filters);
+
+      expect(find.byType(FilterChip), findsNothing);
+      expect(find.byKey(const Key('ringdrill-picker-filter-all')), findsOne);
+      expect(find.byType(VerticalDivider), findsOne);
+    });
+
+    testWidgets('on wide, picking one category drops the section headers', (
+      tester,
+    ) async {
+      // The rail entry is the header at that point, and printing it above the rows
+      // says the same word twice. With "all" selected the headers are what tells
+      // the categories apart, so they stay.
+      _setWidth(tester, 1000);
+      await _open(
+        tester,
+        _Captured(),
+        items: items,
+        filters: filters,
+        sectionLabel: (s) => s.startsWith('B') ? 'Konsonant' : 'Vokal',
+      );
+
+      expect(find.text('Konsonant'), findsOne);
+
+      await tester.tap(find.byKey(const Key('ringdrill-picker-filter-0')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Vokal'),
+        findsOne,
+        reason: 'the rail entry only — no header repeating it',
+      );
+    });
+
+    testWidgets('on compact the headers stay: a chip row is not a header', (
+      tester,
+    ) async {
+      _setWidth(tester, 400);
+      await _open(
+        tester,
+        _Captured(),
+        items: items,
+        filters: filters,
+        sectionLabel: (s) => s.startsWith('B') ? 'Konsonant' : 'Vokal',
+      );
+
+      await tester.tap(find.byKey(const Key('ringdrill-picker-filter-0')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Vokal'),
+        findsNWidgets(2),
+        reason: 'the chip and the section header',
+      );
+    });
+  });
 }
