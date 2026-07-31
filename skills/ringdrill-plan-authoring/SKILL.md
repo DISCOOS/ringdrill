@@ -51,6 +51,42 @@ table the compiler validates against, so it cannot be out of date.
    participant reads.
 8. **`build_plan`** when it is right.
 
+## Not resending the document on every call
+
+A real plan runs to tens of kilobytes, and this loop touches it five or six times.
+Two ways to stop paying for it, and which one applies depends on where the server
+is (ADR-0064):
+
+**Local (stdio) server: use `document_path`.** The file is already on the machine
+the server runs on, so pass the path you are editing instead of the text. Nothing
+is copied and nothing is retained. There is no reason not to do this — if you have
+a path, use it.
+
+**Hosted server: `cache: true`, and only when you mean it.** The hosted server has
+no access to your filesystem, so the alternative is asking it to hold the document
+under its content hash for about half an hour. The response then carries a
+`document_hash` you can send instead of the text.
+
+That is retention, and it is the author's call, not yours to make casually:
+
+- **Set `cache: true`** when you are about to iterate — you have a document in
+  hand and expect to analyze, fix, render and build it over the next few minutes.
+  One upload, then hashes.
+- **Leave it off** for a one-shot call (a single `analyze_plan`, rendering a plan
+  you just fetched with `get_plan`), and whenever you have not been asked to work
+  on this plan repeatedly. Off is the default because off is the server's promise:
+  it compiles what it is sent and keeps nothing.
+- **Ask first** if the plan is marked staff-only, names real people, or the author
+  has said anything about not wanting it to leave their machine. A plan whose
+  `director_notes` carry duty numbers is exactly the plan not to park on a server
+  for half an hour without saying so. Offer the local server instead.
+- **Never set it to work around a miss.** If `document_hash` comes back unknown or
+  expired, resend the document — with `cache: true` again only if the first point
+  still applies.
+
+A miss is not a failure: it costs one resend. Losing a user's trust because an
+agent opted them into retention silently is not recoverable the same way.
+
 Publishing is not available to you, by design. Hand the built archive to the
 person you are working with; they publish it.
 

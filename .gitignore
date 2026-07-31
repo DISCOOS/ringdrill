@@ -57,3 +57,11 @@ sentry.properties
 # stack trace.
 /netlify/functions/lib/mcp-compiler-bundle.js.map
 /netlify/functions/lib/mcp-compiler-bundle.js.deps
+
+# Source material for the worked example: a course booklet in its original Word
+# form, and Word's own lock file beside it. The *converted* plan is what belongs
+# in the repo if anything does — a .docx is neither reviewable in a diff nor
+# readable by the toolchain, and it is one author's copy of someone else's
+# document.
+/assets/example/*.docx
+/assets/example/~$*
