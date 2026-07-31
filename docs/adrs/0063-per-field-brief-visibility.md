@@ -174,12 +174,15 @@ the station.
   or risk notes, the ØVLE phone tree. But as of this ADR the distinction is
   latent, and that should be a decision rather than something a later reader
   discovers and mistakes for an oversight.
-* Bad: actor contact details reach every staff role, so the plan-wide roster is
-  visible to a markör who only needs the one standing next to them. That is
-  deliberate — co-located markers are the common case and the narrower cut (only
-  the actors cast to the same station) is a refinement this ADR does not make —
-  but it does mean PII scope is a role question, not a per-entry one, and a
-  markör's device holds the whole cast list.
+* Bad: actor contact details reach every staff role, so a markör's device holds the
+  whole cast list rather than the one standing next to them. **Accepted as final,
+  not as a gap to close**: the role is the correct discriminator here, and a
+  per-entry cut would be isolation the work does not want. Markörer and veiledere
+  have to find and cover for each other across a course day — co-located markers,
+  a swap when someone is late, a veileder who has to reach a post that is not
+  theirs — and a brief that showed only your own row would break that for no
+  privacy gain, since every one of these people is staff on the same exercise. PII
+  scope is a role question by design.
 * Bad: `critical_questions` at instructor level is a judgement call. They are
   prompts for evaluating whether a team leader thought of something, but they
   carry domain intel a participant would benefit from. An author who wants
@@ -192,9 +195,12 @@ the station.
 * Bad: the source-format table takes on a rendering concern. It already carries
   `mdFileName` and wire keys, and the alternative — a second table in the brief
   layer keyed by field name — is the drift this repo has now fixed twice.
-* Bad: an actor's brief still shows *every* role-play at their stations, not only
-  the ones cast to them. That is an identity cut (`RolePlay.staffUuid`), not an
-  audience one, and wants its own change.
+* Bad: an actor's brief shows *every* role-play at their stations, not only the ones
+  cast to them. **Also accepted as final.** The same reasoning: an actor needs to
+  know what the other markörer at their station are playing, because the scenario is
+  a joint performance and someone has to cover a gap. Narrowing it to
+  `RolePlay.staffUuid` would be an identity cut serving nobody. Neither of these is
+  a follow-up; the role-level model is the answer.
 
 ## Pros and cons of the options
 
