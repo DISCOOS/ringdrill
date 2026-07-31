@@ -3821,7 +3821,7 @@ abstract class AppLocalizations {
   /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
   ///
   /// In en, this message translates to:
-  /// **'Browse all tokens …'**
+  /// **'Show all …'**
   String get tokenBrowserBrowseAll;
 
   /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.

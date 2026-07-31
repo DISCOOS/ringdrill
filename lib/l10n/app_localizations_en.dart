@@ -2238,7 +2238,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tokenBrowserTitle => 'Insert token';
 
   @override
-  String get tokenBrowserBrowseAll => 'Browse all tokens …';
+  String get tokenBrowserBrowseAll => 'Show all …';
 
   @override
   String get tokenBrowserSearchHint => 'Search names and descriptions';

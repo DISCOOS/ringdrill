@@ -483,7 +483,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l.formSectionRemoveAction), findsOne);
-      expect(find.text(l.tokenBrowserBrowseAll), findsNothing);
+      expect(find.text(l.tokenBrowserTitle), findsNothing);
     });
 
     testWidgets('a focused token field puts the action in the menu', (
@@ -495,7 +495,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
 
-      expect(find.text(l.tokenBrowserBrowseAll), findsOne);
+      expect(find.text(l.tokenBrowserTitle), findsOne);
     });
 
     testWidgets('a base section gets a ⋮ it never had before', (tester) async {
@@ -518,7 +518,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
 
-      expect(find.text(l.tokenBrowserBrowseAll), findsOne);
+      expect(find.text(l.tokenBrowserTitle), findsOne);
       expect(
         find.text(l.formSectionRemoveAction),
         findsNothing,
@@ -537,7 +537,7 @@ void main() {
       final l = await _pump(tester, sections: _sections());
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(l.tokenBrowserBrowseAll));
+      await tester.tap(find.text(l.tokenBrowserTitle));
       await tester.pumpAndSettle();
 
       expect(opened, 1);

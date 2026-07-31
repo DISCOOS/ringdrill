@@ -25,7 +25,7 @@ class TokenBrowserRegistry {
 
   Future<void> Function()? _action;
 
-  /// Whether the ⋮ should offer "Browse all tokens …" at all.
+  /// Whether the ⋮ should offer the token browser at all.
   bool get hasAction => _action != null;
 
   void register(Future<void> Function() action) => _action = action;

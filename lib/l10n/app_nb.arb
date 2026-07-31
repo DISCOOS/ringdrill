@@ -1205,7 +1205,7 @@
   "tokenDescRoleplayDescription": "Den korte beskrivelsen av rollen.",
   "tokenDescRoleplayPosition": "Hvor rollen står, som en koordinat leseren kan trykke på.",
   "tokenBrowserTitle": "Sett inn token",
-  "tokenBrowserBrowseAll": "Utforsk alle token …",
+  "tokenBrowserBrowseAll": "Vis alle …",
   "tokenBrowserSearchHint": "Søk i navn og beskrivelser",
   "tokenBrowserExample": "EKSEMPEL",
   "tokenBrowserFilterAll": "Alle",

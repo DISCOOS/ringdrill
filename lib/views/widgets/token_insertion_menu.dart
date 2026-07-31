@@ -43,11 +43,16 @@ class StationPersonMenuEntry extends TokenMenuEntry {
 /// asked without naming each of them (and without a fourth being forgotten).
 mixin _CreateEntry {}
 
-/// "Browse all tokens …" — the persistent last row (ADR-0067).
+/// "Vis alle …" — the card's pinned footer (ADR-0067).
 ///
-/// Present whatever the filter matches, including when it matches nothing: there
-/// the alternative is "no matches", which tells the author their guess failed and
-/// nothing about what would have worked.
+/// Always present: it is the way out when the filter matched nothing *and* when it
+/// matched plenty, so it cannot depend on what the results look like. When nothing
+/// matched, the alternative is "no matches", which tells the author their guess
+/// failed and nothing about what would have worked.
+///
+/// Not a list row. It scrolled away with the results when it was one, and it is not
+/// a result — it is what to do when the results are not what you wanted, so it sits
+/// below the scroll view, behind a divider and on its own surface.
 class BrowseTokensMenuEntry extends TokenMenuEntry {
   const BrowseTokensMenuEntry();
 }
@@ -556,10 +561,6 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
         entries.add(CreatePersonMenuEntry(trimmed));
       }
     }
-    // Last, always. It is not a match for anything the author typed, so it does
-    // not belong among the results — it belongs after them, which is also where a
-    // "no matches" message would have been.
-    entries.add(const BrowseTokensMenuEntry());
     return entries;
   }
 
@@ -826,13 +827,10 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
           child: _TokenMenuCard(
             entries: entries,
             width: width,
-            // "No matches" used to be the whole card when nothing matched. Now the
-            // browse row is always there, so it is a muted line *above* the things
-            // the author can still do — which is what it was always trying to say.
-            emptyLabel:
-                entries.every(
-                  (e) => e is BrowseTokensMenuEntry || e is _CreateEntry,
-                )
+            // "No matches" used to be the whole card when nothing matched. The
+            // pinned footer is always there now, so it is a muted line above the
+            // things the author can still do — which is what it always meant.
+            emptyLabel: entries.every((e) => e is _CreateEntry)
                 ? l10n.tokenMenuEmpty
                 : null,
             onSelect: _select,
@@ -894,22 +892,70 @@ class _TokenMenuCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: width, maxHeight: 240),
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.symmetric(vertical: 4),
+        // The footer is outside the scroll view and always built, so it is there
+        // for a long list, a short one, and none at all.
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (emptyLabel != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                children: [
+                  if (emptyLabel != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      child: Text(
+                        emptyLabel!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  for (final entry in entries) _tile(context, l10n, entry),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            _browseFooter(context, l10n),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Fixed below the scroll view, on its own surface and behind a divider, so it
+  /// reads as an action on the card rather than one more thing that matched. Accent
+  /// coloured for the same reason the picker's own `footerActions` are.
+  Widget _browseFooter(BuildContext context, AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: InkWell(
+        onTap: () => onSelect(const BrowseTokensMenuEntry()),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: Row(
+            children: [
+              Icon(
+                Icons.manage_search,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Text(
-                  emptyLabel!,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  l10n.tokenBrowserBrowseAll,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-            for (final entry in entries) _tile(context, l10n, entry),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1004,12 +1050,9 @@ class _TokenMenuCard extends StatelessWidget {
         title: title(label),
         onTap: () => onSelect(entry),
       ),
-      BrowseTokensMenuEntry() => ListTile(
-        dense: true,
-        leading: const Icon(Icons.manage_search, size: 18),
-        title: title(l10n.tokenBrowserBrowseAll),
-        onTap: () => onSelect(entry),
-      ),
+      // The card's pinned footer, not a row — see [_browseFooter]. The arm exists
+      // because [TokenMenuEntry] is sealed.
+      BrowseTokensMenuEntry() => const SizedBox.shrink(),
       CreateVariableMenuEntry(name: final name) => ListTile(
         dense: true,
         leading: const Icon(Icons.add, size: 18),

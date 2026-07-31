@@ -372,7 +372,7 @@ class _CompactBottomBar extends StatelessWidget {
           ),
           // Two actions now, and the ⋮ is enabled whenever *either* applies: a
           // base section is not removable but its fields still take tokens
-          // (ADR-0067). "Browse all tokens" appears only while a token-aware
+          // (ADR-0067). The browser action appears only while a token-aware
           // field has focus, which is what makes "insert here" mean something.
           PopupMenuButton<String>(
             enabled: current.removable || TokenBrowserRegistry().hasAction,
@@ -399,7 +399,7 @@ List<PopupMenuEntry<String>> _sectionMenuItems(
   if (TokenBrowserRegistry().hasAction)
     PopupMenuItem(
       value: _sectionMenuBrowseTokens,
-      child: Text(l10n.tokenBrowserBrowseAll),
+      child: Text(l10n.tokenBrowserTitle),
     ),
   if (removable)
     PopupMenuItem(value: 'remove', child: Text(l10n.formSectionRemoveAction)),

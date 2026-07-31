@@ -2235,7 +2235,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get tokenBrowserTitle => 'Sett inn token';
 
   @override
-  String get tokenBrowserBrowseAll => 'Utforsk alle token …';
+  String get tokenBrowserBrowseAll => 'Vis alle …';
 
   @override
   String get tokenBrowserSearchHint => 'Søk i navn og beskrivelser';

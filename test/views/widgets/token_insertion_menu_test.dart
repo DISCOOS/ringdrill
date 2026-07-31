@@ -909,17 +909,44 @@ void main() {
     });
 
     group('the browse row (ADR-0067)', () {
-      testWidgets('is the last row whatever the filter matches', (
+      testWidgets('is there for a long list, a short one, and no matches', (
         tester,
       ) async {
         await _pump(tester);
         final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-        await _typeAndOpen(tester, '/');
-        expect(find.text(l10n.tokenBrowserBrowseAll), findsOne);
+        for (final typed in ['/', '/frek', '{{zzzz']) {
+          await _typeAndOpen(tester, typed);
+          expect(
+            find.text(l10n.tokenBrowserBrowseAll),
+            findsOne,
+            reason:
+                'the way out cannot depend on what the results look like, and '
+                '"$typed" produces a different list every time',
+          );
+        }
+      });
 
-        await _typeAndOpen(tester, '/frek');
+      testWidgets('is pinned below the list, not scrolled with it', (
+        tester,
+      ) async {
+        // It was a list row first, and a list row scrolls away — which puts it
+        // furthest from reach exactly when the list is long enough that the author
+        // has given up scanning it.
+        await _pump(tester);
+        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+        await _typeAndOpen(tester, '/');
+
         expect(find.text(l10n.tokenBrowserBrowseAll), findsOne);
+        expect(
+          find.descendant(
+            of: find.byType(ListView),
+            matching: find.text(l10n.tokenBrowserBrowseAll),
+          ),
+          findsNothing,
+          reason: 'inside the scroll view it would scroll away',
+        );
       });
 
       testWidgets('replaces the dead end when nothing matches', (tester) async {
