@@ -2803,4 +2803,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get planStatusPublishing => 'Publishing …';
+
+  @override
+  String get positionNotSet => 'Not set';
+
+  @override
+  String get noPositionTitle => 'No position set';
+
+  @override
+  String get noPositionStationBody =>
+      'This station isn\'t shown on the map, and the brief gets no coordinate.';
+
+  @override
+  String get noPositionRolePlayBody =>
+      'This markør follows its station, but the station has no position. Set a position on the station, or give the markør its own.';
+
+  @override
+  String get setPosition => 'Set position';
+
+  @override
+  String get setOwnPosition => 'Set own position';
 }

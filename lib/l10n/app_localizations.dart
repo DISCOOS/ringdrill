@@ -4807,6 +4807,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Publishing …'**
   String get planStatusPublishing;
+
+  /// Coordinate-bar value when no position is set, in place of the UTM string.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get positionNotSet;
+
+  /// Title of the teaching empty state shown in a map slot with no position.
+  ///
+  /// In en, this message translates to:
+  /// **'No position set'**
+  String get noPositionTitle;
+
+  /// Body of the no-position empty state on a station: what is lost by leaving it unset.
+  ///
+  /// In en, this message translates to:
+  /// **'This station isn\'t shown on the map, and the brief gets no coordinate.'**
+  String get noPositionStationBody;
+
+  /// Body of the no-position empty state on a markør. Names both causes, because the central position is null only when neither the markør nor its station has one.
+  ///
+  /// In en, this message translates to:
+  /// **'This markør follows its station, but the station has no position. Set a position on the station, or give the markør its own.'**
+  String get noPositionRolePlayBody;
+
+  /// Action on the no-position empty state for a station.
+  ///
+  /// In en, this message translates to:
+  /// **'Set position'**
+  String get setPosition;
+
+  /// Action on the no-position empty state for a markør: gives the markør its own position rather than following the station's.
+  ///
+  /// In en, this message translates to:
+  /// **'Set own position'**
+  String get setOwnPosition;
 }
 
 class _AppLocalizationsDelegate

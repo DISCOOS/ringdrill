@@ -3178,5 +3178,29 @@
   "planStatusPublishing": "Publishing …",
   "@planStatusPublishing": {
     "description": "Plan status badge label and tooltip while an upload started from the badge is in flight."
+  },
+  "positionNotSet": "Not set",
+  "@positionNotSet": {
+    "description": "Coordinate-bar value when no position is set, in place of the UTM string."
+  },
+  "noPositionTitle": "No position set",
+  "@noPositionTitle": {
+    "description": "Title of the teaching empty state shown in a map slot with no position."
+  },
+  "noPositionStationBody": "This station isn't shown on the map, and the brief gets no coordinate.",
+  "@noPositionStationBody": {
+    "description": "Body of the no-position empty state on a station: what is lost by leaving it unset."
+  },
+  "noPositionRolePlayBody": "This markør follows its station, but the station has no position. Set a position on the station, or give the markør its own.",
+  "@noPositionRolePlayBody": {
+    "description": "Body of the no-position empty state on a markør. Names both causes, because the central position is null only when neither the markør nor its station has one."
+  },
+  "setPosition": "Set position",
+  "@setPosition": {
+    "description": "Action on the no-position empty state for a station."
+  },
+  "setOwnPosition": "Set own position",
+  "@setOwnPosition": {
+    "description": "Action on the no-position empty state for a markør: gives the markør its own position rather than following the station's."
   }
 }

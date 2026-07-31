@@ -2077,5 +2077,29 @@
   "planStatusPublishing": "Publiserer …",
   "@planStatusPublishing": {
     "description": "Plan status badge label and tooltip while an upload started from the badge is in flight."
+  },
+  "positionNotSet": "Ikke satt",
+  "@positionNotSet": {
+    "description": "Coordinate-bar value when no position is set, in place of the UTM string."
+  },
+  "noPositionTitle": "Ingen posisjon satt",
+  "@noPositionTitle": {
+    "description": "Title of the teaching empty state shown in a map slot with no position."
+  },
+  "noPositionStationBody": "Posten vises ikke i kartet, og heftet får ingen koordinat.",
+  "@noPositionStationBody": {
+    "description": "Body of the no-position empty state on a station: what is lost by leaving it unset."
+  },
+  "noPositionRolePlayBody": "Markøren følger posten, men posten har ingen posisjon. Sett posisjon på posten, eller gi markøren sin egen.",
+  "@noPositionRolePlayBody": {
+    "description": "Body of the no-position empty state on a markør. Names both causes, because the central position is null only when neither the markør nor its station has one."
+  },
+  "setPosition": "Sett posisjon",
+  "@setPosition": {
+    "description": "Action on the no-position empty state for a station."
+  },
+  "setOwnPosition": "Sett egen posisjon",
+  "@setOwnPosition": {
+    "description": "Action on the no-position empty state for a markør: gives the markør its own position rather than following the station's."
   }
 }

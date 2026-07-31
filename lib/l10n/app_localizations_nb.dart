@@ -2801,4 +2801,24 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get planStatusPublishing => 'Publiserer …';
+
+  @override
+  String get positionNotSet => 'Ikke satt';
+
+  @override
+  String get noPositionTitle => 'Ingen posisjon satt';
+
+  @override
+  String get noPositionStationBody =>
+      'Posten vises ikke i kartet, og heftet får ingen koordinat.';
+
+  @override
+  String get noPositionRolePlayBody =>
+      'Markøren følger posten, men posten har ingen posisjon. Sett posisjon på posten, eller gi markøren sin egen.';
+
+  @override
+  String get setPosition => 'Sett posisjon';
+
+  @override
+  String get setOwnPosition => 'Sett egen posisjon';
 }
