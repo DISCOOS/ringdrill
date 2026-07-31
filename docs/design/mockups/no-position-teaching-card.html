@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Ingen posisjon: teaching-kort</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --radius:8px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --font-mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  .grid{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;align-items:flex-start}
+  .col{width:330px}
+  .col.wide{width:430px}
+  .cap{font-size:12px;color:var(--text-3);margin:0 0 6px 4px}
+  .frame{background:var(--bg-1);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+  .bar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .bar .t{flex:1;font-size:15px;font-weight:500}
+  .body{padding:14px;display:flex;flex-direction:column;gap:14px}
+  .card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--bg-1)}
+  .slot{background:var(--bg-2);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:9px;padding:22px 26px}
+  .disc{width:56px;height:56px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center}
+  .disc i{font-size:26px;color:var(--accent)}
+  .h{margin:0;font-size:15px;font-weight:500}
+  .p{margin:0;font-size:13px;line-height:1.55;color:var(--text-2);max-width:32ch}
+  .cta{font-size:13px;font-weight:500;color:var(--accent);background:var(--accent-bg);padding:7px 14px;border-radius:var(--radius)}
+  .cta.off{color:var(--text-3);background:var(--bg-3)}
+  .cbar{display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--border)}
+  .cbar .l{font-size:14px;color:var(--text-2);flex:1}
+  .cbar .v{font-size:14px;color:var(--text-3)}
+  .tile{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)}
+  .note{width:100%;max-width:900px;margin:26px auto 0;font-size:13px;line-height:1.6;color:var(--text-2)}
+  .note h2{font-size:14px;font-weight:500;color:var(--text-1);margin:0 0 6px}
+  .note li{margin-bottom:5px}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <div class="col wide">
+    <p class="cap">1 · I dag — wide detaljpanel, post uten posisjon</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-layout-sidebar" style="font-size:19px;color:var(--text-2)"></i><div style="flex:1"><div style="font-size:15px;font-weight:500">1a Turgåer</div><div style="font-size:12px;color:var(--text-2)">Øve oppstart (PI i PIKSIB)</div></div><i class="ti ti-pencil" style="font-size:18px;color:var(--text-2)"></i></div>
+      <div style="display:flex;gap:12px;padding:12px">
+        <div style="flex:1;border:1px solid var(--border);border-radius:var(--radius);padding:10px">
+          <div style="font-size:11px;color:var(--text-2);margin-bottom:6px">POSTBESKRIVELSE</div>
+          <div style="font-size:12px;color:var(--text-3);line-height:1.5">Kåre Skogstad, 46 år, skulle gå tur til Bua i går kveld …</div>
+        </div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:space-between;min-height:190px">
+          <span style="font-size:14px;color:var(--text-2)">Posisjon</span>
+          <span style="font-size:14px">Ingen posisjon</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <p class="cap">2 · Nytt — samme kortkrom som en satt posisjon</p>
+    <div class="frame">
+      <div class="body">
+        <div class="card">
+          <div class="slot" style="min-height:190px">
+            <div class="disc"><i class="ti ti-map-pin-plus"></i></div>
+            <p class="h">Ingen posisjon satt</p>
+            <p class="p">Posten vises ikke i kartet, og heftet får ingen koordinat.</p>
+            <span class="cta">Sett posisjon</span>
+          </div>
+          <div class="cbar"><span class="l">Plassering</span><span class="v">Ikke satt</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <p class="cap">3 · Markør — verken egen posisjon eller post-posisjon</p>
+    <div class="frame">
+      <div class="body">
+        <div class="card">
+          <div class="slot" style="min-height:190px">
+            <div class="disc"><i class="ti ti-mood-neutral"></i></div>
+            <p class="h">Ingen posisjon satt</p>
+            <p class="p">Markøren følger posten, men posten har ingen posisjon. Sett posisjon på posten, eller gi markøren sin egen.</p>
+            <span class="cta">Sett egen posisjon</span>
+          </div>
+          <div class="cbar"><span class="l">Plassering</span><span class="v">Ikke satt</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <p class="cap">4 · Viewer og kjørende øvelse — forklaring uten handling</p>
+    <div class="frame">
+      <div class="body">
+        <div class="card">
+          <div class="slot" style="min-height:150px">
+            <div class="disc"><i class="ti ti-map-pin-off"></i></div>
+            <p class="h">Ingen posisjon satt</p>
+            <p class="p">Posten vises ikke i kartet.</p>
+          </div>
+          <div class="cbar"><span class="l">Plassering</span><span class="v">Ikke satt</span></div>
+        </div>
+        <div class="card">
+          <div class="slot" style="min-height:150px">
+            <div class="disc"><i class="ti ti-map-pin-plus"></i></div>
+            <p class="h">Ingen posisjon satt</p>
+            <p class="p">Stopp øvelsen for å endre posten.</p>
+            <span class="cta off">Sett posisjon</span>
+          </div>
+          <div class="cbar"><span class="l">Plassering</span><span class="v">Ikke satt</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <p class="cap">5 · Tette kall-steder — uendret énlinjerad</p>
+    <div class="frame">
+      <div class="tile"><span style="font-size:12px;color:var(--text-2);width:26px">1a</span><div style="flex:1"><div style="font-size:14px">Turgåer</div><div style="font-size:12px;color:var(--text-2)">Øve oppstart</div></div><i class="ti ti-chevron-up" style="font-size:18px;color:var(--text-3)"></i></div>
+      <div style="padding:12px 14px;background:var(--bg-2)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px;color:var(--text-2);flex:1">Posisjon</span>
+          <span style="font-size:14px;color:var(--text-3)">Ikke satt</span>
+        </div>
+      </div>
+      <div class="tile" style="border-bottom:none;border-top:1px solid var(--border)"><span style="font-size:12px;color:var(--text-2);width:26px">1b</span><div style="flex:1"><div style="font-size:14px">Rusmisbruk</div><div style="font-size:12px;color:var(--text-2)">Øve oppstart</div></div><i class="ti ti-chevron-down" style="font-size:18px;color:var(--text-3)"></i></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">
+  <h2>Notater</h2>
+  <ul>
+    <li>Panel 2–4 er samme <span style="font-family:var(--font-mono)">PositionCardShell</span> som en satt posisjon: samme radius, samme tonale kart-krom, samme collapse-chevron og legend-slot. Bare thumbnail-sloten og koordinatverdien er byttet.</li>
+    <li>Koordinatbaren står igjen med «Ikke satt» i stedet for UTM-strengen, så overgangen mellom satt og ikke satt ikke leses som to ulike komponenter.</li>
+    <li>Handlingen er rolle-gated (<span style="font-family:var(--font-mono)">IfEditable</span>) og disables mens øvelsen kjører, som blyanten i AppBar. Viewer får forklaringen uten en død knapp.</li>
+    <li>Panel 5: inline kall-steder i ExpansionTile-kropper beholder énlinjeraden. Teaching-kortet er for slots som eier en reell karthøyde.</li>
+  </ul>
+</div>
+</body>
+</html>
