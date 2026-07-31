@@ -6,6 +6,8 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/views/widgets/position_card.dart';
 import 'package:ringdrill/views/widgets/role_mini_map.dart';
+import 'package:ringdrill/views/widgets/position_empty_state.dart';
+import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
 
 /// docs/prompts/position-panel-read-alignment.md — RolePositionPanel on the
@@ -184,4 +186,62 @@ void main() {
       expect(find.byType(Card), findsOneWidget);
     },
   );
+
+  testWidgets('with no central position, the row is the default', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: RolePositionPanel(
+            exercise: exercise(),
+            rolePlay: const RolePlay(
+              uuid: 'rp-1',
+              index: 0,
+              exerciseUuid: 'ex-1',
+              name: 'Hilde',
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final l = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.text(l.positionNotSet), findsOneWidget);
+    expect(find.byType(PositionEmptyState), findsNothing);
+  });
+
+  testWidgets('the card style teaches it, naming both routes out', (
+    tester,
+  ) async {
+    // roleCentralPosition is null only when neither the markør nor its station has
+    // a position, so the body must not imply the markør alone is at fault.
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: RolePositionPanel(
+            exercise: exercise(),
+            rolePlay: const RolePlay(
+              uuid: 'rp-1',
+              index: 0,
+              exerciseUuid: 'ex-1',
+              name: 'Hilde',
+            ),
+            emptyStyle: PositionEmptyStyle.card,
+          ),
+        ),
+      ),
+    );
+
+    final l = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.byType(PositionCardShell), findsOneWidget);
+    expect(find.text(l.noPositionTitle), findsOneWidget);
+    expect(find.text(l.noPositionRolePlayBody), findsOneWidget);
+    expect(find.byIcon(Icons.mood), findsOneWidget);
+    expect(find.text(l.positionNotSet), findsOneWidget);
+  });
 }

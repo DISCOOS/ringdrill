@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -43,12 +42,13 @@ import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/face_badge_icon.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 import 'package:ringdrill/views/widgets/map_legend.dart';
-import 'package:ringdrill/views/widgets/map_placeholder.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/role_mini_map.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
+import 'package:ringdrill/views/widgets/station_position_panel.dart';
+import 'package:ringdrill/views/widgets/position_empty_state.dart';
 import 'package:ringdrill/views/widgets/roleplay_scope.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
@@ -528,19 +528,15 @@ class _RolePlayScreenState extends State<RolePlayScreen>
     ];
   }
 
-  /// The role map panel — null when [rolePlay] has no position, matching
-  /// the stacked body's own "omit entirely" behaviour; the expanded body's
-  /// right pane falls back to [_buildMapPlaceholder] instead, since it
-  /// always needs something to show there. [fillHeight] makes the map flex
-  /// to fill the expanded body's right pane instead of the panel's own
-  /// fixed default height; left `false` for the stacked body's inline
-  /// card.
-  /// The role map's central position (Del B): the marker's own position if
-  /// set, else the portrayed person's location. Null when the marker has
-  /// neither — the map is omitted entirely.
-  LatLng? _markerMapCentral(RolePlay rolePlay, Station? station) =>
-      rolePlay.position ?? _personLocation(station, rolePlay)?.position;
-
+  /// The role map panel. Null only when the exercise cannot be resolved — a
+  /// missing *position* is no longer an absence to route around, because the panel
+  /// renders the teaching card for it (ADR-0057 gating included). That is why
+  /// `_buildMapPlaceholder` is gone: the card is the placeholder now, and it says
+  /// something.
+  ///
+  /// [fillHeight] makes the map flex to fill the expanded body's right pane instead
+  /// of the panel's own fixed default height; left `false` for the stacked body's
+  /// inline card.
   Widget? _buildPositionPanel({
     required RolePlay rolePlay,
     required Station? station,
@@ -549,8 +545,6 @@ class _RolePlayScreenState extends State<RolePlayScreen>
     bool fillHeight = false,
     bool interactive = false,
   }) {
-    final central = _markerMapCentral(rolePlay, station);
-    if (central == null) return null;
     final exercise = _planService.getExercise(rolePlay.exerciseUuid);
     if (exercise == null) return null;
 
@@ -600,18 +594,44 @@ class _RolePlayScreenState extends State<RolePlayScreen>
           sectionId: 'position',
           extraMarkers: extra,
           legend: MapLegend(entries: legendEntries),
+          emptyStyle: PositionEmptyStyle.card,
+          emptyState: _buildRolePositionEmptyState(
+            subject: _RolePlaySubject(rolePlay, exercise),
+            l10n: l10n,
+          ),
         );
       },
     );
   }
 
-  /// Placeholder shown in a map slot for a roleplay with no central
-  /// position — the polished, card-shaped [MapPlaceholder] shared with the
-  /// station and coordinator maps. [height] is null in the expanded body's
-  /// map pane (it fills the pane) and the clamped map height in the medium
-  /// segment (a fixed slot in a scrolling column).
-  Widget _buildMapPlaceholder(AppLocalizations l10n, {double? height}) {
-    return MapPlaceholder(height: height, message: l10n.noLocation);
+  /// The teaching state for a markør with no central position, gated like the
+  /// AppBar pencil (ADR-0057).
+  ///
+  /// `roleCentralPosition` is null only when neither the markør nor its station has
+  /// a position, so the copy names both routes out. The action sets the markør's
+  /// *own* position, which is the one this screen can do something about.
+  Widget _buildRolePositionEmptyState({
+    required _RolePlaySubject subject,
+    required AppLocalizations l10n,
+  }) {
+    return IfEditable(
+      target: EditTarget.rolePlay,
+      // Without a replacement IfEditable collapses to a zero-size box, which would
+      // leave the card's thumbnail slot empty for a viewer.
+      replacement: PositionEmptyState(
+        title: l10n.noPositionTitle,
+        body: l10n.noPositionRolePlayBody,
+        icon: Icons.mood,
+      ),
+      child: PositionEmptyState(
+        title: l10n.noPositionTitle,
+        body: l10n.noPositionRolePlayBody,
+        icon: Icons.mood,
+        actionLabel: l10n.setOwnPosition,
+        onAction: () =>
+            _openRolePlayForm(subject, initialSectionId: 'position'),
+      ),
+    );
   }
 
   /// Expanded body (pane ≥ 840): the same cards the stacked body shows,
@@ -647,7 +667,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
               fillHeight: true,
               interactive: true,
             ) ??
-            _buildMapPlaceholder(l10n),
+            const SizedBox.shrink(),
       ),
     );
   }
@@ -655,9 +675,9 @@ class _RolePlayScreenState extends State<RolePlayScreen>
   /// Compact and medium body: a pinned Info/Map segmented selector, then the
   /// selected segment filling the rest. Info (status/context/play cards +
   /// schedule) scrolls within its area; Map fills it to the bottom with the
-  /// directly-interactive position panel (or, with no central position, a
-  /// [MapPlaceholder] — unlike the compact behaviour before this, which
-  /// omitted it entirely). Only the `expanded` window size uses the two-pane
+  /// directly-interactive position panel — which now teaches its own empty state
+  /// when there is no central position, rather than being swapped for a
+  /// placeholder. Only the `expanded` window size uses the two-pane
   /// `WideDetailMapSplit` instead.
   Widget _buildSegmentedBody({
     required _RolePlaySubject subject,
@@ -691,7 +711,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
                     fillHeight: true,
                     interactive: true,
                   ) ??
-                  _buildMapPlaceholder(l10n),
+                  const SizedBox.shrink(),
             ),
           },
         ),

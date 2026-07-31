@@ -13,6 +13,7 @@ import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/shell/wide_detail_map_split.dart';
+import 'package:ringdrill/views/widgets/position_empty_state.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -154,11 +155,10 @@ void main() {
   // the other tests in this file (map controllers, plan state), which
   // otherwise make its bounded pumps miss the freshly-built selector.
   testWidgets(
-    'a roleplay with no central position still shows the Map segment, with '
-    'the MapPlaceholder fallback instead of omitting it (medium)',
+    'a roleplay with no central position teaches it in the Map segment (medium)',
     (tester) async {
       // A roleplay with neither its own position nor a linked person (so
-      // _markerMapCentral resolves to null) added straight to prefs —
+      // roleCentralPosition resolves to null) added straight to prefs —
       // getRolePlay reads prefs live by key, so no re-init is needed. The
       // compact body would omit the panel entirely; medium's Map segment
       // shows a MapPlaceholder instead.
@@ -183,8 +183,8 @@ void main() {
       // Bounded pumps, not pumpAndSettle: RolePlayScreen docks a
       // DrillMiniPlayer whose live status animates indefinitely, so
       // pumpAndSettle never settles. A frame plus a fixed advance is enough
-      // to build the segmented body (the Map segment here is a static
-      // MapPlaceholder, no map).
+      // to build the segmented body (the Map segment here is a static teaching
+      // card, no map).
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       await tester.tap(find.byIcon(Icons.map));
@@ -192,8 +192,16 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(tester.takeException(), isNull);
-      expect(find.byType(RolePositionPanel), findsNothing);
-      expect(find.text(l10n.noLocation), findsOneWidget);
+      // The panel is no longer swapped for a placeholder: it renders, and teaches
+      // the empty state itself. `roleCentralPosition` is null only when neither the
+      // markør nor its station has a position, so the copy names both routes out
+      // rather than blaming the markør.
+      expect(find.byType(RolePositionPanel), findsOneWidget);
+      expect(find.byType(PositionEmptyState), findsOneWidget);
+      expect(find.text(l10n.noPositionTitle), findsOneWidget);
+      expect(find.text(l10n.noPositionRolePlayBody), findsOneWidget);
+      expect(find.text(l10n.positionNotSet), findsOneWidget);
+      expect(find.text(l10n.noLocation), findsNothing);
     },
   );
 

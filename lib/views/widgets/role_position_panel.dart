@@ -8,6 +8,8 @@ import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/widgets/border_shell.dart';
 import 'package:ringdrill/views/widgets/position_card.dart';
+import 'package:ringdrill/views/widgets/station_position_panel.dart';
+import 'package:ringdrill/views/widgets/position_empty_state.dart';
 import 'package:ringdrill/views/widgets/role_mini_map.dart';
 
 /// Reusable position panel for a single role's detail surface
@@ -43,6 +45,8 @@ class RolePositionPanel extends StatelessWidget {
     this.withTitle = false,
     this.withBorder = false,
     this.padding = EdgeInsets.zero,
+    this.emptyStyle = PositionEmptyStyle.row,
+    this.emptyState,
   });
 
   final Exercise exercise;
@@ -106,6 +110,15 @@ class RolePositionPanel extends StatelessWidget {
   /// collapse chevron, always expanded.
   final String? sectionId;
 
+  /// How a missing central position renders — see [PositionEmptyStyle]. Defaults to
+  /// the row every existing call site already showed.
+  final PositionEmptyStyle emptyStyle;
+
+  /// The teaching empty state for [PositionEmptyStyle.card], built by the caller so
+  /// the role gate stays out of this shared panel. Null falls back to the
+  /// explanation with no action.
+  final Widget? emptyState;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -113,7 +126,9 @@ class RolePositionPanel extends StatelessWidget {
     final position = roleCentralPosition(rolePlay, station);
 
     final content = position == null
-        ? _buildNoPositionRow(l10n, theme)
+        ? (emptyStyle == PositionEmptyStyle.card
+              ? _buildEmptyCard(l10n, theme)
+              : _buildNoPositionRow(l10n, theme))
         : _buildPositionCard(l10n, theme, position);
 
     final positioned = withBorder ? BorderShell(child: content) : content;
@@ -157,8 +172,45 @@ class RolePositionPanel extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        Text(localizations.noLocation, style: theme.textTheme.bodyMedium),
+        Text(localizations.positionNotSet, style: theme.textTheme.bodyMedium),
       ],
+    );
+  }
+
+  /// The same shell as a set position, with the teaching state where the map goes.
+  ///
+  /// `roleCentralPosition` is null only when *neither* the markør nor its station
+  /// has a position, so the copy names both routes out — implying the markør alone
+  /// is at fault would send an author to the wrong form.
+  PositionCardShell _buildEmptyCard(AppLocalizations l10n, ThemeData theme) {
+    return PositionCardShell(
+      asCard: asCard,
+      thumbnail:
+          emptyState ??
+          PositionEmptyState(
+            title: l10n.noPositionTitle,
+            body: l10n.noPositionRolePlayBody,
+            icon: Icons.mood,
+            height: fillHeight ? null : mapHeight,
+          ),
+      thumbnailHeight: mapHeight,
+      fillHeight: fillHeight,
+      sectionId: sectionId,
+      barLabel: Text(
+        label ?? l10n.position,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      barChild: Align(
+        alignment: Alignment.centerRight,
+        child: Text(
+          l10n.positionNotSet,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
     );
   }
 
