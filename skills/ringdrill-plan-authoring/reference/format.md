@@ -195,6 +195,14 @@ already; `{{exercise.roundTable}}` exists for the rarer case where a section has
 show it inline. See *Rules that are not in the schema* in
 [`SKILL.md`](../SKILL.md) for the table of what to write instead of what.
 
+**A repeated literal belongs in a variable.** The other half of the same rule, for
+values nothing derives: a talegruppe, a duty phone number, a meeting place, a team
+designation. No token can exist for them — declare a variable and reference
+`{{var.<slug>}}`, which the author can then change in one place. Three or more
+fields carrying the same literal is the threshold worth acting on
+([ADR-0066](../../../docs/adrs/0066-team-scope-for-cross-reference-tokens.md)
+rejected a `team` scope for exactly this reason: it was a variable all along).
+
 A location token prints `place` when the location has one, so prose that already
 names the spot says it twice:
 

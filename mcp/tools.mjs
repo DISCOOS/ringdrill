@@ -352,6 +352,12 @@ Rules the schema cannot express, and that are easy to get wrong:
   {{plan.exerciseCount}}, {{plan.teamCount}}, {{plan.stationCount}}. Call
   \`schema\` for the full list. A source document has such values printed because
   paper cannot compute — that does not make them content.
+- A literal you write more than a few times wants to be a variable. Nothing derives
+  a talegruppe, a duty phone number, a meeting place or a team designation, so no
+  token exists for them — declare a plan variable and reference {{var.<slug>}},
+  which the author can then edit in one place. Sweep for these once the draft is
+  written: promote a literal that appears in three or more fields, or one decided
+  late or changed on the day. Do not promote a word that merely recurs in prose.
 
 Order of work: schema, read a published plan with get_plan, create_plan, write,
 analyze_plan and fix everything it reports, render_plan and actually read it, then

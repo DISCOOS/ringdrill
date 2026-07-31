@@ -131,6 +131,28 @@ And the one good reason to write a derived-looking value by hand is to record th
 the source document *disagrees* with what the plan computes: then the literal is
 evidence, not a copy, and it belongs next to the token so a reader can compare.
 
+**A literal you write more than a few times wants to be a variable.** The table
+above covers values the *format* derives. This is the other half: values the
+*document* repeats. Nothing computes them, so no token can exist for them — but a
+plan variable (`{{var.<slug>}}`) is author-declared, editable in the plan's
+variables section, and resolves everywhere a token does.
+
+Sweep for these once the draft is written, because they only become visible in
+aggregate:
+
+* a talegruppe or callsign repeated across every station
+* a duty phone number in several fields
+* a meeting place or a time-of-day written into prose in ten places
+* a team designation — the 2026 LSOR booklet writes `Lag 2.X` **39 times**, a
+  wildcard its author typed because paper cannot compute. `{{var.lag}}` with a
+  default is the same wildcard, and setting it on the day changes all 39.
+
+The economy test: promote it when the same literal appears in **three or more**
+fields, or when it is the kind of value that gets decided late or changes on the day
+— a frequency, a phone number, a team number. Do not promote a word that merely
+recurs in prose; a variable that saves nothing is one more thing to maintain, and a
+plan with thirty variables is harder to read than one with six.
+
 **Numbering comes from position. Never write it into a name.** The app renders
 "#2" and "2.1" itself, from list order and the plan's number format. A station
 named `"2a) Fisker"` renders as "2.1 2a) Fisker". Some older plans in the catalog
