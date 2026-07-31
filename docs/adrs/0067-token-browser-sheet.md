@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-07-31
 deciders: ["kengu"]
 consulted: []
@@ -89,12 +89,15 @@ The app is the one surface that cannot show either.
 
 ## Decision outcome
 
-**Recommended: Option B.** Not decided here — it is a new surface with its own
-layout, empty states and localisation, and it should be designed with the section
-editor's own navigation in view (`SectionNavigatedForm`, DESIGN-010) rather than
-bolted onto the overlay.
+Chosen option: **Option B**, and built.
 
-The shape being proposed, drawn in
+It held together in one respect worth recording: the two open questions the proposal
+flagged both answered themselves once the shape was pinned to the picker primitive.
+There was no new layout to design, because `showRingdrillPicker` already had one; and
+the descriptions, which were the reason to hesitate, turned out to be the only part
+that was genuinely new work.
+
+The shape, drawn in
 [`docs/design/mockups/token-browser-sheet.html`](../design/mockups/token-browser-sheet.html):
 
 * **Entry point.** The caret menu gains a persistent last entry, "Browse all
@@ -199,6 +202,14 @@ The shape being proposed, drawn in
   on compact and as the rail on medium/expanded. A picker that passes none looks
   exactly as it does today, and the cast picker gets a place to put
   "all / assigned only" when it wants one.
+* **Reaching the ⋮.** One thing the proposal did not think through: the section
+  editor's ⋮ sits *above* the field in the tree, and the browse action belongs to
+  the field, which holds the controller, the caret and the trigger. An
+  `InheritedWidget` only reaches downwards. So the field registers its action on
+  focus and the chrome reads the registration — the same shape `MainScreen` already
+  uses to let the drawer trigger the visible tab's refresh indicator. Following
+  *focus* rather than mounting is the part that matters: a section form has several
+  token-aware fields alive at once, and "insert a token here" needs a "here".
 * **Insertion.** Tapping a row inserts the literal token at the caret and closes
   the sheet, reusing the caret menu's existing `_select` path so there is one
   implementation of "what text does this entry produce".
@@ -207,9 +218,10 @@ The shape being proposed, drawn in
   bidirectional assert extends to them: a facet with no description fails the
   same way a facet with no label now does.
 
-Option A is what has just been done, and it is the right stopgap — the freeze had
-to stop today. It is not a resolution, because it makes the value less readable to
-protect the layout.
+Option A shipped first as the stopgap — the freeze had to stop that day — and the
+value cap it added stays, because the caret menu still has rows to keep intact. It
+was never the resolution: it protects the layout by truncating the value harder,
+which is the opposite of what the author reading that row needs.
 
 ### Consequences
 
@@ -224,11 +236,14 @@ protect the layout.
 * Good: the trailing slot in the caret menu can go back to one meaning, since the
   browser is where the other kinds belong.
 * Bad: **descriptions for every facet are real writing, in two languages.** 26
-  facets plus the location and person facet paths, each needing a line that says
-  something the label does not. Half-written descriptions would be worse than
-  none, so this is the bulk of the work and the reason the ADR is proposed rather
-  than accepted. Example values add to the same pile, though a smaller one — only
-  the facets that can come back empty need one.
+  facets, each needing a line that says something the label does not, and they are
+  now written. Half-written descriptions would have been worse than none, so
+  `_labelled` asserts them complete the way it asserts the labels: a facet added to
+  `PlanFieldNames` without a description fails loudly rather than reaching the
+  browser as a row that explains nothing. The location and person facet paths share
+  one description per kind rather than one each, since what varies between them is
+  the slug, not the meaning. Example values added to the same pile, though a
+  smaller one — only the facets that can come back empty have one.
 * Bad: the `filters` parameter is a change to a primitive four other call sites
   already depend on. Optional and additive, but a shared widget nonetheless, so
   its tests grow with it.
