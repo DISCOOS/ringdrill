@@ -344,6 +344,13 @@ Rules the schema cannot express, and that are easy to get wrong:
 - A markdown field is visible only to the audiences it declares, so a spoiler is
   withheld only if it sits in the field that owns it: the marker's script in
   \`behavior\`, intel to withhold in \`leader_answers\`.
+- Never hand-roll a value the format derives — a round-time table, a phase
+  breakdown, a duration, a station code. Those go stale the moment a start time or
+  duration changes. Write the token instead: {{exercise.roundTable}},
+  {{exercise.phaseBreakdown}}, {{exercise.durationLabel}},
+  {{station.stationCode}}. Call \`schema\` for the full list. A source document
+  has such values printed because paper cannot compute — that does not make them
+  content.
 
 Order of work: schema, read a published plan with get_plan, create_plan, write,
 analyze_plan and fix everything it reports, render_plan and actually read it, then

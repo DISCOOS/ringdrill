@@ -184,7 +184,16 @@ find and change before publishing.
 | `{{station.loc.<slug>.place}}` / `.label` | The place text / the label. |
 | `{{station.person.<slug>}}` | The person's name. |
 | `{{station.person.<slug>.age}}` | A person facet. |
+| `{{exercise.roundTable}}` | The rotation as a table, one row per round — derived, so it cannot go stale. |
 | `{{plan.name}}`, `{{exercise.startTime}}`, `{{station.stationCode}}`, … | Fields of the enclosing scope. Call `schema`, or let `analyze_plan` list them. |
+
+**A derived value belongs in a token, never in prose.** The rotation times, the
+phase breakdown, a duration, a station code — all of them follow from fields the
+author already set, so a copy typed into a markdown field is correct only until one
+of those changes. The brief renders the rotation in its own *Organisering* block
+already; `{{exercise.roundTable}}` exists for the rarer case where a section has to
+show it inline. See *Rules that are not in the schema* in
+[`SKILL.md`](../SKILL.md) for the table of what to write instead of what.
 
 A location token prints `place` when the location has one, so prose that already
 names the spot says it twice:

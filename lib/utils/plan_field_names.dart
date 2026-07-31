@@ -66,6 +66,7 @@ class PlanFieldNames {
     'exercise.evaluationTime',
     'exercise.rotationTime',
     'exercise.phaseBreakdown',
+    'exercise.roundTable',
   ];
 
   /// Omits `station.description` deliberately (DESIGN-009 follow-up 4c): it *is*

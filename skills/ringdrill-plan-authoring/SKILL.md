@@ -102,6 +102,33 @@ the source *and* in the rendered brief — markdown collapses soft breaks — an
 obvious only in the one place nobody looks while writing. One sentence per line.
 Keep a list item or table row on a single line however long it gets.
 
+**Never hand-roll a value the format derives — there is a token.** This is the
+same mistake as writing a number into a name, and it is the one an agent
+transcribing a document falls into hardest: the source document has the value
+printed, because paper cannot compute, so it looks like content. It is not. A
+rotation table typed into `execution_tips` is correct exactly until someone changes
+`startTime` or a duration, and then it is a confident lie in the brief.
+
+Before typing any time, count, duration or code into prose, check whether the
+`schema` tool lists a token for it. The ones that catch most cases:
+
+| Instead of typing | Write |
+|---|---|
+| a per-round clock table | `{{exercise.roundTable}}` |
+| "15 \| 10 \| 5" | `{{exercise.phaseBreakdown}}` |
+| "08:30–10:30" | `{{exercise.timeLabel}}` |
+| "2 timer (30 min pr oppdrag)" | `{{exercise.durationLabel}}` |
+| the number of rounds or teams | `{{exercise.numberOfRounds}}`, `{{exercise.numberOfTeams}}` |
+| a station's code ("1c") | `{{station.stationCode}}` |
+| a coordinate you already declared | `{{station.loc.<slug>.position}}` |
+
+Two things worth knowing. The brief already renders the rotation in its
+*Organisering* block, so most plans need no table in prose at all — reach for
+`{{exercise.roundTable}}` only when a section genuinely has to show it inline.
+And the one good reason to write a derived-looking value by hand is to record that
+the source document *disagrees* with what the plan computes: then the literal is
+evidence, not a copy, and it belongs next to the token so a reader can compare.
+
 **Numbering comes from position. Never write it into a name.** The app renders
 "#2" and "2.1" itself, from list order and the plan's number format. A station
 named `"2a) Fisker"` renders as "2.1 2a) Fisker". Some older plans in the catalog

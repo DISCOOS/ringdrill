@@ -665,6 +665,8 @@ Map<String, dynamic> _exerciseRefContext(Exercise exercise, BriefLabels l10n) =>
         'evaluationTime': exercise.evaluationTime,
         'rotationTime': exercise.rotationTime,
         'phaseBreakdown': rotationPhaseBreakdown(exercise),
+        // Derived, so an author never hand-rolls the round times into prose.
+        'roundTable': rotationRoundTable(exercise, l10n),
       },
     };
 

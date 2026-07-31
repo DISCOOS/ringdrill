@@ -170,6 +170,45 @@ void main() {
       expect(actual, contains('Round 6: 1200 | 1215 | 1225 (return)'));
     });
   });
+
+  group('rotationRoundTable', () {
+    test('renders one row per round, from the derived schedule', () {
+      // The token `{{exercise.roundTable}}` exists so an author never types these
+      // times: they are derived from startTime and the three durations, so a copy in
+      // a markdown field goes stale the moment any of them changes — which is what
+      // happened in the first real plan converted to this format.
+      final table = rotationRoundTable(
+        _exerciseTwo(),
+        AppLocalizationsNb().brief,
+      );
+      final rows = table.split('\n');
+
+      expect(rows.length, 8, reason: 'header, delimiter and six rounds');
+      expect(rows[1], '|---|---|---|');
+      expect(rows[2], contains('| 1 |'));
+      expect(rows[2], contains('0930'));
+      expect(rows.last, contains('| 6 |'));
+    });
+
+    test('escapes the pipes inside a cell', () {
+      // Both the phase times and the legend naming them are pipe-joined. An
+      // unescaped legend turned a three-column header into five and broke the whole
+      // table — visible only once rendered.
+      final table = rotationRoundTable(
+        _exerciseTwo(),
+        AppLocalizationsNb().brief,
+      );
+      for (final row in table.split('\n')) {
+        final bare = row.replaceAll(r'\|', '');
+        expect(bare.split('|').length, 5, reason: 'three columns in "$row"');
+      }
+    });
+
+    test('an exercise with no schedule renders nothing', () {
+      final empty = _exerciseTwo().copyWith(schedule: const []);
+      expect(rotationRoundTable(empty, AppLocalizationsNb().brief), isEmpty);
+    });
+  });
 }
 
 /// Builds the exact exercise that produced the user's signed-off

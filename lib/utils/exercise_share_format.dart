@@ -40,6 +40,36 @@ List<RotationRound> rotationRounds(Exercise exercise, BriefLabels l10n) {
   ];
 }
 
+/// The rotation as a GFM table: one row per round, with the round number, the
+/// three phase clock faces, and what happens after it.
+///
+/// Exists so an author never has to hand-roll it. Those times are *derived* from
+/// `startTime`, `numberOfRounds` and the three durations, so a table typed into a
+/// markdown field is a copy that goes stale the moment any of them changes — and it
+/// did, in the first real plan converted into this format. `{{exercise.roundTable}}`
+/// resolves to this at render, so the copy cannot drift.
+///
+/// Built on [rotationRounds], the same source the brief's Organisering block reads,
+/// so the token and the block can never disagree.
+String rotationRoundTable(Exercise exercise, BriefLabels l10n) {
+  final rounds = rotationRounds(exercise, l10n);
+  if (rounds.isEmpty) return '';
+  // Everything here is pipe-joined — the phase times *and* the legend that names
+  // them — so both need escaping to survive a table cell. Unescaped, the legend
+  // alone turned a three-column header into five and broke the whole table.
+  String cell(String text) => text.replaceAll('|', r'\|');
+  final buf = StringBuffer()
+    ..writeln(
+      '| ${cell(l10n.round(1))} '
+      '| ${cell(l10n.rotationShareLegendPhases)} | |',
+    )
+    ..writeln('|---|---|---|');
+  for (final r in rounds) {
+    buf.writeln('| ${r.index} | ${cell(r.timesText)} | ${r.suffix} |');
+  }
+  return buf.toString().trimRight();
+}
+
 /// Returns the phase pipe-join string for [exercise]:
 /// `"executionTime | evaluationTime | rotationTime"` (all in minutes).
 String rotationPhaseBreakdown(Exercise exercise) =>
