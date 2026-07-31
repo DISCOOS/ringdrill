@@ -241,7 +241,10 @@ void main() {
     expect(find.byType(PositionCardShell), findsOneWidget);
     expect(find.text(l.noPositionTitle), findsOneWidget);
     expect(find.text(l.noPositionRolePlayBody), findsOneWidget);
-    expect(find.byIcon(Icons.mood), findsOneWidget);
     expect(find.text(l.positionNotSet), findsOneWidget);
+    // Not asserting the icon: this body runs three lines, so at the panel's default
+    // map height the widget drops the icon disc to keep the text and the action
+    // (see position_empty_state_test.dart). Which tier a height selects depends on
+    // font metrics and is not what this test is about.
   });
 }

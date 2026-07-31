@@ -37,6 +37,38 @@ void main() {
     expect(find.text('Sett posisjon'), findsOneWidget);
   });
 
+  testWidgets('long copy keeps its body and action in a fixed slot', (
+    tester,
+  ) async {
+    // The markør body runs three lines where the station's runs two, and the
+    // thumbnail slot has a *fixed* height — it does not grow the way the mockup's
+    // `min-height` does. A layout tuned to the shorter copy clipped the longer one's
+    // button, so the widget measures the copy and drops the icon disc before it
+    // drops anything that carries meaning.
+    //
+    // Asserted as "the text and the action survive", not "the disc is gone at
+    // exactly 190 px": which tier a given height selects depends on font metrics,
+    // and that is not the behaviour worth pinning.
+    await tester.pumpWidget(
+      harness(
+        const PositionEmptyState(
+          title: 'Ingen posisjon satt',
+          body:
+              'Markøren følger posten, men posten har ingen posisjon. Sett '
+              'posisjon på posten, eller gi markøren sin egen.',
+          icon: Icons.mood,
+          actionLabel: 'Sett egen posisjon',
+        ),
+        height: 190,
+      ),
+    );
+
+    expect(find.text('Ingen posisjon satt'), findsOneWidget);
+    expect(find.textContaining('Markøren følger posten'), findsOneWidget);
+    expect(find.text('Sett egen posisjon'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('falls back to a compact caption in a short slot', (
     tester,
   ) async {
