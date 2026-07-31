@@ -52,7 +52,13 @@ enum PlanFieldScope {
 class PlanFieldNames {
   const PlanFieldNames._();
 
-  static const plan = <String>['plan.name', 'plan.description'];
+  static const plan = <String>[
+    'plan.name',
+    'plan.description',
+    'plan.exerciseCount',
+    'plan.teamCount',
+    'plan.stationCount',
+  ];
 
   static const exercise = <String>[
     'exercise.name',
@@ -77,6 +83,7 @@ class PlanFieldNames {
     'station.stationCode',
     'station.position',
     'station.variantSuffix',
+    'station.duration',
   ];
 
   static const roleplay = <String>[

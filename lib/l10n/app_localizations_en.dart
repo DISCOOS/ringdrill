@@ -861,6 +861,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phaseBreakdown => 'Phase Breakdown';
 
   @override
+  String get roundTable => 'Round Table';
+
+  @override
+  String get stationDuration => 'Time per Station';
+
+  @override
+  String get exerciseCount => 'Number of Exercises';
+
+  @override
+  String get teamCount => 'Number of Teams';
+
+  @override
+  String get stationCount => 'Number of Stations';
+
+  @override
   String get pleaseEnterAValidTime => 'Please enter a valid time';
 
   @override

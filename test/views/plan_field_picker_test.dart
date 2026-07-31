@@ -12,7 +12,9 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/exercise_form_screen.dart';
 import 'package:ringdrill/views/plan_form_screen.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
+import 'package:ringdrill/utils/plan_field_names.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
+import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 
 /// DESIGN-009 follow-ups 4b and 4c — the `/`/`{{` picker offers the
 /// already-resolvable `plan.*`/`exercise.*`/`station.*`/`roleplay.*`
@@ -83,15 +85,21 @@ void main() {
 
       expect(find.text(l.planName), findsOneWidget);
       expect(find.text(l.planDescription), findsOneWidget);
+      // The derived counts (`{{plan.exerciseCount}}` and friends) exist so a
+      // plan intro that states "seven exercises" does not have to say it in
+      // prose that goes stale, which only helps if the picker offers them.
+      expect(find.text(l.exerciseCount), findsOneWidget);
+      expect(find.text(l.teamCount), findsOneWidget);
+      expect(find.text(l.stationCount), findsOneWidget);
       expect(find.text(l.exerciseName), findsNothing);
       expect(find.text(l.startTime), findsNothing);
       expect(find.text(l.stationName), findsNothing);
       expect(find.text(l.roleName), findsNothing);
 
-      await tester.tap(find.text(l.planName));
+      await tester.tap(find.text(l.exerciseCount));
       await tester.pump();
 
-      expect(find.textContaining('{{plan.name}}'), findsOneWidget);
+      expect(find.textContaining('{{plan.exerciseCount}}'), findsOneWidget);
     });
   });
 
@@ -157,6 +165,34 @@ void main() {
         findsNothing,
       );
     });
+  });
+
+  group('every declared facet reaches the picker, labelled', () {
+    // `_labelled` falls back to the facet's own name, so a token added to
+    // `PlanFieldNames` without a label here still appears in the `/` menu and
+    // is still searchable — just as `plan.exerciseCount` rather than
+    // "Number of Exercises". That is invisible in a widget test that only looks
+    // for the tokens it already knows about, so assert the whole table.
+    for (final scope in PlanFieldScope.values) {
+      test(scope.name, () {
+        final tokens = switch (scope) {
+          PlanFieldScope.plan => PlanFieldTokens.plan(l),
+          PlanFieldScope.exercise => PlanFieldTokens.exercise(l),
+          PlanFieldScope.station => PlanFieldTokens.station(l),
+          PlanFieldScope.roleplay => PlanFieldTokens.roleplay(l),
+        };
+        expect(
+          tokens.map((t) => t.name),
+          PlanFieldNames.of(scope),
+          reason: 'the picker must offer exactly what the resolver declares',
+        );
+        expect(
+          tokens.where((t) => t.label == t.name),
+          isEmpty,
+          reason: 'these facets fell back to their raw name as their label',
+        );
+      });
+    }
   });
 
   group('StationFormScreen', () {
@@ -274,6 +310,10 @@ void main() {
       );
       expect(
         find.descendant(of: menu, matching: find.text(l.variantSuffix)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: menu, matching: find.text(l.stationDuration)),
         findsOneWidget,
       );
       expect(

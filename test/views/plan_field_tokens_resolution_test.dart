@@ -59,7 +59,27 @@ Exercise _exercise({String? methodMd, List<Station> stations = const []}) =>
       evaluationTime: 10,
       rotationTime: 5,
       stations: stations,
-      schedule: const [],
+      // A real schedule, not `const []`: the derived-value tokens
+      // (`exercise.roundTable`, `station.duration`) read it, and an exercise
+      // without one is a state the compiler never produces. Three rounds of
+      // 20 + 10 + 5 from 08:00, which is what these durations derive.
+      schedule: const [
+        [
+          SimpleTimeOfDay(hour: 8, minute: 0),
+          SimpleTimeOfDay(hour: 8, minute: 20),
+          SimpleTimeOfDay(hour: 8, minute: 30),
+        ],
+        [
+          SimpleTimeOfDay(hour: 8, minute: 35),
+          SimpleTimeOfDay(hour: 8, minute: 55),
+          SimpleTimeOfDay(hour: 9, minute: 5),
+        ],
+        [
+          SimpleTimeOfDay(hour: 9, minute: 10),
+          SimpleTimeOfDay(hour: 9, minute: 30),
+          SimpleTimeOfDay(hour: 9, minute: 40),
+        ],
+      ],
       methodMd: methodMd,
     );
 

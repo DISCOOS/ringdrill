@@ -21,10 +21,14 @@ class PlanFieldTokens {
 
   /// Resolvable at plan scope and, via cascade, everywhere below it
   /// (exercise, station, roleplay).
-  static List<PlanFieldToken> plan(AppLocalizations l) => _labelled(
-    PlanFieldScope.plan,
-    {'plan.name': l.planName, 'plan.description': l.planDescription},
-  );
+  static List<PlanFieldToken> plan(AppLocalizations l) =>
+      _labelled(PlanFieldScope.plan, {
+        'plan.name': l.planName,
+        'plan.description': l.planDescription,
+        'plan.exerciseCount': l.exerciseCount,
+        'plan.teamCount': l.teamCount,
+        'plan.stationCount': l.stationCount,
+      });
 
   /// Resolvable at exercise scope and, via cascade, station/roleplay scope
   /// — but never at plan scope, which has no exercise in context.
@@ -41,6 +45,7 @@ class PlanFieldTokens {
         'exercise.evaluationTime': l.evaluationTime,
         'exercise.rotationTime': l.rotationTime,
         'exercise.phaseBreakdown': l.phaseBreakdown,
+        'exercise.roundTable': l.roundTable,
       });
 
   /// Resolvable at station scope and, via cascade, roleplay scope. Omits
@@ -53,6 +58,7 @@ class PlanFieldTokens {
         'station.stationCode': l.stationCode,
         'station.position': l.positionUtm,
         'station.variantSuffix': l.variantSuffix,
+        'station.duration': l.stationDuration,
       });
 
   /// Resolvable at roleplay scope only. `roleplay.name` is self-referential
@@ -87,6 +93,16 @@ class PlanFieldTokens {
       labels.keys.toSet().difference(names.toSet()).isEmpty,
       'labelled facets not in PlanFieldNames.${scope.name}: '
       '${labels.keys.toSet().difference(names.toSet())}',
+    );
+    // And the other direction, which the doc above always claimed but the
+    // assert did not check: `_labelled` falls back to the raw name, so a facet
+    // added to `PlanFieldNames` without a label here does not disappear from
+    // the picker — it shows up in it as `plan.exerciseCount`, searchable but
+    // untranslated. Silent, and therefore worth an assert.
+    assert(
+      names.toSet().difference(labels.keys.toSet()).isEmpty,
+      'PlanFieldNames.${scope.name} facets with no label here: '
+      '${names.toSet().difference(labels.keys.toSet())}',
     );
     return [
       for (final name in names)

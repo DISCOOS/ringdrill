@@ -1004,6 +1004,26 @@
   "@phaseBreakdown": {
     "description": "Label"
   },
+  "roundTable": "Round Table",
+  "@roundTable": {
+    "description": "Label"
+  },
+  "stationDuration": "Time per Station",
+  "@stationDuration": {
+    "description": "Label"
+  },
+  "exerciseCount": "Number of Exercises",
+  "@exerciseCount": {
+    "description": "Label"
+  },
+  "teamCount": "Number of Teams",
+  "@teamCount": {
+    "description": "Label"
+  },
+  "stationCount": "Number of Stations",
+  "@stationCount": {
+    "description": "Label"
+  },
   "pleaseEnterAValidTime": "Please enter a valid time",
   "@pleaseEnterAValidTime": {
     "description": "Message"

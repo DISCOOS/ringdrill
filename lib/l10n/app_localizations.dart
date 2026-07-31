@@ -1502,6 +1502,36 @@ abstract class AppLocalizations {
   /// **'Phase Breakdown'**
   String get phaseBreakdown;
 
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Round Table'**
+  String get roundTable;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Time per Station'**
+  String get stationDuration;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Number of Exercises'**
+  String get exerciseCount;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Number of Teams'**
+  String get teamCount;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Number of Stations'**
+  String get stationCount;
+
   /// Message
   ///
   /// In en, this message translates to:

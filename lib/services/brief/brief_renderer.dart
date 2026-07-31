@@ -310,6 +310,10 @@ class BriefRenderer {
         'description': station.description,
         'variantSuffix': station.variantSuffix,
         'position': resolver.briefCopyChip(utmStr),
+        // How long a team gets here — derived from the exercise's round, and
+        // printed under every post in a course booklet, so an author converting
+        // one will otherwise type it.
+        'duration': _stationDurationLabel(exercise),
       },
     };
 
@@ -641,7 +645,19 @@ String? _effectiveCommsMd(Plan plan, Exercise exercise) {
 /// literal `{{plan.name}}` stayed in the output instead of being
 /// substituted.
 Map<String, dynamic> _planRefContext(Plan plan) => {
-  'plan': {'name': plan.name, 'description': plan.description},
+  'plan': {
+    'name': plan.name,
+    'description': plan.description,
+    // Counts, because a plan description routinely states them ("Sju øvelser
+    // fredag–søndag") and the plan scope had nothing to offer instead, so they got
+    // typed in and went stale on the next added exercise.
+    'exerciseCount': plan.exercises.length,
+    'teamCount': plan.teams.length,
+    'stationCount': plan.exercises.fold<int>(
+      0,
+      (sum, e) => sum + e.stations.length,
+    ),
+  },
 };
 
 /// Partial exercise context for cross-reference resolution inside

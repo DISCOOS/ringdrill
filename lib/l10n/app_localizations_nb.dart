@@ -857,6 +857,21 @@ class AppLocalizationsNb extends AppLocalizations {
   String get phaseBreakdown => 'Faseinndeling';
 
   @override
+  String get roundTable => 'Rundetabell';
+
+  @override
+  String get stationDuration => 'Tid per post';
+
+  @override
+  String get exerciseCount => 'Antall øvelser';
+
+  @override
+  String get teamCount => 'Antall lag';
+
+  @override
+  String get stationCount => 'Antall poster';
+
+  @override
   String get pleaseEnterAValidTime => 'Oppgi tid';
 
   @override
