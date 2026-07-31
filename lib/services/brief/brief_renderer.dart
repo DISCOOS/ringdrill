@@ -313,7 +313,7 @@ class BriefRenderer {
         // How long a team gets here — derived from the exercise's round, and
         // printed under every post in a course booklet, so an author converting
         // one will otherwise type it.
-        'duration': _stationDurationLabel(exercise),
+        'duration': stationDurationLabel(exercise),
       },
     };
 
@@ -403,7 +403,7 @@ class BriefRenderer {
       'stationAnchor': stationAnchor,
       'position': resolver.briefCopyChip(utmStr),
       'positionValue': positionValue,
-      'stationDurationLabel': _stationDurationLabel(exercise),
+      'stationDurationLabel': stationDurationLabel(exercise),
       'descriptionMd': resolveField(station.description),
       'equipmentMd': resolveField(station.equipmentMd),
       'situationMd': resolveField(station.situationMd),
@@ -481,7 +481,7 @@ class BriefRenderer {
   /// Per-round duration with phase breakdown for a station: "30 min (15 | 10 | 5)".
   @visibleForTesting
   static String stationDurationLabel(Exercise exercise) =>
-      _stationDurationLabel(exercise);
+      exercise_format.stationDurationLabel(exercise);
 
   /// Full Organisering markdown block.
   @visibleForTesting
@@ -587,12 +587,6 @@ final _kStationNamePrefix = RegExp(r'^[0-9]+[a-z]\)\s*');
 int _exerciseNumber(Plan plan, Exercise exercise) {
   final idx = plan.exercises.indexWhere((e) => e.uuid == exercise.uuid);
   return idx < 0 ? 1 : idx + 1;
-}
-
-/// Per-round duration with phase breakdown for a station: "30 min (15 | 10 | 5)".
-String _stationDurationLabel(Exercise exercise) {
-  final round = rotationRoundMinutes(exercise);
-  return '$round min (${rotationPhaseBreakdown(exercise)})';
 }
 
 /// Full Organisering markdown block used in the brief template.

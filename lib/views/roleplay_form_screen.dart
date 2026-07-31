@@ -948,6 +948,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       variables: [...widget.variables, ..._pendingVariables],
       planName: ambientPlan?.planName,
       planDescription: ambientPlan?.planDescription,
+      planCounts: ambientPlan?.planCounts,
       // The linked station's own locations/persons, plus anything created
       // inline this session (ADR-0047, DESIGN-009 follow-up 4) — a
       // roleplay does not own a station's collections, so it always reads

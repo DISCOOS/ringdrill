@@ -15,6 +15,7 @@ import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/roleplay_scope.dart';
+import 'package:ringdrill/utils/plan_field_names.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 
 /// DESIGN-010 stage 2 — context assembly: resolveScopedField reads
@@ -35,6 +36,8 @@ const _rolePlay = RolePlay(
   exerciseUuid: 'ex-1',
   name: 'Nordmann',
   age: 42,
+  description: 'Skadd turgåer',
+  position: LatLng(59.90, 10.74),
 );
 final _stationPosition = const LatLng(59.91, 10.75);
 
@@ -49,7 +52,21 @@ Exercise _exercise() => Exercise(
   evaluationTime: 5,
   rotationTime: 5,
   stations: const [],
-  schedule: const [],
+  // Two rounds of 10 + 5 + 5 from 08:00, so `{{exercise.roundTable}}` has
+  // something to derive. `const []` is a state the compiler never produces, and
+  // a fixture carrying it made the brief-side guard pass on an empty string.
+  schedule: const [
+    [
+      SimpleTimeOfDay(hour: 8, minute: 0),
+      SimpleTimeOfDay(hour: 8, minute: 10),
+      SimpleTimeOfDay(hour: 8, minute: 15),
+    ],
+    [
+      SimpleTimeOfDay(hour: 8, minute: 20),
+      SimpleTimeOfDay(hour: 8, minute: 30),
+      SimpleTimeOfDay(hour: 8, minute: 35),
+    ],
+  ],
 );
 
 Future<BuildContext> _pumpScoped(WidgetTester tester) async {
@@ -64,6 +81,8 @@ Future<BuildContext> _pumpScoped(WidgetTester tester) async {
         // Contains a nested {{var.year}} — only resolves through the
         // fixpoint loop's second pass, exactly like the brief.
         planName: 'Plan {{var.year}}',
+        planDescription: 'Vinterøvelse',
+        planCounts: const (exercises: 7, teams: 4, stations: 25),
         child: ExerciseScope(
           exercise: _exercise(),
           variableOverrides: const {},
@@ -71,6 +90,8 @@ Future<BuildContext> _pumpScoped(WidgetTester tester) async {
             locations: const [_lkp],
             persons: const [_kari],
             name: 'Station A',
+            stationCode: '1c',
+            variantSuffix: 'A',
             position: _stationPosition,
             child: RoleplayScope.forRoleplay(
               _rolePlay,
@@ -90,6 +111,79 @@ Future<BuildContext> _pumpScoped(WidgetTester tester) async {
 }
 
 void main() {
+  // The guard that was missing, and the reason `{{exercise.roundTable}}` shipped
+  // resolving in the brief and not in the editor. `PlanFieldNames` declares the
+  // facet names; `BriefRenderer` and this resolver each build their own value
+  // map, and only the brief's was ever checked against the declaration
+  // (test/views/plan_field_tokens_resolution_test.dart). So a facet added to one
+  // map was offered in the picker, validated by `analyze` and rendered in the
+  // brief — and left as a literal `{{exercise.roundTable}}` in the app's own
+  // preview, which is where an author looks first.
+  //
+  // Asserted at roleplay scope because that is the deepest one: its cascade is
+  // every facet the resolver can ever be asked for.
+  testWidgets('every facet PlanFieldNames declares resolves here too, not only '
+      'in the brief', (tester) async {
+    final context = await _pumpScoped(tester);
+
+    final errors = <Object>[];
+    onResolveFieldError = (error, _) => errors.add(error);
+    addTearDown(() => onResolveFieldError = null);
+
+    final unresolved = <String>[];
+    final empty = <String>[];
+    for (final name in PlanFieldNames.resolvableAt(PlanFieldScope.roleplay)) {
+      final resolved = resolveScopedField(context, '>>>{{$name}}<<<');
+      if (resolved == null || resolved.contains('{{')) {
+        unresolved.add(name);
+        continue;
+      }
+      final value = resolved
+          .replaceFirst('>>>', '')
+          .replaceFirst('<<<', '')
+          .trim();
+      if (value.isEmpty) empty.add(name);
+    }
+
+    expect(
+      unresolved,
+      isEmpty,
+      reason:
+          'these facets are declared but the app-side resolver has no value '
+          'for them, so they render as a literal token in preview',
+    );
+    expect(
+      empty,
+      isEmpty,
+      reason:
+          'these resolved to nothing at all — a value map entry that is '
+          'present but always empty is the same bug one step later',
+    );
+    expect(errors, isEmpty);
+  });
+
+  testWidgets('the facets added for the LSOR conversion resolve to real values', (
+    tester,
+  ) async {
+    final context = await _pumpScoped(tester);
+
+    // Spelled out rather than left to the sweep above, because "non-empty" is a
+    // weak assertion for a derived value: a wrong number is also non-empty.
+    expect(resolveScopedField(context, '{{plan.exerciseCount}}'), '7');
+    expect(resolveScopedField(context, '{{plan.teamCount}}'), '4');
+    expect(resolveScopedField(context, '{{plan.stationCount}}'), '25');
+    // 10 + 5 + 5 per round, with the phase breakdown the booklet prints.
+    expect(
+      resolveScopedField(context, '{{station.duration}}'),
+      '20 min (10 | 5 | 5)',
+    );
+    // hhmm, and the phase pipes escaped so they survive a table cell — the same
+    // string the brief's own Organisering block prints.
+    final table = resolveScopedField(context, '{{exercise.roundTable}}')!;
+    expect(table, contains(r'| 1 | 0800 \| 0810 \| 0815 |'));
+    expect(table, contains(r'| 2 | 0820 \| 0830 \| 0835 |'));
+  });
+
   testWidgets('resolves {{var.*}}, {{plan.*}}, {{exercise.*}}, {{station.*}}, '
       '{{station.loc/person.*}} and {{roleplay.*}} together the same way the '
       'brief would, and leaves an undeclared variable as the brief\'s '

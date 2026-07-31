@@ -70,6 +70,18 @@ String rotationRoundTable(Exercise exercise, BriefLabels l10n) {
   return buf.toString().trimRight();
 }
 
+/// Per-round duration with phase breakdown for one station: "30 min (15 | 10 | 5)".
+///
+/// What a team actually gets at a post, which is what a course booklet prints
+/// under every station and therefore what an author would otherwise type by hand
+/// (`{{station.duration}}`). Lives here rather than in `BriefRenderer` because the
+/// brief and the app's own field preview both need it, and a second copy in the
+/// preview resolver is exactly the drift that made `{{exercise.roundTable}}`
+/// resolve in the brief and not in the editor.
+String stationDurationLabel(Exercise exercise) =>
+    '${rotationRoundMinutes(exercise)} min '
+    '(${rotationPhaseBreakdown(exercise)})';
+
 /// Returns the phase pipe-join string for [exercise]:
 /// `"executionTime | evaluationTime | rotationTime"` (all in minutes).
 String rotationPhaseBreakdown(Exercise exercise) =>
@@ -102,8 +114,7 @@ String exerciseDurationLabel(Exercise exercise, BriefLabels l10n) {
 
 /// Sum of one round's three phases (execution + evaluation + rotation), in
 /// minutes — the repeated `executionTime + evaluationTime + rotationTime`
-/// expression `exerciseDurationLabel` and `BriefRenderer._stationDurationLabel`
-/// both need.
+/// expression `exerciseDurationLabel` and [stationDurationLabel] both need.
 int rotationRoundMinutes(Exercise exercise) =>
     exercise.executionTime + exercise.evaluationTime + exercise.rotationTime;
 

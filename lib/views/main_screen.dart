@@ -475,6 +475,7 @@ class _MainScreenState extends State<MainScreen>
       // resolve-context cascade) get their real values instead of null.
       planName: PlanService().activePlan?.name,
       planDescription: PlanService().activePlan?.description,
+      planCounts: PlanScope.countsOf(PlanService().activePlan),
       child: LayoutBuilder(
         builder: (context, constraints) {
           // The rail + master/detail layout only earns its keep when there is

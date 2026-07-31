@@ -151,6 +151,7 @@ WidgetBuilder _reprovideScopes(
       variables: planScope?.variables ?? activePlan?.variables ?? const [],
       planName: planScope?.planName ?? activePlan?.name,
       planDescription: planScope?.planDescription ?? activePlan?.description,
+      planCounts: planScope?.planCounts ?? PlanScope.countsOf(activePlan),
       child: child,
     );
   };

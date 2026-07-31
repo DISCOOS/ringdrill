@@ -780,6 +780,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
       variables: [...widget.variables, ..._pendingVariables],
       planName: ambientPlan?.planName,
       planDescription: ambientPlan?.planDescription,
+      planCounts: ambientPlan?.planCounts,
       child: StationScope(
         // The station editor owns its locations/persons directly (unlike
         // the roleplay editor's linked-station copy), so it needs no

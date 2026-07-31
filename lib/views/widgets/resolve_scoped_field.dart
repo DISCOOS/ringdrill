@@ -61,10 +61,7 @@ String? resolveScopedField(
     // cascade — a null planName/planDescription (a provider that
     // hasn't forwarded them) renders {{plan.*}} empty, same as the
     // brief does for an empty Plan.name/description, never a crash.
-    'plan': {
-      'name': planScope?.planName,
-      'description': planScope?.planDescription,
-    },
+    'plan': _planFacets(planScope),
     if (exerciseScope != null)
       'exercise': _exerciseFacets(exerciseScope.exercise, l10n),
     if (stationScope != null)
@@ -74,6 +71,10 @@ String? resolveScopedField(
         description: stationScope.description,
         variantSuffix: stationScope.variantSuffix,
         position: stationScope.position,
+        // Per-round length, which is an exercise property read at station
+        // scope — absent, like any other facet whose scope is missing, when
+        // the field is previewed outside an ExerciseScope.
+        exercise: exerciseScope?.exercise,
       ),
     if (roleplayScope != null)
       'roleplay': _roleplayFacets(
@@ -144,10 +145,7 @@ String? resolveModelField(
   };
 
   final refContext = <String, dynamic>{
-    'plan': {
-      'name': planScope?.planName,
-      'description': planScope?.planDescription,
-    },
+    'plan': _planFacets(planScope),
     if (exercise != null) 'exercise': _exerciseFacets(exercise, l10n),
     if (station != null)
       'station': _stationFacets(
@@ -155,6 +153,7 @@ String? resolveModelField(
         description: station.description,
         variantSuffix: station.variantSuffix,
         position: station.position,
+        exercise: exercise,
       ),
     if (roleplay != null)
       'roleplay': _roleplayFacets(
@@ -189,6 +188,16 @@ String? resolveModelField(
 // roleplay.*}}` shape (ADR-0048 — no drift): [resolveScopedField] feeds them
 // from the ancestor scopes, [resolveModelField] from explicit models.
 
+Map<String, dynamic> _planFacets(PlanScope? scope) => {
+  'name': scope?.planName,
+  'description': scope?.planDescription,
+  // Null when the provider has no plan to count, so `{{plan.teamCount}}`
+  // renders empty rather than a confident "0".
+  'exerciseCount': scope?.planCounts?.exercises,
+  'teamCount': scope?.planCounts?.teams,
+  'stationCount': scope?.planCounts?.stations,
+};
+
 Map<String, dynamic> _exerciseFacets(Exercise exercise, AppLocalizations l10n) {
   return {
     'name': exercise.name,
@@ -202,6 +211,7 @@ Map<String, dynamic> _exerciseFacets(Exercise exercise, AppLocalizations l10n) {
     'timeLabel': exerciseTimeLabel(exercise),
     'durationLabel': exerciseDurationLabel(exercise, l10n.brief),
     'phaseBreakdown': rotationPhaseBreakdown(exercise),
+    'roundTable': rotationRoundTable(exercise, l10n.brief),
   };
 }
 
@@ -211,6 +221,7 @@ Map<String, dynamic> _stationFacets({
   String? description,
   String? variantSuffix,
   LatLng? position,
+  Exercise? exercise,
 }) => {
   'name': name ?? '',
   'stationCode': stationCode ?? '',
@@ -220,6 +231,7 @@ Map<String, dynamic> _stationFacets({
     resolver.formatUtm(position),
     position,
   ),
+  'duration': exercise == null ? null : stationDurationLabel(exercise),
 };
 
 Map<String, dynamic> _roleplayFacets({

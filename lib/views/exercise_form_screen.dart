@@ -413,6 +413,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       variables: [...widget.variables, ..._pendingVariables],
       planName: ambientPlan?.planName,
       planDescription: ambientPlan?.planDescription,
+      planCounts: ambientPlan?.planCounts,
       child: scoped,
     );
   }

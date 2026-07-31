@@ -1,7 +1,11 @@
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
 import 'package:ringdrill/models/drill_variable.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/services/plan_service.dart';
+
+/// The plan-scope counts a markdown field can reference.
+typedef PlanCounts = ({int exercises, int teams, int stations});
 
 /// Exposes the active plan's declared variables (ADR-0046) to a subtree, so
 /// token-aware fields (`RingDrillTextField`/`RingDrillTextArea`) read the
@@ -20,6 +24,7 @@ class PlanScope extends InheritedWidget {
     required this.variables,
     this.planName,
     this.planDescription,
+    this.planCounts,
     required super.child,
   });
 
@@ -33,6 +38,14 @@ class PlanScope extends InheritedWidget {
   /// since it sits highest in the tree, where the active plan is known.
   final String? planName;
   final String? planDescription;
+
+  /// The plan's derived counts — `{{plan.exerciseCount}}`,
+  /// `{{plan.teamCount}}`, `{{plan.stationCount}}`. One field rather than three,
+  /// so the next count is a change here and not on every provider.
+  ///
+  /// Null where the provider has no plan to count, exactly like [planName]: a
+  /// `{{plan.teamCount}}` then renders empty rather than a wrong `0`.
+  final PlanCounts? planCounts;
 
   /// Seeds a scope from [PlanService]'s active plan, for a **route** choke
   /// point.
@@ -64,9 +77,26 @@ class PlanScope extends InheritedWidget {
       variables: plan?.variables ?? const [],
       planName: plan?.name,
       planDescription: plan?.description,
+      planCounts: countsOf(plan),
       child: child,
     );
   }
+
+  /// The `{{plan.*}}` counts for [plan], or null when there is no plan.
+  ///
+  /// A station belongs to an exercise, so the plan's station count is the sum
+  /// across exercises — the same number `BriefRenderer` publishes, and not
+  /// `plan.stations`, which does not exist.
+  static PlanCounts? countsOf(Plan? plan) => plan == null
+      ? null
+      : (
+          exercises: plan.exercises.length,
+          teams: plan.teams.length,
+          stations: plan.exercises.fold<int>(
+            0,
+            (sum, e) => sum + e.stations.length,
+          ),
+        );
 
   /// The nearest enclosing [PlanScope], or `null` outside one — for callers
   /// that tolerate having no plan-variable registry available (e.g. the
@@ -96,5 +126,6 @@ class PlanScope extends InheritedWidget {
   bool updateShouldNotify(PlanScope oldWidget) =>
       !listEquals(variables, oldWidget.variables) ||
       planName != oldWidget.planName ||
-      planDescription != oldWidget.planDescription;
+      planDescription != oldWidget.planDescription ||
+      planCounts != oldWidget.planCounts;
 }

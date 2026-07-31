@@ -406,6 +406,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
       variables: [..._declaredVariables, ..._pendingVariables],
       planName: ambientPlan.planName,
       planDescription: ambientPlan.planDescription,
+      planCounts: ambientPlan.planCounts,
       child: StationScope(
         locations: _workingLocations,
         persons: _workingPersons,

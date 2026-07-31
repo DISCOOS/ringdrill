@@ -427,6 +427,10 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
       // e.g. briefIntroMd previews the name as it is currently being typed.
       planName: _nameController.text,
       planDescription: _descriptionController.text,
+      // The counts have no live controller to read, unlike name and description:
+      // this editor cannot add or remove an exercise, so the plan being edited is
+      // already the current answer.
+      planCounts: PlanScope.countsOf(widget.plan),
       child: Form(
         key: _formKey,
         child: SectionNavigatedForm(
