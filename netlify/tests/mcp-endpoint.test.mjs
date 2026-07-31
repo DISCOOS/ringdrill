@@ -6,8 +6,10 @@
 // Only the catalog is faked, because Netlify Blobs are not available here.
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 import { createHandler } from "../functions/mcp.js";
+import { INSTRUCTIONS } from "../../mcp/tools.mjs";
 import {
     createCompilerBackend,
     MAX_DOCUMENT_CHARS,
@@ -109,6 +111,37 @@ test("initialize answers with the shared protocol version and server info", asyn
     assert.equal(status, 200);
     assert.equal(body.result.serverInfo.name, "ringdrill");
     assert.ok(body.result.capabilities.tools);
+    // The one channel most clients inject into the system prompt (ADR-0065), so
+    // it is the only guidance certain to reach an MCP-only client.
+    assert.match(body.result.instructions, /sentence ends/);
+});
+
+test("instructions do not drift from the skill they summarise", async () => {
+    // ADR-0065 splits the conventions across channels: a short always-read string
+    // here, the full guide in the skill. Two copies of a rule is two things to keep
+    // true, so the rules named in one must still be present in the other.
+    const skill = await readFile(
+        new URL("../../skills/ringdrill-plan-authoring/SKILL.md", import.meta.url),
+        "utf8",
+    );
+    const reference = await readFile(
+        new URL(
+            "../../skills/ringdrill-plan-authoring/reference/format.md",
+            import.meta.url,
+        ),
+        "utf8",
+    );
+    const guide = skill + reference;
+
+    for (const rule of [
+        /sentence end/i,
+        /numbering/i,
+        /never invent staff|real person|real people/i,
+        /numberOfTeams/,
+    ]) {
+        assert.match(guide, rule, `the skill no longer covers ${rule}`);
+        assert.match(INSTRUCTIONS, rule, `instructions no longer cover ${rule}`);
+    }
 });
 
 test("tools/list matches the stdio server's table, and omits publish", async () => {

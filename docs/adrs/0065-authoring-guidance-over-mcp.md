@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-07-31
 deciders: ["kengu"]
 consulted: []
@@ -71,10 +71,19 @@ reintroduce exactly what it fixed.
 Chosen option: **Option D**, because no single channel is both guaranteed-read and
 large enough, so the guidance has to be split by how much it costs to always carry.
 
-**`instructions` at `initialize`** — short, and only the rules whose violation is
-unsafe or unrecoverable: no real people in any field, numbering is derived, tokens
-are content, teams ≤ stations, a withheld field is withheld by declaration. Ends
-with a pointer to the resources. This is the one channel most clients inject into
+**`instructions` at `initialize`** — short, and only two kinds of rule: those whose
+violation is unsafe or unrecoverable, and those an agent gets wrong **by default**.
+The second category is easy to under-weight and matters just as much: every coding
+agent reaches for an 80-column hard wrap, and in a markdown field that arrives as a
+ragged break mid-sentence in the editor an author actually types in — invisible in
+the source and in the rendered brief, so nothing in the loop catches it. A rule that
+every agent breaks unprompted earns its line here even when the consequence is
+cosmetic, because the fix costs one sentence and the mistake costs a reflow of the
+whole document.
+
+So: break at sentence ends; numbering is derived; tokens are content; no real people
+in any field; teams ≤ stations; a withheld field is withheld by its own declaration.
+Ends with a pointer to the fuller guidance. This is the one channel most clients inject into
 the system prompt, so it is the only place a rule is certain to be seen — and that
 certainty is exactly why it must stay short.
 

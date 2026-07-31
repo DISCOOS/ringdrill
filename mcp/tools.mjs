@@ -234,6 +234,45 @@ export function toolsFor(backend) {
 /// The protocol version both transports advertise.
 export const PROTOCOL_VERSION = '2024-11-05';
 
+/// What `initialize` returns as `instructions` — the one channel most clients
+/// inject into the system prompt, so the only guidance certain to be read
+/// (ADR-0065).
+///
+/// Kept short on purpose. It carries only rules that are unsafe to break, or that
+/// an agent gets wrong *by default* — the 80-column wrap is the second kind: every
+/// coding agent reaches for it, and the damage is invisible in the source and in
+/// the rendered brief, showing up only in the editor an author actually types in.
+/// Everything explanatory belongs in the authoring guide instead, which is what the
+/// closing pointer is for.
+///
+/// Anything named here must still be true of `skills/ringdrill-plan-authoring/`;
+/// `netlify/tests/mcp-endpoint.test.mjs` checks the pair for drift.
+export const INSTRUCTIONS = `These tools compile a drill plan from one YAML source document.
+
+Rules the schema cannot express, and that are easy to get wrong:
+
+- Break markdown fields at sentence ends, never at a fixed column width. Authors
+  edit these in a section editor that honours your newlines, so an 80-column wrap
+  arrives as a ragged break mid-sentence.
+- Numbering is derived from list position. Never write "2a)" or "#3" into a name —
+  the app renders the code itself, and a name that carries one renders it twice.
+- A token is content, not something to resolve while writing. Write {{var.x}} and
+  {{station.loc.y.position}} literally; they resolve at render.
+- Never put a real person in any field. \`persons\` are fictional scenario subjects,
+  and \`director_notes\` is NOT stripped at publish — a marker roster or a duty
+  phone number there ships to the public catalog.
+- numberOfTeams must be less than or equal to the number of stations.
+- A markdown field is visible only to the audiences it declares, so a spoiler is
+  withheld only if it sits in the field that owns it: the marker's script in
+  \`behavior\`, intel to withhold in \`leader_answers\`.
+
+Order of work: schema, read a published plan with get_plan, create_plan, write,
+analyze_plan and fix everything it reports, render_plan and actually read it, then
+build_plan. Run analyze_plan before calling a document finished — tokens are stored
+raw, so a bad reference is invisible until a reader is holding the brief.
+
+The full conventions ship as the ringdrill-plan-authoring skill.`;
+
 /// What `initialize` reports.
 export const SERVER_INFO = { name: 'ringdrill', version: '1.0.0' };
 
@@ -261,6 +300,7 @@ export async function handleMessage(message, tools) {
                 protocolVersion: PROTOCOL_VERSION,
                 capabilities: { tools: {} },
                 serverInfo: SERVER_INFO,
+                instructions: INSTRUCTIONS,
             });
 
         case 'tools/list':

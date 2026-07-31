@@ -45,9 +45,10 @@ table the compiler validates against, so it cannot be out of date.
    `**Bold**` sub-heading duplicating a section the template already emits; a
    location token printing a place the prose just named; a derived schedule that
    contradicts times you wrote in prose.
-7. **`render_plan --audience=participant`** when the plan has anything to hide —
-   only `director_notes` is withheld, so this is how you find a spoiler sitting in
-   the wrong field.
+7. **`render_plan --audience=participant`** when the plan has anything to hide.
+   Every markdown field declares which audiences may see it (ADR-0063), so this is
+   how you confirm a spoiler sits in the field that owns it rather than one a
+   participant reads.
 8. **`build_plan`** when it is right.
 
 Publishing is not available to you, by design. Hand the built archive to the
@@ -56,6 +57,14 @@ person you are working with; they publish it.
 ## Rules that are not in the schema
 
 These are the mistakes that get made. None of them fails at build time.
+
+**Break markdown fields at sentence ends, never at a column.** Every coding agent
+reaches for an 80-column wrap. Do not: an author edits these fields in the app's
+section editor, which honours your newlines and then wraps again at its own width,
+so a wrapped line arrives as a ragged break mid-sentence. The damage is invisible in
+the source *and* in the rendered brief — markdown collapses soft breaks — and
+obvious only in the one place nobody looks while writing. One sentence per line.
+Keep a list item or table row on a single line however long it gets.
 
 **Numbering comes from position. Never write it into a name.** The app renders
 "#2" and "2.1" itself, from list order and the plan's number format. A station
@@ -67,7 +76,7 @@ because it is the author's content, not an example to copy.
 convention the domain uses.
 
 **Tokens are content, not something to resolve while writing.** Write
-`{{var.talegruppe}}`, `{{station.person.magnus}}`, `{{station.loc.lkp.utm}}`
+`{{var.talegruppe}}`, `{{station.person.magnus}}`, `{{station.loc.lkp.position}}`
 literally. They resolve at render, which is why a coordinate lives in one place
 and the prose stays in sync when it changes. Resolving them yourself defeats the
 mechanism and produces prose that goes stale.
@@ -115,8 +124,11 @@ nothing. What makes a plan usable:
   from where, when they were last seen, and what the team is being asked to do.
   One or two sentences of specifics beats a paragraph of generalities.
 - **`mission` is the order, `situation` is the picture.** Keep them separate.
-- **`director_notes` carries what must not reach participants**: where the marker
-  hides, how they behave, what to withhold. Participants never see it.
+- **Put a secret in the field that owns it.** The marker's script goes in
+  `behavior`, intel to withhold in `leader_answers`, and `director_notes` is for
+  notes to whoever runs the station — not a bucket for everything sensitive. Each is
+  withheld from participants on its own declaration, so the structure survives.
+  Note that none of them is stripped at publish: that applies to Staff only.
 - **Vary the stations.** A rotation where every station is "search for a missing
   person" teaches one thing four times.
 - **Time it honestly.** `executionTime` is how long a team gets at a station.
