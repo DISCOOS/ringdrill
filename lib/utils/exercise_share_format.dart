@@ -9,17 +9,25 @@ String _hhmm(SimpleTimeOfDay t) =>
     '${t.minute.toString().padLeft(2, '0')}';
 
 /// One round in the rotation block. [index] is 1-based.
-/// [timesText] is the pre-formatted `"HHMM | HHMM | HHMM"` joined string.
 /// [suffix] is the resolved `neste` / `retur` label from l10n (no parens).
 class RotationRound {
   const RotationRound({
     required this.index,
-    required this.timesText,
+    required this.times,
     required this.suffix,
   });
 
   final int index;
-  final String timesText;
+
+  /// The round's phase clock faces — `["2000", "2015", "2025"]`, one per entry
+  /// in the schedule row. Kept as a list rather than only the joined string
+  /// because the round *table* wants one column per phase, while the
+  /// Organisering block wants them on one line.
+  final List<String> times;
+
+  /// [times] pipe-joined, for the single-line Organisering block.
+  String get timesText => times.join(' | ');
+
   final String suffix;
 }
 
@@ -32,7 +40,7 @@ List<RotationRound> rotationRounds(Exercise exercise, BriefLabels l10n) {
     for (var r = 0; r < rounds; r++)
       RotationRound(
         index: r + 1,
-        timesText: exercise.schedule[r].map(_hhmm).join(' | '),
+        times: exercise.schedule[r].map(_hhmm).toList(),
         suffix: (r == rounds - 1)
             ? l10n.rotationShareReturn
             : l10n.rotationShareNext,
@@ -40,8 +48,8 @@ List<RotationRound> rotationRounds(Exercise exercise, BriefLabels l10n) {
   ];
 }
 
-/// The rotation as a GFM table: one row per round, with the round number, the
-/// three phase clock faces, and what happens after it.
+/// The rotation as a GFM table: one row per round, with the round number, one
+/// column per phase clock face, and what happens after it.
 ///
 /// Exists so an author never has to hand-roll it. Those times are *derived* from
 /// `startTime`, `numberOfRounds` and the three durations, so a table typed into a
@@ -54,18 +62,40 @@ List<RotationRound> rotationRounds(Exercise exercise, BriefLabels l10n) {
 String rotationRoundTable(Exercise exercise, BriefLabels l10n) {
   final rounds = rotationRounds(exercise, l10n);
   if (rounds.isEmpty) return '';
-  // Everything here is pipe-joined — the phase times *and* the legend that names
-  // them — so both need escaping to survive a table cell. Unescaped, the legend
-  // alone turned a three-column header into five and broke the whole table.
+
+  // A phase per column. The first cut put the pipe-joined `timesText` in one cell
+  // and escaped the pipes, which rendered as a table whose middle column held
+  // "2000 \| 2015 \| 2025" — the plain-text form, inside a table, with the
+  // separators visible. The times are columns; that is what the reader is
+  // comparing down the page.
+  //
+  // Three phases is what this format derives, but the schedule is a list and a
+  // row with a different count would produce a header and body that disagree —
+  // which is not a table at all. So anything else falls back to the one-cell
+  // legend form, which is at least well-formed.
+  final splitPhases = rounds.first.times.length == 3;
+  final phaseHeaders = splitPhases
+      ? [l10n.execution, l10n.evaluation, l10n.rotation]
+      : [l10n.rotationShareLegendPhases];
+
+  // Every cell needs escaping: a pipe in a header or a value ends the cell early
+  // and silently changes the table's column count. The legend is the one that bit
+  // — unescaped, it turned a three-column header into five.
   String cell(String text) => text.replaceAll('|', r'\|');
+  String row(Iterable<String> cells) => '| ${cells.map(cell).join(' | ')} |';
+
+  // The last column carries "neste"/"retur" and has no name of its own.
   final buf = StringBuffer()
-    ..writeln(
-      '| ${cell(l10n.round(1))} '
-      '| ${cell(l10n.rotationShareLegendPhases)} | |',
-    )
-    ..writeln('|---|---|---|');
+    ..writeln(row([l10n.round(1), ...phaseHeaders, '']))
+    ..writeln('|${'---|' * (phaseHeaders.length + 2)}');
   for (final r in rounds) {
-    buf.writeln('| ${r.index} | ${cell(r.timesText)} | ${r.suffix} |');
+    buf.writeln(
+      row([
+        '${r.index}',
+        ...(splitPhases ? r.times : [r.timesText]),
+        r.suffix,
+      ]),
+    );
   }
   return buf.toString().trimRight();
 }

@@ -40,6 +40,13 @@ abstract class BriefLabels {
   String get briefRingRoute;
   String get rotationShareTitle;
   String get rotationShareLegendPhases;
+
+  /// The three phase names, as the round table's column headers. The pipe-joined
+  /// [rotationShareLegendPhases] is the one-line form for prose; a table wants
+  /// them one per column.
+  String get execution;
+  String get evaluation;
+  String get rotation;
   String round(int count);
 
   // The rotation share block (exercise_share_format.dart).
@@ -95,6 +102,15 @@ class HeadlessBriefLabels implements BriefLabels {
   @override
   String get rotationShareLegendPhases =>
       _labels.message('rotationShareLegendPhases');
+
+  @override
+  String get execution => _labels.message('execution');
+
+  @override
+  String get evaluation => _labels.message('evaluation');
+
+  @override
+  String get rotation => _labels.message('rotation');
 
   @override
   String round(int count) => _labels.plural('round', count);

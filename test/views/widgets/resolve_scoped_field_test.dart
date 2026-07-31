@@ -177,11 +177,10 @@ void main() {
       resolveScopedField(context, '{{station.duration}}'),
       '20 min (10 | 5 | 5)',
     );
-    // hhmm, and the phase pipes escaped so they survive a table cell — the same
-    // string the brief's own Organisering block prints.
+    // A GFM table with a column per phase, in hhmm.
     final table = resolveScopedField(context, '{{exercise.roundTable}}')!;
-    expect(table, contains(r'| 1 | 0800 \| 0810 \| 0815 |'));
-    expect(table, contains(r'| 2 | 0820 \| 0830 \| 0835 |'));
+    expect(table, contains('| 1 | 0800 | 0810 | 0815 |'));
+    expect(table, contains('| 2 | 0820 | 0830 | 0835 |'));
   });
 
   testWidgets('resolves {{var.*}}, {{plan.*}}, {{exercise.*}}, {{station.*}}, '

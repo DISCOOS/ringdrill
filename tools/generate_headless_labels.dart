@@ -40,6 +40,10 @@ const headlessKeys = <String>[
   'briefUnknownReference',
   'briefUnknownVariable',
   'rotationShareLegendPhases',
+  // The round table's column headers.
+  'execution',
+  'evaluation',
+  'rotation',
   'rotationShareTitle',
   'variableDurationHourUnit',
   'hour',

@@ -42,6 +42,15 @@ class AppBriefLabels implements BriefLabels {
   String get rotationShareLegendPhases => _l10n.rotationShareLegendPhases;
 
   @override
+  String get execution => _l10n.execution;
+
+  @override
+  String get evaluation => _l10n.evaluation;
+
+  @override
+  String get rotation => _l10n.rotation;
+
+  @override
   String round(int count) => _l10n.round(count);
 
   @override

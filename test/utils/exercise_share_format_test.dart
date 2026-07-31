@@ -184,23 +184,50 @@ void main() {
       final rows = table.split('\n');
 
       expect(rows.length, 8, reason: 'header, delimiter and six rounds');
-      expect(rows[1], '|---|---|---|');
+      expect(rows[1], '|---|---|---|---|---|');
       expect(rows[2], contains('| 1 |'));
       expect(rows[2], contains('0930'));
       expect(rows.last, contains('| 6 |'));
     });
 
-    test('escapes the pipes inside a cell', () {
-      // Both the phase times and the legend naming them are pipe-joined. An
-      // unescaped legend turned a three-column header into five and broke the whole
-      // table — visible only once rendered.
+    test('gives each phase its own column, not one pipe-joined cell', () {
+      // The first cut put the joined "0930 \| 0945 \| 0955" in a single cell, so
+      // the rendered table showed the plain-text form — separators and all — inside
+      // a table. The times are what a reader compares down the page, so they are
+      // columns.
+      final table = rotationRoundTable(
+        _exerciseTwo(),
+        AppLocalizationsNb().brief,
+      );
+      final rows = table.split('\n');
+      final l10n = AppLocalizationsNb();
+
+      expect(
+        rows.first,
+        '| ${l10n.round(1)} | ${l10n.execution} | '
+        '${l10n.evaluation} | ${l10n.rotation} |  |',
+      );
+      expect(rows[2], startsWith('| 1 | 0930 | 0945 | 0955 |'));
+      expect(
+        table,
+        isNot(contains(r'\|')),
+        reason:
+            'nothing is pipe-joined inside a cell any more, so nothing needs '
+            'escaping — an escaped pipe here means a cell went back to holding a '
+            'joined string',
+      );
+    });
+
+    test('every row has the same column count', () {
+      // A header and body that disagree is not a table. Pipes inside a cell are
+      // what breaks this, and the legend was the one that did it.
       final table = rotationRoundTable(
         _exerciseTwo(),
         AppLocalizationsNb().brief,
       );
       for (final row in table.split('\n')) {
         final bare = row.replaceAll(r'\|', '');
-        expect(bare.split('|').length, 5, reason: 'three columns in "$row"');
+        expect(bare.split('|').length, 7, reason: 'five columns in "$row"');
       }
     });
 

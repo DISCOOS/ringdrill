@@ -32,6 +32,9 @@ const headlessLabelMessages = <String, Map<String, Object>>{
     'briefUnknownReference': '‹missing reference: {name}›',
     'briefUnknownVariable': '‹missing variable: {name}›',
     'rotationShareLegendPhases': 'drill | eval | roll / inbound',
+    'execution': 'Execution',
+    'evaluation': 'Evaluation',
+    'rotation': 'Rotation',
     'rotationShareTitle': 'Rotation (time of day)',
     'variableDurationHourUnit': 'h',
     'hour': <String, String>{
@@ -62,6 +65,9 @@ const headlessLabelMessages = <String, Map<String, Object>>{
     'briefUnknownReference': '‹mangler referanse: {name}›',
     'briefUnknownVariable': '‹mangler variabel: {name}›',
     'rotationShareLegendPhases': 'øve | eval | rull / retur',
+    'execution': 'Øving',
+    'evaluation': 'Evaluering',
+    'rotation': 'Rullering',
     'rotationShareTitle': 'Rullering (klokkeslett)',
     'variableDurationHourUnit': 't',
     'hour': <String, String>{
