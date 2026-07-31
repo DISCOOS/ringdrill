@@ -201,6 +201,18 @@ export function createCliBackend({ cli, cwd }) {
     /// file better than this layer could, and reading it is the same capability
     /// the CLI has always had as this user.
     async function withDocument(args, fn) {
+        // The hosted cache does not exist here, and does not need to: locally the
+        // document is already a file, which `document_path` names directly and for
+        // free (ADR-0064). `cache: true` is therefore a no-op — the response carries
+        // no `document_hash`, so an agent has nothing to send back and corrects
+        // itself — but a hash that arrived anyway must say what to do instead.
+        if (args.document_hash !== undefined && args.document === undefined) {
+            throw new Error(
+                'document_hash names a document held by the hosted server; this ' +
+                    'local server has no cache. Pass `document_path` instead — it ' +
+                    'costs a filename, which is what the cache was for.',
+            );
+        }
         const path = args.document_path;
         if (!path) return withTempFile(args.document, '.yaml', fn);
         const dir = await mkdtemp(join(tmpdir(), 'ringdrill-mcp-'));

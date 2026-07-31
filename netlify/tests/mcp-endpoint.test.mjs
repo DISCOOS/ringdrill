@@ -12,6 +12,8 @@ import { createHandler } from "../functions/mcp.js";
 import { INSTRUCTIONS } from "../../mcp/tools.mjs";
 import {
     createCompilerBackend,
+    DOC_CACHE_TTL_MS,
+    documentHash,
     MAX_DOCUMENT_CHARS,
 } from "../functions/lib/mcp-backend.js";
 
@@ -49,6 +51,21 @@ function fakeCatalog({ archive } = {}) {
                 : null,
         readJson: async () => meta,
         readBinary: async () => archive ?? null,
+    };
+}
+
+/// Enough of the Netlify Blobs surface for the document cache, so the retention
+/// behaviour is testable without the real store.
+function memoryStore() {
+    const map = new Map();
+    return {
+        get: async (key) => map.get(key) ?? null,
+        setJSON: async (key, value) => void map.set(key, value),
+        delete: async (key) => void map.delete(key),
+        seed: (key, value) => map.set(key, value),
+        get size() {
+            return map.size;
+        },
     };
 }
 
@@ -300,6 +317,68 @@ test("render_plan summary is a fraction of the full brief", async () => {
     // Names the shape without carrying the prose.
     assert.match(summary.markdown, /Station sections:|Station empty:/);
     assert.doesNotMatch(summary.markdown, /Noe skjer\./);
+});
+
+test("caching is opt-in, and a hash stands in for the document", async () => {
+    // ADR-0064 amends ADR-0060's retention promise rather than dropping it: nothing
+    // is held unless the caller asks, and then only under the server's own hash of
+    // the content. These assertions are that promise.
+    const store = memoryStore();
+    const handler = handlerWith({ docCache: () => store });
+    const call = async (args) =>
+        payload(
+            (
+                await rpc(handler, {
+                    jsonrpc: "2.0",
+                    id: 1,
+                    method: "tools/call",
+                    params: { name: "analyze_plan", arguments: args },
+                })
+            ).body,
+        );
+
+    const plain = await call({ document: DOCUMENT });
+    assert.equal(plain.document_hash, undefined);
+    assert.equal(store.size, 0, "nothing is held unless asked");
+
+    const cached = await call({ document: DOCUMENT, cache: true });
+    assert.equal(cached.document_hash, documentHash(DOCUMENT));
+    assert.equal(store.size, 1);
+
+    const byHash = await call({ document_hash: cached.document_hash });
+    assert.equal(byHash.name, plain.name);
+    assert.equal(byHash.exercises, plain.exercises);
+});
+
+test("an unknown or expired hash asks for a resend, and does not linger", async () => {
+    const store = memoryStore();
+    const handler = handlerWith({ docCache: () => store });
+    const call = async (args) => {
+        const { body } = await rpc(handler, {
+            jsonrpc: "2.0",
+            id: 1,
+            method: "tools/call",
+            params: { name: "analyze_plan", arguments: args },
+        });
+        return body.result;
+    };
+
+    const unknown = await call({ document_hash: "deadbeef" });
+    assert.equal(unknown.isError, true);
+    assert.match(unknown.content[0].text, /never cached, or it has expired/);
+    assert.match(unknown.content[0].text, /cache: true/);
+
+    // Deleted on the read that found it stale: an entry must not outlive its window
+    // just because nothing swept.
+    const hash = documentHash(DOCUMENT);
+    store.seed(`doc/${hash}`, {
+        document: DOCUMENT,
+        storedAt: Date.now() - (DOC_CACHE_TTL_MS + 1000),
+    });
+    const expired = await call({ document_hash: hash });
+    assert.equal(expired.isError, true);
+    assert.match(expired.content[0].text, /expired/);
+    assert.equal(store.size, 0, "an expired entry is deleted when read");
 });
 
 test("schema is the schema itself, not a wrapper", async () => {

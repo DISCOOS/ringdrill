@@ -45,13 +45,40 @@ const SOURCE_DOCUMENT_PATH_ARG = {
         'not resent on every call. The hosted server rejects it.',
 };
 
-/// `document` or `document_path`, either one.
+/// Ask the hosted server to hold this document so later calls can name it
+/// (ADR-0064).
+///
+/// Off by default, and deliberately the caller's choice rather than the server's:
+/// retention is a promise about what the service is, so an author who does not ask
+/// gets a server that compiles what it is sent and keeps nothing. Set it when you
+/// intend to iterate — not reflexively, because setting it opts the author into
+/// retention on their behalf.
+const CACHE_ARG = {
+    type: 'boolean',
+    description:
+        'Hosted server only: hold this document under its content hash so later ' +
+        'calls can pass `document_hash` instead of resending it. Off by default ' +
+        '— the server keeps nothing unless asked. Set it when you are about to ' +
+        'iterate on a large document; the response then carries the hash.',
+};
+
+/// Name a document the server is already holding, instead of resending it.
+const DOCUMENT_HASH_ARG = {
+    type: 'string',
+    description:
+        'A `document_hash` from an earlier response, instead of `document`. ' +
+        'Expires after about half an hour; a miss says so and asks you to resend, ' +
+        'so it costs a slower loop rather than a failure.',
+};
+
+/// `document`, `document_path` or `document_hash` — any one of the three.
 ///
 /// Expressed as `anyOf` rather than `required`, because a schema demanding
-/// `document` would make the path form look invalid.
+/// `document` would make the other two look invalid.
 const DOCUMENT_OR_PATH = [
     { required: ['document'] },
     { required: ['document_path'] },
+    { required: ['document_hash'] },
 ];
 
 /// The tool surface.
@@ -185,6 +212,8 @@ export function toolsFor(backend) {
                 properties: {
                     document: SOURCE_DOCUMENT_ARG,
                     document_path: SOURCE_DOCUMENT_PATH_ARG,
+                    document_hash: DOCUMENT_HASH_ARG,
+                    cache: CACHE_ARG,
                     strict: {
                         type: 'boolean',
                         description: 'Treat warnings as errors.',
@@ -206,6 +235,8 @@ export function toolsFor(backend) {
                 properties: {
                     document: SOURCE_DOCUMENT_ARG,
                     document_path: SOURCE_DOCUMENT_PATH_ARG,
+                    document_hash: DOCUMENT_HASH_ARG,
+                    cache: CACHE_ARG,
                     strict: {
                         type: 'boolean',
                         description: 'Refuse to build if there are warnings.',
@@ -227,6 +258,8 @@ export function toolsFor(backend) {
                 properties: {
                     document: SOURCE_DOCUMENT_ARG,
                     document_path: SOURCE_DOCUMENT_PATH_ARG,
+                    document_hash: DOCUMENT_HASH_ARG,
+                    cache: CACHE_ARG,
                     audience: {
                         type: 'string',
                         enum: [
