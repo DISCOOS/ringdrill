@@ -36,8 +36,14 @@ class PlanFieldToken {
   /// Localized label shown in the picker.
   final String label;
 
-  /// Optional extra detail shown in the picker instead of a value (plan
-  /// fields show a muted "planfelt" hint, never a resolved value).
+  /// Optional extra detail shown in the picker instead of a value — a plan
+  /// field never shows a resolved value, it shows which scope it comes from
+  /// ("plan", "øvelse", "post", "rollespill").
+  ///
+  /// Set by `PlanFieldTokens._labelled`, which is the only place that knows both
+  /// the scope and the localizations. Before that it was never set at all, and
+  /// the menu hardcoded one hint for every entry, so an `{{exercise.*}}` token
+  /// and a `{{plan.*}}` token both read "planfelt".
   final String? hint;
 }
 

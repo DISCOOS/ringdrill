@@ -711,6 +711,12 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
   }
 }
 
+/// Cap on the value shown beside a token's name, out of the card's 280.
+///
+/// Leaves the name roughly 100px after the leading icon and the tile's padding
+/// — enough for a name to stay readable while a long value ellipsises.
+const _menuValueMaxWidth = 120.0;
+
 class _TokenMenuCard extends StatelessWidget {
   const _TokenMenuCard({
     required this.entries,
@@ -767,8 +773,22 @@ class _TokenMenuCard extends StatelessWidget {
     // guarantee for either slot).
     Widget title(String text) =>
         Text(text, maxLines: 1, overflow: TextOverflow.ellipsis);
-    Widget trailing(String text, {TextStyle? style}) =>
-        Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: style);
+    // ListTile lays its trailing out at the width the text wants and gives the
+    // title whatever is left, so a long value — a location's "LSOR kurslokale,
+    // 32V 0580465E 6551894N", a talegruppe like "RK-VFOLD-ØV4 / DMO-ANDRE-1" —
+    // took the whole row and ellipsised the token's *name* down to nothing. The
+    // name is what the author is looking for, so it gets the larger share and the
+    // value is capped: an ellipsised value is still recognisable, an ellipsised
+    // name is not.
+    Widget trailing(String text, {TextStyle? style}) => ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: _menuValueMaxWidth),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      ),
+    );
     return switch (entry) {
       VariableMenuEntry(token: final v) => ListTile(
         dense: true,
@@ -784,7 +804,13 @@ class _TokenMenuCard extends StatelessWidget {
         dense: true,
         leading: const Icon(Icons.article_outlined, size: 18),
         title: title(f.label),
-        trailing: trailing(l10n.tokenMenuPlanFieldHint, style: mutedStyle),
+        // Which scope the token reads from — "plan", "øvelse", "post",
+        // "rollespill". The fallback is what every entry used to show
+        // unconditionally, which is why an {{exercise.*}} token read "planfelt".
+        trailing: trailing(
+          f.hint ?? l10n.tokenMenuPlanFieldHint,
+          style: mutedStyle,
+        ),
         onTap: () => onSelect(entry),
       ),
       StationLocationMenuEntry(token: final l) => ListTile(

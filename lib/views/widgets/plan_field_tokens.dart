@@ -22,7 +22,7 @@ class PlanFieldTokens {
   /// Resolvable at plan scope and, via cascade, everywhere below it
   /// (exercise, station, roleplay).
   static List<PlanFieldToken> plan(AppLocalizations l) =>
-      _labelled(PlanFieldScope.plan, {
+      _labelled(l, PlanFieldScope.plan, {
         'plan.name': l.planName,
         'plan.description': l.planDescription,
         'plan.exerciseCount': l.exerciseCount,
@@ -33,7 +33,7 @@ class PlanFieldTokens {
   /// Resolvable at exercise scope and, via cascade, station/roleplay scope
   /// — but never at plan scope, which has no exercise in context.
   static List<PlanFieldToken> exercise(AppLocalizations l) =>
-      _labelled(PlanFieldScope.exercise, {
+      _labelled(l, PlanFieldScope.exercise, {
         'exercise.name': l.exerciseName,
         'exercise.numberOfTeams': l.numberOfTeams,
         'exercise.numberOfRounds': l.numberOfRounds,
@@ -53,7 +53,7 @@ class PlanFieldTokens {
   /// field the author edits in the station's own base section — resolving
   /// through the fixpoint pass, offering it there recurses on itself.
   static List<PlanFieldToken> station(AppLocalizations l) =>
-      _labelled(PlanFieldScope.station, {
+      _labelled(l, PlanFieldScope.station, {
         'station.name': l.stationName,
         'station.stationCode': l.stationCode,
         'station.position': l.positionUtm,
@@ -71,7 +71,7 @@ class PlanFieldTokens {
   /// description field, but that field is never token-aware in the first
   /// place, so no caller-side filtering is needed for it.
   static List<PlanFieldToken> roleplay(AppLocalizations l) =>
-      _labelled(PlanFieldScope.roleplay, {
+      _labelled(l, PlanFieldScope.roleplay, {
         'roleplay.name': l.roleName,
         'roleplay.age': l.roleAge,
         'roleplay.description': l.roleDescription,
@@ -84,7 +84,21 @@ class PlanFieldTokens {
   /// `analyze` validates); the labels are presentation. Building the list from
   /// the names rather than restating them means a facet cannot exist in the
   /// picker without existing in the validator.
+  /// Which scope a token reads from, shown as the muted hint on its entry.
+  ///
+  /// The scope nouns the app already has, lowercased to match the hint's muted,
+  /// uncapitalised style. Reused rather than four new ARB strings, so the picker
+  /// cannot drift from what the rest of the app calls these things.
+  static String _scopeHint(AppLocalizations l, PlanFieldScope scope) =>
+      switch (scope) {
+        PlanFieldScope.plan => l.plan(1),
+        PlanFieldScope.exercise => l.exercise(1),
+        PlanFieldScope.station => l.station(1),
+        PlanFieldScope.roleplay => l.roleplay(1),
+      }.toLowerCase();
+
   static List<PlanFieldToken> _labelled(
+    AppLocalizations l,
     PlanFieldScope scope,
     Map<String, String> labels,
   ) {
@@ -104,9 +118,10 @@ class PlanFieldTokens {
       'PlanFieldNames.${scope.name} facets with no label here: '
       '${names.toSet().difference(labels.keys.toSet())}',
     );
+    final hint = _scopeHint(l, scope);
     return [
       for (final name in names)
-        PlanFieldToken(name: name, label: labels[name] ?? name),
+        PlanFieldToken(name: name, label: labels[name] ?? name, hint: hint),
     ];
   }
 }

@@ -105,9 +105,19 @@ Future<TextEditingController> _pump(
           focusNode: focusNode,
           variables: const [
             VariableToken(name: 'frekvens', effectiveValue: 'Kanal 6'),
+            // A real one from the LSOR plan: long enough that ListTile used to
+            // hand the whole row to the value.
+            VariableToken(
+              name: 'talegruppe_ovelse',
+              effectiveValue: 'RK-VFOLD-ØV4 / DMO-ANDRE-1',
+            ),
           ],
           planFields: const [
-            PlanFieldToken(name: 'exercise.name', label: 'Øvelsesnavn'),
+            PlanFieldToken(
+              name: 'exercise.name',
+              label: 'Øvelsesnavn',
+              hint: 'øvelse',
+            ),
           ],
           stationLocations: stationLocations,
           stationPersons: stationPersons,
@@ -738,6 +748,64 @@ void main() {
           expect(find.text(l10n.roleDescription), findsNothing);
         },
       );
+    });
+
+    testWidgets('a long value lays out instead of consuming the whole tile', (
+      tester,
+    ) async {
+      // The bug this guards is not cosmetic. The card is 280 wide and `ListTile`
+      // lays its trailing out at whatever width the text wants, giving the title
+      // the remainder — so a value like "RK-VFOLD-ØV4 / DMO-ANDRE-1" (a real
+      // talegruppe from the LSOR plan) took the entire tile and `ListTile`
+      // asserted "Trailing widget consumes the entire tile width", leaving the
+      // tile with no size at all: `RenderBox was not laid out ... hasSize`.
+      //
+      // In a release build there is no assert to catch it. The tile is left
+      // needing layout every frame, its title paints as nothing, and the menu's
+      // full-screen `Positioned.fill` barrier goes on swallowing every tap — the
+      // reported symptom being "no menu appears and then the whole app stops
+      // responding to clicks". It surfaced on web and not on iOS/Android because
+      // whether the value crosses the tile width depends on how wide the string
+      // measures in that renderer's font, not on any web-specific code path.
+      await _pump(tester);
+      await _typeAndOpen(tester, '/');
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'the row must lay out; an exception here is the livelock',
+      );
+
+      final name = find.text('talegruppe_ovelse');
+      final value = find.text('RK-VFOLD-ØV4 / DMO-ANDRE-1');
+      expect(name, findsOneWidget);
+      expect(value, findsOneWidget);
+
+      final nameWidth = tester.getSize(name).width;
+      expect(
+        nameWidth,
+        greaterThan(60),
+        reason:
+            'the name is what the author is scanning for, so it keeps the '
+            'larger share rather than ellipsising to nothing',
+      );
+      expect(
+        tester.getSize(value).width,
+        lessThanOrEqualTo(120),
+        reason: 'the value is the capped side',
+      );
+    });
+
+    testWidgets('a plan-field entry names the scope it reads from', (
+      tester,
+    ) async {
+      // Every entry used to show the same "planfelt" hint, whatever scope it
+      // came from, so an {{exercise.*}} token claimed to be a plan field.
+      await _pump(tester);
+      await _typeAndOpen(tester, '/');
+
+      expect(find.text('Øvelsesnavn'), findsOneWidget);
+      expect(find.text('øvelse'), findsOneWidget);
     });
 
     testWidgets('dismisses on Escape', (tester) async {
