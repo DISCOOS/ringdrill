@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Token browser on showRingdrillPicker (ADR-0067)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --radius:8px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --font-mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  .grid{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;align-items:flex-start}
+  .phone{width:330px}
+  .wide{width:700px}
+  .cap{font-size:12px;color:var(--text-3);margin:0 0 6px 4px}
+  .frame{background:var(--bg-1);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+
+  /* compact: ADR-0027 sheet chrome — drag handle, rounded top, surface */
+  .sheet{background:var(--bg-1);border:1px solid var(--border);border-radius:16px 16px 0 0;overflow:hidden}
+  .handle{display:flex;justify-content:center;padding:10px 0 6px}
+  .handle i{width:32px;height:4px;border-radius:2px;background:var(--text-3);opacity:.5;display:block}
+  /* medium/expanded: showRingdrillDialogShell — rounded chrome, close button */
+  .dialog{background:var(--bg-1);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 8px 26px rgba(0,0,0,.18)}
+
+  .title{display:flex;align-items:center;padding:8px 4px 8px 16px}
+  .title .t{flex:1;font-size:15px;font-weight:500}
+  .title i{font-size:20px;color:var(--text-2);padding:8px}
+  .div{height:1px;background:var(--border)}
+  .searchwrap{padding:8px 16px}
+  .searchfield{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:4px;padding:8px 10px}
+  .searchfield span{font-size:14px;color:var(--text-3);flex:1}
+  .searchfield i{font-size:18px;color:var(--text-2)}
+
+  /* section header: labelSmall, w700, letterSpacing .6, onSurfaceVariant */
+  .sec{padding:12px 16px 4px;font-size:11px;font-weight:700;letter-spacing:.6px;color:var(--text-2)}
+
+  /* row shares the section header's left edge — no leading icon */
+  .tok{padding:8px 16px 12px}
+  .tok .col{min-width:0}
+  /* one line: label first, token after it as a code chip */
+  .hdr{display:flex;align-items:baseline;gap:8px;min-width:0}
+  .hdr .lab{font-size:13.5px;font-weight:500;white-space:nowrap}
+  .hdr .tk{font-family:var(--font-mono);font-size:11.5px;color:var(--text-2);background:var(--bg-2);
+           border:1px solid var(--border);border-radius:4px;padding:1px 5px;
+           min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hdr .tk b{font-weight:600;color:var(--accent)}
+  /* tooltip on an ellipsised token — hover on desktop, long-press on touch */
+  .tip{position:absolute;left:16px;top:26px;z-index:3;background:var(--text-1);color:var(--bg-1);
+       font-family:var(--font-mono);font-size:11px;padding:4px 8px;border-radius:4px;
+       box-shadow:0 4px 12px rgba(0,0,0,.28)}
+  .desc{font-size:12px;color:var(--text-2);margin-top:6px;line-height:1.35}
+  .desc code{font-family:var(--font-mono);font-size:11.5px}
+  .val{margin-top:5px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;
+       padding:5px 7px;font-family:var(--font-mono);font-size:11.5px;color:var(--text-2);
+       line-height:1.45;white-space:pre-wrap;word-break:break-word}
+  .val .k{color:var(--text-3)}
+  .val.ex{border-style:dashed}
+  .extag{display:inline-block;font-family:var(--font-sans);font-size:10px;font-weight:600;letter-spacing:.4px;
+         color:var(--text-3);border:1px solid var(--border);border-radius:3px;padding:0 4px;margin-right:6px}
+
+  /* master rail on medium/expanded — same inventory as the chips */
+  .panes{display:flex;align-items:stretch}
+  .rail{width:170px;border-right:1px solid var(--border);padding:6px 0;flex:none}
+  .rail div{padding:8px 16px;font-size:13px;color:var(--text-2);white-space:nowrap;
+            overflow:hidden;text-overflow:ellipsis}
+  .rail div.on{background:var(--accent-bg);color:var(--accent);font-weight:500;
+               border-left:3px solid var(--accent);padding-left:13px}
+  .rail div.off{opacity:.45}
+  .detail{flex:1;min-width:0}
+
+  /* filter chips under the search field, compact only */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px}
+  .chip{font-size:12px;padding:5px 11px;border:1px solid var(--border);border-radius:999px;
+        color:var(--text-2);white-space:nowrap;background:var(--bg-1)}
+  .chip.on{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);font-weight:500}
+  .chip.off{opacity:.45}
+  /* rejected alternative: segmented button */
+  .segrow{display:flex;border:1px solid var(--border);border-radius:20px;overflow:hidden;margin:0 16px}
+  .segrow > span{flex:1 0 0;text-align:center;font-size:12px;padding:8px 0;border-right:1px solid var(--border);
+                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-2)}
+  .segrow > span:last-child{border-right:none}
+  .segrow > span.on{background:var(--accent-bg);color:var(--accent);font-weight:500}
+  .bad{font-size:12px;color:var(--text-3);padding:8px 16px 0;line-height:1.4}
+  .hit{background:var(--accent-bg);color:var(--accent)}
+  .off{opacity:.55}
+  .offrow{padding:4px 16px 12px;font-size:12px;color:var(--text-3);line-height:1.4}
+  .foot{display:flex;align-items:center;gap:10px;padding:12px 16px;color:var(--accent);font-size:14px;font-weight:500}
+
+  /* caret menu */
+  .bar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .bar .t{flex:1;font-size:15px;font-weight:500}
+  .field{padding:12px 14px}
+  .field .txt{font-size:13.5px;line-height:1.5;color:var(--text-2)}
+  .field .txt em{font-style:normal;background:var(--accent-bg);color:var(--accent);
+                 font-family:var(--font-mono);font-size:12px;padding:1px 3px;border-radius:3px}
+  .caret{border:1px solid var(--border);border-radius:10px;background:var(--bg-1);width:280px;overflow:hidden;
+         box-shadow:0 6px 18px rgba(0,0,0,.14)}
+  .menurow{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border)}
+  .menurow .t{flex:1;font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .menurow .v{font-family:var(--font-mono);font-size:11.5px;color:var(--text-3);max-width:110px;
+              overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .menurow i{font-size:17px;color:var(--text-2)}
+  .browse{display:flex;align-items:center;gap:10px;padding:10px 12px;color:var(--accent);background:var(--bg-2)}
+  .browse span{font-size:13.5px;font-weight:500}
+  .note{font-size:12px;color:var(--text-3);padding:10px 14px}
+
+  .legend{max-width:780px;margin:34px auto 0;font-size:13px;color:var(--text-2);line-height:1.6}
+  .legend h2{font-size:14px;color:var(--text-1);margin:22px 0 8px}
+  .legend h2:first-child{margin-top:0}
+  .legend code{font-family:var(--font-mono);font-size:12px;background:var(--bg-2);padding:1px 4px;border-radius:3px}
+  .legend ul{margin:6px 0 0;padding-left:20px}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <!-- 1 -->
+  <div class="phone">
+    <p class="cap">1 · The fast path is untouched — “/” filters as before, one new fixed row at the bottom</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-chevron-left" style="font-size:20px;color:var(--text-2)"></i><span class="t">Station 3 · Description</span><i class="ti ti-dots-vertical" style="font-size:19px;color:var(--text-2)"></i></div>
+      <div class="field"><div class="txt">The team assembles at <em>{{station.loc.assembly}}</em> and reports on <em>/talk</em></div></div>
+      <div style="padding:0 14px 14px">
+        <div class="caret">
+          <div class="menurow"><i class="ti ti-variable"></i><span class="t">talkgroup</span><span class="v">RK-VFOLD-ØV4 …</span></div>
+          <div class="menurow"><i class="ti ti-variable"></i><span class="t">talkgroup_reserve</span><span class="v">DMO-ANDRE-2</span></div>
+          <div class="browse"><i class="ti ti-list-search" style="font-size:17px"></i><span>Browse all tokens …</span></div>
+        </div>
+      </div>
+      <div class="note">The same action sits in the section editor's ⋮ menu, so the sheet is reachable without typing a trigger character.</div>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="phone">
+    <p class="cap">2 · No matches: the row replaces a dead end with something to do</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-chevron-left" style="font-size:20px;color:var(--text-2)"></i><span class="t">Station 3 · Description</span><i class="ti ti-dots-vertical" style="font-size:19px;color:var(--text-2)"></i></div>
+      <div class="field"><div class="txt">The team assembles at <em>{{station.loc.assembly}}</em> and reports on <em>/freq</em></div></div>
+      <div style="padding:0 14px 14px">
+        <div class="caret">
+          <div class="menurow" style="color:var(--text-3)"><span class="t" style="font-size:13px">No matches</span></div>
+          <div class="menurow"><i class="ti ti-plus" style="color:var(--accent)"></i><span class="t" style="color:var(--accent)">Create variable “freq”</span></div>
+          <div class="browse"><i class="ti ti-list-search" style="font-size:17px"></i><span>Browse all tokens …</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="phone">
+    <p class="cap">3 · Compact: bottom sheet with ADR-0027 chrome — drag handle, title, search, filter chips, sectioned rows</p>
+    <div class="sheet">
+      <div class="handle"><i></i></div>
+      <div class="title"><span class="t">Insert token</span></div>
+      <div class="div"></div>
+      <div class="searchwrap"><div class="searchfield"><i class="ti ti-search"></i><span>Search names and descriptions</span></div></div>
+      <div class="chips">
+        <span class="chip on">All</span>
+        <span class="chip">Plan</span>
+        <span class="chip">Exercise</span>
+        <span class="chip">Station</span>
+        <span class="chip off">Script</span>
+        <span class="chip">Variable</span>
+        <span class="chip">Location</span>
+        <span class="chip">Person</span>
+      </div>
+
+      <div class="sec">PLAN</div>
+      <div class="tok">
+        <div class="col">
+          <div class="hdr"><span class="lab">Plan name</span><span class="tk">{{plan.<b>name</b>}}</span></div>
+          <div class="val">LSOR Winter Exercise 2026</div>
+          <div class="desc">The plan's name, as it reads in the plan list and in the brief's title.</div>
+        </div>
+      </div>
+
+      <div class="div"></div>
+      <div class="sec">EXERCISE</div>
+      <div class="tok">
+        <div class="col">
+          <div class="hdr"><span class="lab">Phase Breakdown</span><span class="tk">{{exercise.<b>phaseBreakdown</b>}}</span></div>
+          <div class="val">15 | 10 | 5</div>
+          <div class="desc">Execution, evaluation and rotation minutes, separated by a vertical bar.</div>
+        </div>
+      </div>
+      <div class="tok">
+        <div class="col">
+          <div class="hdr"><span class="lab">Round Table</span><span class="tk">{{exercise.<b>roundTable</b>}}</span></div>
+          <div class="val ex"><span class="extag">EXAMPLE</span>| Round | Team 1 | Team 2 |
+| --- | --- | --- |
+| 1 | S1 | S2 |
+<span class="k">… 4 more lines</span></div>
+          <div class="desc">A multi-line GFM table of which team is at which station in each round. Built when the brief renders.</div>
+        </div>
+      </div>
+
+      <div class="div"></div>
+      <div class="sec">STATION</div>
+      <div class="tok">
+        <div class="col">
+          <div class="hdr"><span class="lab">Position (UTM)</span><span class="tk">{{station.<b>position</b>}}</span></div>
+          <div class="val">32V 0580465E 6551894N</div>
+          <div class="desc">The station's own position. Empty until the station is placed on the map.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="phone">
+    <p class="cap">4 · Same sheet, further down — scope with no context, ellipsised token with tooltip, footer action</p>
+    <div class="sheet" style="border-radius:0 0 16px 16px">
+      <div class="sec off">SCRIPT</div>
+      <div class="offrow off"><span>No roleplay in this field's scope. Roleplay tokens resolve in a roleplay's own fields.</span></div>
+
+      <div class="div"></div>
+      <div class="sec">VARIABLE</div>
+      <div class="tok">
+        <div class="col">
+          <div class="hdr"><span class="lab">talkgroup</span><span class="tk">{{var.<b>talkgroup</b>}}</span></div>
+          <div class="val">RK-VFOLD-ØV4 / DMO-ANDRE-1</div>
+          <div class="desc">Declared in the plan. The hint the author wrote is the description.</div>
+        </div>
+      </div>
+
+      <div class="div"></div>
+      <div class="sec">LOCATION</div>
+      <div class="tok">
+        <div class="col">
+          <div class="hdr"><span class="lab">Course room</span><span class="tk">{{station.loc.<b>courseroom</b>}}</span></div>
+          <div class="val">LSOR course room, 32V 0580465E 6551894N</div>
+          <div class="desc">Name and position. Append <code>.name</code> or <code>.position</code> for one part.</div>
+        </div>
+      </div>
+
+      <div class="div"></div>
+      <div class="sec">PERSON</div>
+      <div class="tok">
+        <div class="col">
+          <div class="hdr"><span class="lab">Anne Glemsk</span><span class="tk">{{station.person.<b>anne</b>}}</span></div>
+          <div class="val">Anne Glemsk, 39</div>
+          <div class="desc">Name and age. Sub-fields: <code>.age</code>, <code>.description</code>, <code>.loc.*</code></div>
+        </div>
+      </div>
+      <div class="tok" style="position:relative">
+        <div class="col">
+          <div class="hdr"><span class="lab">Home · Anne</span><span class="tk" style="max-width:112px">{{station.person.anne.loc.position}}</span></div>
+          <div class="tip">{{station.person.anne.loc.position}}</div>
+          <div class="val" style="margin-top:16px">32V 0580414E 6552008N</div>
+          <div class="desc">The position of the location this person is attached to.</div>
+        </div>
+      </div>
+
+      <div class="div"></div>
+      <div class="foot"><i class="ti ti-plus" style="font-size:17px"></i>New variable</div>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="wide">
+    <p class="cap">5 · Medium/expanded: the dialog shell laid out master/detail (ADR-0030) — scope rail left, tokens right</p>
+    <div class="dialog">
+      <div class="title"><span class="t">Insert token</span><span style="font-size:12px;color:var(--text-3);margin-right:6px">Station 3 · Description</span><i class="ti ti-x"></i></div>
+      <div class="div"></div>
+      <div class="searchwrap"><div class="searchfield"><i class="ti ti-search"></i><span>Search names and descriptions</span></div></div>
+      <div class="div"></div>
+      <div class="panes">
+        <div class="rail">
+          <div class="on">All</div>
+          <div>Plan</div>
+          <div>Exercise</div>
+          <div>Station</div>
+          <div class="off">Script</div>
+          <div>Variable</div>
+          <div>Location</div>
+          <div>Person</div>
+        </div>
+        <div class="detail">
+          <div class="sec">PLAN</div>
+          <div class="tok">
+            <div class="col">
+              <div class="hdr"><span class="lab">Plan name</span><span class="tk">{{plan.<b>name</b>}}</span></div>
+              <div class="val">LSOR Winter Exercise 2026</div>
+              <div class="desc">The plan's name, as it reads in the plan list and in the brief's title.</div>
+            </div>
+          </div>
+          <div class="div"></div>
+          <div class="sec">EXERCISE</div>
+          <div class="tok">
+            <div class="col">
+              <div class="hdr"><span class="lab">Time Range</span><span class="tk">{{exercise.<b>timeLabel</b>}}</span></div>
+              <div class="val">0900–1130</div>
+              <div class="desc">Start and end time of the exercise, as one expression.</div>
+            </div>
+          </div>
+          <div class="tok">
+            <div class="col">
+              <div class="hdr"><span class="lab">Round Table</span><span class="tk">{{exercise.<b>roundTable</b>}}</span></div>
+              <div class="val ex"><span class="extag">EXAMPLE</span>| Round | Team 1 | Team 2 |
+| --- | --- | --- |
+| 1 | S1 | S2 |
+<span class="k">… 4 more lines</span></div>
+              <div class="desc">A multi-line GFM table of which team is at which station in each round. Built when the brief renders.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="div"></div>
+      <div class="foot"><i class="ti ti-plus" style="font-size:17px"></i>New variable</div>
+    </div>
+    <p class="cap" style="margin-top:10px">“All” shows everything with section headers, as on compact. Pick one scope in the rail and the header drops from the detail — the rail is the header then.</p>
+  </div>
+
+  <!-- 5b -->
+  <div class="wide">
+    <p class="cap">5b · Searching across scopes: the rail shows where the hits are, the detail keeps its headers</p>
+    <div class="dialog">
+      <div class="title"><span class="t">Insert token</span><span style="font-size:12px;color:var(--text-3);margin-right:6px">Station 3 · Description</span><i class="ti ti-x"></i></div>
+      <div class="div"></div>
+      <div class="searchwrap"><div class="searchfield"><i class="ti ti-search"></i><span style="color:var(--text-1)">time</span><i class="ti ti-x" style="font-size:15px;color:var(--text-3)"></i></div></div>
+      <div class="div"></div>
+      <div class="panes">
+        <div class="rail">
+          <div class="on">All</div>
+          <div class="off">Plan</div>
+          <div>Exercise</div>
+          <div>Station</div>
+          <div class="off">Script</div>
+          <div class="off">Variable</div>
+          <div class="off">Location</div>
+          <div class="off">Person</div>
+        </div>
+        <div class="detail">
+          <div class="sec">EXERCISE</div>
+          <div class="tok">
+            <div class="col">
+              <div class="hdr"><span class="lab">Start <span class="hit">Time</span></span><span class="tk">{{exercise.<b>startTime</b>}}</span></div>
+              <div class="val">0900</div>
+              <div class="desc">The clock time the exercise starts, formatted for the app's language.</div>
+            </div>
+          </div>
+          <div class="tok">
+            <div class="col">
+              <div class="hdr"><span class="lab">Rotation <span class="hit">Time</span></span><span class="tk">{{exercise.<b>rotationTime</b>}}</span></div>
+              <div class="val">5 min</div>
+              <div class="desc">Minutes set aside for moving between two stations.</div>
+            </div>
+          </div>
+          <div class="div"></div>
+          <div class="sec">STATION</div>
+          <div class="tok">
+            <div class="col">
+              <div class="hdr"><span class="lab"><span class="hit">Time</span> per Station</span><span class="tk">{{station.<b>duration</b>}}</span></div>
+              <div class="val">25 min</div>
+              <div class="desc">Execution and evaluation time added together, rotation excluded.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="cap" style="margin-top:10px">A scope with no hits dims in the rail rather than disappearing — the same rule the chips follow on compact, in the presentation that fits the window.</p>
+  </div>
+
+  <!-- 6 -->
+  <div class="phone">
+    <p class="cap">6 · Chip active: “Exercise” alone — 12 rows instead of 31, chip and search compose</p>
+    <div class="sheet">
+      <div class="handle"><i></i></div>
+      <div class="title"><span class="t">Insert token</span></div>
+      <div class="div"></div>
+      <div class="searchwrap"><div class="searchfield"><i class="ti ti-search"></i><span>Search names and descriptions</span></div></div>
+      <div class="chips">
+        <span class="chip">All</span>
+        <span class="chip">Plan</span>
+        <span class="chip on">Exercise</span>
+        <span class="chip">Station</span>
+        <span class="chip off">Script</span>
+        <span class="chip">Variable</span>
+        <span class="chip">Location</span>
+        <span class="chip">Person</span>
+      </div>
+
+      <div class="sec">EXERCISE</div>
+      <div class="tok">
+        <div class="col">
+          <div class="hdr"><span class="lab">Time Range</span><span class="tk">{{exercise.<b>timeLabel</b>}}</span></div>
+          <div class="val">0900–1130</div>
+          <div class="desc">Start and end time of the exercise, as one expression.</div>
+        </div>
+      </div>
+      <div class="tok">
+        <div class="col">
+          <div class="hdr"><span class="lab">Number of Rounds</span><span class="tk">{{exercise.<b>numberOfRounds</b>}}</span></div>
+          <div class="val">4</div>
+          <div class="desc">How many times the teams rotate through the stations.</div>
+        </div>
+      </div>
+      <div class="tok">
+        <div class="col">
+          <div class="hdr"><span class="lab">End Time</span><span class="tk">{{exercise.<b>endTime</b>}}</span></div>
+          <div class="val ex"><span class="extag">EXAMPLE</span>1130</div>
+          <div class="desc">Derived from start time, rounds and phase times. This exercise has no start time, so the example shows the shape.</div>
+        </div>
+      </div>
+      <div class="tok">
+        <div class="col">
+          <div class="hdr"><span class="lab">Round Table</span><span class="tk">{{exercise.<b>roundTable</b>}}</span></div>
+          <div class="val ex"><span class="extag">EXAMPLE</span>| Round | Team 1 | Team 2 |
+| --- | --- | --- |
+| 1 | S1 | S2 |
+<span class="k">… 4 more lines</span></div>
+          <div class="desc">A multi-line GFM table of which team is at which station in each round. Built when the brief renders.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7 -->
+  <div class="phone">
+    <p class="cap">7 · Rejected: segmented button — the problem StaffRoleFilter has already solved</p>
+    <div class="frame" style="padding-bottom:14px">
+      <div class="bad" style="padding-top:14px"><b style="color:var(--text-2)">Segmented button, 8 equal-width segments</b></div>
+      <div class="segrow" style="margin-top:8px">
+        <span class="on">All</span><span>Plan</span><span>Exercise</span><span>Station</span><span>Script</span><span>Variable</span><span>Location</span><span>Person</span>
+      </div>
+      <div class="bad">Every segment is as wide as the widest, however short the others are, and a segmented button does not wrap — it clips. With eight categories the row reads “Exer…”, “Stat…”, “Vari…”. The set also varies with context, and a segmented button is for a fixed choice between two and five.</div>
+
+      <div class="bad" style="margin-top:14px"><b style="color:var(--text-2)">Chips, each as wide as its own label, wrapping to the next line</b></div>
+      <div class="chips" style="margin-top:8px;padding-bottom:0">
+        <span class="chip on">All</span>
+        <span class="chip">Plan</span>
+        <span class="chip">Exercise</span>
+        <span class="chip">Station</span>
+        <span class="chip off">Script</span>
+        <span class="chip">Variable</span>
+        <span class="chip">Location</span>
+        <span class="chip">Person</span>
+      </div>
+      <div class="bad">Each chip takes the width its own label needs, and the row wraps rather than scrolling sideways, so no category ends up out of sight. A category with no hits dims where it stands.</div>
+    </div>
+  </div>
+
+  <!-- 8 -->
+  <div class="phone">
+    <p class="cap">8 · The set is derived: the scope cascade decides which filters exist at all</p>
+    <div class="frame" style="padding-bottom:16px">
+      <div class="bad" style="padding-top:14px"><b style="color:var(--text-2)">Plan-scope field</b> — <code style="font-family:var(--font-mono)">PlanFieldScope.plan.withAncestors</code></div>
+      <div class="chips" style="margin-top:8px;padding-bottom:0">
+        <span class="chip on">All</span>
+        <span class="chip">Plan</span>
+        <span class="chip">Variable</span>
+      </div>
+
+      <div class="bad" style="margin-top:16px"><b style="color:var(--text-2)">Station-scope field</b> — the station's own locations and persons come with it</div>
+      <div class="chips" style="margin-top:8px;padding-bottom:0">
+        <span class="chip on">All</span>
+        <span class="chip">Plan</span>
+        <span class="chip">Exercise</span>
+        <span class="chip">Station</span>
+        <span class="chip off">Script</span>
+        <span class="chip">Variable</span>
+        <span class="chip">Location</span>
+        <span class="chip">Person</span>
+      </div>
+
+      <div class="bad" style="margin-top:16px"><b style="color:var(--text-2)">Roleplay-scope field</b> — bottom of the cascade, everything is in scope</div>
+      <div class="chips" style="margin-top:8px;padding-bottom:0">
+        <span class="chip on">All</span>
+        <span class="chip">Plan</span>
+        <span class="chip">Exercise</span>
+        <span class="chip">Station</span>
+        <span class="chip">Script</span>
+        <span class="chip">Variable</span>
+        <span class="chip">Location</span>
+        <span class="chip">Person</span>
+      </div>
+
+      <div class="bad" style="margin-top:14px">No hand-kept list anywhere: the filters are <code style="font-family:var(--font-mono)">PlanFieldScope</code> plus the registries the field has, in the same order as the sections. A new scope produces a new filter without anyone remembering to add one.</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="legend">
+  <h2>This is showRingdrillPicker, not a new surface</h2>
+  <p>The browser is one call to <code>showRingdrillPicker&lt;TokenBrowserEntry&gt;</code> (ADR-0049). The primitive already owns the chrome: a bottom sheet on compact via <code>showRingdrillActionSheet</code>, the rounded dialog shell on medium/expanded, a title row, a search field past a threshold, section headers computed over the <em>filtered</em> list, <code>footerActions</code>, and pop-with-the-chosen-item. None of that is redrawn here.</p>
+
+  <h2>Row anatomy</h2>
+  <p>Three lines, in the order the author asks: <b>what is it called</b>, <b>what will it produce</b>, <b>what does it mean</b>.</p>
+  <ul>
+    <li><b>The left edge.</b> The row starts where the section header starts. No leading icon: the scope is already in the header and in the token's own prefix, so an icon would push every line 30px in and take that width off the long values — in the one direction that is short.</li>
+    <li><b>Line 1 — label and token.</b> Label first, token after it as a code chip. The label is what the author is looking for; the token is what she gets. When the line is tight the token truncates from the right, and an ellipsised token <b>must</b> carry a tooltip with the full string: the tail is exactly what tells <code>{{station.person.anne.loc.position}}</code> from <code>{{station.person.anne.loc.name}}</code>. Hover on desktop, long-press on touch, which <code>Tooltip</code> does by itself. The row's tap is insertion; its long-press is free.</li>
+    <li><b>Line 2 — the value now.</b> What the token resolves to in this field's scope at this moment. The block wraps, so a talkgroup or a round table is readable instead of truncated — the whole reason a sheet exists. When there is nothing to resolve, an <b>example value</b> stands there instead, dashed and marked EXAMPLE, so the author sees the <em>shape</em> of what the token produces. An empty box answers nothing.</li>
+    <li><b>Line 3 — the description.</b> For a plan field the new line in <code>PlanFieldTokens</code>; for a variable the hint the author wrote herself.</li>
+  </ul>
+
+  <h2>One filter, two presentations</h2>
+  <p><b>The set is derived, not written.</b> The filters are <code>PlanFieldScope</code>'s cascade for this field (<code>withAncestors</code>) plus the registries the field actually has — variables always, the station's locations and persons when it owns any — in the same order as the sections. A plan-scope field gets three, a roleplay-scope field gets eight. The demand the ADR makes of the content applies to the filter too: one inventory, no second copy, so a new scope produces a new filter on its own. A scope that exists but has nothing in context stays, dimmed and still selectable — picking it shows the single row explaining why it does not apply here.</p>
+  <p><b>Compact: wrapping chips.</b> Label only, no count — the count is not what an author chooses on, and it costs width where width is short. The row wraps rather than scrolling sideways: eight categories take two lines on a phone and all of them are visible, where a sideways row would hide the last few behind the edge without saying they exist.</p>
+  <p><b>Medium/expanded: a master rail.</b> The same inventory laid out as the app's own wide-screen idiom (ADR-0030): scopes in the master pane, rows in the detail. That is the pattern the plan tab, the station list and the roleplay list already use on a wide window, so the browser reads as part of the app rather than as a dialog that happens to be wide. The window-size rule is the same one <code>showRingdrillPicker</code> already applies to the surface — one parameter, two presentations, no per-call-site choice.</p>
+  <p><b>Why not a segmented button?</b> Because the app has tried it. <code>StaffRoleFilter</code> was a <code>SegmentedButton</code> until four Norwegian role names made every segment as wide as “Øvelsesleder”, overflowed a phone, and clipped the leading “Ø” when shrunk to fit; that file's doc comment is the record. Here it is worse — up to eight categories, and the set varies with context. A segmented button is also <em>view selection</em> in this app (the plan tab's segments, the coordinator's three views), not list filtering, and using it here would blur that.</p>
+  <p>The filters cannot live in <code>itemBuilder</code> either, since they would scroll away with the list. They belong in <code>showRingdrillPicker</code>'s header as an optional <code>filters</code> parameter — a label and a predicate per entry — rendered as chips on compact and as a rail on medium/expanded. A picker that passes none looks exactly as it does today.</p>
+
+  <h2>What is actually new</h2>
+  <ul>
+    <li><b>The row builder.</b> <code>itemBuilder</code> belongs to the call site, so a three-line row needs no change to the primitive.</li>
+    <li><b>The descriptions.</b> One line per facet, in both languages, beside the labels in <code>PlanFieldTokens</code>. Still the bulk of the work, and still why the ADR is <em>proposed</em> rather than accepted.</li>
+    <li><b>The example values.</b> One per facet that has nothing to resolve in the editor — the aggregated ones, the derived ones missing their inputs, and the plainly empty ones. Same home as the descriptions; the structural ones need no translation.</li>
+    <li><b>The search text.</b> <code>searchText</code> joins name, label and description. <code>searchThreshold: 0</code>, since the list is always long.</li>
+    <li><b>The <code>filters</code> parameter</b>, the one addition to the primitive.</li>
+  </ul>
+
+  <h2>Without extending the primitive</h2>
+  <ul>
+    <li><b>A scope with no context</b> is its own <code>TokenBrowserEntry</code> variant rendering as a muted note with no <code>onTap</code>. Its header comes from <code>sectionLabel</code> like any other row, so an empty scope is shown rather than vanishing, without the primitive learning about disabled rows.</li>
+    <li><b>The order</b> is the cascade (plan → exercise → station → roleplay), then variables, locations, persons. <code>sectionLabel</code> only asks that the list is ordered by group, which it is.</li>
+    <li><b>Insertion</b> routes through the caret menu's <code>_select</code>, so there is still one implementation of “what text does this entry produce”.</li>
+  </ul>
+
+  <p>Panels 1 and 2 are the caret menu, which is not a picker call and does not change shape. It gains one row.</p>
+</div>
+</body>
+</html>

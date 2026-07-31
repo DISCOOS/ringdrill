@@ -77,8 +77,9 @@ The app is the one surface that cannot show either.
   width, shorten labels, accept that a row cannot explain itself.
 * **Option B — A searchable browser sheet, opened from the caret menu.** The
   caret menu keeps its filter-first behaviour and gains one entry — "Browse all
-  tokens…" — that opens a modal sheet with a search field, scope sections, and a
-  row per token carrying name, description and live resolved value.
+  tokens…" — that opens the existing picker primitive with a search field, scope
+  filter chips, scope sections, and a row per token carrying name, description
+  and live resolved value.
 * **Option C — Replace the caret menu with the sheet.** `/` opens the sheet
   directly.
 * **Option D — Widen the caret menu and add a second line per row.** No sheet;
@@ -93,22 +94,111 @@ layout, empty states and localisation, and it should be designed with the sectio
 editor's own navigation in view (`SectionNavigatedForm`, DESIGN-010) rather than
 bolted onto the overlay.
 
-The shape being proposed:
+The shape being proposed, drawn in
+[`docs/design/mockups/token-browser-sheet.html`](../design/mockups/token-browser-sheet.html):
 
 * **Entry point.** The caret menu gains a persistent last entry, "Browse all
   tokens…", shown whatever the filter matches — including when it matches nothing,
   where it replaces "no matches" with something the author can actually do. The
   section editor's overflow menu (`⋮`) gets the same action, so the sheet is
   reachable without typing a trigger character at all.
+* **Surface.** Not a new one. The browser is one call to
+  `showRingdrillPicker<TokenBrowserEntry>` (ADR-0049), which already is the
+  app's "pick one from a list" primitive: a bottom sheet on compact, a dialog on
+  medium/expanded, a title row, a search field past a threshold, section headers
+  computed over the *filtered* list, `footerActions`, and pop-with-the-chosen-item.
+  Adding a third bespoke layout for a task the app already has one shape for is
+  exactly what ADR-0049 was written to stop.
+
+  On medium/expanded the dialog is laid out master/detail — scopes in the master
+  pane, rows in the detail — which is ADR-0030's wide-screen idiom rather than a
+  new one. The plan tab, the station list and the roleplay list already read that
+  way on a wide window, so the browser reads as part of the app instead of as a
+  dialog that happens to be wide, and the scope the author is in stays visible
+  while she reads a row.
 * **Content.** Sections by scope, in cascade order (plan → exercise → station →
-  roleplay), then variables, then the station's own locations and persons. Each
-  row: the token as it will be inserted (`{{exercise.roundTable}}`), a one-line
-  description, and the value it resolves to *right now* in this field's scope.
-  A scope with nothing in context is shown, disabled, saying why — "no station in
-  this field's scope" is more useful than an absent section.
-* **Search.** One field, matching against name, label and description. Filtering
-  keeps the section headers, so the result still says which scope a hit belongs
-  to — the thing the caret menu's flat list cannot say.
+  roleplay), then variables, then the station's own locations and persons —
+  `sectionLabel` only asks that the list is ordered by group, which it is.
+  A scope with nothing in context is its own entry variant that renders as a
+  muted note with no `onTap`, so it is shown, saying why, without teaching the
+  primitive about disabled rows.
+* **Row.** Three lines, in the order the author asks: label first with the token
+  beside it as a code chip, then the value it resolves to *right now* in this
+  field's scope, then the description. `itemBuilder` belongs to the call site, so
+  a three-line row needs no change to the primitive. The value gets a wrapping
+  block rather than a trailing slot, which is what removes the failure mode.
+  The row starts on the section header's left edge, with no leading icon: the
+  scope is already in the header and in the token's own prefix, so an icon would
+  only push every line 30px in and take that width off the long values.
+
+  An ellipsised token carries a `Tooltip` with the full string. Truncation is
+  from the right, and the right is exactly where a chained token differs from its
+  neighbours — `{{station.person.anne.loc.position}}` and
+  `{{station.person.anne.loc.name}}` are the same row until the tail. Hover on
+  desktop, long-press on touch, which `Tooltip` does on its own; the row's tap is
+  insertion and its long-press is otherwise unused.
+* **Example values.** A facet with nothing to resolve gets an example instead of
+  an empty box, in a dashed block marked as one. Three cases need it: aggregated
+  facets built at render time (`exercise.roundTable` is a whole GFM table, not a
+  value the editor holds), derived facets whose inputs are missing
+  (`exercise.endTime` with no start time), and facets that are simply empty. The
+  question the row answers is "what shape of thing does this produce", and an
+  empty box answers nothing. Examples live beside the descriptions in
+  `PlanFieldTokens`; the structural ones need no translation.
+* **Search.** The primitive's own field, with `searchText` joining name, label
+  and description and `searchThreshold: 0` since the list is always long.
+  Filtering keeps the section headers, so the result still says which scope a hit
+  belongs to — the thing the caret menu's flat list cannot say.
+* **Filters.** Text search narrows by *what it is called*; the filters narrow by
+  *what kind of token it is* — Plan, Exercise, Station, Script, Variable,
+  Location, Person. Same labels as the section headers, all singular: a filter
+  names a category, it does not count one. Three are count nouns the app already
+  has (`l.plan(1)`, `l.exercise(1)`, `l.station(1)`); the roleplay one is
+  `l.scriptSegment` — the plan tab's own segment name, "Script" / "Spill" —
+  rather than `l.roleplay(1)`, which reads "Roleplay" / "Markør" and names the
+  role roster inside that segment rather than the layer. Only "Variable" has no
+  singular string yet.
+
+  **The scope inventory decides which filters exist.** They are
+  `PlanFieldScope`'s cascade for this field (`withAncestors`) plus the registries
+  the field actually has — variables always, the station's locations and persons
+  when it owns any — in the same order as the sections. A plan-scope field gets
+  three; a roleplay-scope field gets eight. The driver that says the browser must
+  read one inventory rather than a hand-kept list applies to the filter as much
+  as to the content: a new scope should produce a new filter without anyone
+  remembering to add one. A scope that exists but has nothing in context stays,
+  dimmed and still selectable — picking it shows exactly the one row explaining
+  why it does not apply here.
+
+  **One filter, two presentations.** On compact it is a wrapping chip row under
+  the search field. Label only, no count: the count is not what an author chooses
+  on, and it costs width in the one direction that is short. The row wraps rather
+  than scrolling sideways — eight categories take two lines on a phone and all of
+  them are visible, where a sideways row would hide the last few behind the edge
+  without saying they exist. On medium/expanded the same inventory is the
+  master rail described above. Filters with no matches are dimmed rather than
+  removed in both, so nothing jumps while typing. One `filters` parameter, two
+  layouts, no per-call-site choice — the rule `showRingdrillPicker` already
+  applies to its own surface.
+
+  Chips on compact, not a segmented button. The app has already run that
+  experiment:
+  `StaffRoleFilter` was a `SegmentedButton` until four Norwegian role names made
+  every segment as wide as "Øvelsesleder", overflowed a phone, and clipped the
+  leading "Ø" when shrunk to fit — its doc comment is the record of why it is a
+  `ToggleButtons` now. Here it is worse: up to eight categories, and the set
+  varies with what the field has in context. A segmented button does not wrap
+  either; it clips. It is also *view selection* in this app (the plan tab's
+  segments, the coordinator's three views), not list filtering, and reusing it
+  here would blur that.
+
+  This is the one thing the primitive does not already do, and it cannot live in
+  `itemBuilder` — chips there would scroll away with the list. It belongs in
+  `showRingdrillPicker`'s header beside the search field, as an optional
+  `filters` parameter taking a label and a predicate per entry, rendered as chips
+  on compact and as the rail on medium/expanded. A picker that passes none looks
+  exactly as it does today, and the cast picker gets a place to put
+  "all / assigned only" when it wants one.
 * **Insertion.** Tapping a row inserts the literal token at the caret and closes
   the sheet, reusing the caret menu's existing `_select` path so there is one
   implementation of "what text does this entry produce".
@@ -137,8 +227,17 @@ protect the layout.
   facets plus the location and person facet paths, each needing a line that says
   something the label does not. Half-written descriptions would be worse than
   none, so this is the bulk of the work and the reason the ADR is proposed rather
-  than accepted.
-* Bad: a second surface for the same job. Two ways to insert a token means two
+  than accepted. Example values add to the same pile, though a smaller one — only
+  the facets that can come back empty need one.
+* Bad: the `filters` parameter is a change to a primitive four other call sites
+  already depend on. Optional and additive, but a shared widget nonetheless, so
+  its tests grow with it.
+* Good: it is not a new surface. Building on `showRingdrillPicker` means the
+  sheet-on-compact / dialog-on-wide rule, the search field, the section headers
+  and the keyboard-in-sheet handling are already built and already tested, and
+  the browser is recognisable as the picker the author has met when choosing a
+  station or a person.
+* Bad: a second *way in* for the same job. Two ways to insert a token means two
   places a bug can live, and the mitigation — routing both through `_select` —
   only covers insertion, not presentation.
 * Bad: resolving every token for the live-value column runs the resolver once per
@@ -183,13 +282,21 @@ protect the layout.
 
 ## Links
 
-* Related ADRs: [ADR-0049](./0049-adaptive-selector-surface.md),
+* Related ADRs: [ADR-0049](./0049-adaptive-selector-surface.md) (the picker
+  primitive the browser is a call to),
+  [ADR-0027](./0027-unified-bottom-sheet-chrome.md),
+  [ADR-0030](./0030-wide-screen-master-detail-layout.md) (the master/detail
+  layout the wide path uses),
   [ADR-0046](./0046-plan-variables.md),
   [ADR-0047](./0047-scenario-locations-and-persons.md),
   [ADR-0048](./0048-flutter-free-field-resolver.md),
   [ADR-0065](./0065-authoring-guidance-over-mcp.md),
   [ADR-0066](./0066-team-scope-for-cross-reference-tokens.md)
-* Related code: `lib/views/widgets/token_insertion_menu.dart`,
+* Mockup: [`docs/design/mockups/token-browser-sheet.html`](../design/mockups/token-browser-sheet.html)
+* Related code: `lib/views/widgets/ringdrill_picker.dart`,
+  `lib/views/widgets/token_insertion_menu.dart`,
+  `lib/views/widgets/staff_role_filter.dart` (why the filter is chips, not a
+  segmented button),
   `lib/views/widgets/plan_field_tokens.dart`,
   `lib/utils/plan_field_names.dart`,
   `lib/views/widgets/resolve_scoped_field.dart`
