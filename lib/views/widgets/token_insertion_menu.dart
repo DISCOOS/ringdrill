@@ -85,11 +85,40 @@ class StationFacetMenuEntry extends TokenMenuEntry {
 }
 
 class _Trigger {
-  const _Trigger({required this.start, required this.filter});
+  const _Trigger({
+    required this.start,
+    required this.filter,
+    required this.isBrace,
+  });
 
   /// Index of the trigger's first character (the `/` or the first `{`).
   final int start;
   final String filter;
+
+  /// Whether this is a `{{` trigger rather than a `/` one.
+  ///
+  /// Only a `{{` trigger may have the *rest of a token* ahead of the caret, so
+  /// only it consumes what follows (see [_replacementEnd]). After a `/`, a `}}`
+  /// further along the line is ordinary text and stays put.
+  final bool isBrace;
+}
+
+/// Where an insertion stops replacing, starting from [_Trigger.start].
+///
+/// The caret is the obvious end and the wrong one when the caret sits *inside* an
+/// existing token. Put it right after the braces of `{{var.year}}` and the menu
+/// opens, correctly — but replacing only up to the caret left the `var.year}}`
+/// tail behind, so picking an entry produced `{{var.year}}var.year}}` rather than
+/// replacing the token the author was plainly editing.
+///
+/// Token characters followed by `}}` are the rest of that token, so they go with
+/// it. The `}}` is required: without it there is no token ahead, just prose, and
+/// prose after the caret is not the author's to lose. Matching stops at the first
+/// `}}`, so a second token further along the line is never swallowed.
+int _replacementEnd(String text, int caret, _Trigger trigger) {
+  if (!trigger.isBrace) return caret;
+  final tail = RegExp(r'^[\w.]*\}\}').firstMatch(text.substring(caret));
+  return tail == null ? caret : caret + tail.end;
 }
 
 /// `/` opens the command menu; an unclosed `{{` opens the same picker
@@ -110,12 +139,16 @@ _Trigger? _detectTrigger(String text, int caret) {
 
   final brace = RegExp(r'\{\{([\w.]*)$').firstMatch(before);
   if (brace != null) {
-    return _Trigger(start: brace.start, filter: brace.group(1)!);
+    return _Trigger(start: brace.start, filter: brace.group(1)!, isBrace: true);
   }
 
   final slash = RegExp(r'(?:^|\s)/(\w*)$').firstMatch(before);
   if (slash != null) {
-    return _Trigger(start: before.lastIndexOf('/'), filter: slash.group(1)!);
+    return _Trigger(
+      start: before.lastIndexOf('/'),
+      filter: slash.group(1)!,
+      isBrace: false,
+    );
   }
 
   return null;
@@ -651,7 +684,8 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
       CreatePersonMenuEntry(label: final label) =>
         '{{station.person.${widget.onCreatePerson!(label)}}}',
     };
-    final newText = text.replaceRange(trigger.start, caret, token);
+    final end = _replacementEnd(text, caret, trigger);
+    final newText = text.replaceRange(trigger.start, end, token);
     widget.controller.value = TextEditingValue(
       text: newText,
       selection: TextSelection.collapsed(offset: trigger.start + token.length),

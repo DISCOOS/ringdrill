@@ -18,6 +18,23 @@ Future<void> _typeAndOpen(WidgetTester tester, String text) async {
   await tester.pump();
 }
 
+/// Opens the menu with the caret placed *inside* existing text rather than at its
+/// end, which is what `enterText` can express. Sets the value in one go so the
+/// controller notifies exactly once, the way a real caret move does.
+Future<void> _openAt(
+  WidgetTester tester,
+  TextEditingController controller,
+  String text,
+  int caret,
+) async {
+  controller.value = TextEditingValue(
+    text: text,
+    selection: TextSelection.collapsed(offset: caret),
+  );
+  await tester.pump();
+  await tester.pump();
+}
+
 /// Mirrors `token_insertion_menu.dart`'s private `_locationFacetLabel`, so
 /// the discovery test can assert every entry in the public
 /// [locationFacetNames] renders its expected tile without duplicating the
@@ -175,6 +192,85 @@ void main() {
         expect(controller.text, '{{exercise.name}}');
       },
     );
+
+    group('the caret inside an existing token', () {
+      // The menu opens when the caret sits inside a token, which is right — the
+      // author is editing that token. But the insertion replaced only up to the
+      // caret, so the rest of the token stayed behind: picking an entry with the
+      // caret just after the braces of `{{var.year}}` produced
+      // `{{var.frekvens}}var.year}}`.
+      testWidgets('replaces the whole token, not just up to the caret', (
+        tester,
+      ) async {
+        final controller = await _pump(tester);
+
+        // `{{|var.year}}` — caret between the braces and the name.
+        await _openAt(tester, controller, '{{var.year}}', 2);
+        await tester.tap(find.text('frekvens'));
+        await tester.pump();
+
+        expect(controller.text, '{{var.frekvens}}');
+      });
+
+      testWidgets('replaces from mid-name too, keeping surrounding prose', (
+        tester,
+      ) async {
+        final controller = await _pump(tester);
+
+        // `Kanal {{var.frek|}} i dag` — caret inside the name.
+        await _openAt(tester, controller, 'Kanal {{var.frek}} i dag', 16);
+        await tester.tap(find.text('frekvens'));
+        await tester.pump();
+
+        expect(controller.text, 'Kanal {{var.frekvens}} i dag');
+      });
+
+      testWidgets('takes nothing when what follows is prose, not a token tail', (
+        tester,
+      ) async {
+        final controller = await _pump(tester);
+
+        // `{{| min.` — an unclosed trigger with ordinary text after it. There is
+        // no token ahead to replace, and prose after the caret is not ours to eat.
+        await _openAt(tester, controller, '{{ min.', 2);
+        await tester.tap(find.text('frekvens'));
+        await tester.pump();
+
+        expect(controller.text, '{{var.frekvens}} min.');
+      });
+
+      testWidgets('a "/" trigger never consumes a later "}}"', (tester) async {
+        final controller = await _pump(tester);
+
+        // After a `/` the braces ahead belong to whatever the author already
+        // wrote, so only a `{{` trigger may reach past the caret.
+        await _openAt(tester, controller, 'se /frek}} her', 8);
+        await tester.tap(find.text('frekvens'));
+        await tester.pump();
+
+        expect(controller.text, 'se {{var.frekvens}}}} her');
+      });
+
+      testWidgets('stops at the first "}}", leaving a later token alone', (
+        tester,
+      ) async {
+        final controller = await _pump(tester);
+
+        await _openAt(
+          tester,
+          controller,
+          '{{var.frek}} og {{var.talegruppe_ovelse}}',
+          10,
+        );
+        await tester.tap(find.text('frekvens'));
+        await tester.pump();
+
+        expect(
+          controller.text,
+          '{{var.frekvens}} og {{var.talegruppe_ovelse}}',
+        );
+      });
+    });
 
     testWidgets('filters the flat list as the user types after the trigger', (
       tester,
