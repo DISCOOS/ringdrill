@@ -6,7 +6,7 @@ consulted: []
 informed: []
 ---
 
-# ADR-0062: Author an exercise's rounds explicitly when they are not uniform
+# ADR-0062: Express a non-uniform exercise as a mode plus station durations
 
 ## Context and problem statement
 
@@ -72,6 +72,14 @@ change: there is nothing else to keep in step."
   (ADR-0007, ADR-0059).
 * Real plans are the specification. Three of seven exercises in the first real
   booklet converted is not an edge case.
+* **The author must not be handed the arithmetic back.** Not needing to work out
+  round times is most of what RingDrill is for. A fix that asks the author to
+  compute, enumerate or translate what they already know into the model's terms
+  has traded the product's central promise for expressiveness, and that is not a
+  trade worth making — however terse the YAML looks.
+* The editor must stay a form of scalar fields for the common case. An unbounded
+  list of rounds, with inheritance rules to explain, is a different kind of
+  surface from the one an exercise has today.
 
 ## Considered options
 
@@ -85,62 +93,120 @@ change: there is nothing else to keep in step."
   phase group can be split across several model exercises and still render
   `7a`…`7d`.
 * Option E — Split such exercises and accept the renumbering.
+* **Option F — A mode plus station-owned durations.** An exercise states *how
+  teams relate to posts* (`ring`, `together`, `split`); a station may state its
+  own execution time where it differs. Rounds are not authored at all — the round
+  structure and every clock face follow from those two facts.
 
 ## Decision outcome
 
-Chosen option: **Option B**, because it makes a round the authored unit instead
-of a multiplier, which is the one change that covers both failures — unequal
-round lengths and concurrent posts — without touching numbering, the wire format
-or the terse uniform case.
+Chosen option: **Option F**.
 
-`numberOfRounds` and the three durations remain, and remain the whole story when
-every round is the same. When they are not, an exercise may instead list its
-rounds:
+Option B was chosen first and is superseded here. It survives as an option below
+because its reasoning about numbering and the wire format still holds; what it got
+wrong is who does the work.
 
-```yaml
-rounds:
-  - executionTime: 70
-  - executionTime: 100
-  - executionTime: 75
-    stations: [3, 4]   # posts c and d run concurrently
-```
+### Why Option B was wrong
 
-A round inherits any duration it does not state from the exercise. A round that
-names `stations` restricts that round's rotation to them, so two stations and two
-teams in one round means the two run side by side — the same mechanism as an
-exercise with `numberOfTeams: 2` and one round, generalized to a single round of
-a longer exercise. `ExerciseSchedule` walks the list accumulating a running
-start instead of multiplying one cycle, and `endTime` becomes the sum. Since
-`Exercise.schedule` is already per-round, the archive absorbs the result
-unchanged.
+`rounds:` does not make the author write clock times — durations go in, the
+compiler derives the schedule. So it does not break the promise outright. It
+breaks it in two subtler ways.
 
-The timing half and the concurrency half are separable in implementation: the
-first is confined to `schedule.dart` and its two callers, while the second also
-touches team-to-station assignment. If the second grows beyond that, it gets its
-own ADR rather than expanding this one.
+**It asks for a translation.** The booklet does not say "round 2 is 100 minutes".
+It says **"post b takes 100 minutes"**. Every duration in the source document
+belongs to a *post*. Under `rounds:` the author has to work out which round that
+post is visited in and write the duration there — arithmetic, done by hand, of
+exactly the kind this tool exists to remove. And the translation is only stable
+while the rotation is: reorder the posts and every round entry is wrong, silently.
+
+**It is enumerative where the format is declarative.** Today an exercise says
+what it *is* — "four teams rotate through four posts, 15/10/5, four rounds" — and
+the timeline falls out. `rounds:` says what *happens*, round by round. To state one
+fact about one round of six, the author writes six entries. In the editor that is
+four number fields becoming a list surface with per-round inheritance to explain,
+which is the ergonomic cliff that stopped this ADR from being implemented for as
+long as it has.
+
+### The decision
+
+Two authored facts, both declarative, neither a time.
+
+**A mode on the exercise**, saying how teams relate to posts:
+
+* `ring` — today's behaviour, and the default. Teams rotate; one team per post.
+* `together` — all teams work one post at a time and move on together.
+* `split` — teams divide between posts that run concurrently.
+
+**An execution time on a station**, inherited from the exercise unless stated.
+Written in the station editor, next to the post it belongs to, because that is
+where the author already is when they know it.
+
+Everything else stays derived. A round's length is the execution time of the
+post(s) active in it, plus the exercise's evaluation and rotation. In `ring` with
+unequal posts that means the round is as long as its longest active post and the
+teams on shorter posts wait — which is what happens on the day, and is now drawn
+in the editor instead of discovered on the field.
+
+How the three failing exercises read:
+
+* **Øvelse 4, 6** — `together`. This also retires the `numberOfTeams: 1`
+  workaround, which existed only to make the schedule come out right and which
+  makes the brief label a merged four-team group `Lag 2.1`. A second, separate bug
+  closed by the same change.
+* **Øvelse 7** — posts a and b sequential, c and d as one concurrent group under
+  `split`. Four station durations and one grouping. Derived window 20:15–01:15
+  against today's 20:15–02:35.
+
+Drawn in
+[`docs/design/mockups/exercise-modes.html`](../design/mockups/exercise-modes.html),
+which is the artefact to review before any of this is built: nine states, including
+the ones that are easy to skip — an unequal ring with its idle time visible, the
+inherited-versus-overridden station field, and what changing an exercise's mode
+tells the author before they commit.
 
 ### Consequences
 
-* Good: a plan's derived schedule can match the clock the course actually runs
-  on, so the brief stops contradicting itself and `execution_tips` stops being a
-  place to warn readers off the computed grid.
-* Good: concurrent posts become expressible, so a booklet's phase group stays one
-  exercise and keeps its derived `7a`…`7d` codes.
-* Good: numbering, names and the round-trip invariant are untouched; the schedule
-  stays a derived field.
-* Good: the uniform case is unchanged — existing documents and every plan in the
-  catalog keep building byte-identically, since `rounds:` is optional.
-* Bad: two ways to say how long an exercise runs, and a precedence rule between
-  them to document and validate (`rounds:` and `numberOfRounds` together must be
-  rejected, or one must clearly win).
-* Bad: `decompile` has to choose. Emitting `rounds:` always would make every
-  document more verbose than the author wrote; emitting it only when rounds
-  differ means the decompiler inspects the schedule to decide shape.
-* Bad: per-round `stations` is a second way to control rotation alongside
-  `numberOfTeams`, and the two can be made to contradict each other, so
-  `analyze` needs a rule for it.
-* Bad: the exercise player assumes rounds are interchangeable in length in
-  places; a non-uniform exercise will surface those assumptions.
+* Good: the author never states a time, a round or a round count. They state a
+  mode and, where it differs, how long a post takes — both things they already
+  know without computing anything.
+* Good: the editor stays a form. One more field with three options on the
+  exercise, one optional override on the station, and a grouping affordance that
+  appears only in `split`. No list surface, no inheritance rules to teach.
+* Good: the derived timeline becomes the thing the author *reads* instead of the
+  thing they reproduce. Idle time, which the model has always implied and never
+  shown, becomes visible.
+* Good: a plan's derived schedule can match the clock the course actually runs on,
+  so `execution_tips` stops being a place to warn readers off the computed grid.
+* Good: concurrent posts stay one exercise, keeping their derived `7a`…`7d` codes.
+  Numbering, names and the round-trip invariant are untouched.
+* Good: the uniform case is unchanged and every existing document still builds
+  byte-identically — `ring` is the default and a station without its own duration
+  inherits.
+* Good: `numberOfTeams: 1` stops being the documented answer for a
+  work-as-one-group exercise, so the brief stops misreporting the team.
+* Bad: **both facts have to reach the archive**, since neither is recoverable from
+  the derived schedule — the schedule holds times, not which posts were active or
+  how teams were assigned. So this needs an ADR-0059 migration rung, where a
+  timing-only `rounds:` would have needed none. The rung is additive (an absent
+  mode reads as `ring`, an absent station duration inherits), which is the cheap
+  kind.
+* Bad: **the rotation math changes rather than accumulates.** `mode` alters
+  team-to-station assignment, which ADR-0062 originally flagged as the half that
+  grows beyond `schedule.dart`. That is now the main body of the work rather than
+  a second phase.
+* Bad: `numberOfRounds` becomes derived in `together` (one round per post) and
+  partly so in `split`, so the field is authored in one mode and computed in
+  another. The editor has to show that rather than hide it.
+* Bad: idle time in an unequal `ring` is honest and unwelcome. An author who did
+  not realise their posts were unequal will see waiting they did not know they had
+  — which is the point, and will still read as the tool's fault.
+* Bad: three modes is a taxonomy, and taxonomies acquire a fourth member. If a
+  real plan needs one that is not a mode, that is a new ADR rather than a fourth
+  enum value bolted on.
+* Bad: the app currently rebuilds an exercise from its scalar inputs on every save
+  (`exercise_form_screen.dart`), so until the editor understands modes it would
+  flatten a non-uniform exercise on the first LAGRE. That has to land with the
+  format change, not after it.
 
 ## Pros and cons of the options
 
@@ -152,11 +218,26 @@ own ADR rather than expanding this one.
 * Bad: the workaround for grouped teams (`numberOfTeams: 1`) already misreports
   the team in the brief, and this compounds it.
 
-### Option B — Authored `rounds:` list
+### Option B — Authored `rounds:` list *(chosen first, superseded)*
 * Good: one concept covers unequal durations and concurrency.
-* Good: wire format already supports the result; one derivation to change.
-* Bad: a second shape for exercise timing, with a precedence rule.
+* Good: the timing half needs no wire-format change at all — `Exercise.schedule`
+  is already per-round, so `decompile` can compare the stored schedule against the
+  uniform derivation and emit `rounds:` only when they differ. Option F cannot do
+  that and needs a migration rung.
+* Good: strictly smaller. The timing half is confined to `schedule.dart` and two
+  callers.
+* Bad: **it hands the author a translation.** Durations belong to posts in every
+  source document; `rounds:` requires working out which round visits which post
+  and writing the duration there, by hand, and re-doing it whenever the posts are
+  reordered.
+* Bad: **enumerative, where the rest of the format is declarative.** Six entries
+  to say one thing about one round, and an unbounded list surface in an editor that
+  is otherwise scalar fields.
+* Bad: a second shape for exercise timing, with a precedence rule against
+  `numberOfRounds` to document and validate.
 * Bad: `decompile` must decide when to emit it.
+* Bad: does nothing for the `numberOfTeams: 1` workaround, so the brief keeps
+  misreporting a merged group.
 
 ### Option C — Per-round durations only
 * Good: the smallest possible change, entirely inside `schedule.dart`.
@@ -182,6 +263,18 @@ own ADR rather than expanding this one.
 * Bad: silently changes the meaning of a published plan's labels if applied to an
   existing one.
 
+### Option F — Mode plus station-owned durations
+* Good: nothing authored is a time, a round or a round count; the two facts are
+  stated where the author already knows them.
+* Good: the editor stays a form, and the common case gains one defaulted field.
+* Good: closes the `numberOfTeams: 1` accuracy bug as a side effect.
+* Good: makes idle time visible, which the model has always implied.
+* Bad: needs a migration rung, because neither fact survives in the derived
+  schedule.
+* Bad: changes team-to-station assignment, which is the larger half of the work.
+* Bad: `numberOfRounds` is authored in one mode and derived in another.
+* Bad: a taxonomy of three, which invites a fourth.
+
 ## Links
 
 * Related ADRs: [ADR-0058](./0058-source-format-and-plan-compiler.md),
@@ -191,6 +284,13 @@ own ADR rather than expanding this one.
 * Related code: `lib/models/schedule.dart` (`ExerciseSchedule`),
   `lib/models/exercise.dart` (`schedule`, `endTime`),
   `lib/services/plan_service.dart` (`generateSchedule`),
-  `lib/data/source/source_fields.dart`
+  `lib/data/source/source_fields.dart`,
+  `lib/views/exercise_form_screen.dart` (rebuilds the exercise from its scalars on
+  every save — the flattening hazard),
+  `lib/views/station_form_screen.dart` (where a station's own duration is authored)
+* Mockup: [`docs/design/mockups/exercise-modes.html`](../design/mockups/exercise-modes.html)
 * Origin: converting `assets/example/2026 LSOR øvelseshefte.docx`, where Øvelse
   4, 6 and 7 could not be expressed as uniform rotations.
+* Revised 2026-08-01: Option B replaced by Option F, on the grounds that
+  `rounds:` gave the author arithmetic the tool exists to do for them. The problem
+  statement and the numbering analysis are unchanged.

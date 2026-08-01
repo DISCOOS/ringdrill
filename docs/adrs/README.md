@@ -69,7 +69,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0059 | [Normalize legacy `.drill` archives through an ordered migration ladder](./0059-drill-schema-migration-ladder.md) | Accepted |
 | ADR-0060 | [Serve the MCP server remotely as a Netlify function, with the compiler cross-compiled to JavaScript](./0060-remote-mcp-server.md) | Accepted |
 | ADR-0061 | [Accept a UTM string wherever the source format takes a position](./0061-utm-coordinate-input-in-source-format.md) | Accepted |
-| ADR-0062 | [Author an exercise's rounds explicitly when they are not uniform](./0062-authored-rounds-for-non-uniform-exercises.md) | Proposed |
+| ADR-0062 | [Express a non-uniform exercise as a mode plus station durations](./0062-authored-rounds-for-non-uniform-exercises.md) | Proposed |
 | ADR-0063 | [Give every staff role its own brief audience, and declare each field's audiences on the field](./0063-per-field-brief-visibility.md) | Accepted |
 | ADR-0064 | [Cut the document out of the authoring loop, and stop over-answering](./0064-mcp-payload-economy.md) | Accepted |
 | ADR-0065 | [Ship the authoring conventions over MCP, not only as a local skill](./0065-authoring-guidance-over-mcp.md) | Accepted |
