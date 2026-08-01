@@ -6,6 +6,33 @@ part of 'exercise.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_GroupSlot _$GroupSlotFromJson(Map<String, dynamic> json) => _GroupSlot(
+  stationIndex: (json['stationIndex'] as num).toInt(),
+  teams:
+      (json['teams'] as List<dynamic>?)
+          ?.map((e) => (e as num).toInt())
+          .toList() ??
+      const <int>[],
+);
+
+Map<String, dynamic> _$GroupSlotToJson(_GroupSlot instance) =>
+    <String, dynamic>{
+      'stationIndex': instance.stationIndex,
+      'teams': instance.teams,
+    };
+
+_ExerciseGroup _$ExerciseGroupFromJson(Map<String, dynamic> json) =>
+    _ExerciseGroup(
+      stations:
+          (json['stations'] as List<dynamic>?)
+              ?.map((e) => GroupSlot.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <GroupSlot>[],
+    );
+
+Map<String, dynamic> _$ExerciseGroupToJson(_ExerciseGroup instance) =>
+    <String, dynamic>{'stations': instance.stations};
+
 _Exercise _$ExerciseFromJson(Map<String, dynamic> json) => _Exercise(
   uuid: json['uuid'] as String,
   index: (json['index'] as num?)?.toInt() ?? 0,
@@ -18,6 +45,11 @@ _Exercise _$ExerciseFromJson(Map<String, dynamic> json) => _Exercise(
   mode:
       $enumDecodeNullable(_$ExerciseModeEnumMap, json['mode']) ??
       ExerciseMode.ring,
+  groups:
+      (json['groups'] as List<dynamic>?)
+          ?.map((e) => ExerciseGroup.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <ExerciseGroup>[],
   executionTime: (json['executionTime'] as num).toInt(),
   evaluationTime: (json['evaluationTime'] as num).toInt(),
   rotationTime: (json['rotationTime'] as num).toInt(),
@@ -51,6 +83,7 @@ Map<String, dynamic> _$ExerciseToJson(_Exercise instance) => <String, dynamic>{
   'numberOfTeams': instance.numberOfTeams,
   'numberOfRounds': instance.numberOfRounds,
   'mode': _$ExerciseModeEnumMap[instance.mode]!,
+  'groups': instance.groups,
   'executionTime': instance.executionTime,
   'evaluationTime': instance.evaluationTime,
   'rotationTime': instance.rotationTime,

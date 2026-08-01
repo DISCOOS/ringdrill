@@ -53,6 +53,11 @@ enum SourceShape {
   /// Boolean, both sides.
   boolean,
 
+  /// `[1, 2]` of integers, both sides. Used for the team positions in a parallel
+  /// group (ADR-0062) — positions, not names, so a list of strings would be the
+  /// wrong shape and would need parsing at every read.
+  integerList,
+
   /// `[a, b]` of strings, both sides.
   stringList,
 

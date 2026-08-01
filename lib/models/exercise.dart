@@ -40,6 +40,41 @@ enum ExerciseMode {
   bool get roundsAreStations => this != ExerciseMode.ring;
 }
 
+/// One station in a parallel group, with the teams placed on it (ADR-0062).
+///
+/// Authored, not derived: which teams take the missing child and which take the
+/// shoreline is a decision about competence, travel and who has the dog, and the app
+/// has no basis for guessing it. [stationIndex] refers to `Station.index` and [teams]
+/// to positions in `Plan.teams`, so nothing here is a name and nothing is parsed.
+@freezed
+sealed class GroupSlot with _$GroupSlot {
+  const factory GroupSlot({
+    required int stationIndex,
+    @Default(<int>[]) List<int> teams,
+  }) = _GroupSlot;
+
+  factory GroupSlot.fromJson(Map<String, dynamic> json) =>
+      _$GroupSlotFromJson(json);
+}
+
+/// One round of an [ExerciseMode.split] exercise: the stations running at the same
+/// time, and who is on each.
+///
+/// Groups are of any size and need not match each other — four teams across three
+/// stations is 2 + 1 + 1. A group holding exactly one station with every team on it
+/// is [ExerciseMode.together]; one holding one team per station is
+/// [ExerciseMode.ring]. Those two are generated rather than authored, which is what
+/// makes them free.
+@freezed
+sealed class ExerciseGroup with _$ExerciseGroup {
+  const factory ExerciseGroup({
+    @Default(<GroupSlot>[]) List<GroupSlot> stations,
+  }) = _ExerciseGroup;
+
+  factory ExerciseGroup.fromJson(Map<String, dynamic> json) =>
+      _$ExerciseGroupFromJson(json);
+}
+
 /// Represents an immutable exercise with a start and end time
 @freezed
 sealed class Exercise with _$Exercise {
@@ -55,6 +90,11 @@ sealed class Exercise with _$Exercise {
     /// before it, which is why the default is [ExerciseMode.ring] rather than a
     /// migration rung: an old plan *is* a ring route, and says so by omission.
     @Default(ExerciseMode.ring) ExerciseMode mode,
+
+    /// One entry per round, for [ExerciseMode.split] only: the stations running at
+    /// once and the teams on each (ADR-0062). Empty in every other mode, where the
+    /// grouping is generated from the stations instead.
+    @Default(<ExerciseGroup>[]) List<ExerciseGroup> groups,
     required int executionTime,
     required int evaluationTime,
     required int rotationTime,
@@ -282,13 +322,83 @@ extension ExerciseX on Exercise {
         t1:3 = s0
      */
 
-    final t = (stationIndex - roundIndex + stations.length) % stations.length;
-    return (t < numberOfTeams) ? t : -1;
+    final teams = teamsAt(stationIndex, roundIndex);
+    return teams.isEmpty ? -1 : teams.first;
   }
 
-  int stationIndex(int teamIndex, int roundIndex) {
-    return (teamIndex + roundIndex) % stations.length;
+  /// Every team at [stationIndex] during [roundIndex] (ADR-0062).
+  ///
+  /// A ring route has at most one, which is why [teamIndex] existed alone for as
+  /// long as `ring` was the only mode. `together` puts all of them on one station and
+  /// `split` divides them, so "the team at this post" stopped being a single answer
+  /// and callers that show a post's occupants want the list.
+  ///
+  /// Empty means nobody is there this round — a station outside the round's group, or
+  /// a ring position no team has reached.
+  List<int> teamsAt(int stationIndex, int roundIndex) {
+    if (stations.isEmpty) return const [];
+    switch (mode) {
+      case ExerciseMode.ring:
+        final t =
+            (stationIndex - roundIndex + stations.length) % stations.length;
+        return t < numberOfTeams ? [t] : const [];
+      case ExerciseMode.together:
+        return _everyoneIfRoundsStation(stationIndex, roundIndex);
+      case ExerciseMode.split:
+        final group = _groupFor(roundIndex);
+        // No groups declared yet: read it as `together`, the same fallback the
+        // schedule derivation makes, rather than reporting an empty exercise.
+        if (group == null) {
+          return _everyoneIfRoundsStation(stationIndex, roundIndex);
+        }
+        for (final slot in group.stations) {
+          if (slot.stationIndex == stationIndex) return slot.teams;
+        }
+        return const [];
+    }
   }
+
+  /// Which station [teamIndex] is at during [roundIndex], or -1 when it is nowhere.
+  ///
+  /// -1 is reachable outside a ring route: `split` may leave a team unplaced in a
+  /// round, which `analyze` warns about but does not forbid — holding a team back is
+  /// legitimate.
+  int stationIndex(int teamIndex, int roundIndex) {
+    if (stations.isEmpty) return -1;
+    switch (mode) {
+      case ExerciseMode.ring:
+        return (teamIndex + roundIndex) % stations.length;
+      case ExerciseMode.together:
+        return _stationForRound(roundIndex);
+      case ExerciseMode.split:
+        final group = _groupFor(roundIndex);
+        if (group == null) return _stationForRound(roundIndex);
+        for (final slot in group.stations) {
+          if (slot.teams.contains(teamIndex)) return slot.stationIndex;
+        }
+        return -1;
+    }
+  }
+
+  /// Every team, but only at the station this round runs — a `together` round puts
+  /// all of them on one station and nobody on the others.
+  List<int> _everyoneIfRoundsStation(int stationIndex, int roundIndex) =>
+      _stationForRound(roundIndex) == stationIndex
+      ? [for (var t = 0; t < numberOfTeams; t++) t]
+      : const [];
+
+  /// The station a `together` round runs, by position. Wraps, so a round count that
+  /// outran the stations still names one rather than throwing.
+  int _stationForRound(int roundIndex) =>
+      stations.isEmpty ? -1 : roundIndex % stations.length;
+
+  /// The group for [roundIndex], or null when none is declared — a split exercise
+  /// mid-edit has stations before it has groups, and reading it as `together` until
+  /// then is the same fallback the schedule derivation makes.
+  ExerciseGroup? _groupFor(int roundIndex) =>
+      (roundIndex >= 0 && roundIndex < groups.length)
+      ? groups[roundIndex]
+      : null;
 }
 
 /// Represents an immutable drill plan metadata

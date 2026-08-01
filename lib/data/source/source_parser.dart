@@ -347,6 +347,29 @@ class SourceParser {
         diagnostics.error(path, 'expected a list, got ${_typeName(raw)}');
         return null;
 
+      case SourceShape.integerList:
+        if (raw is List) {
+          final out = <int>[];
+          for (var i = 0; i < raw.length; i++) {
+            final item = raw[i];
+            // A position, so a non-integer is not coerced: "2" or 2.5 in a team list
+            // means the author meant something the format cannot honour, and reading
+            // it as 2 would place a team they did not choose.
+            if (item is int) {
+              out.add(item);
+            } else {
+              diagnostics.error(
+                '$path[$i]',
+                'expected a whole number, got ${_typeName(item)}',
+                hint: 'positions in a list, counting from 0',
+              );
+            }
+          }
+          return out;
+        }
+        diagnostics.error(path, 'expected a list, got ${_typeName(raw)}');
+        return null;
+
       case SourceShape.stringMap:
         if (raw is Map) {
           final out = <String, String>{};

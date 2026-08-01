@@ -150,6 +150,16 @@ class PlanDecompiler {
       // exactly the document it did before ADR-0062 and every plan in the catalog
       // round-trips unchanged.
       if (exercise.mode != ExerciseMode.ring) 'mode': exercise.mode.name,
+      if (exercise.groups.isNotEmpty)
+        'groups': [
+          for (final group in exercise.groups)
+            {
+              'stations': [
+                for (final slot in group.stations)
+                  {'station': slot.stationIndex, 'teams': slot.teams},
+              ],
+            },
+        ],
       'executionTime': exercise.executionTime,
       'evaluationTime': exercise.evaluationTime,
       'rotationTime': exercise.rotationTime,

@@ -481,7 +481,61 @@ class SourceScopes {
             'rotation).',
       ),
     ],
-    children: [SourceChild('stations', scope: station)],
+    children: [
+      SourceChild('stations', scope: station),
+      SourceChild(
+        'groups',
+        scope: exerciseGroup,
+        description:
+            'For `mode: split` only, one entry per round. Absent in every '
+            'other mode; absent in split too until the author has grouped '
+            'anything, which reads as `together` in the meantime rather than '
+            'as an error.',
+      ),
+    ],
+  );
+
+  /// One station inside a parallel group, with the teams placed on it.
+  static const groupStation = SourceScope(
+    name: 'groupStation',
+    description:
+        'A station in a parallel group, and the teams on it (ADR-0062). '
+        'Both refer to list positions — the station by its position in the '
+        "exercise's stations, the teams by theirs in the plan's teams — so "
+        'nothing here is a name and nothing is parsed (ADR-0059).',
+    fields: [
+      SourceField(
+        'station',
+        shape: SourceShape.integer,
+        wireKey: 'stationIndex',
+        description:
+            "Zero-based position in the exercise's stations. The station's "
+            'derived code (7c) comes from the same position, which is why a '
+            'concurrent phase can stay one exercise instead of being split '
+            'into several and renumbered.',
+      ),
+      SourceField(
+        'teams',
+        shape: SourceShape.integerList,
+        description:
+            "Zero-based positions in the plan's teams. A team may appear in "
+            'at most one station of a group — the stations run at once, so it '
+            'can only be at one of them — and a team in none of them is '
+            'held back, which analyze warns about rather than forbids.',
+      ),
+    ],
+  );
+
+  /// One round of a split exercise: the stations running at the same time.
+  static const exerciseGroup = SourceScope(
+    name: 'exerciseGroup',
+    description:
+        'One round of a `mode: split` exercise — the stations running at the '
+        'same time, and who is on each. Groups are of any size and need not '
+        'match each other: four teams across three stations is 2 + 1 + 1. '
+        'Ignored in the other modes, where the grouping is generated.',
+    fields: [],
+    children: [SourceChild('stations', scope: groupStation)],
   );
 
   /// A rotating group of participants.
@@ -667,6 +721,8 @@ class SourceScopes {
     roleplay,
     team,
     variable,
+    exerciseGroup,
+    groupStation,
   ];
 
   /// Every markdown field, keyed by wire key (`situationMd`, `directorNotesMd`).

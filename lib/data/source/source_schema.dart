@@ -196,6 +196,11 @@ class SourceSchema {
         'type': 'array',
         'items': {'type': 'string'},
       },
+      SourceShape.integerList => {
+        ...base,
+        'type': 'array',
+        'items': {'type': 'integer'},
+      },
       SourceShape.stringMap => {
         ...base,
         'type': 'object',

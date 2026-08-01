@@ -160,6 +160,13 @@ class SourceEmitter {
         final items = (value as Iterable).map((e) => _scalar('$e'));
         buf.writeln('${field.sourceKey}: [${items.join(', ')}]');
 
+      case SourceShape.integerList:
+        // Unquoted: these are positions, and quoting them would make the document
+        // claim they are names.
+        _prefix(buf, indent: indent, inline: inline);
+        final numbers = (value as Iterable).map((e) => '$e');
+        buf.writeln('${field.sourceKey}: [${numbers.join(', ')}]');
+
       case SourceShape.stringMap:
         final map = (value as Map).cast<String, dynamic>();
         _prefix(buf, indent: indent, inline: inline);

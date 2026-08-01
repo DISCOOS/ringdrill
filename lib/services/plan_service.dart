@@ -1177,6 +1177,7 @@ class PlanService {
     required int rotationTime,
     required AppLocalizations localizations,
     ExerciseMode mode = ExerciseMode.ring,
+    List<ExerciseGroup> groups = const [],
     List<Station> stations = const [],
     Map<String, String> variableOverrides = const {},
   }) {
@@ -1202,6 +1203,7 @@ class PlanService {
       mode: mode,
       numberOfRounds: numberOfRounds,
       numberOfStations: effective.length,
+      numberOfGroups: groups.length,
     );
     final executionMinutes = ExerciseSchedule.executionMinutesFor(
       mode: mode,
@@ -1209,6 +1211,10 @@ class PlanService {
       executionTime: executionTime,
       stationMinutes: [
         for (final station in effective) station.executionTime ?? executionTime,
+      ],
+      groups: [
+        for (final group in groups)
+          [for (final slot in group.stations) slot.stationIndex],
       ],
     );
 
@@ -1222,6 +1228,7 @@ class PlanService {
       numberOfTeams: numberOfTeams,
       numberOfRounds: rounds,
       mode: mode,
+      groups: groups,
       stations: effective,
       schedule: List.unmodifiable(
         ExerciseSchedule.roundsFrom(

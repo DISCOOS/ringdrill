@@ -259,6 +259,7 @@ class PlanBuilder {
       );
 
       final mode = _mode(raw['mode'], '$path.mode', diagnostics);
+      final groups = _groups(raw, path, mode, stations.length, diagnostics);
       if (mode == ExerciseMode.ring && teamsWanted > stations.length) {
         // A ring route puts one team on each station, so more teams than stations
         // leaves some with nowhere to be and the rotation undefined. The app only
@@ -285,6 +286,7 @@ class PlanBuilder {
         mode: mode,
         numberOfRounds: rounds,
         numberOfStations: stations.length,
+        numberOfGroups: groups.length,
       );
       final executionMinutes = ExerciseSchedule.executionMinutesFor(
         mode: mode,
@@ -292,6 +294,10 @@ class PlanBuilder {
         executionTime: execution,
         stationMinutes: [
           for (final station in stations) station.executionTime ?? execution,
+        ],
+        groups: [
+          for (final group in groups)
+            [for (final slot in group.stations) slot.stationIndex],
         ],
       );
 
@@ -303,6 +309,21 @@ class PlanBuilder {
         'numberOfTeams': teamsWanted,
         'numberOfRounds': effectiveRounds,
         'mode': mode.name,
+        // Built by hand rather than via `toJson()`: json_serializable does not nest
+        // `toJson` calls by default, so the generated map would carry live GroupSlot
+        // objects and the `fromJson` below would fail casting them to maps. Encoding
+        // to a string hides this — `jsonEncode` calls `toJson` itself — so it only
+        // shows up on the path this builder takes.
+        if (groups.isNotEmpty)
+          'groups': [
+            for (final group in groups)
+              {
+                'stations': [
+                  for (final slot in group.stations)
+                    {'stationIndex': slot.stationIndex, 'teams': slot.teams},
+                ],
+              },
+          ],
         'executionTime': execution,
         'evaluationTime': evaluation,
         'rotationTime': rotation,
@@ -344,23 +365,119 @@ class PlanBuilder {
     return out;
   }
 
-  /// Reads an authored `mode`, defaulting to `ring` and reporting anything else.
+  /// Reads an authored `mode`, defaulting to `ring`.
   ///
-  /// An unknown mode is an error rather than a silent fallback: a document that says
-  /// `mode: paralell` means something by it, and quietly deriving a ring route would
-  /// produce a schedule the author never asked for and cannot see is wrong.
+  /// An unknown value never reaches here: `mode` is declared with `enumValues` in the
+  /// field table, so the parser has already rejected `mode: paralell` and passed null
+  /// on. That is the right place for it — one check, driven by the same table `schema`
+  /// publishes — and it is why this needs no error branch of its own. A document that
+  /// names a mode the format does not have is an error, not a silent ring route.
   ExerciseMode _mode(Object? raw, String path, DiagnosticSink diagnostics) {
-    if (raw == null) return ExerciseMode.ring;
-    final name = raw.toString().trim().toLowerCase();
+    final name = raw?.toString().trim().toLowerCase();
     for (final mode in ExerciseMode.values) {
       if (mode.name == name) return mode;
     }
-    diagnostics.error(
-      path,
-      'unknown mode "$raw"',
-      hint: 'one of: ${ExerciseMode.values.map((m) => m.name).join(', ')}',
-    );
     return ExerciseMode.ring;
+  }
+
+  /// Reads the authored parallel groups, checking what only the author can know is
+  /// wrong (ADR-0062).
+  ///
+  /// Two rules, and they are different kinds of wrong. A team in two stations of one
+  /// group is an **error**: the stations run at once, so it cannot be at both, and
+  /// both placements are flagged rather than one because neither is more wrong and
+  /// the author is who knows which to drop. A team in none of a group's stations is a
+  /// **warning**: holding a team back is legitimate, and with groups of unequal size
+  /// it is also easy to do by accident.
+  List<ExerciseGroup> _groups(
+    Map<String, dynamic> exercise,
+    String exercisePath,
+    ExerciseMode mode,
+    int stationCount,
+    DiagnosticSink diagnostics,
+  ) {
+    final raw =
+        (exercise['groups'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
+    if (raw.isEmpty) return const [];
+    if (mode != ExerciseMode.split) {
+      diagnostics.warn(
+        '$exercisePath.groups',
+        'groups are only used by mode: split; ignored here',
+        hint:
+            'in ring the rotation is generated, and in together a round is a '
+            'station',
+      );
+      return const [];
+    }
+
+    final teamCount = _positiveInt(
+      exercise['numberOfTeams'],
+      '$exercisePath.numberOfTeams',
+      1,
+    );
+    final out = <ExerciseGroup>[];
+    for (var g = 0; g < raw.length; g++) {
+      final path = '$exercisePath.groups[$g]';
+      final slotsRaw =
+          (raw[g]['stations'] as List?)?.cast<Map<String, dynamic>>() ??
+          const [];
+      final slots = <GroupSlot>[];
+      // Which station each team was placed on in this group, so a second placement
+      // can name the first.
+      final placedOn = <int, int>{};
+      for (var i = 0; i < slotsRaw.length; i++) {
+        final slotPath = '$path.stations[$i]';
+        // Source keys here, not wire keys: this reads the parsed *document*, and the
+        // field's `wireKey: stationIndex` only applies on the way out.
+        final stationIndex = slotsRaw[i]['station'];
+        if (stationIndex is! int ||
+            stationIndex < 0 ||
+            stationIndex >= stationCount) {
+          diagnostics.error(
+            '$slotPath.station',
+            'no station at position $stationIndex',
+            hint: 'the exercise has $stationCount station(s), counting from 0',
+          );
+          continue;
+        }
+        final teams = (slotsRaw[i]['teams'] as List?)?.cast<int>() ?? const [];
+        for (final team in teams) {
+          if (team < 0 || team >= teamCount) {
+            diagnostics.error(
+              '$slotPath.teams',
+              'no team at position $team',
+              hint: 'the exercise has $teamCount team(s), counting from 0',
+            );
+            continue;
+          }
+          final already = placedOn[team];
+          if (already != null) {
+            diagnostics.error(
+              '$slotPath.teams',
+              'team $team is on stations $already and $stationIndex in the '
+                  'same group',
+              hint:
+                  'these stations run at the same time, so a team can only be '
+                  'at one of them',
+            );
+            continue;
+          }
+          placedOn[team] = stationIndex;
+        }
+        slots.add(GroupSlot(stationIndex: stationIndex, teams: teams));
+      }
+      for (var team = 0; team < teamCount; team++) {
+        if (!placedOn.containsKey(team)) {
+          diagnostics.warn(
+            path,
+            'team $team has no station in this round',
+            hint: 'deliberate if the team is held back; otherwise place it',
+          );
+        }
+      }
+      out.add(ExerciseGroup(stations: slots));
+    }
+    return out;
   }
 
   List<Station> _stations(

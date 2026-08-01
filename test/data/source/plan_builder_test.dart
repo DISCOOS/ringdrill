@@ -671,4 +671,196 @@ teams:
       expect(Numbering.exercise(result.plan.exerciseNumberFormat, 1), '#1');
     });
   });
+
+  group('ADR-0062 modes', () {
+    /// Exercise 7: stations a and b in sequence, then c and d at the same time.
+    const splitYaml = '''
+plan:
+  name: P
+teams:
+  - name: T1
+  - name: T2
+  - name: T3
+  - name: T4
+exercises:
+  - name: Night search
+    startTime: "20:15"
+    mode: split
+    numberOfTeams: 4
+    numberOfRounds: 3
+    executionTime: 15
+    evaluationTime: 10
+    rotationTime: 10
+    stations:
+      - name: A
+        executionTime: 70
+      - name: B
+        executionTime: 100
+      - name: C
+        executionTime: 75
+      - name: D
+        executionTime: 75
+    groups:
+      - stations:
+          - station: 0
+            teams: [0, 1, 2, 3]
+      - stations:
+          - station: 1
+            teams: [0, 1, 2, 3]
+      - stations:
+          - station: 2
+            teams: [0, 1]
+          - station: 3
+            teams: [2, 3]
+''';
+
+    test('a split exercise derives one round per group, at the group length', () {
+      final result = _build(splitYaml);
+      expect(result.diagnostics.where((d) => d.isError), isEmpty);
+
+      final exercise = result.plan.exercises.single;
+      expect(exercise.mode, ExerciseMode.split);
+      expect(exercise.numberOfRounds, 3, reason: 'one per group');
+      // 70, then 100, then 75 for the concurrent pair — the numbers the booklet
+      // states per station, never typed as a time.
+      expect(
+        exercise.schedule
+            .map((r) => r.map((t) => t.toString()).join(' '))
+            .toList(),
+        ['20:15 21:25 21:35', '21:45 23:25 23:35', '23:45 01:00 01:10'],
+      );
+    });
+
+    test('the authored team assignment survives the build', () {
+      final exercise = _build(splitYaml).plan.exercises.single;
+      final last = exercise.groups.last;
+      expect(last.stations.map((s) => s.stationIndex), [2, 3]);
+      expect(last.stations.first.teams, [0, 1]);
+      expect(last.stations.last.teams, [2, 3]);
+    });
+
+    test('stationIndex and teamsAt read the group, not the ring formula', () {
+      final exercise = _build(splitYaml).plan.exercises.single;
+      // Round 3: teams 0 and 1 on station 2, teams 2 and 3 on station 3.
+      expect(exercise.stationIndex(0, 2), 2);
+      expect(exercise.stationIndex(3, 2), 3);
+      expect(exercise.teamsAt(2, 2), [0, 1]);
+      expect(exercise.teamsAt(3, 2), [2, 3]);
+      // Round 1 is station 0 with everyone; nobody is on station 3.
+      expect(exercise.teamsAt(0, 0), [0, 1, 2, 3]);
+      expect(exercise.teamsAt(3, 0), isEmpty);
+    });
+
+    test('a team on two stations of one group is an error', () {
+      // The stations run at once, so it cannot be at both. The message names both
+      // stations, because the author is the one who knows which to drop.
+      final errors = _errors(
+        splitYaml.replaceFirst(
+          '          - station: 3\n            teams: [2, 3]',
+          '          - station: 3\n            teams: [1, 3]',
+        ),
+      );
+      expect(errors, hasLength(1));
+      expect(errors.single.message, contains('team 1'));
+      expect(errors.single.message, contains('stations 2 and 3'));
+    });
+
+    test('a team in no station of a group is a warning, not an error', () {
+      // Holding a team back is legitimate; with unequal groups it is also easy to
+      // do by accident, which is why it is said at all.
+      final result = _build(
+        splitYaml.replaceFirst(
+          '            teams: [2, 3]',
+          '            teams: [2]',
+        ),
+      );
+      expect(result.diagnostics.where((d) => d.isError), isEmpty);
+      expect(
+        result.diagnostics.where(
+          (d) => !d.isError && d.message.contains('team 3 has no station'),
+        ),
+        hasLength(1),
+      );
+    });
+
+    test('a group naming a station that does not exist is an error', () {
+      final errors = _errors(
+        splitYaml.replaceFirst('- station: 2', '- station: 9'),
+      );
+      expect(errors.single.message, contains('no station at position 9'));
+    });
+
+    test('groups outside split are ignored, with a warning', () {
+      // Not an error: the grouping is simply not what decides the rounds there.
+      final result = _build(
+        splitYaml.replaceFirst('mode: split', 'mode: ring'),
+      );
+      expect(result.diagnostics.where((d) => d.isError), isEmpty);
+      expect(result.plan.exercises.single.groups, isEmpty);
+      expect(
+        result.diagnostics.where(
+          (d) => d.message.contains('only used by mode'),
+        ),
+        hasLength(1),
+      );
+    });
+
+    test('an unknown mode is an error, not a silent ring route', () {
+      // Rejected by the field table's own enumeration check — `mode` declares its
+      // values there, so this needs no bespoke validation in the builder.
+      final errors = _errors(
+        splitYaml.replaceFirst('mode: split', 'mode: paralell'),
+      );
+      expect(errors.single.message, contains('not a valid mode'));
+    });
+
+    test('together needs no station per team, unlike ring', () {
+      // The rule is about rotation, and only ring rotates. Enforcing it everywhere
+      // rejected the very plans ADR-0062 exists to express.
+      const together = '''
+plan:
+  name: P
+exercises:
+  - name: All together
+    startTime: "13:00"
+    mode: together
+    numberOfTeams: 4
+    numberOfRounds: 9
+    executionTime: 45
+    evaluationTime: 15
+    rotationTime: 10
+    stations:
+      - name: A
+      - name: B
+''';
+      final result = _build(together);
+      expect(result.diagnostics.where((d) => d.isError), isEmpty);
+      final exercise = result.plan.exercises.single;
+      // numberOfRounds is derived here: one per station, whatever the document said.
+      expect(exercise.numberOfRounds, 2);
+      expect(exercise.endTime.toString(), '15:20');
+      // Everyone is on the round's station, and nobody on the other.
+      expect(exercise.teamsAt(0, 0), [0, 1, 2, 3]);
+      expect(exercise.teamsAt(1, 0), isEmpty);
+    });
+
+    test('the same document in ring mode is rejected for too many teams', () {
+      final errors = _errors('''
+plan:
+  name: P
+exercises:
+  - name: Ring
+    startTime: "13:00"
+    numberOfTeams: 4
+    numberOfRounds: 2
+    executionTime: 45
+    evaluationTime: 15
+    rotationTime: 10
+    stations:
+      - name: A
+      - name: B
+''');
+      expect(errors.single.message, contains('numberOfTeams is 4'));
+    });
+  });
 }
