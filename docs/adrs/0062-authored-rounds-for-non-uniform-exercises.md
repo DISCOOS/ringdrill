@@ -95,8 +95,9 @@ change: there is nothing else to keep in step."
 * Option E — Split such exercises and accept the renumbering.
 * **Option F — A mode plus station-owned durations.** An exercise states *how
   teams relate to posts* (`ring`, `together`, `split`); a station may state its
-  own execution time where it differs. Rounds are not authored at all — the round
-  structure and every clock face follow from those two facts.
+  own execution time where it differs; in `split`, the author places teams on the
+  posts that run at once. Rounds are not authored at all — the round structure and
+  every clock face follow.
 
 ## Decision outcome
 
@@ -135,7 +136,41 @@ Two authored facts, both declarative, neither a time.
 
 * `ring` — today's behaviour, and the default. Teams rotate; one team per post.
 * `together` — all teams work one post at a time and move on together.
-* `split` — teams divide between posts that run concurrently.
+* `split` — any number of posts running at once, with the teams divided between
+  them, in groups that need not be the same size.
+
+**One model, three presets.** There is a single structure underneath: a round is a
+set of **groups**, and a group is one post with some teams on it. The modes are group
+sizes. `ring` is every group holding exactly one team; `together` is one group
+holding all of them; `split` is anything in between — four teams across three posts
+is 2 + 1 + 1. None of the three is a different mechanism.
+
+They stay three modes rather than one exposed group model because `ring` and
+`together` are the two that can be **generated**. An author who picks `ring` assigns
+nothing at all, which is the entire ergonomic argument: authoring cost rises with
+irregularity and nowhere else. Exposing the group model directly would charge every
+exercise for the existence of the odd one, which is the mistake `rounds:` made.
+
+**In `split`, the team-to-post assignment is authored.** Which teams take the missing
+child and which take the shoreline is a decision — competence, travel, who has the
+dog — and the app has no basis for guessing it. This is the one place in the design
+where the author assigns something by hand, and it is deliberate: it is a decision,
+not a computation. `ring` and `together` derive their assignment and cost nothing.
+
+**Two validation rules follow**, and both belong in `analyze` as well as in the
+editor, so a document written by hand is not told less than the app tells:
+
+* A team in two posts of the same parallel group is an **error**. The posts run at
+  once; a team can be at one of them. Both placements are flagged rather than one,
+  because neither is more wrong and the author is the one who knows which to drop.
+* A team in no post of a group is a **warning**, promoted by `--strict`. Holding a
+  team back is legitimate; with groups of unequal size it is also easy to do by
+  accident.
+
+**Switching mode is not symmetric.** Leaving `ring` or `together` costs nothing,
+since neither stored anything the author typed. Leaving `split` discards the groups
+and their assignments, because a generated mode has nowhere to put hand-placed teams.
+The confirmation says which case it is rather than offering one generic warning.
 
 **An execution time on a station**, inherited from the exercise unless stated.
 Written in the station editor, next to the post it belongs to, because that is
@@ -176,7 +211,11 @@ tells the author before they commit.
 
 * Good: the author never states a time, a round or a round count. They state a
   mode and, where it differs, how long a post takes — both things they already
-  know without computing anything.
+  know without computing anything. In `split` they also place teams, which is a
+  decision they were going to make anyway.
+* Good: authoring cost is proportional to irregularity. Nothing for a ring drill,
+  nothing for an all-together exercise, one assignment per team only where the
+  exercise genuinely is irregular.
 * Good: the editor stays a form. One more field with three options on the
   exercise, one optional override on the station, and a grouping affordance that
   appears only in `split`. No list surface, no inheritance rules to teach.
@@ -209,9 +248,14 @@ tells the author before they commit.
 * Bad: idle time in an unequal `ring` is honest and unwelcome. An author who did
   not realise their posts were unequal will see waiting they did not know they had
   — which is the point, and will still read as the tool's fault.
-* Bad: three modes is a taxonomy, and taxonomies acquire a fourth member. If a
-  real plan needs one that is not a mode, that is a new ADR rather than a fourth
-  enum value bolted on.
+* Bad: three modes is a taxonomy, and taxonomies acquire a fourth member. The
+  mitigation is that the model underneath is general — a fourth preset would be a
+  new way of *generating* groups, not a new kind of round — so a fourth member is
+  cheap in a way a fourth special case would not be.
+* Bad: `split` carries authored assignment data, so it needs a shape in the source
+  format, a place in the archive, and two `analyze` rules. It is the most expensive
+  third of this ADR and the only third that can be got wrong by an author rather
+  than by the compiler.
 * Bad: the app currently rebuilds an exercise from its scalar inputs on every save
   (`exercise_form_screen.dart`), so until the editor understands modes it would
   flatten a non-uniform exercise on the first LAGRE. That has to land with the
@@ -273,8 +317,10 @@ tells the author before they commit.
   existing one.
 
 ### Option F — Mode plus station-owned durations
-* Good: nothing authored is a time, a round or a round count; the two facts are
-  stated where the author already knows them.
+* Good: nothing authored is a time, a round or a round count; the facts are stated
+  where the author already knows them.
+* Good: one general model — a round is groups of teams on posts — with two of the
+  three cases generated, so cost tracks irregularity.
 * Good: the editor stays a form, and the common case gains one defaulted field.
 * Good: closes the `numberOfTeams: 1` accuracy bug as a side effect.
 * Good: makes idle time visible, which the model has always implied.
@@ -283,6 +329,8 @@ tells the author before they commit.
 * Bad: changes team-to-station assignment, which is the larger half of the work.
 * Bad: `numberOfRounds` is authored in one mode and derived in another.
 * Bad: a taxonomy of three, which invites a fourth.
+* Bad: `split`'s assignment is authored data with its own validation rules, and the
+  only part of the design an author can get wrong.
 
 ## Links
 

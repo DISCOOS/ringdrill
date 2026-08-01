@@ -10,14 +10,14 @@
     --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
     --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
     --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
-    --warn:#8a5a00; --warn-bg:#FBF0DC;
+    --warn:#8a5a00; --warn-bg:#FBF0DC; --err:#a3272b; --err-bg:#FAE4E4;
     --radius:8px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
     --font-mono:ui-monospace,Menlo,Consolas,monospace;
   }
   @media (prefers-color-scheme: dark){:root{
     --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
     --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
-    --accent:#8fc7dd;--accent-bg:#123243;--warn:#e0bf84;--warn-bg:#3a2f18;
+    --accent:#8fc7dd;--accent-bg:#123243;--warn:#e0bf84;--warn-bg:#3a2f18;--err:#f0a5a5;--err-bg:#3d1f21;
   }}
   .ic{width:1em;height:1em;flex:none;stroke:currentColor;stroke-width:1.9;fill:none;
       stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em}
@@ -93,8 +93,16 @@
   .grp{margin:2px 10px 6px 16px;border:1px solid var(--accent);border-left-width:3px;border-radius:6px;background:var(--accent-bg)}
   .grptag{display:flex;align-items:center;gap:6px;padding:6px 12px 2px;font-size:10.5px;color:var(--accent);font-weight:600}
   .grp .strow{padding:6px 12px}
-  .teams{display:flex;gap:6px;padding:2px 12px 8px;flex-wrap:wrap}
-  .tchip{font-size:10.5px;color:var(--accent);border:1px solid var(--accent);border-radius:10px;padding:1px 8px}
+  /* per-station team assignment inside a concurrent group — authored, not derived */
+  .teams{display:flex;gap:6px;padding:2px 12px 8px 40px;flex-wrap:wrap;align-items:center}
+  .tchip{display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--accent);
+         border:1px solid var(--accent);border-radius:10px;padding:2px 4px 2px 8px}
+  .tchip .rm{opacity:.7}
+  .tchip.bad{color:var(--err);border-color:var(--err);background:var(--err-bg);text-decoration:none}
+  .tchip.add{color:var(--text-3);border-style:dashed;border-color:var(--border);padding:2px 8px}
+  .note.err{background:var(--err-bg);color:var(--err)}
+  .note.err b{color:var(--err)}
+  table.rt td.bad{color:var(--err);font-weight:600}
   .addgrp{display:flex;align-items:center;gap:8px;padding:9px 16px;color:var(--accent);font-size:12.5px}
 
   .note{font-size:11.5px;color:var(--text-2);padding:10px 16px;line-height:1.5;background:var(--bg-2)}
@@ -171,7 +179,7 @@
         <svg class="ic g" viewBox="0 0 24 24"><use href="#i-ring"/></svg>
         <div class="body">
           <div class="t">Ring drill</div>
-          <div class="d">Teams rotate between the stations. One team at each station at a time.</div>
+          <div class="d"><b>One team per station.</b> Teams rotate; the app works out who is where.</div>
         </div>
         <svg class="ic ck" viewBox="0 0 24 24"><use href="#i-check"/></svg>
       </div>
@@ -180,7 +188,7 @@
         <svg class="ic g" viewBox="0 0 24 24"><use href="#i-together"/></svg>
         <div class="body">
           <div class="t">Together</div>
-          <div class="d">All teams work one station at a time, and move on together.</div>
+          <div class="d"><b>One station, all teams.</b> Everyone works the same station, then moves on together.</div>
         </div>
       </div>
       <div class="div"></div>
@@ -188,10 +196,16 @@
         <svg class="ic g" viewBox="0 0 24 24"><use href="#i-split"/></svg>
         <div class="body">
           <div class="t">Split</div>
-          <div class="d">Teams divide between stations that run at the same time.</div>
+          <div class="d"><b>Anything in between.</b> You group the stations that run together and say
+            which teams go to each. Groups need not be the same size.</div>
         </div>
       </div>
-      <div class="note">The mode decides which teams are where. Durations are a separate question, answered per station — see 4.</div>
+      <div class="note">
+        All three are the same thing with different group sizes — one team per group, all teams in
+        one group, or any mix. The first two are <b>generated</b>, which is why they cost the author
+        nothing; Split is where assignment is actually authored. Durations are a separate question,
+        answered per station — see 4.
+      </div>
     </div>
   </div>
 
@@ -305,23 +319,81 @@
 
   <!-- 7 -->
   <div class="phone">
-    <p class="cap">7 · Split — the one extra fact the author states: which stations run at the same time. Grouped in the exercise’s own station list.</p>
+    <p class="cap">7 · Split — groups need not be equal. Four teams across three parallel stations is
+      2 + 1 + 1, and the author says which. Nothing here assumes halves.</p>
     <div class="frame">
       <div class="modeclosed"><svg class="ic g" viewBox="0 0 24 24"><use href="#i-split"/></svg><span class="t">Split</span><svg class="ic cv" viewBox="0 0 24 24"><use href="#i-chevron"/></svg></div>
       <div class="sec">STATIONS</div>
       <div class="strow"><span class="code">7a</span><span class="n">Roadside incident</span><span class="dur own">70 min</span></div>
       <div class="strow"><span class="code">7b</span><span class="n">Hiker assistance</span><span class="dur own">100 min</span></div>
       <div class="grp">
-        <div class="grptag"><svg class="ic" viewBox="0 0 24 24" style="width:14px;height:14px"><use href="#i-split"/></svg>AT THE SAME TIME</div>
+        <div class="grptag"><svg class="ic" viewBox="0 0 24 24" style="width:14px;height:14px"><use href="#i-split"/></svg>PARALLEL STATIONS · 3</div>
         <div class="strow"><span class="code">7c</span><span class="n">Missing child</span><span class="dur own">75 min</span></div>
+        <div class="teams">
+          <span class="tchip">Team 1<svg class="ic rm" viewBox="0 0 24 24"><use href="#i-x"/></svg></span>
+          <span class="tchip">Team 2<svg class="ic rm" viewBox="0 0 24 24"><use href="#i-x"/></svg></span>
+          <span class="tchip add">+ team</span>
+        </div>
         <div class="strow"><span class="code">7d</span><span class="n">Abandoned vehicle</span><span class="dur own">75 min</span></div>
-        <div class="teams"><span class="tchip">Teams 1–2 → 7c</span><span class="tchip">Teams 3–4 → 7d</span></div>
+        <div class="teams">
+          <span class="tchip">Team 3<svg class="ic rm" viewBox="0 0 24 24"><use href="#i-x"/></svg></span>
+          <span class="tchip add">+ team</span>
+        </div>
+        <div class="strow"><span class="code">7e</span><span class="n">Shoreline sweep</span><span class="dur own">75 min</span></div>
+        <div class="teams">
+          <span class="tchip">Team 4<svg class="ic rm" viewBox="0 0 24 24"><use href="#i-x"/></svg></span>
+          <span class="tchip add">+ team</span>
+        </div>
       </div>
-      <div class="addgrp"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New concurrent group</div>
+      <div class="addgrp"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New parallel group</div>
       <div class="note">
-        Drag two stations together, or select them and group. The team split is derived, not typed —
-        the chips say what the app worked out, and the codes <code>7c</code>/<code>7d</code> stay
-        derived from position (ADR-0059), which is the whole reason not to split the exercise.
+        <b>Which teams go where is authored, not derived.</b> Whether teams 1–2 take the missing
+        child or the shoreline is a real decision — competence, travel, who has the dog — and the app
+        has no basis for guessing it. “+ team” opens the ordinary picker, listing the teams not yet
+        placed in this group.
+      </div>
+      <div class="note">
+        A group holds any number of stations, and a station any number of teams. Two teams here, one
+        there, one there. When every group holds exactly one team this <em>is</em> a ring drill round,
+        which is why Ring drill is a preset rather than a different mechanism — see the note at the
+        bottom. The codes <code>7c</code>–<code>7e</code> stay derived from position (ADR-0059),
+        which is the whole reason not to split the exercise into several.
+      </div>
+    </div>
+  </div>
+
+  <!-- 7b -->
+  <div class="phone">
+    <p class="cap">7b · The rule, and both ways of breaking it. A team is at one station per round —
+      so being in two is an error, and being in none is worth saying.</p>
+    <div class="frame">
+      <div class="grp" style="border-color:var(--err)">
+        <div class="grptag" style="color:var(--err)"><svg class="ic" viewBox="0 0 24 24" style="width:14px;height:14px"><use href="#i-split"/></svg>PARALLEL STATIONS</div>
+        <div class="strow"><span class="code">7c</span><span class="n">Missing child</span><span class="dur own">75 min</span></div>
+        <div class="teams">
+          <span class="tchip">Team 1<svg class="ic rm" viewBox="0 0 24 24"><use href="#i-x"/></svg></span>
+          <span class="tchip bad">Team 2<svg class="ic rm" viewBox="0 0 24 24"><use href="#i-x"/></svg></span>
+        </div>
+        <div class="strow"><span class="code">7d</span><span class="n">Abandoned vehicle</span><span class="dur own">75 min</span></div>
+        <div class="teams">
+          <span class="tchip bad">Team 2<svg class="ic rm" viewBox="0 0 24 24"><use href="#i-x"/></svg></span>
+          <span class="tchip">Team 3<svg class="ic rm" viewBox="0 0 24 24"><use href="#i-x"/></svg></span>
+        </div>
+      </div>
+      <div class="note err">
+        <b>Team 2 is at two stations at once.</b> The stations run in parallel, so a team can only be
+        at one of them. Both chips are marked, because neither is more wrong than the other and the
+        author is the one who knows which to drop.
+      </div>
+      <div class="note warn">
+        <b>Team 4 has no station in this round.</b> Legitimate — a team can be held back — so it is a
+        warning, not an error, and <code>--strict</code> promotes it. With groups of unequal size
+        this is easy to do by accident, which is why it is worth saying at all.
+      </div>
+      <div class="note">
+        The same two checks run for a document written by hand: <code>analyze</code> reports the
+        collision as an error and the unplaced team as a warning, so a YAML or MCP author is not
+        told less than the app tells.
       </div>
     </div>
   </div>
@@ -352,7 +424,7 @@
 
   <!-- 9 -->
   <div class="phone">
-    <p class="cap">9 · Changing mode on an exercise that already has one. The mode decides team-to-station assignment, so it is a real change and it says so.</p>
+    <p class="cap">9 · Switching to a generated mode from Ring drill. Nothing is lost; the numbers change, so it says which.</p>
     <div class="frame">
       <div class="title"><span class="t">Switch to Together?</span></div>
       <div class="div"></div>
@@ -370,6 +442,34 @@
     </div>
   </div>
 
+  <!-- 9b -->
+  <div class="phone">
+    <p class="cap">9b · Switching <em>to</em> Ring drill is trivial to compute — the app works out who is
+      where — but not free if the author had assigned anything. That part is the confirmation.</p>
+    <div class="frame">
+      <div class="title"><span class="t">Switch to Ring drill?</span></div>
+      <div class="div"></div>
+      <div class="note">
+        The app will work out which team is at which station in each round. The number of rounds
+        becomes <b>4</b> (one per station) and the exercise ends at <b>16:00</b>.
+      </div>
+      <div class="note err">
+        <b>The 3 parallel stations and their team assignments are removed.</b> Ring drill generates the
+        assignment, so there is nowhere for hand-placed teams to go. This is the only mode switch
+        that discards authored work, and it is the only one that says so in red.
+      </div>
+      <div class="div"></div>
+      <div class="strow" style="justify-content:flex-end;gap:16px;color:var(--accent);font-size:13px;font-weight:500">
+        <span>CANCEL</span><span>SWITCH</span>
+      </div>
+      <p class="cap" style="padding:10px 16px 12px;margin:0">
+        Switching away from Ring drill or Together costs nothing, because neither stored anything the
+        author typed. Switching away from Split does, and the difference is worth stating rather than
+        having one generic “are you sure”.
+      </p>
+    </div>
+  </div>
+
 </div>
 
 <div class="foot">
@@ -377,11 +477,40 @@
   <ul>
     <li>One <b>mode</b> per exercise — a choice from three, defaulting to today’s behaviour.</li>
     <li>An <b>execution time</b> on a station, only where it differs from the exercise’s.</li>
-    <li>A <b>concurrent group</b>, only in Split, only where stations genuinely run together.</li>
+    <li>In Split only: a <b>parallel group</b>, and <b>which teams go to which station</b> in it —
+      any number of stations, any number of teams each, groups of unequal size. This is real
+      authoring work, and it is the only place in the design where the author assigns anything by
+      hand, because it is a decision rather than a computation.</li>
   </ul>
   <p>
     No round list, no per-round entries, no clock faces. Every time above is derived, and the
     uniform exercise — most of a course day — is untouched by all of it.
+  </p>
+
+  <h2>One model, three presets</h2>
+  <p>
+    There is only one thing underneath: a round is a set of <b>groups</b>, and a group is one station
+    with some teams on it. The three modes are group sizes.
+  </p>
+  <ul>
+    <li><b>Ring drill</b> — every group holds one team, and there are as many groups as stations. The
+      rotation is generated.</li>
+    <li><b>Together</b> — one group holds every team. Generated too.</li>
+    <li><b>Split</b> — any number of groups, of any size, and they need not match each other. Four
+      teams across three stations is 2 + 1 + 1. Authored.</li>
+  </ul>
+  <p>
+    So Ring drill is the case where every split is a single team, and Together is the case where
+    there is one split holding all of them — neither is a different mechanism. They stay separate
+    modes because they are the two that can be <em>generated</em>, and generating them is what keeps
+    the common case free: an author who picks Ring drill assigns nothing at all, which is the whole
+    reason not to expose the group model directly and call it a day.
+  </p>
+  <p>
+    This also says where the effort belongs. Authoring cost rises with irregularity and nowhere else:
+    nothing for a ring drill, nothing for an all-together exercise, and one assignment per team only
+    in the case that is genuinely irregular. That is the opposite of <code>rounds:</code>, which
+    charged every exercise for the existence of the odd one.
   </p>
 
   <h2>One representation, not two</h2>
