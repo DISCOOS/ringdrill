@@ -3818,7 +3818,7 @@ abstract class AppLocalizations {
   /// **'Insert token'**
   String get tokenBrowserTitle;
 
-  /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
+  /// Token browser (ADR-0067): the insertion menu's pinned footer, which opens the full token browser. Short because the list it belongs to is directly above it; the section editor's overflow menu uses tokenBrowserTitle instead, where there is no such context.
   ///
   /// In en, this message translates to:
   /// **'Show all …'**
