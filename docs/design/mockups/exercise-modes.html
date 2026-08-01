@@ -67,23 +67,20 @@
   .opt .body{min-width:0}
   .opt .ck{margin-left:auto;font-size:17px;color:var(--accent);flex:none}
 
-  /* derived timeline: what the author reads instead of computing */
-  .tl{padding:8px 16px 14px}
-  .tlrow{display:flex;align-items:center;gap:7px;margin:3px 0}
-  .tlno{width:14px;font-size:10.5px;color:var(--text-3);text-align:right;flex:none}
-  .bar{flex:1;display:flex;height:17px;border-radius:3px;overflow:hidden;border:1px solid var(--border)}
-  .seg{display:flex;align-items:center;justify-content:center;font-size:9px;letter-spacing:.2px;white-space:nowrap;overflow:hidden}
-  .ex{background:var(--accent-bg);color:var(--accent)}
-  .ev{background:var(--bg-3);color:var(--text-2)}
-  .ro{background:var(--bg-2);color:var(--text-3)}
-  .idle{color:var(--warn);
-        background:repeating-linear-gradient(45deg,var(--warn-bg),var(--warn-bg) 4px,transparent 4px,transparent 8px)}
-  .tlt{width:80px;font-size:10px;color:var(--text-3);font-family:var(--font-mono);flex:none;text-align:right}
-  .tlpost{width:26px;font-size:10px;color:var(--text-2);font-family:var(--font-mono);flex:none}
-  .legend{display:flex;gap:12px;padding:2px 16px 12px;font-size:10px;color:var(--text-3);flex-wrap:wrap}
-  .legend span{display:flex;align-items:center;gap:5px}
-  .legend i{width:11px;height:11px;border-radius:2px;border:1px solid var(--border);display:block}
-  .total{display:flex;justify-content:space-between;padding:8px 16px 12px;font-size:11.5px;color:var(--text-2)}
+  /* The round table, as markdown_widget renders `{{exercise.roundTable}}` — the
+     representation the brief and the app already use for a rotation. Reused rather
+     than invented: a second way to draw a schedule is a second thing to keep true. */
+  .rtwrap{padding:4px 16px 12px;overflow-x:auto}
+  table.rt{border-collapse:collapse;font-size:12px;width:100%}
+  table.rt th,table.rt td{border:1px solid var(--border);padding:5px 8px;text-align:left;white-space:nowrap}
+  table.rt th{font-weight:600;color:var(--text-2);font-size:11px}
+  table.rt td.t{font-family:var(--font-mono)}
+  table.rt td.n{color:var(--text-3);width:1%}
+  table.rt td.post{font-family:var(--font-mono);color:var(--accent);font-weight:600}
+  table.rt td.suffix{color:var(--text-3);font-size:11px}
+  table.rt td.wait{color:var(--warn);font-size:11px}
+  table.rt tr.long td{background:var(--warn-bg)}
+  .total{display:flex;justify-content:space-between;padding:4px 16px 12px;font-size:11.5px;color:var(--text-2)}
   .total b{font-family:var(--font-mono);font-weight:600;color:var(--text-1)}
 
   /* station rows, and the parallel group bracket */
@@ -130,35 +127,36 @@
 <h1>Three exercise modes, and station-owned durations</h1>
 <p class="lead">
   ADR-0062 proposed an authored <code>rounds:</code> list. This is the alternative: the author
-  states <b>how teams relate to posts</b> (one field, three options) and <b>how long a post
-  takes</b> (where that post is edited). The app keeps doing the arithmetic — every clock face
-  below is derived, none of it is typed.
+  states <b>how teams relate to posts</b> (one field, three options) and <b>how long a station
+  takes</b> (where that station is edited). The app keeps doing the arithmetic — every clock face
+  below is derived, none of it is typed, and all of it is the round table the brief already
+  renders.
 </p>
 
 <div class="grid">
 
   <!-- 1 -->
   <div class="phone">
-    <p class="cap">1 · The common case is unchanged. “Gjennomføring” is one more field with a default, and Ringløype is it.</p>
+    <p class="cap">1 · The common case is unchanged. “Conduct” is one more field with a default, and Ring drill is it.</p>
     <div class="frame">
-      <div class="title"><svg class="ic" viewBox="0 0 24 24"><use href="#i-x"/></svg><span class="t">Endre øvelse</span><svg class="ic" viewBox="0 0 24 24"><use href="#i-eye"/></svg><span class="save">LAGRE</span></div>
+      <div class="title"><svg class="ic" viewBox="0 0 24 24"><use href="#i-x"/></svg><span class="t">Edit Exercise</span><svg class="ic" viewBox="0 0 24 24"><use href="#i-eye"/></svg><span class="save">SAVE</span></div>
       <div class="div"></div>
       <div class="fields">
-        <div class="f half"><label>Øvingsnavn</label><div class="v">Områdesøk – Lindhøy</div></div>
-        <div class="f half"><label>Starttid</label><div class="v">09:00</div></div>
+        <div class="f half"><label>Exercise Name</label><div class="v">Area search – Lindhøy</div></div>
+        <div class="f half"><label>Start Time</label><div class="v">09:00</div></div>
       </div>
       <div class="modeclosed">
         <svg class="ic g" viewBox="0 0 24 24"><use href="#i-ring"/></svg>
-        <span class="t">Ringløype</span>
+        <span class="t">Ring drill</span>
         <svg class="ic cv" viewBox="0 0 24 24"><use href="#i-chevron"/></svg>
       </div>
       <div class="fields">
-        <div class="f"><label>Antall lag</label><div class="v">4</div></div>
-        <div class="f"><label>Antall poster</label><div class="v">4</div></div>
-        <div class="f"><label>Antall runder</label><div class="v">4</div></div>
-        <div class="f"><label>Øvingstid</label><div class="v">15</div></div>
-        <div class="f"><label>Evalueringstid</label><div class="v">10</div></div>
-        <div class="f"><label>Rulleringstid</label><div class="v">5</div></div>
+        <div class="f"><label>Number of Teams</label><div class="v">4</div></div>
+        <div class="f"><label>Number of stations</label><div class="v">4</div></div>
+        <div class="f"><label>Number of Rounds</label><div class="v">4</div></div>
+        <div class="f"><label>Execution Time</label><div class="v">15</div></div>
+        <div class="f"><label>Evaluation Time</label><div class="v">10</div></div>
+        <div class="f"><label>Rotation Time</label><div class="v">5</div></div>
       </div>
     </div>
   </div>
@@ -167,13 +165,13 @@
   <div class="phone">
     <p class="cap">2 · The mode field open. Three options, each one sentence — the app has to teach this, so the sentence is the design.</p>
     <div class="frame">
-      <div class="title"><svg class="ic" viewBox="0 0 24 24"><use href="#i-x"/></svg><span class="t">Gjennomføring</span></div>
+      <div class="title"><svg class="ic" viewBox="0 0 24 24"><use href="#i-x"/></svg><span class="t">Conduct</span></div>
       <div class="div"></div>
       <div class="opt on">
         <svg class="ic g" viewBox="0 0 24 24"><use href="#i-ring"/></svg>
         <div class="body">
-          <div class="t">Ringløype</div>
-          <div class="d">Lagene rullerer mellom postene. Ett lag på hver post om gangen.</div>
+          <div class="t">Ring drill</div>
+          <div class="d">Teams rotate between the stations. One team at each station at a time.</div>
         </div>
         <svg class="ic ck" viewBox="0 0 24 24"><use href="#i-check"/></svg>
       </div>
@@ -181,181 +179,169 @@
       <div class="opt">
         <svg class="ic g" viewBox="0 0 24 24"><use href="#i-together"/></svg>
         <div class="body">
-          <div class="t">Samlet</div>
-          <div class="d">Alle lagene arbeider på én post om gangen, og rykker videre sammen.</div>
+          <div class="t">Together</div>
+          <div class="d">All teams work one station at a time, and move on together.</div>
         </div>
       </div>
       <div class="div"></div>
       <div class="opt">
         <svg class="ic g" viewBox="0 0 24 24"><use href="#i-split"/></svg>
         <div class="body">
-          <div class="t">Delt</div>
-          <div class="d">Lagene deles mellom poster som går samtidig.</div>
+          <div class="t">Split</div>
+          <div class="d">Teams divide between stations that run at the same time.</div>
         </div>
       </div>
-      <div class="note">The mode decides which teams are where. Durations are a separate question, answered per post — see 4.</div>
+      <div class="note">The mode decides which teams are where. Durations are a separate question, answered per station — see 4.</div>
     </div>
   </div>
 
   <!-- 3 -->
   <div class="wide">
-    <p class="cap">3 · The derived timeline, in the exercise editor under the fields. This is what replaces the arithmetic: the author reads it instead of computing it.</p>
+    <p class="cap">3 · The derived schedule, in the exercise editor under the fields — the same round table
+      <code>{{exercise.roundTable}}</code> puts in the brief. Nothing new to learn, and one representation to keep true.</p>
     <div class="frame">
-      <div class="sec">BEREGNET TIDSLINJE</div>
-      <div class="tl">
-        <div class="tlrow"><span class="tlno">1</span><span class="bar">
-          <span class="seg ex" style="flex:15">øving</span><span class="seg ev" style="flex:10">eval</span><span class="seg ro" style="flex:5">rull</span>
-        </span><span class="tlt">0900–0930</span></div>
-        <div class="tlrow"><span class="tlno">2</span><span class="bar">
-          <span class="seg ex" style="flex:15">øving</span><span class="seg ev" style="flex:10">eval</span><span class="seg ro" style="flex:5">rull</span>
-        </span><span class="tlt">0930–1000</span></div>
-        <div class="tlrow"><span class="tlno">3</span><span class="bar">
-          <span class="seg ex" style="flex:15">øving</span><span class="seg ev" style="flex:10">eval</span><span class="seg ro" style="flex:5">rull</span>
-        </span><span class="tlt">1000–1030</span></div>
-        <div class="tlrow"><span class="tlno">4</span><span class="bar">
-          <span class="seg ex" style="flex:15">øving</span><span class="seg ev" style="flex:10">eval</span><span class="seg ro" style="flex:5">retur</span>
-        </span><span class="tlt">1030–1100</span></div>
-      </div>
-      <div class="legend">
-        <span><i style="background:var(--accent-bg)"></i>øving</span>
-        <span><i style="background:var(--bg-3)"></i>evaluering</span>
-        <span><i style="background:var(--bg-2)"></i>rullering</span>
-        <span><i class="idle" style="background-color:var(--warn-bg)"></i>venting</span>
+      <div class="sec">ROUND TABLE</div>
+      <div class="rtwrap">
+        <table class="rt">
+          <tr><th>Round</th><th>Execution</th><th>Evaluation</th><th>Rotation</th><th></th></tr>
+          <tr><td class="n">1</td><td class="t">0900</td><td class="t">0915</td><td class="t">0925</td><td class="suffix">next</td></tr>
+          <tr><td class="n">2</td><td class="t">0930</td><td class="t">0945</td><td class="t">0955</td><td class="suffix">next</td></tr>
+          <tr><td class="n">3</td><td class="t">1000</td><td class="t">1015</td><td class="t">1025</td><td class="suffix">next</td></tr>
+          <tr><td class="n">4</td><td class="t">1030</td><td class="t">1045</td><td class="t">1055</td><td class="suffix">return</td></tr>
+        </table>
       </div>
       <div class="div"></div>
-      <div class="total"><span>4 runder · 4 poster · 4 lag</span><span><b>09:00–11:00</b></span></div>
+      <div class="total"><span>4 rounds · 4 stations · 4 teams</span><span><b>09:00–11:00</b></span></div>
+      <div class="note">Read-only. Each cell is when that phase begins, exactly as the brief prints it.</div>
     </div>
   </div>
 
   <!-- 4 -->
   <div class="phone">
-    <p class="cap">4 · Where an odd duration is authored: the station editor, next to the post it belongs to. The booklet says “post b takes 100 minutes”, so that is where it is written.</p>
+    <p class="cap">4 · Where an odd duration is authored: the station editor, next to the station it belongs to. The booklet says “station b takes 100 minutes”, so that is where it is written.</p>
     <div class="frame">
-      <div class="title"><svg class="ic" viewBox="0 0 24 24"><use href="#i-x"/></svg><span class="t">Endre post</span><span class="save">LAGRE</span></div>
+      <div class="title"><svg class="ic" viewBox="0 0 24 24"><use href="#i-x"/></svg><span class="t">Edit Station</span><span class="save">SAVE</span></div>
       <div class="div"></div>
       <div class="fields">
-        <div class="f full"><label>Postnavn</label><div class="v">Assistanse turgåer</div></div>
+        <div class="f full"><label>Station Name</label><div class="v">Hiker assistance</div></div>
         <div class="f half">
-          <label>Øvingstid</label>
+          <label>Execution Time</label>
           <div class="v ghost">15</div>
-          <div class="hint">Arver fra øvelsen. Overstyr for denne posten.</div>
+          <div class="hint">Inherited from the exercise. Override for this station.</div>
         </div>
         <div class="f half">
-          <label>Øvingstid</label>
+          <label>Execution Time</label>
           <div class="v" style="color:var(--accent);font-weight:600">100</div>
-          <div class="hint warn">Overstyrt. Runden med denne posten blir 100 min.</div>
+          <div class="hint warn">Overridden. The round holding this station becomes 100 min.</div>
         </div>
       </div>
-      <div class="note">Two states of one field, side by side: inherited (left) and overridden (right). Nothing becomes a list, and the uniform exercise never sees this.</div>
+      <div class="note">Two states of one field, side by side: inherited (left) and overridden (right). Nothing becomes a list, and a uniform exercise never sees this.</div>
     </div>
   </div>
 
   <!-- 5 -->
   <div class="wide">
-    <p class="cap">5 · Ringløype with one long post. Rounds stop being equal, and the waiting is drawn rather than hidden — everyone stands still until post b is done.</p>
+    <p class="cap">5 · Ring drill with one long station. Rounds stop being equal — the same table, with rows of
+      different lengths and the waiting stated rather than hidden.</p>
     <div class="frame">
-      <div class="sec">BEREGNET TIDSLINJE</div>
-      <div class="tl">
-        <div class="tlrow"><span class="tlno">1</span><span class="bar">
-          <span class="seg ex" style="flex:100">øving 100</span><span class="seg ev" style="flex:10">eval</span><span class="seg ro" style="flex:5">rull</span>
-        </span><span class="tlt">2015–2210</span></div>
-        <div class="tlrow"><span class="tlno">2</span><span class="bar">
-          <span class="seg ex" style="flex:100">øving 100</span><span class="seg ev" style="flex:10">eval</span><span class="seg ro" style="flex:5">rull</span>
-        </span><span class="tlt">2210–0005</span></div>
+      <div class="sec">ROUND TABLE</div>
+      <div class="rtwrap">
+        <table class="rt">
+          <tr><th>Round</th><th>Execution</th><th>Evaluation</th><th>Rotation</th><th></th></tr>
+          <tr><td class="n">1</td><td class="t">0900</td><td class="t">0925</td><td class="t">0935</td><td class="suffix">next</td></tr>
+          <tr><td class="n">2</td><td class="t">0940</td><td class="t">1005</td><td class="t">1015</td><td class="suffix">next</td></tr>
+          <tr><td class="n">3</td><td class="t">1020</td><td class="t">1045</td><td class="t">1055</td><td class="suffix">next</td></tr>
+          <tr><td class="n">4</td><td class="t">1100</td><td class="t">1125</td><td class="t">1135</td><td class="suffix">return</td></tr>
+        </table>
       </div>
       <div class="note warn">
-        <b>Rundelengden er den lengste posten i runden.</b> Post 7b tar 100 min, de andre 70–75, så
-        lagene på de korte postene venter. Slik kjøres det i praksis — men nå står det i planen i
-        stedet for å bli en overraskelse på dagen.
+        <b>A round is as long as its longest station.</b> Station 2c takes 25 min, the others 15, so
+        the round is 25 — and the teams on the short stations wait. That is how it runs on the day;
+        it is now in the plan instead of being a surprise on the field.
       </div>
-      <div class="div"></div>
-      <div class="tl">
-        <div class="tlrow"><span class="tlpost">7a</span><span class="bar">
-          <span class="seg ex" style="flex:70">øving 70</span><span class="seg idle" style="flex:30">venting 30</span>
-        </span><span class="tlt">→ 2210</span></div>
-        <div class="tlrow"><span class="tlpost">7b</span><span class="bar">
-          <span class="seg ex" style="flex:100">øving 100</span>
-        </span><span class="tlt">→ 2210</span></div>
-        <div class="tlrow"><span class="tlpost">7c</span><span class="bar">
-          <span class="seg ex" style="flex:75">øving 75</span><span class="seg idle" style="flex:25">venting 25</span>
-        </span><span class="tlt">→ 2210</span></div>
+      <div class="sec">WAITING, PER STATION</div>
+      <div class="rtwrap">
+        <table class="rt">
+          <tr><th>Station</th><th>Execution</th><th>Waiting</th></tr>
+          <tr><td class="post">2a</td><td class="t">15 min</td><td class="wait">10 min</td></tr>
+          <tr><td class="post">2b</td><td class="t">15 min</td><td class="wait">10 min</td></tr>
+          <tr class="long"><td class="post">2c</td><td class="t">25 min</td><td class="wait">—</td></tr>
+          <tr><td class="post">2d</td><td class="t">15 min</td><td class="wait">10 min</td></tr>
+        </table>
       </div>
-      <p class="cap" style="padding:0 16px 12px;margin:0">Per post, so the author can see which one is forcing the wait and shorten it if that was not intended.</p>
+      <p class="cap" style="padding:0 16px 12px;margin:0">So the author can see which station is forcing the wait, and shorten it if that was not intended.</p>
     </div>
   </div>
 
   <!-- 6 -->
   <div class="wide">
-    <p class="cap">6 · Samlet — Øvelse 4 and 6. All four teams on one post at a time; a round is a post, and its length is that post’s own duration.</p>
+    <p class="cap">6 · Together — exercises 4 and 6. All four teams on one station at a time, so a round <em>is</em> a
+      station. The table gains a Station column; that is the only difference.</p>
     <div class="frame">
-      <div class="modeclosed"><svg class="ic g" viewBox="0 0 24 24"><use href="#i-together"/></svg><span class="t">Samlet</span><svg class="ic cv" viewBox="0 0 24 24"><use href="#i-chevron"/></svg></div>
+      <div class="modeclosed"><svg class="ic g" viewBox="0 0 24 24"><use href="#i-together"/></svg><span class="t">Together</span><svg class="ic cv" viewBox="0 0 24 24"><use href="#i-chevron"/></svg></div>
       <div class="fields">
-        <div class="f"><label>Antall lag</label><div class="v">4</div></div>
-        <div class="f"><label>Antall poster</label><div class="v">2</div></div>
-        <div class="f"><label>Antall runder</label><div class="v locked">2</div><div class="hint">= antall poster</div></div>
+        <div class="f"><label>Number of Teams</label><div class="v">4</div></div>
+        <div class="f"><label>Number of stations</label><div class="v">2</div></div>
+        <div class="f"><label>Number of Rounds</label><div class="v locked">2</div><div class="hint">= number of stations</div></div>
       </div>
-      <div class="sec">BEREGNET TIDSLINJE</div>
-      <div class="tl">
-        <div class="tlrow"><span class="tlpost">4a</span><span class="bar">
-          <span class="seg ex" style="flex:45">øving 45 · alle lag</span><span class="seg ev" style="flex:15">eval</span><span class="seg ro" style="flex:10">flytt</span>
-        </span><span class="tlt">1300–1410</span></div>
-        <div class="tlrow"><span class="tlpost">4b</span><span class="bar">
-          <span class="seg ex" style="flex:45">øving 45 · alle lag</span><span class="seg ev" style="flex:15">eval</span><span class="seg ro" style="flex:10">retur</span>
-        </span><span class="tlt">1410–1520</span></div>
+      <div class="sec">ROUND TABLE</div>
+      <div class="rtwrap">
+        <table class="rt">
+          <tr><th>Round</th><th>Station</th><th>Execution</th><th>Evaluation</th><th>Rotation</th><th></th></tr>
+          <tr><td class="n">1</td><td class="post">4a</td><td class="t">1300</td><td class="t">1345</td><td class="t">1400</td><td class="suffix">next</td></tr>
+          <tr><td class="n">2</td><td class="post">4b</td><td class="t">1410</td><td class="t">1455</td><td class="t">1510</td><td class="suffix">return</td></tr>
+        </table>
       </div>
+      <div class="div"></div>
+      <div class="total"><span>2 rounds · 2 stations · 4 teams, all together</span><span><b>13:00–15:20</b></span></div>
       <div class="note">
         <b>This is what replaces <code>numberOfTeams: 1</code>.</b> The workaround merged four teams
         into one so the schedule would come out right, and the brief then called the merged group
-        <span class="bad">Lag 2.1</span>. In Samlet the teams keep their real names and the schedule
-        is still right.
+        <span class="bad">Team 2.1</span>. In Together the teams keep their real names and the
+        schedule is still right.
       </div>
     </div>
   </div>
 
   <!-- 7 -->
   <div class="phone">
-    <p class="cap">7 · Delt — the one extra fact the author states: which posts run at the same time. Grouped in the exercise’s own post list.</p>
+    <p class="cap">7 · Split — the one extra fact the author states: which stations run at the same time. Grouped in the exercise’s own station list.</p>
     <div class="frame">
-      <div class="modeclosed"><svg class="ic g" viewBox="0 0 24 24"><use href="#i-split"/></svg><span class="t">Delt</span><svg class="ic cv" viewBox="0 0 24 24"><use href="#i-chevron"/></svg></div>
-      <div class="sec">POSTER</div>
-      <div class="strow"><span class="code">7a</span><span class="n">Skadested vei</span><span class="dur own">70 min</span></div>
-      <div class="strow"><span class="code">7b</span><span class="n">Assistanse turgåer</span><span class="dur own">100 min</span></div>
+      <div class="modeclosed"><svg class="ic g" viewBox="0 0 24 24"><use href="#i-split"/></svg><span class="t">Split</span><svg class="ic cv" viewBox="0 0 24 24"><use href="#i-chevron"/></svg></div>
+      <div class="sec">STATIONS</div>
+      <div class="strow"><span class="code">7a</span><span class="n">Roadside incident</span><span class="dur own">70 min</span></div>
+      <div class="strow"><span class="code">7b</span><span class="n">Hiker assistance</span><span class="dur own">100 min</span></div>
       <div class="grp">
-        <div class="grptag"><svg class="ic" style="font-size:14px" viewBox="0 0 24 24"><use href="#i-split"/></svg>GÅR SAMTIDIG</div>
-        <div class="strow"><span class="code">7c</span><span class="n">Savnet barn</span><span class="dur own">75 min</span></div>
-        <div class="strow"><span class="code">7d</span><span class="n">Forlatt kjøretøy</span><span class="dur own">75 min</span></div>
-        <div class="teams"><span class="tchip">Lag 1–2 → 7c</span><span class="tchip">Lag 3–4 → 7d</span></div>
+        <div class="grptag"><svg class="ic" viewBox="0 0 24 24" style="width:14px;height:14px"><use href="#i-split"/></svg>AT THE SAME TIME</div>
+        <div class="strow"><span class="code">7c</span><span class="n">Missing child</span><span class="dur own">75 min</span></div>
+        <div class="strow"><span class="code">7d</span><span class="n">Abandoned vehicle</span><span class="dur own">75 min</span></div>
+        <div class="teams"><span class="tchip">Teams 1–2 → 7c</span><span class="tchip">Teams 3–4 → 7d</span></div>
       </div>
-      <div class="addgrp"><svg class="ic" style="font-size:16px" viewBox="0 0 24 24"><use href="#i-plus"/></svg>Ny parallellgruppe</div>
+      <div class="addgrp"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New concurrent group</div>
       <div class="note">
-        Drag two posts together, or pick them and group. The team split is derived, not typed — the
-        chips say what the app worked out, and the codes <code>7c</code>/<code>7d</code> stay derived
-        from position (ADR-0059), which is the whole reason not to split the exercise.
+        Drag two stations together, or select them and group. The team split is derived, not typed —
+        the chips say what the app worked out, and the codes <code>7c</code>/<code>7d</code> stay
+        derived from position (ADR-0059), which is the whole reason not to split the exercise.
       </div>
     </div>
   </div>
 
   <!-- 8 -->
   <div class="wide">
-    <p class="cap">8 · Øvelse 7 end to end — the case that motivated the ADR. Sequential a, b, then c and d together.</p>
+    <p class="cap">8 · Exercise 7 end to end — the case that motivated the ADR. Stations a and b in sequence,
+      then c and d together. One round table, one Station column, three rows.</p>
     <div class="frame">
-      <div class="sec">BEREGNET TIDSLINJE</div>
-      <div class="tl">
-        <div class="tlrow"><span class="tlpost">7a</span><span class="bar">
-          <span class="seg ex" style="flex:70">øving 70</span><span class="seg ev" style="flex:10">eval</span><span class="seg ro" style="flex:10">flytt</span>
-        </span><span class="tlt">2015–2145</span></div>
-        <div class="tlrow"><span class="tlpost">7b</span><span class="bar">
-          <span class="seg ex" style="flex:100">øving 100</span><span class="seg ev" style="flex:10">eval</span><span class="seg ro" style="flex:10">flytt</span>
-        </span><span class="tlt">2145–2345</span></div>
-        <div class="tlrow"><span class="tlpost">7c<br>7d</span><span class="bar">
-          <span class="seg ex" style="flex:75">øving 75 · parallelt</span><span class="seg ev" style="flex:10">eval</span><span class="seg ro" style="flex:9">retur</span>
-        </span><span class="tlt">2345–0115</span></div>
+      <div class="sec">ROUND TABLE</div>
+      <div class="rtwrap">
+        <table class="rt">
+          <tr><th>Round</th><th>Stations</th><th>Execution</th><th>Evaluation</th><th>Rotation</th><th></th></tr>
+          <tr><td class="n">1</td><td class="post">7a</td><td class="t">2015</td><td class="t">2125</td><td class="t">2135</td><td class="suffix">next</td></tr>
+          <tr><td class="n">2</td><td class="post">7b</td><td class="t">2145</td><td class="t">2325</td><td class="t">2335</td><td class="suffix">next</td></tr>
+          <tr><td class="n">3</td><td class="post">7c 7d</td><td class="t">2345</td><td class="t">0100</td><td class="t">0110</td><td class="suffix">return</td></tr>
+        </table>
       </div>
       <div class="div"></div>
-      <div class="total">
-        <span>3 runder · 4 poster · 4 lag</span>
-        <span><b>20:15–01:15</b></span>
-      </div>
+      <div class="total"><span>3 rounds · 4 stations · 4 teams</span><span><b>20:15–01:15</b></span></div>
       <div class="note warn">
         Today the same plan derives <span class="bad">20:15–02:35</span> — 80 minutes that do not
         exist — and the conversion shipped it with a note in <code>execution_tips</code> telling the
@@ -366,17 +352,17 @@
 
   <!-- 9 -->
   <div class="phone">
-    <p class="cap">9 · Changing mode on an exercise that already has one. The mode decides team-to-post assignment, so it is a real change and it says so.</p>
+    <p class="cap">9 · Changing mode on an exercise that already has one. The mode decides team-to-station assignment, so it is a real change and it says so.</p>
     <div class="frame">
-      <div class="title"><span class="t">Bytt til Samlet?</span></div>
+      <div class="title"><span class="t">Switch to Together?</span></div>
       <div class="div"></div>
       <div class="note">
-        Alle lagene kommer til å arbeide på én post om gangen. Antall runder blir <b>2</b> (én per
-        post) i stedet for 4, og øvelsen slutter <b>15:20</b> i stedet for 16:00.
+        All teams will work one station at a time. The number of rounds becomes <b>2</b> (one per
+        station) instead of 4, and the exercise ends at <b>15:20</b> instead of 16:00.
       </div>
       <div class="div"></div>
       <div class="strow" style="justify-content:flex-end;gap:16px;color:var(--accent);font-size:13px;font-weight:500">
-        <span>AVBRYT</span><span>BYTT</span>
+        <span>CANCEL</span><span>SWITCH</span>
       </div>
       <p class="cap" style="padding:10px 16px 12px;margin:0">
         The consequence is stated as the two numbers the author cares about, computed before they commit.
@@ -390,17 +376,27 @@
   <h2>What the author types, in total</h2>
   <ul>
     <li>One <b>mode</b> per exercise — a choice from three, defaulting to today’s behaviour.</li>
-    <li>An <b>Øvingstid</b> on a station, only where it differs from the exercise’s.</li>
-    <li>A <b>parallel group</b>, only in Delt, only where posts genuinely run together.</li>
+    <li>An <b>execution time</b> on a station, only where it differs from the exercise’s.</li>
+    <li>A <b>concurrent group</b>, only in Split, only where stations genuinely run together.</li>
   </ul>
   <p>
-    No round list, no per-round entries, no clock faces. Every time in this mockup is derived, and
-    the uniform exercise — most of a course day — is untouched by all of it.
+    No round list, no per-round entries, no clock faces. Every time above is derived, and the
+    uniform exercise — most of a course day — is untouched by all of it.
+  </p>
+
+  <h2>One representation, not two</h2>
+  <p>
+    The schedule is shown as the round table the brief already renders
+    (<code>{{exercise.roundTable}}</code>, <code>rotationRoundTable</code>), not as a new chart. All
+    three modes are the same table; <code>Together</code> and <code>Split</code> add a Station
+    column, because in those modes a round <em>is</em> a station or a group of them. An author who
+    has read a brief has already read this table, and there is one implementation to keep true
+    rather than two.
   </p>
 
   <h2>Compared with ADR-0062’s <code>rounds:</code> list</h2>
   <p>
-    <code>rounds:</code> asks the author to translate what they know (“post b takes 100 minutes”)
+    <code>rounds:</code> asks the author to translate what they know (“station b takes 100 minutes”)
     into round-space (“round 2 is 100 minutes”) by hand, and to enumerate every round to say one
     thing about one of them. In the editor that is an unbounded list with inheritance rules to
     explain. Here the two facts are stated where they already live, and the round structure falls
@@ -415,7 +411,7 @@
     <li><b>Rotation math changes rather than accumulates.</b> Mode alters team-to-station
       assignment, which is the part ADR-0062 flagged as the half that grows.</li>
     <li><b>Waiting becomes visible.</b> Panel 5 is honest, not comfortable: an author who did not
-      realise their posts were unequal will see idle time they did not know they had.</li>
+      realise their stations were unequal will see idle time they did not know they had.</li>
   </ul>
 </div>
 

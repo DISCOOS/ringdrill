@@ -144,8 +144,16 @@ where the author already is when they know it.
 Everything else stays derived. A round's length is the execution time of the
 post(s) active in it, plus the exercise's evaluation and rotation. In `ring` with
 unequal posts that means the round is as long as its longest active post and the
-teams on shorter posts wait — which is what happens on the day, and is now drawn
-in the editor instead of discovered on the field.
+teams on shorter posts wait — which is what happens on the day, and is now shown in
+the editor instead of discovered on the field.
+
+**Shown as the round table, not as a new chart.** All three modes render the same
+table the brief already prints (`{{exercise.roundTable}}`,
+`rotationRoundTable`); `together` and `split` add a Station column, because in those
+modes a round *is* a station or a group of them. An author who has read a brief has
+already read this table, and there is one implementation to keep true rather than
+two — the same argument ADR-0067 made for building the token browser on the existing
+picker instead of a third bespoke layout.
 
 How the three failing exercises read:
 
@@ -172,9 +180,10 @@ tells the author before they commit.
 * Good: the editor stays a form. One more field with three options on the
   exercise, one optional override on the station, and a grouping affordance that
   appears only in `split`. No list surface, no inheritance rules to teach.
-* Good: the derived timeline becomes the thing the author *reads* instead of the
-  thing they reproduce. Idle time, which the model has always implied and never
-  shown, becomes visible.
+* Good: the derived schedule becomes the thing the author *reads* instead of the
+  thing they reproduce, in the representation they already know. Idle time, which
+  the model has always implied and never shown, becomes visible — as a second small
+  table rather than a new kind of graphic.
 * Good: a plan's derived schedule can match the clock the course actually runs on,
   so `execution_tips` stops being a place to warn readers off the computed grid.
 * Good: concurrent posts stay one exercise, keeping their derived `7a`…`7d` codes.
