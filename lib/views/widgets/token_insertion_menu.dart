@@ -168,6 +168,7 @@ int _replacementEnd(String text, int caret, _Trigger trigger) {
 _Trigger? _detectTrigger(String text, int caret) {
   if (caret < 0 || caret > text.length) return null;
   final before = text.substring(0, caret);
+  if (_insideQuotes(before)) return null;
 
   final brace = RegExp(r'\{\{([\w.]*)$').firstMatch(before);
   if (brace != null) {
@@ -186,6 +187,31 @@ _Trigger? _detectTrigger(String text, int caret) {
   }
 
   return null;
+}
+
+/// Whether the caret sits inside an open quotation.
+///
+/// Quoted text is being reported rather than written — a talegruppe, a phrase from
+/// the source booklet, "km/t" — so a `/` or a `{{` in there is content, and popping
+/// the menu open over it is noise the author has to dismiss every time.
+///
+/// Judged per line, not per field: prose closes its quotes on the same line it opens
+/// them, and one stray `"` earlier in a long markdown field would otherwise flip
+/// every trigger after it for good.
+///
+/// `"` is counted for parity, since the same character opens and closes. `«` and `“`
+/// are matched against their closers instead, which is what a Norwegian author
+/// actually types. `'` is left out on purpose: it is an apostrophe far more often
+/// than a quote, and counting it would break the trigger after every "don't".
+bool _insideQuotes(String before) {
+  final lineStart = before.lastIndexOf('\n') + 1;
+  final line = before.substring(lineStart);
+  if (line.split('"').length.isEven) return true;
+  for (final pair in const [('«', '»'), ('\u201C', '\u201D')]) {
+    final open = line.lastIndexOf(pair.$1);
+    if (open >= 0 && !line.substring(open).contains(pair.$2)) return true;
+  }
+  return false;
 }
 
 /// A `{{var.` prefix on the filter names the registry namespace explicitly
@@ -313,6 +339,19 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
   _Trigger? _trigger;
   Rect? _caretRect;
 
+  /// Where the trigger was when the author dismissed the menu on purpose.
+  ///
+  /// Dismissing has to *stay* dismissed. Without this, Escape closed the menu and
+  /// then any caret move back to the same spot reopened it — the controller notifies
+  /// on a selection change too, so simply clicking where you had just escaped from
+  /// put it straight back. The author had no way to say "not here".
+  ///
+  /// Held as an offset and checked against the character still sitting there, so the
+  /// suppression lasts exactly as long as that trigger does: keep typing after the
+  /// `/` and it stays shut, delete the `/` and retype it and it opens again. Which is
+  /// how a completion popup behaves everywhere else.
+  int? _dismissedAt;
+
   @visibleForTesting
   bool get isMenuOpen => _entry != null;
 
@@ -399,6 +438,7 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
   }
 
   void _onChanged() {
+    _expireDismissal();
     final selection = widget.controller.selection;
     if (!widget.focusNode.hasFocus ||
         !selection.isValid ||
@@ -414,6 +454,7 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
       _hideMenu();
       return;
     }
+    if (trigger.start == _dismissedAt) return;
     _trigger = trigger;
     // The controller notifies listeners synchronously as soon as its value
     // changes, before EditableText's own listener (registered later, since
@@ -466,6 +507,30 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
     final entry = OverlayEntry(builder: _buildOverlay);
     _entry = entry;
     Overlay.of(context, rootOverlay: true).insert(entry);
+  }
+
+  /// Drops the dismissal once the trigger it referred to is gone.
+  ///
+  /// Keyed on the *text*, never on where the caret is: moving away from a dismissed
+  /// trigger and back again must not revive the menu, which is the whole point, so
+  /// "no trigger detected right now" cannot be what expires it. Only the character
+  /// at the remembered offset can — deleted, or shifted out from under the offset by
+  /// an edit.
+  void _expireDismissal() {
+    final at = _dismissedAt;
+    if (at == null) return;
+    final text = widget.controller.text;
+    if (at >= text.length || (text[at] != '/' && text[at] != '{')) {
+      _dismissedAt = null;
+    }
+  }
+
+  /// Closes the menu *and* remembers it, for Escape and for a tap outside — the two
+  /// ways the author says "not this time". Distinct from [_hideMenu], which also runs
+  /// when the trigger simply stops existing and must not suppress anything.
+  void _dismiss() {
+    _dismissedAt = _trigger?.start;
+    _hideMenu();
   }
 
   void _hideMenu() {
@@ -831,7 +896,9 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: _hideMenu,
+            // Tapping in the text closes the menu and moves the caret: the barrier
+            // is translucent, so the tap reaches the field too.
+            onTap: _dismiss,
           ),
         ),
         Positioned(
@@ -861,7 +928,7 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
         if (_entry != null &&
             event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.escape) {
-          _hideMenu();
+          _dismiss();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;

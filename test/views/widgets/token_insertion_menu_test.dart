@@ -155,6 +155,11 @@ Future<TextEditingController> _pump(
   return controller;
 }
 
+/// Whether the caret menu's overlay is up.
+bool _isOpen(WidgetTester tester) => tester
+    .state<TokenInsertionMenuState>(find.byType(TokenInsertionMenu))
+    .isMenuOpen;
+
 void main() {
   group('TokenInsertionMenu', () {
     testWidgets(
@@ -965,6 +970,120 @@ void main() {
               .isMenuOpen,
           isFalse,
         );
+      });
+    });
+
+    group('quoted text never triggers', () {
+      // Quoted text is being reported rather than written, so a `/` in there is
+      // content — "km/t", a phrase lifted from the source booklet, a talegruppe.
+      testWidgets('inside a double-quoted span', (tester) async {
+        await _pump(tester);
+        await _typeAndOpen(tester, 'Meld "km/');
+
+        expect(_isOpen(tester), isFalse);
+      });
+
+      testWidgets('but again once the quote closes', (tester) async {
+        await _pump(tester);
+        await _typeAndOpen(tester, 'Meld "km/t" på /');
+
+        expect(_isOpen(tester), isTrue);
+      });
+
+      testWidgets('inside Norwegian «» quotes too', (tester) async {
+        await _pump(tester);
+        await _typeAndOpen(tester, 'Meld «km/');
+
+        expect(_isOpen(tester), isFalse);
+      });
+
+      testWidgets('a quote on an earlier line does not silence the next', (
+        tester,
+      ) async {
+        // Judged per line. One stray `"` in a long markdown field would otherwise
+        // flip every trigger after it for good.
+        // Set through the controller: a `TextField` is single-line here, so a
+        // newline typed through the input pipeline does not survive it.
+        final controller = await _pump(tester);
+        const text = 'Sitat: "noe\nRunder: /';
+        await _openAt(tester, controller, text, text.length);
+
+        expect(_isOpen(tester), isTrue);
+      });
+
+      testWidgets('an apostrophe is not a quote', (tester) async {
+        // Counting `'` would break the trigger after every "don't".
+        await _pump(tester);
+        await _typeAndOpen(tester, "don't /");
+
+        expect(_isOpen(tester), isTrue);
+      });
+    });
+
+    group('dismissing stays dismissed', () {
+      testWidgets('Escape, then a caret move back, does not reopen it', (
+        tester,
+      ) async {
+        // The controller notifies on a selection change too, so clicking back where
+        // you had just escaped from used to put the menu straight back — the author
+        // had no way to say "not here".
+        final controller = await _pump(tester);
+        await _typeAndOpen(tester, 'Kanal /frek');
+        expect(_isOpen(tester), isTrue);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pump();
+        expect(_isOpen(tester), isFalse);
+
+        // Away, and back to exactly the same offset.
+        controller.selection = const TextSelection.collapsed(offset: 0);
+        await tester.pump();
+        controller.selection = TextSelection.collapsed(
+          offset: controller.text.length,
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(_isOpen(tester), isFalse);
+      });
+
+      testWidgets('typing on after Escape keeps it shut', (tester) async {
+        await _pump(tester);
+        await _typeAndOpen(tester, 'Kanal /f');
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pump();
+
+        await _typeAndOpen(tester, 'Kanal /fre');
+
+        expect(_isOpen(tester), isFalse);
+      });
+
+      testWidgets('deleting the "/" and retyping it opens it again', (
+        tester,
+      ) async {
+        // The suppression lasts exactly as long as the trigger it referred to.
+        await _pump(tester);
+        await _typeAndOpen(tester, 'Kanal /');
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pump();
+        expect(_isOpen(tester), isFalse);
+
+        await _typeAndOpen(tester, 'Kanal ');
+        await _typeAndOpen(tester, 'Kanal /');
+
+        expect(_isOpen(tester), isTrue);
+      });
+
+      testWidgets('a different trigger elsewhere still opens', (tester) async {
+        // Dismissing one place is not dismissing everywhere.
+        await _pump(tester);
+        await _typeAndOpen(tester, 'Kanal /');
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pump();
+
+        await _typeAndOpen(tester, 'Kanal / og /');
+
+        expect(_isOpen(tester), isTrue);
       });
     });
 
