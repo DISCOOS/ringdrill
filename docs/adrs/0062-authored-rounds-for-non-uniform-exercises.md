@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-07-30
 deciders: ["kengu"]
 consulted: []
@@ -226,11 +226,24 @@ How the three failing exercises read:
   against today's 20:15–02:35.
 
 Drawn in
-[`docs/design/mockups/exercise-modes.html`](../design/mockups/exercise-modes.html),
-which is the artefact to review before any of this is built: nine states, including
-the ones that are easy to skip — an unequal ring with its idle time visible, the
-inherited-versus-overridden station field, and what changing an exercise's mode
-tells the author before they commit.
+[`docs/design/mockups/exercise-modes.html`](../design/mockups/exercise-modes.html):
+eleven states, including the ones easy to skip — the equal-but-longer rounds an
+unequal ring produces and the waiting that goes with them, the
+inherited-versus-overridden station field, an uneven three-way split, both ways of
+breaking the one-team-one-post rule, and both directions of a mode switch.
+
+The mockup was the review, and it did its job — four things changed on the drawing
+before anything was built:
+
+* The schedule is the **round table the brief already prints**, not a new chart. One
+  representation to keep true, and one the author has already read.
+* `split` is **any number of groups of any size**, not two halves, and its team
+  assignment is **authored**. The first draft claimed the app derived it; it cannot.
+* Two **validation rules** follow from that assignment, owed to `analyze` as much as
+  to the editor.
+* An unequal `ring` makes every round **equally longer**, not unequal — the first
+  draft's caption said the reverse of what the design does. That error was only
+  visible once the schedule was drawn as a table with real times in it.
 
 ### Consequences
 
