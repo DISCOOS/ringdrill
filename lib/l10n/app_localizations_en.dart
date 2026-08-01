@@ -1851,7 +1851,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get briefPerStation => 'per station';
 
   @override
-  String get briefRingRoute => 'Ring route';
+  String get briefRingRoute => 'Ring Route';
 
   @override
   String get briefCodeCopied => 'Copied';

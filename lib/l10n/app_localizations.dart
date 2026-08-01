@@ -3125,7 +3125,7 @@ abstract class AppLocalizations {
   /// Label for the ring-rotation configuration line in the brief Organisering section.
   ///
   /// In en, this message translates to:
-  /// **'Ring route'**
+  /// **'Ring Route'**
   String get briefRingRoute;
 
   /// Snackbar message shown after clicking an inline code chip in the brief copies its content to the clipboard.

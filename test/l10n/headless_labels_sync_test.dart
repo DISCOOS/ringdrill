@@ -123,7 +123,7 @@ void main() {
         labels.message('briefUnknownVariable', args: {'name': 'talegruppe'}),
         '‹missing variable: talegruppe›',
       );
-      expect(labels.message('briefRingRoute'), 'Ring route');
+      expect(labels.message('briefRingRoute'), 'Ring Route');
     });
 
     test(

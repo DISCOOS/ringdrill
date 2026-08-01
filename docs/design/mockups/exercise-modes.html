@@ -145,7 +145,7 @@
 
   <!-- 1 -->
   <div class="phone">
-    <p class="cap">1 · The common case is unchanged. “Conduct” is one more field with a default, and Ring Drill is it.</p>
+    <p class="cap">1 · The common case is unchanged. “Conduct” is one more field with a default, and Ring Route is it.</p>
     <div class="frame">
       <div class="title"><svg class="ic" viewBox="0 0 24 24"><use href="#i-x"/></svg><span class="t">Edit Exercise</span><svg class="ic" viewBox="0 0 24 24"><use href="#i-eye"/></svg><span class="save">SAVE</span></div>
       <div class="div"></div>
@@ -155,7 +155,7 @@
       </div>
       <div class="modeclosed">
         <svg class="ic g" viewBox="0 0 24 24"><use href="#i-ring"/></svg>
-        <span class="t">Ring Drill</span>
+        <span class="t">Ring Route</span>
         <svg class="ic cv" viewBox="0 0 24 24"><use href="#i-chevron"/></svg>
       </div>
       <div class="fields">
@@ -178,7 +178,7 @@
       <div class="opt on">
         <svg class="ic g" viewBox="0 0 24 24"><use href="#i-ring"/></svg>
         <div class="body">
-          <div class="t">Ring Drill</div>
+          <div class="t">Ring Route</div>
           <div class="d"><b>One team per station.</b> Teams rotate; the app works out who is where.</div>
         </div>
         <svg class="ic ck" viewBox="0 0 24 24"><use href="#i-check"/></svg>
@@ -255,7 +255,7 @@
 
   <!-- 5 -->
   <div class="wide">
-    <p class="cap">5 · Ring Drill with one long station. Rounds stop being equal — the same table, with rows of
+    <p class="cap">5 · Ring Route with one long station. Rounds stop being equal — the same table, with rows of
       different lengths and the waiting stated rather than hidden.</p>
     <div class="frame">
       <div class="sec">ROUND TABLE</div>
@@ -355,7 +355,7 @@
       <div class="note">
         A group holds any number of stations, and a station any number of teams. Two teams here, one
         there, one there. When every group holds exactly one team this <em>is</em> a ring drill round,
-        which is why Ring Drill is a preset rather than a different mechanism — see the note at the
+        which is why Ring Route is a preset rather than a different mechanism — see the note at the
         bottom. The codes <code>7c</code>–<code>7e</code> stay derived from position (ADR-0059),
         which is the whole reason not to split the exercise into several.
       </div>
@@ -424,7 +424,7 @@
 
   <!-- 9 -->
   <div class="phone">
-    <p class="cap">9 · Switching to a generated mode from Ring Drill. Nothing is lost; the numbers change, so it says which.</p>
+    <p class="cap">9 · Switching to a generated mode from Ring Route. Nothing is lost; the numbers change, so it says which.</p>
     <div class="frame">
       <div class="title"><span class="t">Switch to Together?</span></div>
       <div class="div"></div>
@@ -444,17 +444,17 @@
 
   <!-- 9b -->
   <div class="phone">
-    <p class="cap">9b · Switching <em>to</em> Ring Drill is trivial to compute — the app works out who is
+    <p class="cap">9b · Switching <em>to</em> Ring Route is trivial to compute — the app works out who is
       where — but not free if the author had assigned anything. That part is the confirmation.</p>
     <div class="frame">
-      <div class="title"><span class="t">Switch to Ring Drill?</span></div>
+      <div class="title"><span class="t">Switch to Ring Route?</span></div>
       <div class="div"></div>
       <div class="note">
         The app will work out which team is at which station in each round. The number of rounds
         becomes <b>4</b> (one per station) and the exercise ends at <b>16:00</b>.
       </div>
       <div class="note err">
-        <b>The 3 parallel stations and their team assignments are removed.</b> Ring Drill generates the
+        <b>The 3 parallel stations and their team assignments are removed.</b> Ring Route generates the
         assignment, so there is nowhere for hand-placed teams to go. This is the only mode switch
         that discards authored work, and it is the only one that says so in red.
       </div>
@@ -463,7 +463,7 @@
         <span>CANCEL</span><span>SWITCH</span>
       </div>
       <p class="cap" style="padding:10px 16px 12px;margin:0">
-        Switching away from Ring Drill or Together costs nothing, because neither stored anything the
+        Switching away from Ring Route or Together costs nothing, because neither stored anything the
         author typed. Switching away from Split does, and the difference is worth stating rather than
         having one generic “are you sure”.
       </p>
@@ -493,17 +493,17 @@
     with some teams on it. The three modes are group sizes.
   </p>
   <ul>
-    <li><b>Ring Drill</b> — every group holds one team, and there are as many groups as stations. The
+    <li><b>Ring Route</b> — every group holds one team, and there are as many groups as stations. The
       rotation is generated.</li>
     <li><b>Together</b> — one group holds every team. Generated too.</li>
     <li><b>Split</b> — any number of groups, of any size, and they need not match each other. Four
       teams across three stations is 2 + 1 + 1. Authored.</li>
   </ul>
   <p>
-    So Ring Drill is the case where every split is a single team, and Together is the case where
+    So Ring Route is the case where every split is a single team, and Together is the case where
     there is one split holding all of them — neither is a different mechanism. They stay separate
     modes because they are the two that can be <em>generated</em>, and generating them is what keeps
-    the common case free: an author who picks Ring Drill assigns nothing at all, which is the whole
+    the common case free: an author who picks Ring Route assigns nothing at all, which is the whole
     reason not to expose the group model directly and call it a day.
   </p>
   <p>

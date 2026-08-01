@@ -135,6 +135,10 @@ Two authored facts, both declarative, neither a time.
 **A mode on the exercise**, saying how teams relate to posts:
 
 * `ring` — today's behaviour, and the default. Teams rotate; one team per post.
+  Labelled **Ring Route** in the UI. "Ring Drill" is deliberately not the label: it
+  names the whole domain this app is about — the product, and the kind of
+  exercise-and-station plan it describes — and reusing it for one mode of one
+  exercise would make the general term mean a specific thing.
 * `together` — all teams work one post at a time and move on together.
 * `split` — any number of posts running at once, with the teams divided between
   them, in groups that need not be the same size.

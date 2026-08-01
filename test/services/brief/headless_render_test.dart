@@ -165,7 +165,7 @@ void main() {
       final nb = await _render(HeadlessBriefLabels(languageCode: 'nb'));
       final en = await _render(HeadlessBriefLabels(languageCode: 'en'));
       expect(nb, contains('Ringløype'));
-      expect(en, contains('Ring route'));
+      expect(en, contains('Ring Route'));
       expect(nb, isNot(en));
     });
 
@@ -173,7 +173,7 @@ void main() {
       // A plan may name a language the app has no ARB for; a brief should still
       // render, in the fallback, rather than throwing at the reader.
       final markdown = await _render(HeadlessBriefLabels(languageCode: 'de'));
-      expect(markdown, contains('Ring route'));
+      expect(markdown, contains('Ring Route'));
     });
 
     test('carries no Flutter in its own import closure', () {

@@ -13,6 +13,7 @@ class names, so a rename inside the app never changes this format.
 |---|---|
 | **Plan** | The whole document. Named, tagged, in one content language. Owns the variables. |
 | **Exercise** | One drill: a set of stations plus the rotation over them. Has a start time, a team count, a round count and three phase durations. |
+| **Ring route** | The rotation itself — teams moving between stations on a shared clock, one team per station. The default and only shape today. Not to be confused with **ring drill**, which names the whole domain: exercises, stations and the plans that hold them. |
 | **Station** | A rotation post. Teams move between stations one round at a time. Has an administrative `position` (where the post is) and, optionally, scenario data. |
 | **Location** | Station-owned scenario geography — a last known position, a command post. Addressed as `{{station.loc.<slug>}}`. Distinct from the station's own `position`. |
 | **Person** | A station-owned *fictional* subject — the missing person, a witness. No real-world identity. Addressed as `{{station.person.<slug>}}`. |

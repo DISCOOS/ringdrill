@@ -25717,7 +25717,7 @@ B.en=new A.a_(B.K,["Station","Station","Stations"],t.w)
 B.em=new A.a_(B.K,["Exercise","Exercise","Exercises"],t.w)
 B.eo=new A.a_(B.K,["Round","Round","Rounds"],t.w)
 B.eq=new A.a_(B.K,["now","1 hour","{count} hours"],t.w)
-B.ex=new A.a_(B.c9,[B.ek,B.en,B.em,B.eo,"Ring route","no position","\u2039missing reference: {name}\u203a","\u2039missing variable: {name}\u203a","drill | eval | roll / inbound","Execution","Evaluation","Rotation","Rotation (time of day)","h",B.eq,"per station","Note: {rounds} rounds across {stations} stations means each team will revisit some stations.","Note: {rounds} rounds across {stations} stations means each team will only visit some stations.","Each round","return","next"],t.hG)
+B.ex=new A.a_(B.c9,[B.ek,B.en,B.em,B.eo,"Ring Route","no position","\u2039missing reference: {name}\u203a","\u2039missing variable: {name}\u203a","drill | eval | roll / inbound","Execution","Evaluation","Rotation","Rotation (time of day)","h",B.eq,"per station","Note: {rounds} rounds across {stations} stations means each team will revisit some stations.","Note: {rounds} rounds across {stations} stations means each team will only visit some stations.","Each round","return","next"],t.hG)
 B.eN={"=0":0,other:1}
 B.eC=new A.a_(B.eN,["Lag","Lag"],t.w)
 B.el=new A.a_(B.K,["Post","Post","Poster"],t.w)

@@ -27,7 +27,7 @@ const headlessLabelMessages = <String, Map<String, Object>>{
       'other': 'Exercises',
     },
     'round': <String, String>{'=0': 'Round', '=1': 'Round', 'other': 'Rounds'},
-    'briefRingRoute': 'Ring route',
+    'briefRingRoute': 'Ring Route',
     'briefStationNoPosition': 'no position',
     'briefUnknownReference': '‹missing reference: {name}›',
     'briefUnknownVariable': '‹missing variable: {name}›',
