@@ -108,9 +108,15 @@ String rotationRoundTable(Exercise exercise, BriefLabels l10n) {
 /// brief and the app's own field preview both need it, and a second copy in the
 /// preview resolver is exactly the drift that made `{{exercise.roundTable}}`
 /// resolve in the brief and not in the editor.
-String stationDurationLabel(Exercise exercise) =>
-    '${rotationRoundMinutes(exercise)} min '
-    '(${rotationPhaseBreakdown(exercise)})';
+String stationDurationLabel(Exercise exercise, {int? executionTime}) {
+  // A station may run longer than its exercise (ADR-0062), and this label is about
+  // *this* station — so its own execution time wins, in the total and in the
+  // breakdown. Reading the exercise's here reported 35 min for a 100-minute post.
+  final execution = executionTime ?? exercise.executionTime;
+  final total = execution + exercise.evaluationTime + exercise.rotationTime;
+  return '$total min '
+      '($execution | ${exercise.evaluationTime} | ${exercise.rotationTime})';
+}
 
 /// Returns the phase pipe-join string for [exercise]:
 /// `"executionTime | evaluationTime | rotationTime"` (all in minutes).
@@ -133,12 +139,21 @@ String exerciseTimeLabel(Exercise exercise) =>
 /// just the total without the per-round suffix. Shared by `BriefRenderer`
 /// (`{{exercise.durationLabel}}`) and DESIGN-010's view-layer resolution.
 String exerciseDurationLabel(Exercise exercise, BriefLabels l10n) {
-  final round = rotationRoundMinutes(exercise);
-  final total = exercise.numberOfRounds * round;
+  // Total from the *derived* schedule, not from numberOfRounds × cycle. With
+  // rounds of differing length (ADR-0062) the multiplication is simply wrong: it
+  // reported 70 min for an exercise whose own endTime said 210. startTime and
+  // endTime already carry the answer, and they wrap at midnight, so a negative
+  // difference means the exercise crossed 00:00.
+  final span = exercise.endTime.inMinutes - exercise.startTime.inMinutes;
+  final total = span >= 0 ? span : span + 24 * 60;
   final totalStr = (total >= 60 && total % 60 == 0)
       ? l10n.hour(total ~/ 60)
       : '$total min';
   if (exercise.numberOfRounds <= 1) return totalStr;
+  // The per-round suffix only means anything when the rounds are the same length.
+  // Where they are not, the total is the honest whole story.
+  final round = rotationRoundMinutes(exercise);
+  if (total != exercise.numberOfRounds * round) return totalStr;
   return '$totalStr ($round min ${l10n.briefPerStation})';
 }
 

@@ -73,8 +73,10 @@ String? resolveScopedField(
         position: stationScope.position,
         // Per-round length, which is an exercise property read at station
         // scope — absent, like any other facet whose scope is missing, when
-        // the field is previewed outside an ExerciseScope.
+        // the field is previewed outside an ExerciseScope. The station's own
+        // execution time overrides the exercise's where it has one (ADR-0062).
         exercise: exerciseScope?.exercise,
+        executionTime: stationScope.executionTime,
       ),
     if (roleplayScope != null)
       'roleplay': _roleplayFacets(
@@ -154,6 +156,7 @@ String? resolveModelField(
         variantSuffix: station.variantSuffix,
         position: station.position,
         exercise: exercise,
+        executionTime: station.executionTime,
       ),
     if (roleplay != null)
       'roleplay': _roleplayFacets(
@@ -222,6 +225,7 @@ Map<String, dynamic> _stationFacets({
   String? variantSuffix,
   LatLng? position,
   Exercise? exercise,
+  int? executionTime,
 }) => {
   'name': name ?? '',
   'stationCode': stationCode ?? '',
@@ -231,7 +235,9 @@ Map<String, dynamic> _stationFacets({
     resolver.formatUtm(position),
     position,
   ),
-  'duration': exercise == null ? null : stationDurationLabel(exercise),
+  'duration': exercise == null
+      ? null
+      : stationDurationLabel(exercise, executionTime: executionTime),
 };
 
 Map<String, dynamic> _roleplayFacets({

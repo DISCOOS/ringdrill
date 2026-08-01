@@ -951,12 +951,17 @@ void main() {
     });
 
     test('exerciseDurationLabel — multi-round, non-hour total', () {
-      // 3 × 30 min = "90 min (30 min pr oppdrag)"
+      // 3 × 30 min = "90 min (30 min pr oppdrag)". endTime is 10:00 rather than the
+      // shared _end, because it has to *agree* with those scalars: the label now
+      // reads the total off startTime/endTime, which is the only field that can
+      // express an exercise whose rounds differ in length (ADR-0062). This fixture
+      // said 3 × 30 and also said two hours, and the old implementation ignored the
+      // contradiction because it never looked at endTime at all.
       final ex = Exercise(
         uuid: 'e',
         name: 'E',
         startTime: _start,
-        endTime: _end,
+        endTime: const SimpleTimeOfDay(hour: 10, minute: 0),
         numberOfTeams: 3,
         numberOfRounds: 3,
         executionTime: 15,

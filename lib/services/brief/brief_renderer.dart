@@ -310,10 +310,14 @@ class BriefRenderer {
         'description': station.description,
         'variantSuffix': station.variantSuffix,
         'position': resolver.briefCopyChip(utmStr),
-        // How long a team gets here — derived from the exercise's round, and
-        // printed under every post in a course booklet, so an author converting
-        // one will otherwise type it.
-        'duration': stationDurationLabel(exercise),
+        // How long a team gets here — derived from the round, and printed under
+        // every post in a course booklet, so an author converting one will
+        // otherwise type it. The station's own execution time wins where it has
+        // one (ADR-0062).
+        'duration': stationDurationLabel(
+          exercise,
+          executionTime: station.executionTime,
+        ),
       },
     };
 
@@ -403,7 +407,10 @@ class BriefRenderer {
       'stationAnchor': stationAnchor,
       'position': resolver.briefCopyChip(utmStr),
       'positionValue': positionValue,
-      'stationDurationLabel': stationDurationLabel(exercise),
+      'stationDurationLabel': stationDurationLabel(
+        exercise,
+        executionTime: station.executionTime,
+      ),
       'descriptionMd': resolveField(station.description),
       'equipmentMd': resolveField(station.equipmentMd),
       'situationMd': resolveField(station.situationMd),
@@ -480,8 +487,11 @@ class BriefRenderer {
 
   /// Per-round duration with phase breakdown for a station: "30 min (15 | 10 | 5)".
   @visibleForTesting
-  static String stationDurationLabel(Exercise exercise) =>
-      exercise_format.stationDurationLabel(exercise);
+  static String stationDurationLabel(Exercise exercise, {int? executionTime}) =>
+      exercise_format.stationDurationLabel(
+        exercise,
+        executionTime: executionTime,
+      );
 
   /// Full Organisering markdown block.
   @visibleForTesting

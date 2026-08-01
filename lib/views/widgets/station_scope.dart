@@ -32,6 +32,7 @@ class StationScope extends InheritedWidget {
     this.portrayerOf,
     this.name,
     this.stationCode,
+    this.executionTime,
     this.description,
     this.variantSuffix,
     this.position,
@@ -69,6 +70,7 @@ class StationScope extends InheritedWidget {
             description: station.description,
             variantSuffix: station.variantSuffix,
             position: station.position,
+            executionTime: station.executionTime,
             child: child,
           );
     return ExerciseScope(
@@ -104,6 +106,11 @@ class StationScope extends InheritedWidget {
   /// once the brief itself is generated.
   final String? name;
   final String? stationCode;
+
+  /// The station's own execution time, where it overrides the exercise's
+  /// (ADR-0062). Null inherits, which is what almost every station does — and what
+  /// `{{station.duration}}` reports when it is.
+  final int? executionTime;
   final String? description;
   final String? variantSuffix;
 
@@ -183,6 +190,7 @@ class StationScope extends InheritedWidget {
       !listEquals(persons, oldWidget.persons) ||
       name != oldWidget.name ||
       stationCode != oldWidget.stationCode ||
+      executionTime != oldWidget.executionTime ||
       description != oldWidget.description ||
       variantSuffix != oldWidget.variantSuffix ||
       position != oldWidget.position;

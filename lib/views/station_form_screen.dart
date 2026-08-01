@@ -800,6 +800,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
         description: _descriptionController.text,
         variantSuffix: widget.station.variantSuffix,
         position: _position,
+        executionTime: widget.station.executionTime,
         child: Form(
           key: _formKey,
           child: SectionNavigatedForm(
