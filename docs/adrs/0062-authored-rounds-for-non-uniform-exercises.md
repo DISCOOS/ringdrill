@@ -171,6 +171,27 @@ editor, so a document written by hand is not told less than the app tells:
   team back is legitimate; with groups of unequal size it is also easy to do by
   accident.
 
+**Unequal round lengths are already a consequence, not a fourth mode.** A round's
+length is the execution time of the posts live in it, so rounds differ wherever the
+posts do: `together` gives one round per post — Øvelse 7's 70/100/75 — and `split`
+one round per group. `ring` alone keeps its rounds equal, and must: every post is
+live in every round, so the longest sets all of them, and what varies is which teams
+wait.
+
+Two things still cannot be expressed, and neither belongs in the mode enum: the same
+post taking different times on different visits, and phase durations varying by
+round. The mode axis is *which teams are on which posts*; duration is an orthogonal
+axis, wanted independently in all three modes. A fourth member mixing them would also
+be the only mode that cannot be **generated**, which is the property the other three
+depend on for costing nothing.
+
+If a real plan needs either, the shape is a **per-round override composing with the
+mode** — the mode decides who is where, the override adjusts that round's phases.
+That is Option C, argued against above on ergonomic grounds and deliberately left
+unbuilt: the booklet that produced three failing exercises did not need it, and "real
+plans are the specification" is one of this ADR's own drivers. Recorded here so a
+later reader finds the extension point rather than reopening the mode enum.
+
 **Switching mode is not symmetric.** Leaving `ring` or `together` costs nothing,
 since neither stored anything the author typed. Leaving `split` discards the groups
 and their assignments, because a generated mode has nowhere to put hand-placed teams.

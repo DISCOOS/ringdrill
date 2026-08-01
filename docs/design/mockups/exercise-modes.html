@@ -255,8 +255,8 @@
 
   <!-- 5 -->
   <div class="wide">
-    <p class="cap">5 · Ring Route with one long station. Rounds stop being equal — the same table, with rows of
-      different lengths and the waiting stated rather than hidden.</p>
+    <p class="cap">5 · Ring Route with one long station. Every station is live every round, so the rounds stay
+      <em>equal</em> — and all of them get longer. What differs is the waiting, per station.</p>
     <div class="frame">
       <div class="sec">ROUND TABLE</div>
       <div class="rtwrap">
@@ -270,8 +270,9 @@
       </div>
       <div class="note warn">
         <b>A round is as long as its longest station.</b> Station 2c takes 25 min, the others 15, so
-        the round is 25 — and the teams on the short stations wait. That is how it runs on the day;
-        it is now in the plan instead of being a surprise on the field.
+        every round is 25 — the exercise runs 40 minutes longer than the 15-minute stations suggest,
+        and the teams on those stations wait. That is how it runs on the day; it is now in the plan
+        instead of being a surprise on the field.
       </div>
       <div class="sec">WAITING, PER STATION</div>
       <div class="rtwrap">
@@ -521,6 +522,39 @@
     column, because in those modes a round <em>is</em> a station or a group of them. An author who
     has read a brief has already read this table, and there is one implementation to keep true
     rather than two.
+  </p>
+
+  <h2>Is “rounds of different lengths” a fourth mode?</h2>
+  <p>
+    No — and mostly because it is already here. A round’s length is the execution time of the
+    stations live in it, so unequal rounds fall out wherever the stations differ:
+    <b>Together</b> gives one round per station, which is exactly Exercise 7’s 70 / 100 / 75
+    (panel 8), and <b>Split</b> gives one round per group. Only <b>Ring Route</b> keeps its rounds
+    equal, and necessarily so: every station is live in every round, so the longest one sets all of
+    them (panel 5).
+  </p>
+  <p>
+    Two things still cannot be said, and neither is a mode:
+  </p>
+  <ul>
+    <li>The same station taking <b>different times on different visits</b> — 30 minutes the first
+      time through, 15 on the repeat.</li>
+    <li><b>Phase times varying by round</b> — a longer evaluation on the last round than on the
+      first.</li>
+  </ul>
+  <p>
+    The mode axis is <em>which teams are on which stations</em>. Duration is a different axis, and an
+    orthogonal one: you could want either of those in Ring Route, in Together or in Split. Putting a
+    duration concept in the mode enum would mix the two, and it would be the only mode that cannot be
+    <em>generated</em> — which is the property that makes the other three cost the author nothing.
+  </p>
+  <p>
+    If a real plan needs them, the shape is a <b>per-round override</b> that composes with the mode:
+    the mode still decides who is where, and the override adjusts that round’s phases. Which is
+    ADR-0062’s Option C, argued against on ergonomic grounds and deliberately left unbuilt — the
+    booklet that produced three failing exercises did not need it, and “real plans are the
+    specification” is one of this ADR’s own drivers. The door is here, and this paragraph is the
+    handle.
   </p>
 
   <h2>Compared with ADR-0062’s <code>rounds:</code> list</h2>
