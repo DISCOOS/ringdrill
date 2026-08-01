@@ -15,6 +15,9 @@ _Exercise _$ExerciseFromJson(Map<String, dynamic> json) => _Exercise(
   ),
   numberOfTeams: (json['numberOfTeams'] as num).toInt(),
   numberOfRounds: (json['numberOfRounds'] as num).toInt(),
+  mode:
+      $enumDecodeNullable(_$ExerciseModeEnumMap, json['mode']) ??
+      ExerciseMode.ring,
   executionTime: (json['executionTime'] as num).toInt(),
   evaluationTime: (json['evaluationTime'] as num).toInt(),
   rotationTime: (json['rotationTime'] as num).toInt(),
@@ -47,6 +50,7 @@ Map<String, dynamic> _$ExerciseToJson(_Exercise instance) => <String, dynamic>{
   'startTime': instance.startTime,
   'numberOfTeams': instance.numberOfTeams,
   'numberOfRounds': instance.numberOfRounds,
+  'mode': _$ExerciseModeEnumMap[instance.mode]!,
   'executionTime': instance.executionTime,
   'evaluationTime': instance.evaluationTime,
   'rotationTime': instance.rotationTime,
@@ -56,6 +60,12 @@ Map<String, dynamic> _$ExerciseToJson(_Exercise instance) => <String, dynamic>{
   'metadata': instance.metadata,
   'templateId': instance.templateId,
   'variableOverrides': instance.variableOverrides,
+};
+
+const _$ExerciseModeEnumMap = {
+  ExerciseMode.ring: 'ring',
+  ExerciseMode.together: 'together',
+  ExerciseMode.split: 'split',
 };
 
 _ExerciseMetadata _$ExerciseMetadataFromJson(Map<String, dynamic> json) =>

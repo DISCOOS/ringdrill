@@ -270,28 +270,45 @@ class PlanBuilder {
         minute: startTime['minute'] as int,
       );
 
+      final mode = _mode(raw['mode'], '$path.mode', diagnostics);
+      // How many rounds the mode implies. In `ring` the author says; in the others it
+      // follows from the stations, and an authored count is then a derived value the
+      // document should not be restating (ADR-0062).
+      final effectiveRounds = ExerciseSchedule.roundsForMode(
+        mode: mode,
+        numberOfRounds: rounds,
+        numberOfStations: stations.length,
+      );
+      final executionMinutes = ExerciseSchedule.executionMinutesFor(
+        mode: mode,
+        numberOfRounds: effectiveRounds,
+        executionTime: execution,
+        stationMinutes: [
+          for (final station in stations) station.executionTime ?? execution,
+        ],
+      );
+
       final wire = <String, dynamic>{
         'uuid': (raw['uuid'] as String?) ?? _mintUuid(),
         'index': i,
         'name': raw['name'] ?? '',
         'startTime': startTime,
         'numberOfTeams': teamsWanted,
-        'numberOfRounds': rounds,
+        'numberOfRounds': effectiveRounds,
+        'mode': mode.name,
         'executionTime': execution,
         'evaluationTime': evaluation,
         'rotationTime': rotation,
         'stations': const <Map<String, dynamic>>[],
-        'schedule': ExerciseSchedule.rounds(
+        'schedule': ExerciseSchedule.roundsFrom(
           startTime: start,
-          numberOfRounds: rounds,
-          executionTime: execution,
+          executionMinutes: executionMinutes,
           evaluationTime: evaluation,
           rotationTime: rotation,
         ).map((round) => round.map((t) => t.toJson()).toList()).toList(),
-        'endTime': ExerciseSchedule.endTime(
+        'endTime': ExerciseSchedule.endTimeFrom(
           startTime: start,
-          numberOfRounds: rounds,
-          executionTime: execution,
+          executionMinutes: executionMinutes,
           evaluationTime: evaluation,
           rotationTime: rotation,
         ).toJson(),
@@ -320,6 +337,25 @@ class PlanBuilder {
     return out;
   }
 
+  /// Reads an authored `mode`, defaulting to `ring` and reporting anything else.
+  ///
+  /// An unknown mode is an error rather than a silent fallback: a document that says
+  /// `mode: paralell` means something by it, and quietly deriving a ring route would
+  /// produce a schedule the author never asked for and cannot see is wrong.
+  ExerciseMode _mode(Object? raw, String path, DiagnosticSink diagnostics) {
+    if (raw == null) return ExerciseMode.ring;
+    final name = raw.toString().trim().toLowerCase();
+    for (final mode in ExerciseMode.values) {
+      if (mode.name == name) return mode;
+    }
+    diagnostics.error(
+      path,
+      'unknown mode "$raw"',
+      hint: 'one of: ${ExerciseMode.values.map((m) => m.name).join(', ')}',
+    );
+    return ExerciseMode.ring;
+  }
+
   List<Station> _stations(
     Map<String, dynamic> exercise,
     String exercisePath,
@@ -338,6 +374,15 @@ class PlanBuilder {
         // ensureStations does exactly this, which is why the label subset
         // includes `station`.
         'name': source['name'] ?? '${labels.plural('station', 1)} ${i + 1}',
+        // Absent inherits the exercise's, which is what almost every station does
+        // (ADR-0062). Present and non-positive is meaningless, so it is reported
+        // rather than silently making a zero-length round.
+        if (source['executionTime'] != null)
+          'executionTime': _positiveInt(
+            source['executionTime'],
+            '$path.executionTime',
+            1,
+          ),
         if (source['variantSuffix'] != null)
           'variantSuffix': source['variantSuffix'],
         if (source['position'] != null) 'position': source['position'],

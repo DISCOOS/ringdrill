@@ -13,6 +13,33 @@ part 'exercise.g.dart';
 /// `MapConfig.labelDetailZoomFor`, `LatlngListX.toMarkerSpecs`).
 typedef StationLocation = ((String, int), String, LatLng, String?);
 
+/// How an exercise's teams relate to its stations (ADR-0062).
+///
+/// One structure underneath: a round is a set of *groups*, and a group is one station
+/// with some teams on it. These are group sizes, and two of the three are generated —
+/// which is why picking one costs the author nothing.
+enum ExerciseMode {
+  /// One team per station, rotating. The default, and every plan written before
+  /// ADR-0062 — an archive with no mode reads as this.
+  @JsonValue('ring')
+  ring,
+
+  /// One group holding every team: all teams work one station at a time and move on
+  /// together. A round *is* a station, so `numberOfRounds` is derived, and the
+  /// `numberOfTeams: 1` workaround this replaces stops misreporting the team.
+  @JsonValue('together')
+  together,
+
+  /// Any number of groups of any size, running at once, with the teams divided
+  /// between them. The one mode whose assignment is authored rather than generated,
+  /// because which teams take which station is a decision the app cannot infer.
+  @JsonValue('split')
+  split;
+
+  /// Whether a round is one station (or a group of them) rather than all of them.
+  bool get roundsAreStations => this != ExerciseMode.ring;
+}
+
 /// Represents an immutable exercise with a start and end time
 @freezed
 sealed class Exercise with _$Exercise {
@@ -23,6 +50,11 @@ sealed class Exercise with _$Exercise {
     required SimpleTimeOfDay startTime,
     required int numberOfTeams,
     required int numberOfRounds,
+
+    /// How teams relate to stations (ADR-0062). Absent in every archive written
+    /// before it, which is why the default is [ExerciseMode.ring] rather than a
+    /// migration rung: an old plan *is* a ring route, and says so by omission.
+    @Default(ExerciseMode.ring) ExerciseMode mode,
     required int executionTime,
     required int evaluationTime,
     required int rotationTime,

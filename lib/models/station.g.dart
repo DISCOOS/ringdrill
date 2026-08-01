@@ -9,6 +9,7 @@ part of 'station.dart';
 _Station _$StationFromJson(Map<String, dynamic> json) => _Station(
   index: (json['index'] as num).toInt(),
   name: json['name'] as String,
+  executionTime: (json['executionTime'] as num?)?.toInt(),
   variantSuffix: json['variantSuffix'] as String?,
   position: const NullableLatLngJsonConverter().fromJson(
     json['position'] as Map<String, dynamic>?,
@@ -34,6 +35,7 @@ _Station _$StationFromJson(Map<String, dynamic> json) => _Station(
 Map<String, dynamic> _$StationToJson(_Station instance) => <String, dynamic>{
   'index': instance.index,
   'name': instance.name,
+  'executionTime': instance.executionTime,
   'variantSuffix': instance.variantSuffix,
   'position': const NullableLatLngJsonConverter().toJson(instance.position),
   'description': instance.description,

@@ -13,6 +13,14 @@ sealed class Station with _$Station {
   const factory Station({
     required int index,
     required String name,
+
+    /// Minutes a team spends drilling here, overriding the exercise's
+    /// `executionTime` (ADR-0062). Null inherits, which is what every station did
+    /// before and what almost all of them still do.
+    ///
+    /// Authored on the station because that is where a source document states it —
+    /// "post b takes 100 minutes" — and where the author is when they know it.
+    int? executionTime,
     String? variantSuffix,
     @NullableLatLngJsonConverter() LatLng? position,
     String? description,

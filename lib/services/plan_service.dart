@@ -1176,6 +1176,7 @@ class PlanService {
     required int evaluationTime,
     required int rotationTime,
     required AppLocalizations localizations,
+    ExerciseMode mode = ExerciseMode.ring,
     List<Station> stations = const [],
     Map<String, String> variableOverrides = const {},
   }) {
@@ -1190,6 +1191,25 @@ class PlanService {
     // different phase model; nothing ever passed false, so it went with the
     // move rather than being ported.
     final start = startTime.toSimple();
+    // The mode and the stations' own execution times both feed the derivation
+    // (ADR-0062). This method rebuilds an exercise from its inputs on every save, so
+    // anything the derivation does not see is lost — which is why they arrive here
+    // rather than being applied somewhere downstream.
+    final effective = ensureStations(localizations, numberOfStations, stations);
+    final rounds = ExerciseSchedule.roundsForMode(
+      mode: mode,
+      numberOfRounds: numberOfRounds,
+      numberOfStations: effective.length,
+    );
+    final executionMinutes = ExerciseSchedule.executionMinutesFor(
+      mode: mode,
+      numberOfRounds: rounds,
+      executionTime: executionTime,
+      stationMinutes: [
+        for (final station in effective) station.executionTime ?? executionTime,
+      ],
+    );
+
     return Exercise(
       name: name,
       uuid: uuid ?? nanoid(8),
@@ -1198,21 +1218,20 @@ class PlanService {
       evaluationTime: evaluationTime,
       rotationTime: rotationTime,
       numberOfTeams: numberOfTeams,
-      numberOfRounds: numberOfRounds,
-      stations: ensureStations(localizations, numberOfStations, stations),
+      numberOfRounds: rounds,
+      mode: mode,
+      stations: effective,
       schedule: List.unmodifiable(
-        ExerciseSchedule.rounds(
+        ExerciseSchedule.roundsFrom(
           startTime: start,
-          numberOfRounds: numberOfRounds,
-          executionTime: executionTime,
+          executionMinutes: executionMinutes,
           evaluationTime: evaluationTime,
           rotationTime: rotationTime,
         ),
       ),
-      endTime: ExerciseSchedule.endTime(
+      endTime: ExerciseSchedule.endTimeFrom(
         startTime: start,
-        numberOfRounds: numberOfRounds,
-        executionTime: executionTime,
+        executionMinutes: executionMinutes,
         evaluationTime: evaluationTime,
         rotationTime: rotationTime,
       ),
