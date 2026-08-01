@@ -340,7 +340,10 @@ Rules the schema cannot express, and that are easy to get wrong:
 - Never put a real person in any field. \`persons\` are fictional scenario subjects,
   and \`director_notes\` is NOT stripped at publish — a marker roster or a duty
   phone number there ships to the public catalog.
-- numberOfTeams must be less than or equal to the number of stations.
+- numberOfTeams must be less than or equal to the number of stations — in a ring
+  route. With \`mode: together\` every team works the same station at once, and with
+  \`mode: split\` the teams divide between stations that run in parallel, so neither
+  is bound by that rule.
 - A markdown field is visible only to the audiences it declares, so a spoiler is
   withheld only if it sits in the field that owns it: the marker's script in
   \`behavior\`, intel to withhold in \`leader_answers\`.

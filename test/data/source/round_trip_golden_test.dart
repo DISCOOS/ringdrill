@@ -19,6 +19,7 @@ import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/drill_migrations.dart';
 import 'package:ringdrill/data/source/plan_decompiler.dart';
 import 'package:ringdrill/data/source/source_compiler.dart';
+import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/plan.dart';
 
 /// Decompiles then rebuilds [drillPath], returning both plans.
@@ -153,6 +154,94 @@ void main() {
       // is comparing something that varies run to run.
       final again = PlanDecompiler.decompile(result.before);
       expect(again.yaml, PlanDecompiler.decompile(result.before).yaml);
+    });
+  });
+
+  group('ADR-0062: mode and station duration survive the round trip', () {
+    // Neither is recoverable from the derived schedule — it holds times, not which
+    // stations were live or how long each was — so both have to be carried
+    // explicitly. A round trip that dropped them would come back as a ring route
+    // with a silently different clock, which is the failure mode the contentHash
+    // invariant exists to catch.
+    ({Plan before, Plan after, String yaml}) tripWith(
+      Plan Function(Plan) edit,
+    ) {
+      final original = edit(
+        DrillFile.fromFile(File('test/fixtures/test-7x.drill')).plan(),
+      );
+      final document = PlanDecompiler.decompile(original);
+      final rebuilt = SourceCompiler.toPlan(
+        document.yaml,
+        now: DateTime.utc(2026, 1, 1),
+      );
+      return (before: original, after: rebuilt.plan, yaml: document.yaml);
+    }
+
+    test(
+      'a together exercise stays together, with its derived round count',
+      () {
+        final result = tripWith(
+          (plan) => plan.copyWith(
+            exercises: [
+              plan.exercises.first.copyWith(mode: ExerciseMode.together),
+              ...plan.exercises.skip(1),
+            ],
+          ),
+        );
+
+        expect(result.yaml, contains('mode: together'));
+        expect(result.after.exercises.first.mode, ExerciseMode.together);
+        // A round is a station in this mode, so the count follows the stations
+        // rather than whatever the archive happened to say.
+        expect(
+          result.after.exercises.first.numberOfRounds,
+          result.after.exercises.first.stations.length,
+        );
+      },
+    );
+
+    test('a station keeps its own execution time, and only it emits one', () {
+      final result = tripWith((plan) {
+        final exercise = plan.exercises.first;
+        return plan.copyWith(
+          exercises: [
+            exercise.copyWith(
+              stations: [
+                exercise.stations.first.copyWith(executionTime: 100),
+                ...exercise.stations.skip(1),
+              ],
+            ),
+            ...plan.exercises.skip(1),
+          ],
+        );
+      });
+
+      expect(result.after.exercises.first.stations.first.executionTime, 100);
+      expect(
+        result.after.exercises.first.stations
+            .skip(1)
+            .every((s) => s.executionTime == null),
+        isTrue,
+        reason: 'an inheriting station must emit nothing, as before ADR-0062',
+      );
+      // One override, one emitted key: the decompiler must not start writing the
+      // inherited value out for every station.
+      expect(
+        'executionTime'.allMatches(result.yaml).length,
+        result.before.exercises.length + 1,
+        reason: 'one per exercise, plus the single station override',
+      );
+    });
+
+    test('a ring route decompiles to the document it always did', () {
+      // The default is absent, not written. This is what keeps every published
+      // plan round-tripping byte-identically rather than gaining a `mode:` line.
+      final result = _roundTrip('test/fixtures/test-7x.drill');
+      expect(result.yaml, isNot(contains('mode:')));
+      expect(
+        result.after.exercises.every((e) => e.mode == ExerciseMode.ring),
+        isTrue,
+      );
     });
   });
 

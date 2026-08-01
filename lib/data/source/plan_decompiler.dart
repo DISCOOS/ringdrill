@@ -146,6 +146,10 @@ class PlanDecompiler {
       'startTime': _time(exercise.startTime),
       'numberOfTeams': exercise.numberOfTeams,
       'numberOfRounds': exercise.numberOfRounds,
+      // Emitted only when it is not the default, so a ring route decompiles to
+      // exactly the document it did before ADR-0062 and every plan in the catalog
+      // round-trips unchanged.
+      if (exercise.mode != ExerciseMode.ring) 'mode': exercise.mode.name,
       'executionTime': exercise.executionTime,
       'evaluationTime': exercise.evaluationTime,
       'rotationTime': exercise.rotationTime,
@@ -189,6 +193,9 @@ class PlanDecompiler {
 
     return <String, dynamic>{
       'name': station.name,
+      // Only when the station has its own; an inheriting station emits nothing, as
+      // it did before ADR-0062.
+      if (station.executionTime != null) 'executionTime': station.executionTime,
       if (station.variantSuffix != null) 'variantSuffix': station.variantSuffix,
       if (station.position != null) 'position': _position(station.position!),
       if (station.description != null) 'description': station.description,

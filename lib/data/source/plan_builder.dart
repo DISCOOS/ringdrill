@@ -253,24 +253,31 @@ class PlanBuilder {
         '$path.numberOfTeams',
         1,
       );
-      if (teamsWanted > stations.length) {
-        // The app only asserts this, so it is a debug-mode crash there and
-        // nothing at all in release. Rotation is undefined with more teams than
-        // stations, so here it is a hard error.
-        diagnostics.error(
-          '$path.numberOfTeams',
-          'numberOfTeams is $teamsWanted but the exercise has '
-              '${stations.length} station(s)',
-          hint: 'a rotation needs at least one station per team',
-        );
-      }
-
       final start = SimpleTimeOfDay(
         hour: startTime['hour'] as int,
         minute: startTime['minute'] as int,
       );
 
       final mode = _mode(raw['mode'], '$path.mode', diagnostics);
+      if (mode == ExerciseMode.ring && teamsWanted > stations.length) {
+        // A ring route puts one team on each station, so more teams than stations
+        // leaves some with nowhere to be and the rotation undefined. The app only
+        // asserts it — a debug crash there and nothing in release — so here it is a
+        // hard error.
+        //
+        // Only `ring`, though: `together` puts every team on one station on purpose,
+        // and `split` divides them into groups that are smaller than the team count
+        // by definition. Applying the ring rule to those rejected the very plans
+        // ADR-0062 exists to express.
+        diagnostics.error(
+          '$path.numberOfTeams',
+          'numberOfTeams is $teamsWanted but the exercise has '
+              '${stations.length} station(s)',
+          hint:
+              'a ring route needs at least one station per team — or use '
+              'mode: together, where every team works the same station',
+        );
+      }
       // How many rounds the mode implies. In `ring` the author says; in the others it
       // follows from the stations, and an authored count is then a derived value the
       // document should not be restating (ADR-0062).

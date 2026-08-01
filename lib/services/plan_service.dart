@@ -1181,8 +1181,10 @@ class PlanService {
     Map<String, String> variableOverrides = const {},
   }) {
     assert(
-      numberOfTeams <= numberOfStations,
-      '<numberOfTeams> must be less or equal to <numberOfStations>',
+      mode != ExerciseMode.ring || numberOfTeams <= numberOfStations,
+      '<numberOfTeams> must be less or equal to <numberOfStations> in a ring '
+      'route — in together every team shares one station, and in split the '
+      'groups are smaller than the team count by definition (ADR-0062)',
     );
     // The rotation math itself lives in ExerciseSchedule, which is free of
     // package:flutter so the source-format builder can call it too — this

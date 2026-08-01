@@ -244,6 +244,18 @@ class SourceScopes {
     fields: [
       SourceField('name', shape: SourceShape.string),
       SourceField(
+        'executionTime',
+        shape: SourceShape.integer,
+        description:
+            "Minutes a team spends drilling here, overriding the exercise's "
+            'executionTime (ADR-0062). Absent inherits, which is what almost '
+            'every station does. Write it where the source document states it '
+            '— "post b takes 100 minutes" is a fact about the post, not about '
+            'a round. In `ring` the longest station sets every round, so an '
+            'override there lengthens the whole exercise and leaves the other '
+            'stations waiting.',
+      ),
+      SourceField(
         'variantSuffix',
         shape: SourceShape.string,
         description:
@@ -365,7 +377,28 @@ class SourceScopes {
             '(DEBT-0013).',
       ),
       SourceField('numberOfTeams', shape: SourceShape.integer),
-      SourceField('numberOfRounds', shape: SourceShape.integer),
+      SourceField(
+        'numberOfRounds',
+        shape: SourceShape.integer,
+        description:
+            'How many rounds the rotation runs. Authored in `ring`; in '
+            '`together` and `split` it is derived (one round per station, or '
+            'per parallel group) and an authored value is ignored.',
+      ),
+      SourceField(
+        'mode',
+        shape: SourceShape.enumeration,
+        enumValues: ['ring', 'together', 'split'],
+        description:
+            'How teams relate to stations (ADR-0062). `ring` (the default, and '
+            'what an absent mode means) rotates one team per station. '
+            '`together` puts every team on one station at a time, so a round '
+            'is a station. `split` runs several stations at once with the '
+            'teams divided between them. All three are the same structure — a '
+            'round is a set of groups, a group is a station with some teams on '
+            'it — and the first two are generated, which is why they cost '
+            'nothing to author.',
+      ),
       SourceField(
         'executionTime',
         shape: SourceShape.integer,
