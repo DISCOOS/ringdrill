@@ -153,6 +153,18 @@ int _replacementEnd(String text, int caret, _Trigger trigger) {
 /// is not a filter character, so a completed `{{var.frekvens}}` no longer
 /// matches). The `/` trigger deliberately does not allow `.`: variable
 /// names are plain slugs (ADR-0046) with no dotted path to type out.
+///
+/// The `/` trigger used to require a space (or the start of the field) in front of
+/// it, which made `Kanal/` type as ordinary text and open nothing — the author has
+/// to know to put a space in first, and there is nothing on screen to tell them
+/// that. It now fires wherever the `/` is.
+///
+/// The two exclusions left are the ones where a `/` is provably part of something
+/// else: right after another `/` or after a `:`, which between them cover
+/// `https://`, `//` and the like. Without them, typing a URL into a markdown field
+/// pops the menu open mid-word. A `/` after a letter or a digit does open it —
+/// "rull/retur" will — and that is the accepted cost: the menu changes no text, and
+/// the next non-word character closes it again.
 _Trigger? _detectTrigger(String text, int caret) {
   if (caret < 0 || caret > text.length) return null;
   final before = text.substring(0, caret);
@@ -162,10 +174,12 @@ _Trigger? _detectTrigger(String text, int caret) {
     return _Trigger(start: brace.start, filter: brace.group(1)!, isBrace: true);
   }
 
-  final slash = RegExp(r'(?:^|\s)/(\w*)$').firstMatch(before);
+  final slash = RegExp(r'(?<![/:])/(\w*)$').firstMatch(before);
   if (slash != null) {
+    // The match starts at the `/` itself now that nothing precedes it in the
+    // pattern, so there is no need to go looking for it again.
     return _Trigger(
-      start: before.lastIndexOf('/'),
+      start: slash.start,
       filter: slash.group(1)!,
       isBrace: false,
     );

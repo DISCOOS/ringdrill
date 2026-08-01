@@ -908,6 +908,66 @@ void main() {
       expect(find.text('øvelse'), findsOneWidget);
     });
 
+    group('where "/" opens the menu', () {
+      testWidgets('mid-word, with no space in front of it', (tester) async {
+        // It used to need a space (or the start of the field), so `Kanal/` typed as
+        // ordinary text and opened nothing — and nothing on screen said why.
+        final controller = await _pump(tester);
+        await _typeAndOpen(tester, 'Kanal/');
+
+        expect(find.text('frekvens'), findsOne);
+
+        await tester.tap(find.text('frekvens'));
+        await tester.pump();
+        expect(controller.text, 'Kanal{{var.frekvens}}');
+      });
+
+      testWidgets('after a digit', (tester) async {
+        await _pump(tester);
+        await _typeAndOpen(tester, '24/');
+        expect(find.text('frekvens'), findsOne);
+      });
+
+      testWidgets('at the very start, and after a space, as before', (
+        tester,
+      ) async {
+        await _pump(tester);
+        await _typeAndOpen(tester, '/');
+        expect(find.text('frekvens'), findsOne);
+
+        await _typeAndOpen(tester, 'Runder: /');
+        expect(find.text('frekvens'), findsOne);
+      });
+
+      testWidgets('not on the second slash of a URL', (tester) async {
+        // A `/` right after another is never the start of a command, and without
+        // this typing a URL into a markdown field would leave the menu open.
+        await _pump(tester);
+        await _typeAndOpen(tester, 'https://');
+
+        expect(
+          tester
+              .state<TokenInsertionMenuState>(find.byType(TokenInsertionMenu))
+              .isMenuOpen,
+          isFalse,
+        );
+      });
+
+      testWidgets('not straight after a colon', (tester) async {
+        // So a URL never opens it at all, rather than flashing it open for the one
+        // keystroke between `https:` and `https://`.
+        await _pump(tester);
+        await _typeAndOpen(tester, 'https:/');
+
+        expect(
+          tester
+              .state<TokenInsertionMenuState>(find.byType(TokenInsertionMenu))
+              .isMenuOpen,
+          isFalse,
+        );
+      });
+    });
+
     group('the browse row (ADR-0067)', () {
       testWidgets('is there for a long list, a short one, and no matches', (
         tester,
