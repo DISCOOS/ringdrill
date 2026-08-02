@@ -35,6 +35,27 @@ Iterable<Color?> _collectTextColors(RichText widget) sync* {
   yield* _spanColors(span);
 }
 
+/// The weight one rendered cell's text is actually drawn at.
+///
+/// Resolved down the span tree, not read off the `RichText` root: the root carries the
+/// ambient `DefaultTextStyle` (a plain w400) and the cell's own style sits on the leaf
+/// that holds the text, where it overrides its ancestors.
+FontWeight? _weightOf(WidgetTester tester, String text) {
+  final rich = tester.widget<RichText>(find.text(text, findRichText: true));
+  return _resolveWeight(rich.text, null);
+}
+
+FontWeight? _resolveWeight(InlineSpan span, FontWeight? inherited) {
+  final here = span.style?.fontWeight ?? inherited;
+  if (span is TextSpan && span.text == null && span.children != null) {
+    for (final child in span.children!) {
+      final resolved = _resolveWeight(child, here);
+      if (resolved != null) return resolved;
+    }
+  }
+  return here;
+}
+
 Iterable<Color?> _spanColors(InlineSpan span) sync* {
   yield span.style?.color;
   if (span is TextSpan && span.children != null) {
@@ -466,6 +487,57 @@ void main() {
 
       expect(find.byType(Table), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the header is bold and the body is not', (tester) async {
+      // Reported from the exercise editor's round table: every cell was bold, so the
+      // header stopped reading as one. The cause is in the package —
+      // `TBodyNode.style` reads `config.table.headerStyle`, and `bodyStyle` is applied
+      // to nothing (markdown_widget 2.3.2+8) — so setting a weight for the header sets
+      // it for the body too. The fix is to set neither and let each node fall back,
+      // which only works while the nodes have no inherited style to prefer. That is
+      // exactly what this asserts, and it is why it is asserted rather than assumed:
+      // an upgrade could restore `bodyStyle` and change which branch runs.
+      await tester.pumpWidget(buildWidget(data: table, width: 900));
+      await tester.pumpAndSettle();
+
+      expect(_weightOf(tester, 'Rolle'), FontWeight.bold, reason: 'header cell');
+      expect(
+        _weightOf(tester, 'LSOR Deltakere'),
+        isNot(FontWeight.bold),
+        reason: 'body cell',
+      );
+    });
+
+    testWidgets('the header fill is an overlay, so it darkens any surface', (
+      tester,
+    ) async {
+      // An opaque light grey was lighter than the rollup card the editor's round-table
+      // preview sits in, which inverted the intent: the header read as the lighter row.
+      // Translucent is what makes "darker in light mode" true off-canvas as well.
+      await tester.pumpWidget(buildWidget(data: table, width: 900));
+      await tester.pumpAndSettle();
+
+      final rows = tester.widget<Table>(find.byType(Table)).children;
+      final header = rows.first.decoration as BoxDecoration;
+      final fill = header.color!;
+
+      expect(fill.a, lessThan(1.0), reason: 'an overlay, not a fill');
+      expect(fill.a, greaterThan(0.0), reason: 'and actually visible');
+      // Light theme: the overlay is black, so it darkens whatever is behind it.
+      expect(fill.r, lessThan(0.5));
+      expect(fill.g, lessThan(0.5));
+      expect(fill.b, lessThan(0.5));
+      // Dark theme inverts, which is the whole reason this is a theme token.
+      final dark = BriefTheme.dark().surfaces.tableHeader;
+      expect(dark.a, lessThan(1.0));
+      expect(dark.r, greaterThan(0.5));
+
+      expect(
+        rows.last.decoration,
+        isNull,
+        reason: 'body rows stay on the surrounding surface',
+      );
     });
   });
 }

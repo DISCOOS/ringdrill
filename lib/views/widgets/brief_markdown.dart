@@ -614,16 +614,17 @@ MarkdownConfig _briefMarkdownConfig(
         // A fill, not weight alone: a header row that differs only in boldness stops
         // reading as a header the moment anything else on the row is emphasised.
         headerRowDecoration: BoxDecoration(color: t.surfaces.tableHeader),
-        headerStyle: TextStyle(
-          color: t.text.heading,
-          fontWeight: FontWeight.bold,
-        ),
-        // Weight stated, not inherited. `bodyStyle` set only a colour, so cells took
-        // their weight from whatever `DefaultTextStyle` the table happened to sit in —
-        // which rendered every cell of the exercise preview's round table bold, header
-        // and body alike, so the header stopped meaning anything. A table body is
-        // never emphasis, wherever it is placed.
-        bodyStyle: TextStyle(color: t.text.body, fontWeight: FontWeight.normal),
+        // `headerStyle` and `bodyStyle` are deliberately not set, which is the only way
+        // to get a bold header and a plain body out of this package: `TBodyNode.style`
+        // reads `config.table.headerStyle` — not `bodyStyle`, which is applied to
+        // nothing at all (markdown_widget 2.3.2+8, blocks/container/table.dart:144).
+        // So any weight set for the header is also the body's weight, which is what
+        // rendered every cell of the round table bold. Left null, each node falls back
+        // to its own default: `p.textStyle` bolded for the header, `p.textStyle` as-is
+        // for the body. Colour comes from `PConfig` either way.
+        //
+        // Revisit on upgrade: if the package starts honouring `bodyStyle`, state both
+        // rather than relying on fallbacks.
         // A table wider than its slot scrolls rather than overflowing. Without
         // this, `TableNode` puts the built `Table` straight into a `WidgetSpan`
         // with no scroll of its own, so a plan's "Talegrupper" table is fine on a

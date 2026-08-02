@@ -23,10 +23,16 @@ class BriefSurfaces {
   final Color appBar;
 
   /// A table's header row, so the header reads as one without relying on weight
-  /// alone. Darker than [canvas] in light, lighter in dark — its own token rather
-  /// than [sidebar], which is a 2% tint chosen to sit beside white and is all but
-  /// invisible as a fill, and rather than the code background, which would tie a
-  /// table's header to an unrelated block type.
+  /// alone. Darker in light mode, lighter in dark.
+  ///
+  /// Translucent, and that is the point: a table is not always on [canvas]. The
+  /// exercise editor's round-table preview sits in a rollup card, so an opaque light
+  /// grey — which is what this was — came out *lighter* than the card behind it and
+  /// inverted the intent. An overlay darkens or lightens whatever it is actually on.
+  ///
+  /// Its own token rather than [sidebar], which is a 2% tint chosen to sit beside
+  /// white and is all but invisible as a fill, and rather than the code background,
+  /// which would tie a table's header to an unrelated block type.
   final Color tableHeader;
 }
 
@@ -201,7 +207,8 @@ class BriefTheme {
       canvas: Color(0xFFFFFFFF),
       sidebar: Color(0xFFFAFAFA),
       appBar: Color(0xFFFFFFFF),
-      tableHeader: Color(0xFFF1F2F4),
+      // 6% black: darker than anything it is placed on.
+      tableHeader: Color(0x0F000000),
     ),
     text: BriefTextColors(
       heading: Color(0xFF0F172A),
@@ -254,7 +261,9 @@ class BriefTheme {
       canvas: Color(0xFF0B0F17),
       sidebar: Color(0xFF0F1623),
       appBar: Color(0xFF0B0F17),
-      tableHeader: Color(0xFF1A2334),
+      // 8% white: lighter than anything it is placed on. A touch more than light
+      // mode's 6%, since a pale overlay on a dark fill reads weaker at equal alpha.
+      tableHeader: Color(0x14FFFFFF),
     ),
     text: BriefTextColors(
       heading: Color(0xFFE5E7EB),
