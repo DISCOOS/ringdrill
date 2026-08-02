@@ -67,6 +67,23 @@ Future<T?> showRingdrillPicker<T>({
   String? subtitle,
   List<Widget> footerActions = const [],
 }) {
+  // Drop focus before pushing. When the picker's route pops, Flutter restores focus
+  // to whatever had it — and if that was a text field further up a scrollable form,
+  // restoring it calls `Scrollable.ensureVisible` and the form jumps back to that
+  // field. In the parallel-group editor that meant every team added below the fold
+  // cost the author a scroll back down.
+  //
+  // Here rather than at the five call sites: none of them wants focus preserved
+  // across a modal, and the app already drops it on tap-outside (`DismissKeyboard`),
+  // so this is the same rule applied to the same kind of gesture.
+  //
+  // `primaryFocus`, not `FocusScope.of(context).unfocus()` — which is what
+  // `DismissKeyboard` uses and which does *not* work here. That call only detaches
+  // focus when the scope it resolves to is the one currently holding it, and the
+  // scope enclosing a row deep in a form is not. Dropping the primary focus is
+  // unconditional, and unconditional is what this needs.
+  FocusManager.instance.primaryFocus?.unfocus();
+
   final wide = WindowSizeClass.of(context).hasMasterDetail;
   Widget builder(BuildContext context) => _RingdrillPickerBody<T>(
     title: title,
