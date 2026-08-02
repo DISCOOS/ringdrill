@@ -2278,6 +2278,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get exerciseMode => 'Gjennomføring';
 
   @override
+  String get exerciseModeRing => 'Ring';
+
+  @override
   String get exerciseModeTogether => 'Samlet';
 
   @override

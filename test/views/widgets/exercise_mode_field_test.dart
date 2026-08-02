@@ -39,9 +39,9 @@ void main() {
     final l = await _pump(tester, mode: ExerciseMode.ring, onChanged: (_) {});
 
     expect(find.text(l.exerciseMode), findsOne);
-    expect(find.text(l.briefRingRoute), findsOne);
+    expect(find.text(l.exerciseModeRing), findsOne);
 
-    await tester.tap(find.text(l.briefRingRoute));
+    await tester.tap(find.text(l.exerciseModeRing));
     await tester.pumpAndSettle();
 
     // Each option carries its sentence: the app has to teach the difference, and the
@@ -53,15 +53,17 @@ void main() {
     expect(find.text(l.exerciseModeSplitDescription), findsOne);
   });
 
-  testWidgets('the ring label is the one the brief already prints', (
+  testWidgets('the three labels read as a set of one-word options', (
     tester,
   ) async {
-    // Not "Ring Drill": that names the whole domain, not one mode of one exercise.
-    // Reusing `briefRingRoute` is what keeps the editor and the brief saying the
-    // same word for the same thing.
+    // The picker's job is three parallel choices, so "Ring" beside "Together" and
+    // "Split" — not "Ring Route", which is what the brief calls the route in a
+    // sentence with room for it. And not "Ring Drill", which names the whole domain
+    // rather than one mode of one exercise.
     final l = await _pump(tester, mode: ExerciseMode.ring, onChanged: (_) {});
-    expect(l.briefRingRoute, 'Ring Route');
-    expect(find.text(l.briefRingRoute), findsOne);
+    expect(l.exerciseModeRing, 'Ring');
+    expect(l.briefRingRoute, 'Ring Route', reason: 'the brief keeps its own term');
+    expect(find.text(l.exerciseModeRing), findsOne);
   });
 
   testWidgets('choosing a different mode reports it', (tester) async {
@@ -72,7 +74,7 @@ void main() {
       onChanged: (mode) => chosen = mode,
     );
 
-    await tester.tap(find.text(l.briefRingRoute));
+    await tester.tap(find.text(l.exerciseModeRing));
     await tester.pumpAndSettle();
     await tester.tap(find.text(l.exerciseModeTogether));
     await tester.pumpAndSettle();
@@ -109,7 +111,7 @@ void main() {
       onChanged: (_) => calls++,
     );
 
-    await tester.tap(find.text(l.briefRingRoute));
+    await tester.tap(find.text(l.exerciseModeRing));
     await tester.pumpAndSettle();
     // Escape is what the sheet and the dialog both honour.
     await tester.tapAt(const Offset(10, 10));

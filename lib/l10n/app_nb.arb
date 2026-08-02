@@ -1217,6 +1217,7 @@
   "stationNotUsedInExercise": "Ikke i bruk i denne øvelsen. Ingen runde har lag på denne posten.",
   "stationNotUsedBadge": "Ikke i bruk",
   "exerciseMode": "Gjennomføring",
+  "exerciseModeRing": "Ring",
   "exerciseModeTogether": "Samlet",
   "exerciseModeSplit": "Delt",
   "exerciseModeRingDescription": "Ett lag per post. Lagene rullerer, og appen regner ut hvem som er hvor.",

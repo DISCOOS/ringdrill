@@ -18,12 +18,14 @@ import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 
 /// What the UI calls [mode].
 ///
-/// `ring` reuses `briefRingRoute` — the string the brief already prints for the same
-/// thing — rather than a second wording for one concept. "Ring Drill" is deliberately
-/// not it: that names the whole domain, not one mode of one exercise.
+/// One word each, so the three read as a set: Ring · Together · Split. `ring` has its
+/// own string rather than reusing the brief's `briefRingRoute` — the brief names the
+/// *route* ("Ring Route" / "Ringløype") in a sentence with room for it, while a picker
+/// row sits beside two one-word siblings. "Ring Drill" is deliberately neither: that
+/// names the whole domain, not one mode of one exercise.
 String exerciseModeLabel(AppLocalizations l10n, ExerciseMode mode) =>
     switch (mode) {
-      ExerciseMode.ring => l10n.briefRingRoute,
+      ExerciseMode.ring => l10n.exerciseModeRing,
       ExerciseMode.together => l10n.exerciseModeTogether,
       ExerciseMode.split => l10n.exerciseModeSplit,
     };

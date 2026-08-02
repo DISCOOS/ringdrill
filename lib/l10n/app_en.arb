@@ -2452,6 +2452,10 @@
   "@exerciseMode": {
     "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
   },
+  "exerciseModeRing": "Ring",
+  "@exerciseModeRing": {
+    "description": "ADR-0062: the ring mode in the conduct picker. One word, so it sits beside Together and Split as a set. The brief keeps briefRingRoute (\"Ring Route\" / \"Ringløype\"), which names the route rather than the mode."
+  },
   "exerciseModeTogether": "Together",
   "@exerciseModeTogether": {
     "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."

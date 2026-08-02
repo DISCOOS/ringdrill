@@ -2281,6 +2281,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exerciseMode => 'Conduct';
 
   @override
+  String get exerciseModeRing => 'Ring';
+
+  @override
   String get exerciseModeTogether => 'Together';
 
   @override

@@ -3890,6 +3890,12 @@ abstract class AppLocalizations {
   /// **'Conduct'**
   String get exerciseMode;
 
+  /// ADR-0062: the ring mode in the conduct picker. One word, so it sits beside Together and Split as a set. The brief keeps briefRingRoute ("Ring Route" / "Ringløype"), which names the route rather than the mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Ring'**
+  String get exerciseModeRing;
+
   /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
   ///
   /// In en, this message translates to:
