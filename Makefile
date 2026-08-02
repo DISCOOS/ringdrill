@@ -1,6 +1,6 @@
 .PHONY: \
 	build watch i18n labels templates format format-check cli-build cli-check \
-	mcp mcp-bundle mcp-call mcp-serve mcp-test release patch publish \
+	audit-plan mcp mcp-bundle mcp-call mcp-serve mcp-test release patch publish \
 	build-web build-web-js upload-symbols-web strip-source-maps-web release-web \
 	release-android patch-android \
 	release-ios patch-ios \
@@ -10,7 +10,7 @@
 
 .SILENT: \
 	build watch i18n labels templates format format-check \
-	cli-build cli-check mcp mcp-bundle mcp-call mcp-serve mcp-test release patch
+	cli-build cli-check audit-plan mcp mcp-bundle mcp-call mcp-serve mcp-test release patch
 
 # Local Netlify dev configuration. Override on the command line, e.g.:
 #   make catalog-seed SEED_DRILL=path/to/other.drill
@@ -186,6 +186,18 @@ mcp-bundle:
 #   make mcp-call ARGS='create_plan name="LSOR 2027" teams=4 --raw'
 mcp-call:
 	node mcp/dev-call.mjs $(ARGS)
+
+# Audits a source document for what `analyze` cannot see: the three fields the app
+# asks for by name, derived values typed into prose, and literals that want to be
+# variables. Exits 1 on a missing expected field, so it can gate an authoring loop.
+#
+#   make audit-plan PLAN=path/to/plan.yaml
+#   make audit-plan PLAN=after.yaml BASELINE=before.yaml
+#
+# The BASELINE form is the point: it makes "did that instruction change help" a diff
+# rather than an impression.
+audit-plan:
+	dart run tools/audit_authoring.dart $(PLAN) $(if $(BASELINE),--baseline=$(BASELINE),)
 
 # The server's own tests. Drive it over a real stdio pipe, deliberately via
 # `dart run` so the build-hooks preamble it has to tolerate stays exercised.
