@@ -115,28 +115,84 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// Token-aware so `RingDrillTextField`/`RingDrillTextArea`
   /// (`tokenAware: true`) can drive their chips from [PlanScope]
   /// (DESIGN-008 follow-up 09).
-  /// The station's own execution time, or empty to inherit the exercise's
-  /// (ADR-0062).
+  /// The station's own phase times, or empty to inherit the exercise's (ADR-0062).
+  /// Three, because all three vary in the field: a long post, a long debrief, and a
+  /// long walk off it.
   final TextEditingController _executionTimeController =
       TextEditingController();
+  final TextEditingController _evaluationTimeController =
+      TextEditingController();
+  final TextEditingController _rotationTimeController = TextEditingController();
 
-  /// The override as a number, or null while the field is empty or not yet valid —
+  /// An override as a number, or null while its field is empty or not yet valid —
   /// which is also what gets saved.
-  int? get _overriddenExecutionMinutes {
-    final text = _executionTimeController.text.trim();
+  ///
+  /// Zero is an override, not an absence: a post with no debrief, or the next post at
+  /// the same spot with no walk between them, are both real. Only an empty field
+  /// inherits — which is why this cannot test `> 0`, as it did while typing 0 quietly
+  /// meant "use the exercise's".
+  int? _overridden(TextEditingController controller) {
+    final text = controller.text.trim();
     if (text.isEmpty) return null;
     final minutes = int.tryParse(text);
-    return (minutes != null && minutes > 0) ? minutes : null;
+    return (minutes != null && minutes >= 0) ? minutes : null;
   }
 
-  /// The round length the override produces — execution plus the exercise's
-  /// evaluation and rotation — for the helper line. Null when nothing is overridden,
-  /// or when there is no exercise in context to add the other two phases from.
+  int? get _overriddenExecutionMinutes => _overridden(_executionTimeController);
+  int? get _overriddenEvaluationMinutes =>
+      _overridden(_evaluationTimeController);
+  int? get _overriddenRotationMinutes => _overridden(_rotationTimeController);
+
+  /// One phase's override field. [inherits] is the exercise's own value, shown as the
+  /// hint so "inherit" says *what* it inherits — null is a legitimate state here,
+  /// since the form is reachable without a parent exercise, and then there is nothing
+  /// to show.
+  Widget _phaseOverrideField(
+    AppLocalizations l10n, {
+    required TextEditingController controller,
+    required String label,
+    required int? inherits,
+  }) => TextFormField(
+    controller: controller,
+    keyboardType: TextInputType.number,
+    decoration: InputDecoration(
+      labelText: label,
+      hintText: inherits?.toString(),
+      // Always floated. An inheriting field is empty, so by default its label sits
+      // where the value goes — at full size, which truncates it to "Evaluation T…" in
+      // a three-column row and hides the very hint that shows what is inherited. It
+      // also made the inheriting field look unlike its overridden neighbours when the
+      // whole point of the row is that they are the same three fields.
+      floatingLabelBehavior: FloatingLabelBehavior.always,
+    ),
+    onChanged: (_) => setState(() {}),
+    validator: (value) {
+      final text = value?.trim() ?? '';
+      if (text.isEmpty) return null;
+      final minutes = int.tryParse(text);
+      // Zero is allowed, matching what the exercise's own three accept — a rule
+      // stricter on the override than on the value it overrides would only surprise.
+      return (minutes == null || minutes < 0)
+          ? l10n.pleaseEnterAValidNumber
+          : null;
+    },
+  );
+
+  /// The round length this station's timing produces — its own overrides plus the
+  /// exercise's where it has none — for the helper line. Null when nothing is
+  /// overridden, or when there is no exercise in context to inherit the rest from.
   int? get _overriddenRoundMinutes {
-    final execution = _overriddenExecutionMinutes;
     final exercise = widget.parentExercise;
-    if (execution == null || exercise == null) return null;
-    return execution + exercise.evaluationTime + exercise.rotationTime;
+    if (exercise == null) return null;
+    final execution = _overriddenExecutionMinutes;
+    final evaluation = _overriddenEvaluationMinutes;
+    final rotation = _overriddenRotationMinutes;
+    if (execution == null && evaluation == null && rotation == null) {
+      return null;
+    }
+    return (execution ?? exercise.executionTime) +
+        (evaluation ?? exercise.evaluationTime) +
+        (rotation ?? exercise.rotationTime);
   }
 
   final TextEditingController _nameController = TokenTextEditingController(
@@ -255,6 +311,10 @@ class _StationFormScreenState extends State<StationFormScreen> {
     _nameController.text = widget.station.name;
     _executionTimeController.text =
         widget.station.executionTime?.toString() ?? '';
+    _evaluationTimeController.text =
+        widget.station.evaluationTime?.toString() ?? '';
+    _rotationTimeController.text =
+        widget.station.rotationTime?.toString() ?? '';
     _descriptionController.text = widget.station.description?.toString() ?? "";
     _descriptionRevealed = _descriptionController.text.trim().isNotEmpty;
     _descriptionFocusNode.addListener(_handleDescriptionFocusChange);
@@ -981,37 +1041,54 @@ class _StationFormScreenState extends State<StationFormScreen> {
                     : l10n.pleaseEnterAName,
               ),
               const SizedBox(height: 16),
-              // The station's own execution time (ADR-0062). A plain numeric field
-              // rather than a new control, with the inherit/override state said in
-              // the helper — the same way every other optional field in these forms
-              // explains itself. Empty means inherit, which is what almost every
-              // station does.
-              TextFormField(
-                controller: _executionTimeController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: l10n.executionTime,
-                  // The exercise's own time as the hint, so "inherit" shows what it
-                  // inherits. Null parentExercise is a legitimate state here (the
-                  // form is reachable without one), and then there is nothing to
-                  // inherit to show.
-                  hintText: widget.parentExercise?.executionTime.toString(),
-                  helperMaxLines: 3,
-                  helperText: _overriddenRoundMinutes == null
-                      ? l10n.stationExecutionTimeInherits
-                      : l10n.stationExecutionTimeOverridden(
-                          _overriddenRoundMinutes!,
-                        ),
+              // The station's own phase times (ADR-0062). Plain numeric fields rather
+              // than a new control, in the same order and with the same labels as the
+              // exercise editor's own three — an author who has set them there reads
+              // this row without being taught it. Empty means inherit, which is what
+              // almost every station does for all three.
+              Row(
+                children: [
+                  Expanded(
+                    child: _phaseOverrideField(
+                      l10n,
+                      controller: _executionTimeController,
+                      label: l10n.executionTime,
+                      inherits: widget.parentExercise?.executionTime,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _phaseOverrideField(
+                      l10n,
+                      controller: _evaluationTimeController,
+                      label: l10n.evaluationTime,
+                      inherits: widget.parentExercise?.evaluationTime,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _phaseOverrideField(
+                      l10n,
+                      controller: _rotationTimeController,
+                      label: l10n.rotationTime,
+                      inherits: widget.parentExercise?.rotationTime,
+                    ),
+                  ),
+                ],
+              ),
+              // One note for the three, not three copies of it: the sentence is about
+              // this station's timing as a whole, and the round it produces is a fact
+              // about all three together.
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  _overriddenRoundMinutes == null
+                      ? l10n.stationTimingInherits
+                      : l10n.stationTimingOverridden(_overriddenRoundMinutes!),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
-                onChanged: (_) => setState(() {}),
-                validator: (value) {
-                  final text = value?.trim() ?? '';
-                  if (text.isEmpty) return null;
-                  final minutes = int.tryParse(text);
-                  return (minutes == null || minutes <= 0)
-                      ? l10n.pleaseEnterAValidNumber
-                      : null;
-                },
               ),
               const SizedBox(height: 16),
               PositionFormField(
@@ -1078,6 +1155,10 @@ class _StationFormScreenState extends State<StationFormScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    // The execution one was never disposed before there were three of them.
+    _executionTimeController.dispose();
+    _evaluationTimeController.dispose();
+    _rotationTimeController.dispose();
     _descriptionController.dispose();
     _descriptionFocusNode.dispose();
     for (final c in _sectionControllers.values) {
@@ -1164,6 +1245,8 @@ class _StationFormScreenState extends State<StationFormScreen> {
       final newStation = widget.station.copyWith(
         name: name,
         executionTime: _overriddenExecutionMinutes,
+        evaluationTime: _overriddenEvaluationMinutes,
+        rotationTime: _overriddenRotationMinutes,
         position: _position,
         description: description.isEmpty ? null : description,
         equipmentMd: _readSection(_StationSection.equipment),

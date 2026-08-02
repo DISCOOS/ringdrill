@@ -288,13 +288,19 @@ class PlanBuilder {
         numberOfStations: stations.length,
         numberOfGroups: groups.length,
       );
-      final executionMinutes = ExerciseSchedule.executionMinutesFor(
+      final exercisePhases = (
+        execution: execution,
+        evaluation: evaluation,
+        rotation: rotation,
+      );
+      final phaseMinutes = ExerciseSchedule.phaseMinutesFor(
         mode: mode,
         numberOfRounds: effectiveRounds,
-        executionTime: execution,
-        stationMinutes: [
-          for (final station in stations) station.executionTime ?? execution,
-        ],
+        fallback: exercisePhases,
+        stationMinutes: ExerciseSchedule.stationMinutesFrom(
+          stations: stations,
+          fallback: exercisePhases,
+        ),
         groups: [
           for (final group in groups)
             [for (final slot in group.stations) slot.stationIndex],
@@ -330,15 +336,11 @@ class PlanBuilder {
         'stations': const <Map<String, dynamic>>[],
         'schedule': ExerciseSchedule.roundsFrom(
           startTime: start,
-          executionMinutes: executionMinutes,
-          evaluationTime: evaluation,
-          rotationTime: rotation,
+          minutes: phaseMinutes,
         ).map((round) => round.map((t) => t.toJson()).toList()).toList(),
         'endTime': ExerciseSchedule.endTimeFrom(
           startTime: start,
-          executionMinutes: executionMinutes,
-          evaluationTime: evaluation,
-          rotationTime: rotation,
+          minutes: phaseMinutes,
         ).toJson(),
         if (raw['templateId'] != null) 'templateId': raw['templateId'],
         'variableOverrides':
@@ -502,10 +504,31 @@ class PlanBuilder {
         // (ADR-0062). Present and non-positive is meaningless, so it is reported
         // rather than silently making a zero-length round.
         if (source['executionTime'] != null)
+          // Minimum 0, the same as the exercise's own three accept: a post with no
+          // debrief, or one whose successor is at the same spot, are both real. Absent
+          // is what inherits — zero is an override to zero.
           'executionTime': _positiveInt(
             source['executionTime'],
             '$path.executionTime',
-            1,
+            0,
+          ),
+        if (source['evaluationTime'] != null)
+          // Minimum 0, the same as the exercise's own three accept: a post with no
+          // debrief, or one whose successor is at the same spot, are both real. Absent
+          // is what inherits — zero is an override to zero.
+          'evaluationTime': _positiveInt(
+            source['evaluationTime'],
+            '$path.evaluationTime',
+            0,
+          ),
+        if (source['rotationTime'] != null)
+          // Minimum 0, the same as the exercise's own three accept: a post with no
+          // debrief, or one whose successor is at the same spot, are both real. Absent
+          // is what inherits — zero is an override to zero.
+          'rotationTime': _positiveInt(
+            source['rotationTime'],
+            '$path.rotationTime',
+            0,
           ),
         if (source['variantSuffix'] != null)
           'variantSuffix': source['variantSuffix'],

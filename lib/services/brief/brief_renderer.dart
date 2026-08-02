@@ -317,6 +317,8 @@ class BriefRenderer {
         'duration': stationDurationLabel(
           exercise,
           executionTime: station.executionTime,
+          evaluationTime: station.evaluationTime,
+          rotationTime: station.rotationTime,
         ),
       },
     };
@@ -410,6 +412,8 @@ class BriefRenderer {
       'stationDurationLabel': stationDurationLabel(
         exercise,
         executionTime: station.executionTime,
+        evaluationTime: station.evaluationTime,
+        rotationTime: station.rotationTime,
       ),
       'descriptionMd': resolveField(station.description),
       'equipmentMd': resolveField(station.equipmentMd),
@@ -487,11 +491,17 @@ class BriefRenderer {
 
   /// Per-round duration with phase breakdown for a station: "30 min (15 | 10 | 5)".
   @visibleForTesting
-  static String stationDurationLabel(Exercise exercise, {int? executionTime}) =>
-      exercise_format.stationDurationLabel(
-        exercise,
-        executionTime: executionTime,
-      );
+  static String stationDurationLabel(
+    Exercise exercise, {
+    int? executionTime,
+    int? evaluationTime,
+    int? rotationTime,
+  }) => exercise_format.stationDurationLabel(
+    exercise,
+    executionTime: executionTime,
+    evaluationTime: evaluationTime,
+    rotationTime: rotationTime,
+  );
 
   /// Full Organisering markdown block.
   @visibleForTesting

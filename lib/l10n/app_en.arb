@@ -2506,13 +2506,13 @@
   "@exerciseModeSwitchDiscardsGroups": {
     "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
   },
-  "stationExecutionTimeInherits": "Inherited from the exercise. Override for this station.",
-  "@stationExecutionTimeInherits": {
+  "stationTimingInherits": "Inherited from the exercise. Override for this station.",
+  "@stationTimingInherits": {
     "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
   },
-  "stationExecutionTimeOverridden": "The round holding this station becomes {minutes} min.",
-  "@stationExecutionTimeOverridden": {
-    "description": "ADR-0062: helper under a station's overridden execution time, stating the round length it produces.",
+  "stationTimingOverridden": "The round holding this station becomes {minutes} min.",
+  "@stationTimingOverridden": {
+    "description": "ADR-0062: helper under a station's three timing overrides, stating the round length they produce.",
     "placeholders": { "minutes": { "type": "int" } }
   },
   "tokenBrowserTitle": "Insert token",

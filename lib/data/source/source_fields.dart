@@ -256,6 +256,29 @@ class SourceScopes {
             'stations waiting.',
       ),
       SourceField(
+        'evaluationTime',
+        shape: SourceShape.integer,
+        description:
+            "Minutes of debrief at this station, overriding the exercise's "
+            'evaluationTime. Absent inherits; 0 means no debrief at this post '
+            'at all. A demanding post earns a longer debrief than a simple '
+            'one. Maximised per round like executionTime, and independently '
+            'of it.',
+      ),
+      SourceField(
+        'rotationTime',
+        shape: SourceShape.integer,
+        description:
+            'Minutes to leave this station and reach the next one, overriding '
+            "the exercise's rotationTime. Absent inherits; 0 means no walk, "
+            'as when the next post is at the same spot. Terrain is what '
+            'makes it vary — the walk off a shoreline post is not the walk off '
+            'the one beside the car park. In `ring` every team rotates at '
+            'once, so the longest walk sets the round and the rest wait; in '
+            '`together` a round is a station, so this is exactly that round\'s '
+            'rotation.',
+      ),
+      SourceField(
         'variantSuffix',
         shape: SourceShape.string,
         description:

@@ -47,7 +47,8 @@ class RoundOccupancy {
     Exercise exercise,
     int stationIndex,
     int roundIndex,
-  ) => '${l10n.team(1)} '
+  ) =>
+      '${l10n.team(1)} '
       '${numbers(exercise.teamsAt(stationIndex, roundIndex))}';
 
   /// The team numbers alone, for a cell with no room for the noun.

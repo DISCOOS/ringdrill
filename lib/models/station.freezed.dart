@@ -21,7 +21,21 @@ mixin _$Station {
 ///
 /// Authored on the station because that is where a source document states it —
 /// "post b takes 100 minutes" — and where the author is when they know it.
- int? get executionTime; String? get variantSuffix;@NullableLatLngJsonConverter() LatLng? get position; String? get description;/// Per-scope value overrides for plan-global variables, keyed by
+ int? get executionTime;/// Minutes of debrief at this station, overriding the exercise's
+/// `evaluationTime`. Null inherits.
+///
+/// A demanding post earns a longer debrief than a simple one, and the author
+/// knows which is which while writing the post.
+ int? get evaluationTime;/// Minutes to leave this station and reach the next one, overriding the
+/// exercise's `rotationTime`. Null inherits.
+///
+/// An edge rather than a property, strictly — but a well-defined one, because the
+/// route is station order with a wrap. Terrain is what makes it vary: the walk out
+/// of a shoreline post is not the walk out of the one beside the car park.
+///
+/// In `ring` every team rotates at once, so the longest walk sets the round's
+/// rotation phase and the rest wait — the same way [executionTime] behaves there.
+ int? get rotationTime; String? get variantSuffix;@NullableLatLngJsonConverter() LatLng? get position; String? get description;/// Per-scope value overrides for plan-global variables, keyed by
 /// DrillVariable.name. A key that does not name a declared variable is
 /// meaningless and is ignored at resolution time (ADR-0046). This scope
 /// never declares new variables.
@@ -47,16 +61,16 @@ $StationCopyWith<Station> get copyWith => _$StationCopyWithImpl<Station>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Station&&(identical(other.index, index) || other.index == index)&&(identical(other.name, name) || other.name == name)&&(identical(other.executionTime, executionTime) || other.executionTime == executionTime)&&(identical(other.variantSuffix, variantSuffix) || other.variantSuffix == variantSuffix)&&(identical(other.position, position) || other.position == position)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.variableOverrides, variableOverrides)&&const DeepCollectionEquality().equals(other.locations, locations)&&const DeepCollectionEquality().equals(other.persons, persons)&&(identical(other.equipmentMd, equipmentMd) || other.equipmentMd == equipmentMd)&&(identical(other.situationMd, situationMd) || other.situationMd == situationMd)&&(identical(other.missionMd, missionMd) || other.missionMd == missionMd)&&(identical(other.logisticsMd, logisticsMd) || other.logisticsMd == logisticsMd)&&(identical(other.criticalQuestionsMd, criticalQuestionsMd) || other.criticalQuestionsMd == criticalQuestionsMd)&&(identical(other.leaderAnswersMd, leaderAnswersMd) || other.leaderAnswersMd == leaderAnswersMd)&&(identical(other.directorNotesMd, directorNotesMd) || other.directorNotesMd == directorNotesMd));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Station&&(identical(other.index, index) || other.index == index)&&(identical(other.name, name) || other.name == name)&&(identical(other.executionTime, executionTime) || other.executionTime == executionTime)&&(identical(other.evaluationTime, evaluationTime) || other.evaluationTime == evaluationTime)&&(identical(other.rotationTime, rotationTime) || other.rotationTime == rotationTime)&&(identical(other.variantSuffix, variantSuffix) || other.variantSuffix == variantSuffix)&&(identical(other.position, position) || other.position == position)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.variableOverrides, variableOverrides)&&const DeepCollectionEquality().equals(other.locations, locations)&&const DeepCollectionEquality().equals(other.persons, persons)&&(identical(other.equipmentMd, equipmentMd) || other.equipmentMd == equipmentMd)&&(identical(other.situationMd, situationMd) || other.situationMd == situationMd)&&(identical(other.missionMd, missionMd) || other.missionMd == missionMd)&&(identical(other.logisticsMd, logisticsMd) || other.logisticsMd == logisticsMd)&&(identical(other.criticalQuestionsMd, criticalQuestionsMd) || other.criticalQuestionsMd == criticalQuestionsMd)&&(identical(other.leaderAnswersMd, leaderAnswersMd) || other.leaderAnswersMd == leaderAnswersMd)&&(identical(other.directorNotesMd, directorNotesMd) || other.directorNotesMd == directorNotesMd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,index,name,executionTime,variantSuffix,position,description,const DeepCollectionEquality().hash(variableOverrides),const DeepCollectionEquality().hash(locations),const DeepCollectionEquality().hash(persons),equipmentMd,situationMd,missionMd,logisticsMd,criticalQuestionsMd,leaderAnswersMd,directorNotesMd);
+int get hashCode => Object.hash(runtimeType,index,name,executionTime,evaluationTime,rotationTime,variantSuffix,position,description,const DeepCollectionEquality().hash(variableOverrides),const DeepCollectionEquality().hash(locations),const DeepCollectionEquality().hash(persons),equipmentMd,situationMd,missionMd,logisticsMd,criticalQuestionsMd,leaderAnswersMd,directorNotesMd);
 
 @override
 String toString() {
-  return 'Station(index: $index, name: $name, executionTime: $executionTime, variantSuffix: $variantSuffix, position: $position, description: $description, variableOverrides: $variableOverrides, locations: $locations, persons: $persons, equipmentMd: $equipmentMd, situationMd: $situationMd, missionMd: $missionMd, logisticsMd: $logisticsMd, criticalQuestionsMd: $criticalQuestionsMd, leaderAnswersMd: $leaderAnswersMd, directorNotesMd: $directorNotesMd)';
+  return 'Station(index: $index, name: $name, executionTime: $executionTime, evaluationTime: $evaluationTime, rotationTime: $rotationTime, variantSuffix: $variantSuffix, position: $position, description: $description, variableOverrides: $variableOverrides, locations: $locations, persons: $persons, equipmentMd: $equipmentMd, situationMd: $situationMd, missionMd: $missionMd, logisticsMd: $logisticsMd, criticalQuestionsMd: $criticalQuestionsMd, leaderAnswersMd: $leaderAnswersMd, directorNotesMd: $directorNotesMd)';
 }
 
 
@@ -67,7 +81,7 @@ abstract mixin class $StationCopyWith<$Res>  {
   factory $StationCopyWith(Station value, $Res Function(Station) _then) = _$StationCopyWithImpl;
 @useResult
 $Res call({
- int index, String name, int? executionTime, String? variantSuffix,@NullableLatLngJsonConverter() LatLng? position, String? description, Map<String, String> variableOverrides, List<Location> locations, List<Person> persons,@JsonKey(includeFromJson: false, includeToJson: false) String? equipmentMd,@JsonKey(includeFromJson: false, includeToJson: false) String? situationMd,@JsonKey(includeFromJson: false, includeToJson: false) String? missionMd,@JsonKey(includeFromJson: false, includeToJson: false) String? logisticsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? criticalQuestionsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? leaderAnswersMd,@JsonKey(includeFromJson: false, includeToJson: false) String? directorNotesMd
+ int index, String name, int? executionTime, int? evaluationTime, int? rotationTime, String? variantSuffix,@NullableLatLngJsonConverter() LatLng? position, String? description, Map<String, String> variableOverrides, List<Location> locations, List<Person> persons,@JsonKey(includeFromJson: false, includeToJson: false) String? equipmentMd,@JsonKey(includeFromJson: false, includeToJson: false) String? situationMd,@JsonKey(includeFromJson: false, includeToJson: false) String? missionMd,@JsonKey(includeFromJson: false, includeToJson: false) String? logisticsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? criticalQuestionsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? leaderAnswersMd,@JsonKey(includeFromJson: false, includeToJson: false) String? directorNotesMd
 });
 
 
@@ -84,11 +98,13 @@ class _$StationCopyWithImpl<$Res>
 
 /// Create a copy of Station
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? index = null,Object? name = null,Object? executionTime = freezed,Object? variantSuffix = freezed,Object? position = freezed,Object? description = freezed,Object? variableOverrides = null,Object? locations = null,Object? persons = null,Object? equipmentMd = freezed,Object? situationMd = freezed,Object? missionMd = freezed,Object? logisticsMd = freezed,Object? criticalQuestionsMd = freezed,Object? leaderAnswersMd = freezed,Object? directorNotesMd = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? index = null,Object? name = null,Object? executionTime = freezed,Object? evaluationTime = freezed,Object? rotationTime = freezed,Object? variantSuffix = freezed,Object? position = freezed,Object? description = freezed,Object? variableOverrides = null,Object? locations = null,Object? persons = null,Object? equipmentMd = freezed,Object? situationMd = freezed,Object? missionMd = freezed,Object? logisticsMd = freezed,Object? criticalQuestionsMd = freezed,Object? leaderAnswersMd = freezed,Object? directorNotesMd = freezed,}) {
   return _then(_self.copyWith(
 index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,executionTime: freezed == executionTime ? _self.executionTime : executionTime // ignore: cast_nullable_to_non_nullable
+as int?,evaluationTime: freezed == evaluationTime ? _self.evaluationTime : evaluationTime // ignore: cast_nullable_to_non_nullable
+as int?,rotationTime: freezed == rotationTime ? _self.rotationTime : rotationTime // ignore: cast_nullable_to_non_nullable
 as int?,variantSuffix: freezed == variantSuffix ? _self.variantSuffix : variantSuffix // ignore: cast_nullable_to_non_nullable
 as String?,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
 as LatLng?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
@@ -184,10 +200,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int index,  String name,  int? executionTime,  String? variantSuffix, @NullableLatLngJsonConverter()  LatLng? position,  String? description,  Map<String, String> variableOverrides,  List<Location> locations,  List<Person> persons, @JsonKey(includeFromJson: false, includeToJson: false)  String? equipmentMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? situationMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? missionMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? logisticsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? criticalQuestionsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? leaderAnswersMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? directorNotesMd)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int index,  String name,  int? executionTime,  int? evaluationTime,  int? rotationTime,  String? variantSuffix, @NullableLatLngJsonConverter()  LatLng? position,  String? description,  Map<String, String> variableOverrides,  List<Location> locations,  List<Person> persons, @JsonKey(includeFromJson: false, includeToJson: false)  String? equipmentMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? situationMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? missionMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? logisticsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? criticalQuestionsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? leaderAnswersMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? directorNotesMd)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Station() when $default != null:
-return $default(_that.index,_that.name,_that.executionTime,_that.variantSuffix,_that.position,_that.description,_that.variableOverrides,_that.locations,_that.persons,_that.equipmentMd,_that.situationMd,_that.missionMd,_that.logisticsMd,_that.criticalQuestionsMd,_that.leaderAnswersMd,_that.directorNotesMd);case _:
+return $default(_that.index,_that.name,_that.executionTime,_that.evaluationTime,_that.rotationTime,_that.variantSuffix,_that.position,_that.description,_that.variableOverrides,_that.locations,_that.persons,_that.equipmentMd,_that.situationMd,_that.missionMd,_that.logisticsMd,_that.criticalQuestionsMd,_that.leaderAnswersMd,_that.directorNotesMd);case _:
   return orElse();
 
 }
@@ -205,10 +221,10 @@ return $default(_that.index,_that.name,_that.executionTime,_that.variantSuffix,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int index,  String name,  int? executionTime,  String? variantSuffix, @NullableLatLngJsonConverter()  LatLng? position,  String? description,  Map<String, String> variableOverrides,  List<Location> locations,  List<Person> persons, @JsonKey(includeFromJson: false, includeToJson: false)  String? equipmentMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? situationMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? missionMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? logisticsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? criticalQuestionsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? leaderAnswersMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? directorNotesMd)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int index,  String name,  int? executionTime,  int? evaluationTime,  int? rotationTime,  String? variantSuffix, @NullableLatLngJsonConverter()  LatLng? position,  String? description,  Map<String, String> variableOverrides,  List<Location> locations,  List<Person> persons, @JsonKey(includeFromJson: false, includeToJson: false)  String? equipmentMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? situationMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? missionMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? logisticsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? criticalQuestionsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? leaderAnswersMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? directorNotesMd)  $default,) {final _that = this;
 switch (_that) {
 case _Station():
-return $default(_that.index,_that.name,_that.executionTime,_that.variantSuffix,_that.position,_that.description,_that.variableOverrides,_that.locations,_that.persons,_that.equipmentMd,_that.situationMd,_that.missionMd,_that.logisticsMd,_that.criticalQuestionsMd,_that.leaderAnswersMd,_that.directorNotesMd);}
+return $default(_that.index,_that.name,_that.executionTime,_that.evaluationTime,_that.rotationTime,_that.variantSuffix,_that.position,_that.description,_that.variableOverrides,_that.locations,_that.persons,_that.equipmentMd,_that.situationMd,_that.missionMd,_that.logisticsMd,_that.criticalQuestionsMd,_that.leaderAnswersMd,_that.directorNotesMd);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -222,10 +238,10 @@ return $default(_that.index,_that.name,_that.executionTime,_that.variantSuffix,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int index,  String name,  int? executionTime,  String? variantSuffix, @NullableLatLngJsonConverter()  LatLng? position,  String? description,  Map<String, String> variableOverrides,  List<Location> locations,  List<Person> persons, @JsonKey(includeFromJson: false, includeToJson: false)  String? equipmentMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? situationMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? missionMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? logisticsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? criticalQuestionsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? leaderAnswersMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? directorNotesMd)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int index,  String name,  int? executionTime,  int? evaluationTime,  int? rotationTime,  String? variantSuffix, @NullableLatLngJsonConverter()  LatLng? position,  String? description,  Map<String, String> variableOverrides,  List<Location> locations,  List<Person> persons, @JsonKey(includeFromJson: false, includeToJson: false)  String? equipmentMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? situationMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? missionMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? logisticsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? criticalQuestionsMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? leaderAnswersMd, @JsonKey(includeFromJson: false, includeToJson: false)  String? directorNotesMd)?  $default,) {final _that = this;
 switch (_that) {
 case _Station() when $default != null:
-return $default(_that.index,_that.name,_that.executionTime,_that.variantSuffix,_that.position,_that.description,_that.variableOverrides,_that.locations,_that.persons,_that.equipmentMd,_that.situationMd,_that.missionMd,_that.logisticsMd,_that.criticalQuestionsMd,_that.leaderAnswersMd,_that.directorNotesMd);case _:
+return $default(_that.index,_that.name,_that.executionTime,_that.evaluationTime,_that.rotationTime,_that.variantSuffix,_that.position,_that.description,_that.variableOverrides,_that.locations,_that.persons,_that.equipmentMd,_that.situationMd,_that.missionMd,_that.logisticsMd,_that.criticalQuestionsMd,_that.leaderAnswersMd,_that.directorNotesMd);case _:
   return null;
 
 }
@@ -237,7 +253,7 @@ return $default(_that.index,_that.name,_that.executionTime,_that.variantSuffix,_
 @JsonSerializable()
 
 class _Station implements Station {
-  const _Station({required this.index, required this.name, this.executionTime, this.variantSuffix, @NullableLatLngJsonConverter() this.position, this.description, final  Map<String, String> variableOverrides = const <String, String>{}, final  List<Location> locations = const <Location>[], final  List<Person> persons = const <Person>[], @JsonKey(includeFromJson: false, includeToJson: false) this.equipmentMd, @JsonKey(includeFromJson: false, includeToJson: false) this.situationMd, @JsonKey(includeFromJson: false, includeToJson: false) this.missionMd, @JsonKey(includeFromJson: false, includeToJson: false) this.logisticsMd, @JsonKey(includeFromJson: false, includeToJson: false) this.criticalQuestionsMd, @JsonKey(includeFromJson: false, includeToJson: false) this.leaderAnswersMd, @JsonKey(includeFromJson: false, includeToJson: false) this.directorNotesMd}): _variableOverrides = variableOverrides,_locations = locations,_persons = persons;
+  const _Station({required this.index, required this.name, this.executionTime, this.evaluationTime, this.rotationTime, this.variantSuffix, @NullableLatLngJsonConverter() this.position, this.description, final  Map<String, String> variableOverrides = const <String, String>{}, final  List<Location> locations = const <Location>[], final  List<Person> persons = const <Person>[], @JsonKey(includeFromJson: false, includeToJson: false) this.equipmentMd, @JsonKey(includeFromJson: false, includeToJson: false) this.situationMd, @JsonKey(includeFromJson: false, includeToJson: false) this.missionMd, @JsonKey(includeFromJson: false, includeToJson: false) this.logisticsMd, @JsonKey(includeFromJson: false, includeToJson: false) this.criticalQuestionsMd, @JsonKey(includeFromJson: false, includeToJson: false) this.leaderAnswersMd, @JsonKey(includeFromJson: false, includeToJson: false) this.directorNotesMd}): _variableOverrides = variableOverrides,_locations = locations,_persons = persons;
   factory _Station.fromJson(Map<String, dynamic> json) => _$StationFromJson(json);
 
 @override final  int index;
@@ -249,6 +265,22 @@ class _Station implements Station {
 /// Authored on the station because that is where a source document states it —
 /// "post b takes 100 minutes" — and where the author is when they know it.
 @override final  int? executionTime;
+/// Minutes of debrief at this station, overriding the exercise's
+/// `evaluationTime`. Null inherits.
+///
+/// A demanding post earns a longer debrief than a simple one, and the author
+/// knows which is which while writing the post.
+@override final  int? evaluationTime;
+/// Minutes to leave this station and reach the next one, overriding the
+/// exercise's `rotationTime`. Null inherits.
+///
+/// An edge rather than a property, strictly — but a well-defined one, because the
+/// route is station order with a wrap. Terrain is what makes it vary: the walk out
+/// of a shoreline post is not the walk out of the one beside the car park.
+///
+/// In `ring` every team rotates at once, so the longest walk sets the round's
+/// rotation phase and the rest wait — the same way [executionTime] behaves there.
+@override final  int? rotationTime;
 @override final  String? variantSuffix;
 @override@NullableLatLngJsonConverter() final  LatLng? position;
 @override final  String? description;
@@ -319,16 +351,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Station&&(identical(other.index, index) || other.index == index)&&(identical(other.name, name) || other.name == name)&&(identical(other.executionTime, executionTime) || other.executionTime == executionTime)&&(identical(other.variantSuffix, variantSuffix) || other.variantSuffix == variantSuffix)&&(identical(other.position, position) || other.position == position)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._variableOverrides, _variableOverrides)&&const DeepCollectionEquality().equals(other._locations, _locations)&&const DeepCollectionEquality().equals(other._persons, _persons)&&(identical(other.equipmentMd, equipmentMd) || other.equipmentMd == equipmentMd)&&(identical(other.situationMd, situationMd) || other.situationMd == situationMd)&&(identical(other.missionMd, missionMd) || other.missionMd == missionMd)&&(identical(other.logisticsMd, logisticsMd) || other.logisticsMd == logisticsMd)&&(identical(other.criticalQuestionsMd, criticalQuestionsMd) || other.criticalQuestionsMd == criticalQuestionsMd)&&(identical(other.leaderAnswersMd, leaderAnswersMd) || other.leaderAnswersMd == leaderAnswersMd)&&(identical(other.directorNotesMd, directorNotesMd) || other.directorNotesMd == directorNotesMd));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Station&&(identical(other.index, index) || other.index == index)&&(identical(other.name, name) || other.name == name)&&(identical(other.executionTime, executionTime) || other.executionTime == executionTime)&&(identical(other.evaluationTime, evaluationTime) || other.evaluationTime == evaluationTime)&&(identical(other.rotationTime, rotationTime) || other.rotationTime == rotationTime)&&(identical(other.variantSuffix, variantSuffix) || other.variantSuffix == variantSuffix)&&(identical(other.position, position) || other.position == position)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._variableOverrides, _variableOverrides)&&const DeepCollectionEquality().equals(other._locations, _locations)&&const DeepCollectionEquality().equals(other._persons, _persons)&&(identical(other.equipmentMd, equipmentMd) || other.equipmentMd == equipmentMd)&&(identical(other.situationMd, situationMd) || other.situationMd == situationMd)&&(identical(other.missionMd, missionMd) || other.missionMd == missionMd)&&(identical(other.logisticsMd, logisticsMd) || other.logisticsMd == logisticsMd)&&(identical(other.criticalQuestionsMd, criticalQuestionsMd) || other.criticalQuestionsMd == criticalQuestionsMd)&&(identical(other.leaderAnswersMd, leaderAnswersMd) || other.leaderAnswersMd == leaderAnswersMd)&&(identical(other.directorNotesMd, directorNotesMd) || other.directorNotesMd == directorNotesMd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,index,name,executionTime,variantSuffix,position,description,const DeepCollectionEquality().hash(_variableOverrides),const DeepCollectionEquality().hash(_locations),const DeepCollectionEquality().hash(_persons),equipmentMd,situationMd,missionMd,logisticsMd,criticalQuestionsMd,leaderAnswersMd,directorNotesMd);
+int get hashCode => Object.hash(runtimeType,index,name,executionTime,evaluationTime,rotationTime,variantSuffix,position,description,const DeepCollectionEquality().hash(_variableOverrides),const DeepCollectionEquality().hash(_locations),const DeepCollectionEquality().hash(_persons),equipmentMd,situationMd,missionMd,logisticsMd,criticalQuestionsMd,leaderAnswersMd,directorNotesMd);
 
 @override
 String toString() {
-  return 'Station(index: $index, name: $name, executionTime: $executionTime, variantSuffix: $variantSuffix, position: $position, description: $description, variableOverrides: $variableOverrides, locations: $locations, persons: $persons, equipmentMd: $equipmentMd, situationMd: $situationMd, missionMd: $missionMd, logisticsMd: $logisticsMd, criticalQuestionsMd: $criticalQuestionsMd, leaderAnswersMd: $leaderAnswersMd, directorNotesMd: $directorNotesMd)';
+  return 'Station(index: $index, name: $name, executionTime: $executionTime, evaluationTime: $evaluationTime, rotationTime: $rotationTime, variantSuffix: $variantSuffix, position: $position, description: $description, variableOverrides: $variableOverrides, locations: $locations, persons: $persons, equipmentMd: $equipmentMd, situationMd: $situationMd, missionMd: $missionMd, logisticsMd: $logisticsMd, criticalQuestionsMd: $criticalQuestionsMd, leaderAnswersMd: $leaderAnswersMd, directorNotesMd: $directorNotesMd)';
 }
 
 
@@ -339,7 +371,7 @@ abstract mixin class _$StationCopyWith<$Res> implements $StationCopyWith<$Res> {
   factory _$StationCopyWith(_Station value, $Res Function(_Station) _then) = __$StationCopyWithImpl;
 @override @useResult
 $Res call({
- int index, String name, int? executionTime, String? variantSuffix,@NullableLatLngJsonConverter() LatLng? position, String? description, Map<String, String> variableOverrides, List<Location> locations, List<Person> persons,@JsonKey(includeFromJson: false, includeToJson: false) String? equipmentMd,@JsonKey(includeFromJson: false, includeToJson: false) String? situationMd,@JsonKey(includeFromJson: false, includeToJson: false) String? missionMd,@JsonKey(includeFromJson: false, includeToJson: false) String? logisticsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? criticalQuestionsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? leaderAnswersMd,@JsonKey(includeFromJson: false, includeToJson: false) String? directorNotesMd
+ int index, String name, int? executionTime, int? evaluationTime, int? rotationTime, String? variantSuffix,@NullableLatLngJsonConverter() LatLng? position, String? description, Map<String, String> variableOverrides, List<Location> locations, List<Person> persons,@JsonKey(includeFromJson: false, includeToJson: false) String? equipmentMd,@JsonKey(includeFromJson: false, includeToJson: false) String? situationMd,@JsonKey(includeFromJson: false, includeToJson: false) String? missionMd,@JsonKey(includeFromJson: false, includeToJson: false) String? logisticsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? criticalQuestionsMd,@JsonKey(includeFromJson: false, includeToJson: false) String? leaderAnswersMd,@JsonKey(includeFromJson: false, includeToJson: false) String? directorNotesMd
 });
 
 
@@ -356,11 +388,13 @@ class __$StationCopyWithImpl<$Res>
 
 /// Create a copy of Station
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? index = null,Object? name = null,Object? executionTime = freezed,Object? variantSuffix = freezed,Object? position = freezed,Object? description = freezed,Object? variableOverrides = null,Object? locations = null,Object? persons = null,Object? equipmentMd = freezed,Object? situationMd = freezed,Object? missionMd = freezed,Object? logisticsMd = freezed,Object? criticalQuestionsMd = freezed,Object? leaderAnswersMd = freezed,Object? directorNotesMd = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? index = null,Object? name = null,Object? executionTime = freezed,Object? evaluationTime = freezed,Object? rotationTime = freezed,Object? variantSuffix = freezed,Object? position = freezed,Object? description = freezed,Object? variableOverrides = null,Object? locations = null,Object? persons = null,Object? equipmentMd = freezed,Object? situationMd = freezed,Object? missionMd = freezed,Object? logisticsMd = freezed,Object? criticalQuestionsMd = freezed,Object? leaderAnswersMd = freezed,Object? directorNotesMd = freezed,}) {
   return _then(_Station(
 index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,executionTime: freezed == executionTime ? _self.executionTime : executionTime // ignore: cast_nullable_to_non_nullable
+as int?,evaluationTime: freezed == evaluationTime ? _self.evaluationTime : evaluationTime // ignore: cast_nullable_to_non_nullable
+as int?,rotationTime: freezed == rotationTime ? _self.rotationTime : rotationTime // ignore: cast_nullable_to_non_nullable
 as int?,variantSuffix: freezed == variantSuffix ? _self.variantSuffix : variantSuffix // ignore: cast_nullable_to_non_nullable
 as String?,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
 as LatLng?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable

@@ -17,6 +17,17 @@ const _nine = SimpleTimeOfDay(hour: 9, minute: 0);
 String _hhmm(SimpleTimeOfDay t) =>
     '${t.hour.toString().padLeft(2, '0')}${t.minute.toString().padLeft(2, '0')}';
 
+/// Per-round phases where only the execution length varies, which is the shape most of
+/// these cases are about.
+List<PhaseMinutes> _uniform(
+  List<int> execution, {
+  required int evaluation,
+  required int rotation,
+}) => [
+  for (final minutes in execution)
+    (execution: minutes, evaluation: evaluation, rotation: rotation),
+];
+
 List<String> _flat(List<RoundPhases> rounds) => [
   for (final round in rounds) round.map(_hhmm).join('-'),
 ];
@@ -72,9 +83,11 @@ void main() {
         _flat(
           ExerciseSchedule.roundsFrom(
             startTime: _nine,
-            executionMinutes: List.filled(args.count, args.execution),
-            evaluationTime: args.evaluation,
-            rotationTime: args.rotation,
+            minutes: _uniform(
+              List.filled(args.count, args.execution),
+              evaluation: args.evaluation,
+              rotation: args.rotation,
+            ),
           ),
         ),
       );
@@ -172,6 +185,140 @@ void main() {
     );
   });
 
+  group('phaseMinutesFor', () {
+    const exercise = (execution: 15, evaluation: 10, rotation: 5);
+
+    test('a station inherits each phase it does not override', () {
+      final minutes = ExerciseSchedule.stationMinutesFrom(
+        stations: const [
+          Station(index: 0, name: 'a'),
+          Station(index: 1, name: 'b', executionTime: 100),
+          Station(index: 2, name: 'c', rotationTime: 25),
+          Station(
+            index: 3,
+            name: 'd',
+            executionTime: 40,
+            evaluationTime: 20,
+            rotationTime: 2,
+          ),
+        ],
+        fallback: exercise,
+      );
+
+      expect(minutes[0], exercise, reason: 'nothing overridden');
+      expect(minutes[1], (execution: 100, evaluation: 10, rotation: 5));
+      expect(minutes[2], (execution: 15, evaluation: 10, rotation: 25));
+      expect(minutes[3], (execution: 40, evaluation: 20, rotation: 2));
+    });
+
+    test('ring: each phase is maxed on its own, not as a package', () {
+      // The claim worth pinning. The post that runs longest is not necessarily the one
+      // furthest from the next, so taking the longest station's *triple* would inflate
+      // the phases it does not lead on.
+      final minutes = ExerciseSchedule.phaseMinutesFor(
+        mode: ExerciseMode.ring,
+        numberOfRounds: 2,
+        fallback: exercise,
+        stationMinutes: const [
+          (execution: 100, evaluation: 10, rotation: 5),
+          (execution: 15, evaluation: 10, rotation: 25),
+        ],
+      );
+
+      expect(minutes, [
+        (execution: 100, evaluation: 10, rotation: 25),
+        (execution: 100, evaluation: 10, rotation: 25),
+      ]);
+    });
+
+    test('ring: overriding every station downward shortens the round', () {
+      // No floor at the exercise's own value: if no station needs 15 minutes, keeping
+      // teams at a post for 15 minutes is time the exercise does not have.
+      expect(
+        ExerciseSchedule.phaseMinutesFor(
+          mode: ExerciseMode.ring,
+          numberOfRounds: 1,
+          fallback: exercise,
+          stationMinutes: const [
+            (execution: 8, evaluation: 4, rotation: 2),
+            (execution: 10, evaluation: 4, rotation: 2),
+          ],
+        ),
+        [(execution: 10, evaluation: 4, rotation: 2)],
+      );
+    });
+
+    test('together: the walk out of station 3 is round 3 rotation', () {
+      // A round *is* a station here, so a per-station rotation lands exactly where it
+      // was authored rather than being flattened into a maximum.
+      expect(
+        ExerciseSchedule.phaseMinutesFor(
+          mode: ExerciseMode.together,
+          numberOfRounds: 3,
+          fallback: exercise,
+          stationMinutes: const [
+            (execution: 70, evaluation: 10, rotation: 5),
+            (execution: 100, evaluation: 20, rotation: 30),
+            (execution: 45, evaluation: 10, rotation: 5),
+          ],
+        ),
+        const [
+          (execution: 70, evaluation: 10, rotation: 5),
+          (execution: 100, evaluation: 20, rotation: 30),
+          (execution: 45, evaluation: 10, rotation: 5),
+        ],
+      );
+    });
+
+    test('split: the longest of each phase within the group', () {
+      expect(
+        ExerciseSchedule.phaseMinutesFor(
+          mode: ExerciseMode.split,
+          numberOfRounds: 2,
+          fallback: exercise,
+          stationMinutes: const [
+            (execution: 75, evaluation: 10, rotation: 30),
+            (execution: 90, evaluation: 25, rotation: 5),
+            (execution: 45, evaluation: 10, rotation: 5),
+          ],
+          groups: const [
+            [0, 1],
+            [2],
+          ],
+        ),
+        const [
+          (execution: 90, evaluation: 25, rotation: 30),
+          (execution: 45, evaluation: 10, rotation: 5),
+        ],
+      );
+    });
+
+    test('a long walk moves the clock, not just the total', () {
+      // End to end: the rotation override has to land between the rounds, or the phase
+      // boundaries a marker reads off the brief are wrong even when the total is right.
+      final minutes = ExerciseSchedule.phaseMinutesFor(
+        mode: ExerciseMode.together,
+        numberOfRounds: 2,
+        fallback: exercise,
+        stationMinutes: const [
+          (execution: 30, evaluation: 10, rotation: 40),
+          (execution: 30, evaluation: 10, rotation: 5),
+        ],
+      );
+      final rounds = ExerciseSchedule.roundsFrom(
+        startTime: _nine,
+        minutes: minutes,
+      );
+
+      // Round 2 starts 40 minutes after round 1's evaluation ends, not 5.
+      expect(_flat(rounds), ['0900-0930-0940', '1020-1050-1100']);
+      expect(
+        _hhmm(ExerciseSchedule.endTimeFrom(startTime: _nine, minutes: minutes)),
+        '1105',
+      );
+    });
+  });
+
   group('roundsForMode', () {
     test('ring obeys the authored count', () {
       expect(
@@ -233,9 +380,7 @@ void main() {
 
       final rounds = ExerciseSchedule.roundsFrom(
         startTime: const SimpleTimeOfDay(hour: 20, minute: 15),
-        executionMinutes: minutes,
-        evaluationTime: 10,
-        rotationTime: 10,
+        minutes: _uniform(minutes, evaluation: 10, rotation: 10),
       );
       expect(_flat(rounds), [
         '2015-2125-2135',
@@ -245,9 +390,7 @@ void main() {
 
       final end = ExerciseSchedule.endTimeFrom(
         startTime: const SimpleTimeOfDay(hour: 20, minute: 15),
-        executionMinutes: minutes,
-        evaluationTime: 10,
-        rotationTime: 10,
+        minutes: _uniform(minutes, evaluation: 10, rotation: 10),
       );
       expect(_hhmm(end), '0120');
     });
@@ -264,9 +407,7 @@ void main() {
       );
       final rounds = ExerciseSchedule.roundsFrom(
         startTime: const SimpleTimeOfDay(hour: 13, minute: 0),
-        executionMinutes: minutes,
-        evaluationTime: 15,
-        rotationTime: 10,
+        minutes: _uniform(minutes, evaluation: 15, rotation: 10),
       );
       expect(_flat(rounds), ['1300-1345-1400', '1410-1455-1510']);
     });

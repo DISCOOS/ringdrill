@@ -77,6 +77,8 @@ String? resolveScopedField(
         // execution time overrides the exercise's where it has one (ADR-0062).
         exercise: exerciseScope?.exercise,
         executionTime: stationScope.executionTime,
+        evaluationTime: stationScope.evaluationTime,
+        rotationTime: stationScope.rotationTime,
       ),
     if (roleplayScope != null)
       'roleplay': _roleplayFacets(
@@ -157,6 +159,8 @@ String? resolveModelField(
         position: station.position,
         exercise: exercise,
         executionTime: station.executionTime,
+        evaluationTime: station.evaluationTime,
+        rotationTime: station.rotationTime,
       ),
     if (roleplay != null)
       'roleplay': _roleplayFacets(
@@ -226,6 +230,8 @@ Map<String, dynamic> _stationFacets({
   LatLng? position,
   Exercise? exercise,
   int? executionTime,
+  int? evaluationTime,
+  int? rotationTime,
 }) => {
   'name': name ?? '',
   'stationCode': stationCode ?? '',
@@ -237,7 +243,12 @@ Map<String, dynamic> _stationFacets({
   ),
   'duration': exercise == null
       ? null
-      : stationDurationLabel(exercise, executionTime: executionTime),
+      : stationDurationLabel(
+          exercise,
+          executionTime: executionTime,
+          evaluationTime: evaluationTime,
+          rotationTime: rotationTime,
+        ),
 };
 
 Map<String, dynamic> _roleplayFacets({

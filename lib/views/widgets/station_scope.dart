@@ -33,6 +33,8 @@ class StationScope extends InheritedWidget {
     this.name,
     this.stationCode,
     this.executionTime,
+    this.evaluationTime,
+    this.rotationTime,
     this.description,
     this.variantSuffix,
     this.position,
@@ -71,6 +73,8 @@ class StationScope extends InheritedWidget {
             variantSuffix: station.variantSuffix,
             position: station.position,
             executionTime: station.executionTime,
+            evaluationTime: station.evaluationTime,
+            rotationTime: station.rotationTime,
             child: child,
           );
     return ExerciseScope(
@@ -107,10 +111,12 @@ class StationScope extends InheritedWidget {
   final String? name;
   final String? stationCode;
 
-  /// The station's own execution time, where it overrides the exercise's
-  /// (ADR-0062). Null inherits, which is what almost every station does — and what
+  /// The station's own phase times, where it overrides the exercise's (ADR-0062).
+  /// Null inherits, which is what almost every station does for all three — and what
   /// `{{station.duration}}` reports when it is.
   final int? executionTime;
+  final int? evaluationTime;
+  final int? rotationTime;
   final String? description;
   final String? variantSuffix;
 
@@ -191,6 +197,8 @@ class StationScope extends InheritedWidget {
       name != oldWidget.name ||
       stationCode != oldWidget.stationCode ||
       executionTime != oldWidget.executionTime ||
+      evaluationTime != oldWidget.evaluationTime ||
+      rotationTime != oldWidget.rotationTime ||
       description != oldWidget.description ||
       variantSuffix != oldWidget.variantSuffix ||
       position != oldWidget.position;

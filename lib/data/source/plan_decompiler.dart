@@ -206,6 +206,9 @@ class PlanDecompiler {
       // Only when the station has its own; an inheriting station emits nothing, as
       // it did before ADR-0062.
       if (station.executionTime != null) 'executionTime': station.executionTime,
+      if (station.evaluationTime != null)
+        'evaluationTime': station.evaluationTime,
+      if (station.rotationTime != null) 'rotationTime': station.rotationTime,
       if (station.variantSuffix != null) 'variantSuffix': station.variantSuffix,
       if (station.position != null) 'position': _position(station.position!),
       if (station.description != null) 'description': station.description,

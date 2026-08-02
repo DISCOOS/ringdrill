@@ -106,14 +106,22 @@ String rotationRoundTable(Exercise exercise, BriefLabels l10n) {
 /// brief and the app's own field preview both need it, and a second copy in the
 /// preview resolver is exactly the drift that made `{{exercise.roundTable}}`
 /// resolve in the brief and not in the editor.
-String stationDurationLabel(Exercise exercise, {int? executionTime}) {
-  // A station may run longer than its exercise (ADR-0062), and this label is about
-  // *this* station — so its own execution time wins, in the total and in the
-  // breakdown. Reading the exercise's here reported 35 min for a 100-minute post.
+String stationDurationLabel(
+  Exercise exercise, {
+  int? executionTime,
+  int? evaluationTime,
+  int? rotationTime,
+}) {
+  // A station may own any of the three phases (ADR-0062), and this label is about
+  // *this* station — so its own values win, in the total and in the breakdown. Reading
+  // the exercise's execution here reported 35 min for a 100-minute post; reading the
+  // exercise's evaluation and rotation was the same bug one field over, and stayed
+  // once a station could own those too.
   final execution = executionTime ?? exercise.executionTime;
-  final total = execution + exercise.evaluationTime + exercise.rotationTime;
-  return '$total min '
-      '($execution | ${exercise.evaluationTime} | ${exercise.rotationTime})';
+  final evaluation = evaluationTime ?? exercise.evaluationTime;
+  final rotation = rotationTime ?? exercise.rotationTime;
+  final total = execution + evaluation + rotation;
+  return '$total min ($execution | $evaluation | $rotation)';
 }
 
 /// Returns the phase pipe-join string for [exercise]:

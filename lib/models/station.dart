@@ -21,6 +21,24 @@ sealed class Station with _$Station {
     /// Authored on the station because that is where a source document states it —
     /// "post b takes 100 minutes" — and where the author is when they know it.
     int? executionTime,
+
+    /// Minutes of debrief at this station, overriding the exercise's
+    /// `evaluationTime`. Null inherits.
+    ///
+    /// A demanding post earns a longer debrief than a simple one, and the author
+    /// knows which is which while writing the post.
+    int? evaluationTime,
+
+    /// Minutes to leave this station and reach the next one, overriding the
+    /// exercise's `rotationTime`. Null inherits.
+    ///
+    /// An edge rather than a property, strictly — but a well-defined one, because the
+    /// route is station order with a wrap. Terrain is what makes it vary: the walk out
+    /// of a shoreline post is not the walk out of the one beside the car park.
+    ///
+    /// In `ring` every team rotates at once, so the longest walk sets the round's
+    /// rotation phase and the rest wait — the same way [executionTime] behaves there.
+    int? rotationTime,
     String? variantSuffix,
     @NullableLatLngJsonConverter() LatLng? position,
     String? description,

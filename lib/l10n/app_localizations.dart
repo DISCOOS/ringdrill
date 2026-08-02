@@ -3960,13 +3960,13 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Inherited from the exercise. Override for this station.'**
-  String get stationExecutionTimeInherits;
+  String get stationTimingInherits;
 
-  /// ADR-0062: helper under a station's overridden execution time, stating the round length it produces.
+  /// ADR-0062: helper under a station's three timing overrides, stating the round length they produce.
   ///
   /// In en, this message translates to:
   /// **'The round holding this station becomes {minutes} min.'**
-  String stationExecutionTimeOverridden(int minutes);
+  String stationTimingOverridden(int minutes);
 
   /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
   ///

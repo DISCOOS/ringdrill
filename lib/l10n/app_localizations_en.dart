@@ -2334,11 +2334,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'The parallel groups and their team assignments will be removed. The app generates the assignment in this mode, so there is nowhere for hand-placed teams to go.';
 
   @override
-  String get stationExecutionTimeInherits =>
+  String get stationTimingInherits =>
       'Inherited from the exercise. Override for this station.';
 
   @override
-  String stationExecutionTimeOverridden(int minutes) {
+  String stationTimingOverridden(int minutes) {
     return 'The round holding this station becomes $minutes min.';
   }
 

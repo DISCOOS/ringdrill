@@ -233,6 +233,44 @@ void main() {
       );
     });
 
+    test('a station keeps an evaluation and a rotation override too', () {
+      // The three phases are symmetric on a station, so the round trip has to be too:
+      // a decompiler that emits only one of them silently drops the debrief and the
+      // walk on the next build.
+      final result = tripWith((plan) {
+        final exercise = plan.exercises.first;
+        return plan.copyWith(
+          exercises: [
+            exercise.copyWith(
+              stations: [
+                exercise.stations.first.copyWith(
+                  evaluationTime: 20,
+                  rotationTime: 25,
+                ),
+                ...exercise.stations.skip(1),
+              ],
+            ),
+            ...plan.exercises.skip(1),
+          ],
+        );
+      });
+
+      final station = result.after.exercises.first.stations.first;
+      expect(station.evaluationTime, 20);
+      expect(station.rotationTime, 25);
+      expect(
+        station.executionTime,
+        isNull,
+        reason: 'each phase is overridden on its own',
+      );
+      expect(
+        result.after.exercises.first.stations
+            .skip(1)
+            .every((s) => s.evaluationTime == null && s.rotationTime == null),
+        isTrue,
+      );
+    });
+
     test('a ring route decompiles to the document it always did', () {
       // The default is absent, not written. This is what keeps every published
       // plan round-tripping byte-identically rather than gaining a `mode:` line.

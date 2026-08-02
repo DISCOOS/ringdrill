@@ -2331,11 +2331,11 @@ class AppLocalizationsNb extends AppLocalizations {
       'Parallellgruppene og lagfordelingen blir fjernet. Appen fordeler lagene selv i denne modusen, så det er ingen plass til lag du har satt inn manuelt.';
 
   @override
-  String get stationExecutionTimeInherits =>
+  String get stationTimingInherits =>
       'Arver fra øvelsen. Overstyr for denne posten.';
 
   @override
-  String stationExecutionTimeOverridden(int minutes) {
+  String stationTimingOverridden(int minutes) {
     return 'Runden med denne posten blir $minutes min.';
   }
 

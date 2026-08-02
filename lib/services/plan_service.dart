@@ -1205,13 +1205,19 @@ class PlanService {
       numberOfStations: effective.length,
       numberOfGroups: groups.length,
     );
-    final executionMinutes = ExerciseSchedule.executionMinutesFor(
+    final exercisePhases = (
+      execution: executionTime,
+      evaluation: evaluationTime,
+      rotation: rotationTime,
+    );
+    final phaseMinutes = ExerciseSchedule.phaseMinutesFor(
       mode: mode,
       numberOfRounds: rounds,
-      executionTime: executionTime,
-      stationMinutes: [
-        for (final station in effective) station.executionTime ?? executionTime,
-      ],
+      fallback: exercisePhases,
+      stationMinutes: ExerciseSchedule.stationMinutesFrom(
+        stations: effective,
+        fallback: exercisePhases,
+      ),
       groups: [
         for (final group in groups)
           [for (final slot in group.stations) slot.stationIndex],
@@ -1231,18 +1237,11 @@ class PlanService {
       groups: groups,
       stations: effective,
       schedule: List.unmodifiable(
-        ExerciseSchedule.roundsFrom(
-          startTime: start,
-          executionMinutes: executionMinutes,
-          evaluationTime: evaluationTime,
-          rotationTime: rotationTime,
-        ),
+        ExerciseSchedule.roundsFrom(startTime: start, minutes: phaseMinutes),
       ),
       endTime: ExerciseSchedule.endTimeFrom(
         startTime: start,
-        executionMinutes: executionMinutes,
-        evaluationTime: evaluationTime,
-        rotationTime: rotationTime,
+        minutes: phaseMinutes,
       ),
       variableOverrides: variableOverrides,
     );

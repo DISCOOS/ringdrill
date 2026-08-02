@@ -976,26 +976,43 @@ void main() {
       );
     });
 
-    test(
-      'stationDurationLabel formats round duration with phase breakdown',
-      () {
-        // 15 + 10 + 5 = 30 min (15 | 10 | 5)
-        final ex = Exercise(
-          uuid: 'e',
-          name: 'E',
-          startTime: _start,
-          endTime: _end,
-          numberOfTeams: 4,
-          numberOfRounds: 4,
-          executionTime: 15,
-          evaluationTime: 10,
-          rotationTime: 5,
-          stations: const [],
-          schedule: const [],
-        );
-        expect(BriefRenderer.stationDurationLabel(ex), '30 min (15 | 10 | 5)');
-      },
-    );
+    test('stationDurationLabel formats round duration with phase breakdown', () {
+      // 15 + 10 + 5 = 30 min (15 | 10 | 5)
+      final ex = Exercise(
+        uuid: 'e',
+        name: 'E',
+        startTime: _start,
+        endTime: _end,
+        numberOfTeams: 4,
+        numberOfRounds: 4,
+        executionTime: 15,
+        evaluationTime: 10,
+        rotationTime: 5,
+        stations: const [],
+        schedule: const [],
+      );
+      expect(BriefRenderer.stationDurationLabel(ex), '30 min (15 | 10 | 5)');
+
+      // Each phase the station owns wins, in the total and in the breakdown
+      // (ADR-0062). This label prints under every post in a booklet, so reading the
+      // exercise's value for a phase the station overrode is a number the reader
+      // then plans around: 165 min, not 30, and 25 minutes of debrief they would
+      // otherwise cut short.
+      expect(
+        BriefRenderer.stationDurationLabel(
+          ex,
+          executionTime: 100,
+          evaluationTime: 25,
+          rotationTime: 40,
+        ),
+        '165 min (100 | 25 | 40)',
+      );
+      // And one override leaves the other two inherited.
+      expect(
+        BriefRenderer.stationDurationLabel(ex, rotationTime: 40),
+        '65 min (15 | 10 | 40)',
+      );
+    });
 
     test('formatUtm returns empty string for null', () {
       expect(BriefRenderer.formatUtm(null), '');
