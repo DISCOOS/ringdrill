@@ -2398,6 +2398,55 @@
   "@tokenDescRoleplayPosition": {
     "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
   },
+  "exerciseMode": "Conduct",
+  "@exerciseMode": {
+    "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
+  },
+  "exerciseModeTogether": "Together",
+  "@exerciseModeTogether": {
+    "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
+  },
+  "exerciseModeSplit": "Split",
+  "@exerciseModeSplit": {
+    "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
+  },
+  "exerciseModeRingDescription": "One team per station. Teams rotate; the app works out who is where.",
+  "@exerciseModeRingDescription": {
+    "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
+  },
+  "exerciseModeTogetherDescription": "One station, all teams. Everyone works the same station, then moves on together.",
+  "@exerciseModeTogetherDescription": {
+    "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
+  },
+  "exerciseModeSplitDescription": "Anything in between. You group the stations that run together and say which teams go to each.",
+  "@exerciseModeSplitDescription": {
+    "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
+  },
+  "exerciseModePickerTitle": "How is it run?",
+  "@exerciseModePickerTitle": {
+    "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
+  },
+  "exerciseModeRoundsDerived": "= number of stations",
+  "@exerciseModeRoundsDerived": {
+    "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
+  },
+  "exerciseModeSwitchTitle": "Change conduct?",
+  "@exerciseModeSwitchTitle": {
+    "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
+  },
+  "exerciseModeSwitchDiscardsGroups": "The parallel groups and their team assignments will be removed. The app generates the assignment in this mode, so there is nowhere for hand-placed teams to go.",
+  "@exerciseModeSwitchDiscardsGroups": {
+    "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
+  },
+  "stationExecutionTimeInherits": "Inherited from the exercise. Override for this station.",
+  "@stationExecutionTimeInherits": {
+    "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
+  },
+  "stationExecutionTimeOverridden": "The round holding this station becomes {minutes} min.",
+  "@stationExecutionTimeOverridden": {
+    "description": "ADR-0062: helper under a station's overridden execution time, stating the round length it produces.",
+    "placeholders": { "minutes": { "type": "int" } }
+  },
   "tokenBrowserTitle": "Insert token",
   "@tokenBrowserTitle": {
     "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."

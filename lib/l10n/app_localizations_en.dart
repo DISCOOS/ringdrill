@@ -2235,6 +2235,49 @@ class AppLocalizationsEn extends AppLocalizations {
       'Where the role is placed, as a coordinate the reader can tap.';
 
   @override
+  String get exerciseMode => 'Conduct';
+
+  @override
+  String get exerciseModeTogether => 'Together';
+
+  @override
+  String get exerciseModeSplit => 'Split';
+
+  @override
+  String get exerciseModeRingDescription =>
+      'One team per station. Teams rotate; the app works out who is where.';
+
+  @override
+  String get exerciseModeTogetherDescription =>
+      'One station, all teams. Everyone works the same station, then moves on together.';
+
+  @override
+  String get exerciseModeSplitDescription =>
+      'Anything in between. You group the stations that run together and say which teams go to each.';
+
+  @override
+  String get exerciseModePickerTitle => 'How is it run?';
+
+  @override
+  String get exerciseModeRoundsDerived => '= number of stations';
+
+  @override
+  String get exerciseModeSwitchTitle => 'Change conduct?';
+
+  @override
+  String get exerciseModeSwitchDiscardsGroups =>
+      'The parallel groups and their team assignments will be removed. The app generates the assignment in this mode, so there is nowhere for hand-placed teams to go.';
+
+  @override
+  String get stationExecutionTimeInherits =>
+      'Inherited from the exercise. Override for this station.';
+
+  @override
+  String stationExecutionTimeOverridden(int minutes) {
+    return 'The round holding this station becomes $minutes min.';
+  }
+
+  @override
   String get tokenBrowserTitle => 'Insert token';
 
   @override

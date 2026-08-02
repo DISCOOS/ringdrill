@@ -3812,6 +3812,78 @@ abstract class AppLocalizations {
   /// **'Where the role is placed, as a coordinate the reader can tap.'**
   String get tokenDescRoleplayPosition;
 
+  /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
+  ///
+  /// In en, this message translates to:
+  /// **'Conduct'**
+  String get exerciseMode;
+
+  /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
+  ///
+  /// In en, this message translates to:
+  /// **'Together'**
+  String get exerciseModeTogether;
+
+  /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
+  ///
+  /// In en, this message translates to:
+  /// **'Split'**
+  String get exerciseModeSplit;
+
+  /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
+  ///
+  /// In en, this message translates to:
+  /// **'One team per station. Teams rotate; the app works out who is where.'**
+  String get exerciseModeRingDescription;
+
+  /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
+  ///
+  /// In en, this message translates to:
+  /// **'One station, all teams. Everyone works the same station, then moves on together.'**
+  String get exerciseModeTogetherDescription;
+
+  /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything in between. You group the stations that run together and say which teams go to each.'**
+  String get exerciseModeSplitDescription;
+
+  /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
+  ///
+  /// In en, this message translates to:
+  /// **'How is it run?'**
+  String get exerciseModePickerTitle;
+
+  /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
+  ///
+  /// In en, this message translates to:
+  /// **'= number of stations'**
+  String get exerciseModeRoundsDerived;
+
+  /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
+  ///
+  /// In en, this message translates to:
+  /// **'Change conduct?'**
+  String get exerciseModeSwitchTitle;
+
+  /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
+  ///
+  /// In en, this message translates to:
+  /// **'The parallel groups and their team assignments will be removed. The app generates the assignment in this mode, so there is nowhere for hand-placed teams to go.'**
+  String get exerciseModeSwitchDiscardsGroups;
+
+  /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
+  ///
+  /// In en, this message translates to:
+  /// **'Inherited from the exercise. Override for this station.'**
+  String get stationExecutionTimeInherits;
+
+  /// ADR-0062: helper under a station's overridden execution time, stating the round length it produces.
+  ///
+  /// In en, this message translates to:
+  /// **'The round holding this station becomes {minutes} min.'**
+  String stationExecutionTimeOverridden(int minutes);
+
   /// Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value.
   ///
   /// In en, this message translates to:

@@ -2232,6 +2232,49 @@ class AppLocalizationsNb extends AppLocalizations {
       'Hvor rollen står, som en koordinat leseren kan trykke på.';
 
   @override
+  String get exerciseMode => 'Gjennomføring';
+
+  @override
+  String get exerciseModeTogether => 'Samlet';
+
+  @override
+  String get exerciseModeSplit => 'Delt';
+
+  @override
+  String get exerciseModeRingDescription =>
+      'Ett lag per post. Lagene rullerer, og appen regner ut hvem som er hvor.';
+
+  @override
+  String get exerciseModeTogetherDescription =>
+      'Én post, alle lag. Alle arbeider på samme post og rykker videre sammen.';
+
+  @override
+  String get exerciseModeSplitDescription =>
+      'Alt mellom. Du grupperer postene som går samtidig og sier hvilke lag som går hvor.';
+
+  @override
+  String get exerciseModePickerTitle => 'Hvordan gjennomføres den?';
+
+  @override
+  String get exerciseModeRoundsDerived => '= antall poster';
+
+  @override
+  String get exerciseModeSwitchTitle => 'Endre gjennomføring?';
+
+  @override
+  String get exerciseModeSwitchDiscardsGroups =>
+      'Parallellgruppene og lagfordelingen blir fjernet. Appen fordeler lagene selv i denne modusen, så det er ingen plass til lag du har satt inn manuelt.';
+
+  @override
+  String get stationExecutionTimeInherits =>
+      'Arver fra øvelsen. Overstyr for denne posten.';
+
+  @override
+  String stationExecutionTimeOverridden(int minutes) {
+    return 'Runden med denne posten blir $minutes min.';
+  }
+
+  @override
   String get tokenBrowserTitle => 'Sett inn token';
 
   @override

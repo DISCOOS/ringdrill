@@ -115,6 +115,30 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// Token-aware so `RingDrillTextField`/`RingDrillTextArea`
   /// (`tokenAware: true`) can drive their chips from [PlanScope]
   /// (DESIGN-008 follow-up 09).
+  /// The station's own execution time, or empty to inherit the exercise's
+  /// (ADR-0062).
+  final TextEditingController _executionTimeController =
+      TextEditingController();
+
+  /// The override as a number, or null while the field is empty or not yet valid —
+  /// which is also what gets saved.
+  int? get _overriddenExecutionMinutes {
+    final text = _executionTimeController.text.trim();
+    if (text.isEmpty) return null;
+    final minutes = int.tryParse(text);
+    return (minutes != null && minutes > 0) ? minutes : null;
+  }
+
+  /// The round length the override produces — execution plus the exercise's
+  /// evaluation and rotation — for the helper line. Null when nothing is overridden,
+  /// or when there is no exercise in context to add the other two phases from.
+  int? get _overriddenRoundMinutes {
+    final execution = _overriddenExecutionMinutes;
+    final exercise = widget.parentExercise;
+    if (execution == null || exercise == null) return null;
+    return execution + exercise.evaluationTime + exercise.rotationTime;
+  }
+
   final TextEditingController _nameController = TokenTextEditingController(
     text: "Station",
   );
@@ -229,6 +253,8 @@ class _StationFormScreenState extends State<StationFormScreen> {
     _workingLocations = List<Location>.of(widget.station.locations);
     _workingPersons = List<Person>.of(widget.station.persons);
     _nameController.text = widget.station.name;
+    _executionTimeController.text =
+        widget.station.executionTime?.toString() ?? '';
     _descriptionController.text = widget.station.description?.toString() ?? "";
     _descriptionRevealed = _descriptionController.text.trim().isNotEmpty;
     _descriptionFocusNode.addListener(_handleDescriptionFocusChange);
@@ -955,6 +981,39 @@ class _StationFormScreenState extends State<StationFormScreen> {
                     : l10n.pleaseEnterAName,
               ),
               const SizedBox(height: 16),
+              // The station's own execution time (ADR-0062). A plain numeric field
+              // rather than a new control, with the inherit/override state said in
+              // the helper — the same way every other optional field in these forms
+              // explains itself. Empty means inherit, which is what almost every
+              // station does.
+              TextFormField(
+                controller: _executionTimeController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: l10n.executionTime,
+                  // The exercise's own time as the hint, so "inherit" shows what it
+                  // inherits. Null parentExercise is a legitimate state here (the
+                  // form is reachable without one), and then there is nothing to
+                  // inherit to show.
+                  hintText: widget.parentExercise?.executionTime.toString(),
+                  helperMaxLines: 3,
+                  helperText: _overriddenRoundMinutes == null
+                      ? l10n.stationExecutionTimeInherits
+                      : l10n.stationExecutionTimeOverridden(
+                          _overriddenRoundMinutes!,
+                        ),
+                ),
+                onChanged: (_) => setState(() {}),
+                validator: (value) {
+                  final text = value?.trim() ?? '';
+                  if (text.isEmpty) return null;
+                  final minutes = int.tryParse(text);
+                  return (minutes == null || minutes <= 0)
+                      ? l10n.pleaseEnterAValidNumber
+                      : null;
+                },
+              ),
+              const SizedBox(height: 16),
               PositionFormField(
                 markers: markers,
                 title: l10n.placement,
@@ -1104,6 +1163,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
 
       final newStation = widget.station.copyWith(
         name: name,
+        executionTime: _overriddenExecutionMinutes,
         position: _position,
         description: description.isEmpty ? null : description,
         equipmentMd: _readSection(_StationSection.equipment),

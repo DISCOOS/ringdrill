@@ -17,6 +17,7 @@ import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/rollup.dart';
+import 'package:ringdrill/views/widgets/exercise_mode_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 import 'package:ringdrill/views/widgets/variable_overrides_section.dart';
@@ -133,6 +134,43 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     text: "5",
   );
 
+  /// The exercise's conduct mode, and the parallel groups that only `split` uses
+  /// (ADR-0062). Held in state rather than read from `widget.exercise` on every
+  /// build, because this form rebuilds its exercise from these inputs on save — so
+  /// anything not held here is dropped, which is how a split plan edited in the app
+  /// would silently revert to a ring route.
+  ExerciseMode _mode = ExerciseMode.ring;
+  List<ExerciseGroup> _groups = const [];
+
+  /// Applies a mode change, confirming first when it would throw authored work away.
+  ///
+  /// Leaving `split` is the only destructive direction: `ring` and `together` generate
+  /// their assignment, so there is nowhere for hand-placed teams to go. The other
+  /// directions store nothing the author typed, so they need no dialog — one generic
+  /// "are you sure" on every switch would train the author to dismiss the one that
+  /// matters.
+  Future<void> _onModeChanged(ExerciseMode next) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (_mode == ExerciseMode.split &&
+        next != ExerciseMode.split &&
+        _groups.isNotEmpty) {
+      final confirmed = await confirmDestructive(
+        context,
+        title: l10n.exerciseModeSwitchTitle,
+        message: l10n.exerciseModeSwitchDiscardsGroups,
+        confirmLabel: l10n.exerciseMode,
+      );
+      if (!confirmed || !mounted) return;
+    }
+    setState(() {
+      _mode = next;
+      // The groups belong to `split` alone; keeping them for a mode that ignores
+      // them would make them reappear on a switch back, having silently gone stale
+      // against whatever the stations did in between.
+      if (next != ExerciseMode.split) _groups = const [];
+    });
+  }
+
   bool _stationsTracksTeams = true;
   bool _legacyOversizedCounters = false;
 
@@ -187,6 +225,8 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
           .toString();
       _numberOfStationsController.text = e.stations.length.toString();
       _numberOfRoundsController.text = e.numberOfRounds.toString();
+      _mode = e.mode;
+      _groups = e.groups;
       _executionTimeController.text = e.executionTime.toString();
       _evaluationTimeController.text = e.evaluationTime.toString();
       _rotationTimeController.text = e.rotationTime.toString();
@@ -470,6 +510,9 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                 ),
                 const SizedBox(height: 16.0),
               ],
+              // Above the counters, because it decides what they mean: outside a ring
+              // route the round count is derived rather than authored (ADR-0062).
+              ExerciseModeField(mode: _mode, onChanged: _onModeChanged),
               Row(
                 children: [
                   Expanded(
@@ -530,11 +573,21 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                     child: TextFormField(
                       controller: _numberOfRoundsController,
                       keyboardType: TextInputType.number,
+                      // Derived outside a ring route — one round per station, or per
+                      // parallel group — so the field is read-only there and says
+                      // where the number came from rather than accepting one it will
+                      // then ignore.
+                      enabled: _mode == ExerciseMode.ring,
                       decoration: InputDecoration(
                         labelText: l10n.numberOfRounds,
+                        helperText: _mode == ExerciseMode.ring
+                            ? null
+                            : l10n.exerciseModeRoundsDerived,
                       ),
                       onChanged: (_) => setState(() {}),
-                      validator: (value) => _validateCounter(value, l10n),
+                      validator: (value) => _mode == ExerciseMode.ring
+                          ? _validateCounter(value, l10n)
+                          : null,
                     ),
                   ),
                 ],
@@ -803,6 +856,8 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
 
       // Generate exercise with user input
       final newExercise = PlanService.generateSchedule(
+        mode: _mode,
+        groups: _groups,
         name: name,
         startTime: _startTime,
         uuid: widget.exercise?.uuid,

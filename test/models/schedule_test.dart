@@ -4,9 +4,13 @@
 // The invariant that matters most is the first group's: a ring route with no station
 // overrides must derive exactly what it derived before this existed, because that is
 // most of every plan in the catalog.
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/schedule.dart';
+import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/plan_service.dart';
 
 const _nine = SimpleTimeOfDay(hour: 9, minute: 0);
 
@@ -147,22 +151,25 @@ void main() {
       );
     });
 
-    test('a group naming a station that does not exist is ignored, not fatal', () {
-      // A stale index survives a station being deleted. The round still has to have
-      // a length, and the exercise's own time is the only defensible one.
-      expect(
-        ExerciseSchedule.executionMinutesFor(
-          mode: ExerciseMode.split,
-          numberOfRounds: 1,
-          executionTime: 15,
-          stationMinutes: const [70],
-          groups: const [
-            [9],
-          ],
-        ),
-        [15],
-      );
-    });
+    test(
+      'a group naming a station that does not exist is ignored, not fatal',
+      () {
+        // A stale index survives a station being deleted. The round still has to have
+        // a length, and the exercise's own time is the only defensible one.
+        expect(
+          ExerciseSchedule.executionMinutesFor(
+            mode: ExerciseMode.split,
+            numberOfRounds: 1,
+            executionTime: 15,
+            stationMinutes: const [70],
+            groups: const [
+              [9],
+            ],
+          ),
+          [15],
+        );
+      },
+    );
   });
 
   group('roundsForMode', () {
@@ -177,18 +184,21 @@ void main() {
       );
     });
 
-    test('together derives one round per station, ignoring the authored count', () {
-      // The field becomes derived in this mode, which is why the editor shows it
-      // locked rather than editable.
-      expect(
-        ExerciseSchedule.roundsForMode(
-          mode: ExerciseMode.together,
-          numberOfRounds: 4,
-          numberOfStations: 2,
-        ),
-        2,
-      );
-    });
+    test(
+      'together derives one round per station, ignoring the authored count',
+      () {
+        // The field becomes derived in this mode, which is why the editor shows it
+        // locked rather than editable.
+        expect(
+          ExerciseSchedule.roundsForMode(
+            mode: ExerciseMode.together,
+            numberOfRounds: 4,
+            numberOfStations: 2,
+          ),
+          2,
+        );
+      },
+    );
 
     test('split derives one round per group', () {
       expect(
@@ -259,6 +269,89 @@ void main() {
         rotationTime: 10,
       );
       expect(_flat(rounds), ['1300-1345-1400', '1410-1455-1510']);
+    });
+  });
+
+  group('generateSchedule carries the mode and groups', () {
+    // The exercise editor rebuilds its exercise from these inputs on every save, so
+    // anything generateSchedule does not take is dropped. That is how a split plan
+    // edited in the app would silently revert to a ring route — the flattening hazard
+    // ADR-0062 named, closed by passing them rather than by guarding against it.
+    testWidgets('a split exercise keeps its groups and its derived clock', (
+      tester,
+    ) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final rebuilt = PlanService.generateSchedule(
+        name: 'Night search',
+        startTime: const TimeOfDay(hour: 20, minute: 15),
+        numberOfTeams: 4,
+        numberOfStations: 4,
+        numberOfRounds: 3,
+        executionTime: 15,
+        evaluationTime: 10,
+        rotationTime: 10,
+        localizations: l10n,
+        mode: ExerciseMode.split,
+        groups: const [
+          ExerciseGroup(
+            stations: [
+              GroupSlot(stationIndex: 0, teams: [0, 1, 2, 3]),
+            ],
+          ),
+          ExerciseGroup(
+            stations: [
+              GroupSlot(stationIndex: 1, teams: [0, 1, 2, 3]),
+            ],
+          ),
+          ExerciseGroup(
+            stations: [
+              GroupSlot(stationIndex: 2, teams: [0, 1]),
+              GroupSlot(stationIndex: 3, teams: [2, 3]),
+            ],
+          ),
+        ],
+        stations: const [
+          Station(index: 0, name: 'A', executionTime: 70),
+          Station(index: 1, name: 'B', executionTime: 100),
+          Station(index: 2, name: 'C', executionTime: 75),
+          Station(index: 3, name: 'D', executionTime: 75),
+        ],
+      );
+
+      expect(rebuilt.mode, ExerciseMode.split);
+      expect(rebuilt.groups, hasLength(3));
+      expect(rebuilt.numberOfRounds, 3, reason: 'one per group');
+      expect(_flat(rebuilt.schedule), [
+        '2015-2125-2135',
+        '2145-2325-2335',
+        '2345-0100-0110',
+      ]);
+      // And the assignment still answers "who is where" after the rebuild.
+      expect(rebuilt.teamsAt(2, 2), [0, 1]);
+      expect(rebuilt.teamsAt(3, 2), [2, 3]);
+    });
+
+    testWidgets('a ring exercise is unchanged by any of this', (tester) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final rebuilt = PlanService.generateSchedule(
+        name: 'Area search',
+        startTime: const TimeOfDay(hour: 9, minute: 0),
+        numberOfTeams: 4,
+        numberOfStations: 4,
+        numberOfRounds: 4,
+        executionTime: 15,
+        evaluationTime: 10,
+        rotationTime: 5,
+        localizations: l10n,
+      );
+      expect(rebuilt.mode, ExerciseMode.ring);
+      expect(rebuilt.groups, isEmpty);
+      expect(_flat(rebuilt.schedule), [
+        '0900-0915-0925',
+        '0930-0945-0955',
+        '1000-1015-1025',
+        '1030-1045-1055',
+      ]);
     });
   });
 }
