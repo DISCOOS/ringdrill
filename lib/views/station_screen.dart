@@ -628,15 +628,25 @@ class _StationScreenState extends State<StationScreen>
     ExerciseEvent event,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final rows = List.generate(exercise.schedule.length, (roundIndex) {
+    // Only the rounds this station is actually used in. The Spill viewer's own
+    // timetable has always done this, and once a round is a group rather than a
+    // rotation over every station (ADR-0062) the skipped rounds are the majority — a
+    // `together` station would otherwise show one row and N-1 crosses.
+    final activeRounds = [
+      for (var round = 0; round < exercise.schedule.length; round++)
+        if (RoundOccupancy.isActive(exercise, widget.stationIndex, round))
+          round,
+    ];
+    final rows = activeRounds.map((roundIndex) {
       // Every team here, not the first of them (ADR-0062): `together` puts all of
       // them on one station and `split` divides them, so a row that named one was
       // naming an arbitrary member of the set.
       final teams = exercise.teamsAt(widget.stationIndex, roundIndex);
       // The tap opens *a* team, and with several here it opens the first. A row
       // cannot open four sheets, and the label already says who else is present, so
-      // the first is the least surprising of the available wrong answers.
-      final teamIndex = teams.isEmpty ? -1 : teams.first;
+      // the first is the least surprising of the available wrong answers. Never
+      // empty: only active rounds are listed.
+      final teamIndex = teams.first;
       return ScheduleTableRow(
         roundIndex: roundIndex,
         label: RoundOccupancy.label(
@@ -655,23 +665,17 @@ class _StationScreenState extends State<StationScreen>
                 ),
               ),
       );
-    });
-    // A station no round uses — possible from ADR-0062, where a round is a group of
-    // stations rather than a rotation over all of them. Its timetable was every row
-    // struck through, which says "never used" only by implication and asks the reader
-    // to notice an absence across four rows.
-    final used = [
-      for (var round = 0; round < exercise.schedule.length; round++)
-        if (RoundOccupancy.isActive(exercise, widget.stationIndex, round))
-          round,
-    ];
+    }).toList();
+    // A station no round uses at all, for the same reason: it belongs to no group.
+    // Its timetable was every row struck through, which says "never used" only by
+    // implication and asks the reader to notice an absence.
     return ScheduleCard(
       sectionId: 'schedule',
       title: l10n.stationTimingCardTitle,
       headerLabel: l10n.team(1),
-      badge: used.isEmpty ? l10n.stationNotUsedBadge : null,
+      badge: activeRounds.isEmpty ? l10n.stationNotUsedBadge : null,
       emptyNote: l10n.stationNotUsedInExercise,
-      rows: used.isEmpty ? const [] : rows,
+      rows: rows,
       event: event,
       exercise: exercise,
       // Collapsed-header summary: the whole exercise window and its duration,

@@ -17,6 +17,7 @@ import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/team_form_screen.dart';
+import 'package:ringdrill/views/round_occupancy.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
@@ -196,10 +197,23 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
     required bool isNow,
     String? time,
   }) {
-    final stationIndex = widget.exercise.stationIndex(
+    // Null when the team is nowhere this round — reachable from ADR-0062, where a
+    // `split` round may hold a team back. `stations[-1]` threw rather than
+    // misrendering, so this was a crash waiting for the first such plan.
+    final stationIndex = RoundOccupancy.stationOf(
+      widget.exercise,
       widget.teamIndex,
       roundIndex,
     );
+    if (stationIndex == null) {
+      return PlayerStatusCell(
+        icon: Icons.location_on,
+        label: isNow ? l10n.statusNow : l10n.nextLabel,
+        time: time,
+        value: l10n.statusNotActiveNow,
+        isNow: isNow,
+      );
+    }
     final station = widget.exercise.stations[stationIndex];
     final plan = _planService.activePlan;
     final exerciseNumber = _planService.getExerciseNumber(widget.exercise.uuid);
@@ -254,10 +268,19 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
       return n < 1 ? 1 : n;
     }();
     final rows = List.generate(widget.exercise.schedule.length, (index) {
-      final stationIndex = widget.exercise.stationIndex(
+      final stationIndex = RoundOccupancy.stationOf(
+        widget.exercise,
         widget.teamIndex,
         index,
       );
+      if (stationIndex == null) {
+        // Held back this round: say so rather than crashing on stations[-1].
+        return ScheduleTableRow(
+          roundIndex: index,
+          label: '${localizations.station(1)} ×',
+          muted: true,
+        );
+      }
       final station = widget.exercise.stations[stationIndex];
       // The formatted post number + name (Station.numberAndName), matching the
       // status card's badge + name above.
