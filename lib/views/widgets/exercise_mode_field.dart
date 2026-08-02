@@ -1,11 +1,17 @@
 /// The exercise's conduct mode as a form field (ADR-0062).
 ///
-/// Deliberately not a new control. It is the pattern the forms already use for
-/// "choose one, and show what is chosen": a `ListTile` carrying the current value,
-/// opening [showRingdrillPicker] (ADR-0049) — the app's bottom-sheet-on-compact,
-/// dialog-on-wide picker — with one `ListTile` per option. The station picker in the
-/// roleplay editor reads the same way, which is the point: an author who has chosen a
-/// station has already met this.
+/// Deliberately not a new control. It is the pattern this form already uses for a
+/// tappable value — an `InkWell` around an [InputDecorator], the same as the start-time
+/// field beside the exercise name — opening [showRingdrillPicker] (ADR-0049), the app's
+/// bottom-sheet-on-compact, dialog-on-wide picker, with one `ListTile` per option. The
+/// station picker in the roleplay editor reads the same way, which is the point: an
+/// author who has chosen a station has already met this.
+///
+/// The border is the outlined variant rather than the siblings' underline. As a bare
+/// `ListTile` this had no frame at all and read as a caption floating between two rows
+/// of real inputs; and unlike those inputs it governs the whole exercise — the counters
+/// below it change meaning when it changes — so reading as its own enclosed thing is
+/// right rather than merely decorative.
 ///
 /// The mode's label, description and icon live here rather than at the two call
 /// sites, so the row and the picker cannot describe the same mode differently.
@@ -66,17 +72,30 @@ class ExerciseModeField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      leading: Icon(exerciseModeIcon(mode)),
-      title: Text(
-        l10n.exerciseMode,
-        style: Theme.of(context).textTheme.bodySmall,
-      ),
-      subtitle: Text(exerciseModeLabel(l10n, mode)),
-      trailing: const Icon(Icons.expand_more),
-      enabled: enabled,
+    final theme = Theme.of(context);
+    const radius = BorderRadius.all(Radius.circular(8));
+    return InkWell(
       onTap: enabled ? () => _pick(context, l10n) : null,
+      borderRadius: radius,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: l10n.exerciseMode,
+          enabled: enabled,
+          border: const OutlineInputBorder(borderRadius: radius),
+          prefixIcon: Icon(exerciseModeIcon(mode)),
+          suffixIcon: const Icon(Icons.expand_more),
+        ),
+        child: Text(
+          exerciseModeLabel(l10n, mode),
+          // ADR-0037: themed, not a hardcoded size — and bodyLarge, so the value sits
+          // at the same weight as the text the sibling fields hold.
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: enabled
+                ? null
+                : theme.colorScheme.onSurface.withValues(alpha: 0.38),
+          ),
+        ),
+      ),
     );
   }
 

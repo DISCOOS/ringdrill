@@ -2,9 +2,9 @@
 // exercise editor rebuilds its exercise from these inputs on every save, so a mode
 // the form does not hold is a mode the first LAGRE throws away.
 //
-// The control itself is deliberately nothing new — a `ListTile` opening
-// `showRingdrillPicker`, the same shape the roleplay editor's station selector uses —
-// so what is worth testing is the wiring, not the widget.
+// The control itself is deliberately nothing new — a tappable `InputDecorator` opening
+// `showRingdrillPicker`, the same shape the start-time field and the roleplay editor's
+// station selector use — so what is worth testing is the wiring, not the widget.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
@@ -53,6 +53,24 @@ void main() {
     expect(find.text(l.exerciseModeSplitDescription), findsOne);
   });
 
+  testWidgets('the row is a framed field, not a bare list tile', (
+    tester,
+  ) async {
+    // As a `ListTile` this had no frame and read as a caption floating between two rows
+    // of real inputs. It is the form's own tappable-value idiom now — an `InkWell`
+    // around an `InputDecorator`, like the start-time field — with the outlined border
+    // rather than the siblings' underline, since it governs the whole exercise.
+    await _pump(tester, mode: ExerciseMode.ring, onChanged: (_) {});
+
+    expect(find.byType(ListTile), findsNothing);
+    final decorator = tester.widget<InputDecorator>(
+      find.byType(InputDecorator),
+    );
+    expect(decorator.decoration.border, isA<OutlineInputBorder>());
+    expect(decorator.decoration.prefixIcon, isNotNull, reason: 'the mode icon');
+    expect(decorator.decoration.suffixIcon, isNotNull, reason: 'it opens');
+  });
+
   testWidgets('the three labels read as a set of one-word options', (
     tester,
   ) async {
@@ -62,7 +80,11 @@ void main() {
     // rather than one mode of one exercise.
     final l = await _pump(tester, mode: ExerciseMode.ring, onChanged: (_) {});
     expect(l.exerciseModeRing, 'Ring');
-    expect(l.briefRingRoute, 'Ring Route', reason: 'the brief keeps its own term');
+    expect(
+      l.briefRingRoute,
+      'Ring Route',
+      reason: 'the brief keeps its own term',
+    );
     expect(find.text(l.exerciseModeRing), findsOne);
   });
 
@@ -96,7 +118,7 @@ void main() {
 
     await tester.tap(find.text(l.exerciseModeTogether));
     await tester.pumpAndSettle();
-    // Two now: the row's own subtitle and the picker's row.
+    // Two now: the row's own value and the picker's row.
     await tester.tap(find.text(l.exerciseModeTogether).last);
     await tester.pumpAndSettle();
 
