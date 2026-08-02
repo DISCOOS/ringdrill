@@ -611,11 +611,19 @@ MarkdownConfig _briefMarkdownConfig(
       // Tables
       TableConfig(
         border: TableBorder.all(color: t.borders.subtle),
+        // A fill, not weight alone: a header row that differs only in boldness stops
+        // reading as a header the moment anything else on the row is emphasised.
+        headerRowDecoration: BoxDecoration(color: t.surfaces.tableHeader),
         headerStyle: TextStyle(
           color: t.text.heading,
           fontWeight: FontWeight.bold,
         ),
-        bodyStyle: TextStyle(color: t.text.body),
+        // Weight stated, not inherited. `bodyStyle` set only a colour, so cells took
+        // their weight from whatever `DefaultTextStyle` the table happened to sit in —
+        // which rendered every cell of the exercise preview's round table bold, header
+        // and body alike, so the header stopped meaning anything. A table body is
+        // never emphasis, wherever it is placed.
+        bodyStyle: TextStyle(color: t.text.body, fontWeight: FontWeight.normal),
         // A table wider than its slot scrolls rather than overflowing. Without
         // this, `TableNode` puts the built `Table` straight into a `WidgetSpan`
         // with no scroll of its own, so a plan's "Talegrupper" table is fine on a

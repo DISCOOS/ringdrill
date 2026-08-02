@@ -84,18 +84,16 @@ String rotationRoundTable(Exercise exercise, BriefLabels l10n) {
   String cell(String text) => text.replaceAll('|', r'\|');
   String row(Iterable<String> cells) => '| ${cells.map(cell).join(' | ')} |';
 
-  // The last column carries "neste"/"retur" and has no name of its own.
+  // "neste"/"retur" goes in parentheses after the rotation time rather than in a
+  // column of its own: it is a note about that time, and a column with no header was
+  // a cell the reader had to guess the meaning of.
   final buf = StringBuffer()
-    ..writeln(row([l10n.round(1), ...phaseHeaders, '']))
-    ..writeln('|${'---|' * (phaseHeaders.length + 2)}');
+    ..writeln(row([l10n.round(1), ...phaseHeaders]))
+    ..writeln('|${'---|' * (phaseHeaders.length + 1)}');
   for (final r in rounds) {
-    buf.writeln(
-      row([
-        '${r.index}',
-        ...(splitPhases ? r.times : [r.timesText]),
-        r.suffix,
-      ]),
-    );
+    final phases = splitPhases ? [...r.times] : [r.timesText];
+    phases[phases.length - 1] = '${phases.last} (${r.suffix})';
+    buf.writeln(row(['${r.index}', ...phases]));
   }
   return buf.toString().trimRight();
 }

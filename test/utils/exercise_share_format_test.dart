@@ -184,7 +184,7 @@ void main() {
       final rows = table.split('\n');
 
       expect(rows.length, 8, reason: 'header, delimiter and six rounds');
-      expect(rows[1], '|---|---|---|---|---|');
+      expect(rows[1], '|---|---|---|---|');
       expect(rows[2], contains('| 1 |'));
       expect(rows[2], contains('0930'));
       expect(rows.last, contains('| 6 |'));
@@ -205,9 +205,11 @@ void main() {
       expect(
         rows.first,
         '| ${l10n.round(1)} | ${l10n.execution} | '
-        '${l10n.evaluation} | ${l10n.rotation} |  |',
+        '${l10n.evaluation} | ${l10n.rotation} |',
       );
-      expect(rows[2], startsWith('| 1 | 0930 | 0945 | 0955 |'));
+      // The rotation cell carries what happens after the round, in parentheses —
+      // it is a note about that time, not a column of its own.
+      expect(rows[2], '| 1 | 0930 | 0945 | 0955 (${l10n.rotationShareNext}) |');
       expect(
         table,
         isNot(contains(r'\|')),
@@ -227,7 +229,7 @@ void main() {
       );
       for (final row in table.split('\n')) {
         final bare = row.replaceAll(r'\|', '');
-        expect(bare.split('|').length, 7, reason: 'five columns in "$row"');
+        expect(bare.split('|').length, 6, reason: 'four columns in "$row"');
       }
     });
 

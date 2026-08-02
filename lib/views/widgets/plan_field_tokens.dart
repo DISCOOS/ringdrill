@@ -118,10 +118,10 @@ class PlanFieldTokens {
   /// the editor never holds it: it is assembled when the brief renders.
   static const _examples = <String, String>{
     'exercise.roundTable':
-        '| Runde | Øving | Evaluering | Rullering |  |\n'
-        '|---|---|---|---|---|\n'
-        '| 1 | 0900 | 0915 | 0925 | neste |\n'
-        '| 2 | 0930 | 0945 | 0955 | retur |',
+        '| Runde | Øving | Evaluering | Rullering |\n'
+        '|---|---|---|---|\n'
+        '| 1 | 0900 | 0915 | 0925 (neste) |\n'
+        '| 2 | 0930 | 0945 | 0955 (retur) |',
     'exercise.phaseBreakdown': '15 | 10 | 5',
     'exercise.timeLabel': '0900–1130',
     'exercise.durationLabel': '2 t (30 min pr oppdrag)',

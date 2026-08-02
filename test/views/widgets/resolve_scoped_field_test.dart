@@ -177,10 +177,11 @@ void main() {
       resolveScopedField(context, '{{station.duration}}'),
       '20 min (10 | 5 | 5)',
     );
-    // A GFM table with a column per phase, in hhmm.
+    // A GFM table with a column per phase, in hhmm, and what happens after the round
+    // in parentheses on the rotation time rather than in a column of its own.
     final table = resolveScopedField(context, '{{exercise.roundTable}}')!;
-    expect(table, contains('| 1 | 0800 | 0810 | 0815 |'));
-    expect(table, contains('| 2 | 0820 | 0830 | 0835 |'));
+    expect(table, contains('| 1 | 0800 | 0810 | 0815 ('));
+    expect(table, contains('| 2 | 0820 | 0830 | 0835 ('));
   });
 
   testWidgets('resolves {{var.*}}, {{plan.*}}, {{exercise.*}}, {{station.*}}, '
