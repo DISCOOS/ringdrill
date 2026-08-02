@@ -197,6 +197,7 @@ another field's heading reads as a duplicate section. Neither is an error
 | `training_focus` | exercise | What to watch for and evaluate. | "Training focus" |
 | `order_format` | exercise | The order template teams work to. | "Order format" |
 | `execution_tips` | exercise | Practical notes for whoever runs it. | "Execution tips" |
+| `description` | station | The post's own summary: what this post is, in a sentence or two. **Expected** — see below. | the top of the post's own section |
 | `equipment` | station | What the station needs on site. | "Equipment" |
 | `situation` | station | The scenario: who, where, when, what is known. | "Situation" |
 | `mission` | station | The order the team is given. | "Mission" |
@@ -207,9 +208,38 @@ another field's heading reads as a duplicate section. Neither is an error
 | `behavior` | roleplay | How the marker acts. | "Role-play (*person*)" |
 | `background` | roleplay | What the marker knows and has done. | "Role-play (*person*)" |
 | `props` | roleplay | What the marker needs. | **Props:** within the role-play section |
+| `description` | roleplay | The marker as a team sees them: build, clothing, manner. **Expected** — see below. | within the role-play section |
 
 A field you have nothing real to put in should be omitted, not filled with
-something generic.
+something generic. **Three are exceptions**, because the app asks for them by name.
+
+### The three the app expects
+
+An exercise's `method`, a station's `description` and a roleplay's `description` are
+the ones the app nudges about. A post without a description shows
+`Missing: Station description  ·  Add` in its own card, once per post, for as long as
+it stays empty — so leaving it out is not neutral, it is a visible gap in someone
+else's plan.
+
+They are easy to skip by accident, because a source document usually has no heading
+that maps to them. A course booklet gives you the scenario and the order, which land
+in `situation` and `mission`, and nothing that reads like "describe this post". Write
+it anyway, from what the rest of the post says:
+
+```yaml
+- name: Demens
+  # What this post is, for someone scanning the list — not the scenario again.
+  description: |
+    House search for a missing woman with dementia, in and around Gamlehuset.
+  situation: |
+    (AL) Anne Glemsk, 39, was reported missing from Gamlehuset in
+    {{station.position}} by family at 13.00 today.
+```
+
+`description` and `situation` are not duplicates: the first is the post as staff
+refer to it, the second is the scenario as the team meets it. If yours would repeat
+`situation`, shorten it to the one line that distinguishes this post from the one
+before it.
 
 `comms` cascades: a station shows its exercise's `comms`, falling back to the
 plan's. That is why a station needs no `comms` of its own to show talk groups,

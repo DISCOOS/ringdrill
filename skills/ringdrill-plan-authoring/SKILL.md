@@ -224,9 +224,20 @@ whole rotation, `split` groups and the two rules that police them are in
 The format will happily accept a plan that is structurally perfect and trains
 nothing. What makes a plan usable:
 
+- **Write the three the app asks for by name.** An exercise's `method`, a station's
+  `description` and a roleplay's `description` are the fields the app nudges about:
+  a post with no description shows `Missing: Station description · Add` in its own
+  card, once per post, until someone fills it. They are the easiest to skip, because
+  a source booklet has no heading that maps to them — it gives you the scenario and
+  the order, which land in `situation` and `mission`. Write them anyway, from what
+  the rest of the post already says.
 - **A station is a scenario, not a label.** `situation` should say who is missing,
   from where, when they were last seen, and what the team is being asked to do.
   One or two sentences of specifics beats a paragraph of generalities.
+- **`description` is not `situation` again.** The first is the post as staff refer to
+  it ("House search for a missing woman with dementia"), the second is the scenario as
+  the team meets it. If the description would repeat the situation, cut it to the one
+  line that tells this post apart from the one before it.
 - **`mission` is the order, `situation` is the picture.** Keep them separate.
 - **Put a secret in the field that owns it.** The marker's script goes in
   `behavior`, intel to withhold in `leader_answers`, and `director_notes` is for

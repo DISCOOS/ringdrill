@@ -337,6 +337,16 @@ Rules the schema cannot express, and that are easy to get wrong:
   the app renders the code itself, and a name that carries one renders it twice.
 - A token is content, not something to resolve while writing. Write {{var.x}} and
   {{station.loc.y.position}} literally; they resolve at render.
+- Three fields the app asks for by name: an exercise's \`method\`, a station's
+  \`description\` and a roleplay's \`description\`. A post with no description shows
+  "Missing: Station description" in its own card until someone fills it. They are the
+  easiest to skip, because a source booklet has no heading that maps to them — it
+  gives you the scenario and the order, which land in \`situation\` and \`mission\`.
+  Write them from what the rest of the post already says.
+- A station's \`description\` is not its \`situation\` again: the first is the post as
+  staff refer to it ("house search for a missing woman with dementia"), the second is
+  the scenario as the team meets it. If one would repeat the other, cut the
+  description to the line that tells this post apart from the one before it.
 - Never put a real person in any field. \`persons\` are fictional scenario subjects,
   and \`director_notes\` is NOT stripped at publish — a marker roster or a duty
   phone number there ships to the public catalog.

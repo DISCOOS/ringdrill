@@ -298,7 +298,13 @@ class SourceScopes {
       SourceField(
         'description',
         shape: SourceShape.string,
-        description: 'Short lead-in. Longer prose belongs in situation.',
+        description:
+            "The post's own summary: what this post is, in a sentence or two, "
+            'for someone scanning the list. The app treats it as expected and '
+            'shows "Missing: Station description" on a post without one, so '
+            'omitting it is visible rather than neutral. Not a duplicate of '
+            'situation — that is the scenario as the team meets it, this is '
+            'the post as staff refer to it. Longer prose belongs in situation.',
       ),
       SourceField(
         'variableOverrides',
