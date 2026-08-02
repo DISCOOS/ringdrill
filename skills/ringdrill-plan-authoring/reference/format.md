@@ -12,8 +12,9 @@ class names, so a rename inside the app never changes this format.
 | Term | What it is |
 |---|---|
 | **Plan** | The whole document. Named, tagged, in one content language. Owns the variables. |
-| **Exercise** | One drill: a set of stations plus the rotation over them. Has a start time, a team count, a round count and three phase durations. |
-| **Ring route** | The rotation itself — teams moving between stations on a shared clock, one team per station. The default and only shape today. Not to be confused with **ring drill**, which names the whole domain: exercises, stations and the plans that hold them. |
+| **Exercise** | One drill: a set of stations plus the rotation over them. Has a start time, a team count, a round count, three phase durations and a `mode`. |
+| **Ring route** | The default `mode`: teams move between stations on a shared clock, one team per station. Not to be confused with **ring drill**, which names the whole domain — exercises, stations and the plans that hold them. |
+| **Group** | One round of a `split` exercise: the stations running at the same time, and which teams are on each. |
 | **Station** | A rotation post. Teams move between stations one round at a time. Has an administrative `position` (where the post is) and, optionally, scenario data. |
 | **Location** | Station-owned scenario geography — a last known position, a command post. Addressed as `{{station.loc.<slug>}}`. Distinct from the station's own `position`. |
 | **Person** | A station-owned *fictional* subject — the missing person, a witness. No real-world identity. Addressed as `{{station.person.<slug>}}`. |
@@ -49,36 +50,95 @@ nothing derives from it.
 
 ## The rotation
 
-An exercise runs `numberOfRounds` rounds. Each round is
-`executionTime + evaluationTime + rotationTime` minutes: the teams work, then get
-feedback, then move. Every team is at a different station in a given round, and
-all advance together.
+An exercise says **how its teams relate to its stations** with `mode`, and that decides
+everything else about the clock. Three values, and the first is the default an absent
+`mode` means:
 
-`numberOfTeams` must be ≤ the number of stations. One round per station is a full
-rotation, which is the usual intent.
+| `mode` | Shape | Rounds |
+|---|---|---|
+| `ring` | One team per station; teams rotate. | `numberOfRounds`, as authored. |
+| `together` | All teams on one station at a time, moving on together. | One per station. |
+| `split` | Several stations at once, teams divided between them. | One per group. |
+
+They are one structure with different group sizes: a round is a set of **groups**, and a
+group is one station with some teams on it. `ring` is every group holding one team;
+`together` is one group holding all of them; `split` is anything in between — four teams
+across three stations is 2 + 1 + 1. `ring` and `together` are *generated*, which is why
+choosing them costs you nothing.
+
+A round is `execution + evaluationTime + rotationTime` minutes, where the execution is
+**the station's own** where it states one:
+
+```yaml
+stations:
+  - name: Assistanse turgåer
+    executionTime: 100      # this post takes 100 min; others inherit the exercise's
+```
+
+Write it on the station, because that is what a source document states — "post b takes
+100 minutes" is a fact about the post, not about a round. In `ring` every station is live
+every round, so **the longest one sets every round** and the teams on shorter posts wait;
+the exercise runs longer than its short stations suggest. In `together` and `split` a
+round is only as long as the station(s) it holds, which is what lets rounds differ.
+
+`numberOfTeams` must be ≤ the number of stations **in `ring`** — one team per station is
+what a rotation means. `together` puts every team on one station on purpose, and `split`
+divides them into groups smaller than the team count by definition, so neither is bound
+by it.
+
+`numberOfRounds` is authored in `ring` and **derived** in the other two. Setting it there
+is not an error, just ignored.
 
 You never write `schedule` or `endTime`. Both follow from the above.
 
-### What the rotation cannot express
+### `split`: the groups
 
-Every round is the same length: the schedule is one cycle multiplied
-(`ExerciseSchedule` in `lib/models/schedule.dart`). So an exercise whose phases
-genuinely differ in length has no honest form, and neither has one where two
-stations run **concurrently**. Both occur in real course booklets — see
-[ADR-0062](../../../docs/adrs/0062-authored-rounds-for-non-uniform-exercises.md).
+`split` is the one mode with something to author beyond the mode itself. One entry per
+round, naming the stations that run at the same time and which teams go to each:
 
-Until that lands, there are two workarounds, and both cost something visible:
+```yaml
+mode: split
+groups:
+  - stations:                 # round 1: everyone on post a
+      - station: 0
+        teams: [0, 1, 2, 3]
+  - stations:                 # round 2: posts c and d in parallel
+      - station: 2
+        teams: [0, 1]
+      - station: 3
+        teams: [2, 3]
+```
 
-* **All teams working one station at a time** — a full-scale phase rather than a
-  rotation. Use `numberOfTeams: 1`, with the real teams grouped into one. The
-  schedule stays correct, but the brief then names that group after the first
-  team ("Lag 2.1") instead of all of them, so say what is really happening in
-  `method`.
-* **Phases of unequal length, or stations running side by side** — no form is
-  correct. Keep the *per-station* durations honest, since that is the number
-  someone acts on, and put the real clock in `execution_tips` stating plainly
-  that the derived grid and end time do not apply to this exercise. A reader who
-  trusts a wrong schedule is worse off than one who has been told to ignore it.
+Both are list positions counting from 0 — the station's position in the exercise, the
+team's in the plan — so nothing here is a name and nothing is parsed
+([ADR-0059](../../../docs/adrs/0059-drill-schema-migration-ladder.md)). Keeping a
+concurrent phase in **one** exercise is the point: split it across two model exercises
+and the later stations renumber, losing the `7c`/`7d` labels the booklet and the
+veiledere use.
+
+Which teams go where is the one thing the compiler will not decide for you. It is a real
+decision — competence, travel, who has the dog — and two rules hold:
+
+* A team in **two stations of one group** is an **error**. Those stations run at once, so
+  it cannot be at both.
+* A team in **none** of a group's stations is a **warning**, promoted by `--strict`.
+  Holding a team back is legitimate; with groups of unequal size it is also easy to do by
+  accident.
+
+A station in no group at all is simply unused, and the app says so where it would
+otherwise have shown an empty timetable.
+
+### What is still not expressible
+
+The same station taking **different times on different visits**, and phase durations
+**varying by round**. Neither is a mode — the mode axis is which teams are on which
+stations, and duration is a separate one. See
+[ADR-0062](../../../docs/adrs/0062-authored-rounds-for-non-uniform-exercises.md), which
+records the extension point rather than leaving it to be rediscovered.
+
+If you find yourself reaching for `numberOfTeams: 1` to make an all-together phase come
+out right, you want `mode: together`. That workaround made the brief name the merged
+group after its first team ("Lag 2.1") instead of all of them; it is no longer needed.
 
 ## Markdown fields
 

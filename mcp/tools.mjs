@@ -340,10 +340,26 @@ Rules the schema cannot express, and that are easy to get wrong:
 - Never put a real person in any field. \`persons\` are fictional scenario subjects,
   and \`director_notes\` is NOT stripped at publish — a marker roster or a duty
   phone number there ships to the public catalog.
+- An exercise says how its teams relate to its stations with \`mode\`: \`ring\` (the
+  default — teams rotate, one per station), \`together\` (all teams on one station at a
+  time) or \`split\` (several stations at once, teams divided). Not every exercise is a
+  rotation, and forcing one into \`ring\` produces a schedule the reader cannot tell is
+  wrong. Never use \`numberOfTeams: 1\` to make an all-together phase come out right —
+  that predates modes and makes the brief name the merged group after its first team.
 - numberOfTeams must be less than or equal to the number of stations — in a ring
   route. With \`mode: together\` every team works the same station at once, and with
   \`mode: split\` the teams divide between stations that run in parallel, so neither
-  is bound by that rule.
+  is bound by that rule. numberOfRounds is likewise authored only in \`ring\`; the
+  others derive it, one round per station or per group.
+- A station may carry its own \`executionTime\`, overriding the exercise's. Write it
+  where the source document states it — "post b takes 100 minutes" is a fact about the
+  post, not about a round. In \`ring\` the longest station sets every round, so an
+  override there lengthens the whole exercise and leaves the other stations waiting.
+- \`mode: split\` also takes \`groups\`: one entry per round, naming the stations that
+  run at the same time and which teams go to each, by list position. A team in two
+  stations of one group is an error — they run at once — and a team in none is a
+  warning that \`--strict\` promotes. Keep a concurrent phase in one exercise: split it
+  across two and the later stations renumber, losing the codes the source document uses.
 - A markdown field is visible only to the audiences it declares, so a spoiler is
   withheld only if it sits in the field that owns it: the marker's script in
   \`behavior\`, intel to withhold in \`leader_answers\`.

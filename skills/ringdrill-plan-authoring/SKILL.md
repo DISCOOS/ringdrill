@@ -191,16 +191,33 @@ the role ("markør tildeles av veileder"). Operational numbers that genuinely
 belong in the plan go in a variable, where they are easy to find and change before
 publishing.
 
-**More teams than stations cannot rotate.** `numberOfTeams` must be ≤ the station
-count. The reverse is fine and common: a full-scale exercise often runs
-`numberOfTeams: 1` over several stations, with the real teams grouped into one.
+**Not every exercise is a rotation. Say which it is with `mode`.** Three values, and
+the default is the rotation:
 
-**Not every exercise is a rotation, and some cannot be expressed.** Every round
-is the same length, and two stations cannot run concurrently. Real booklets
-contain both. Read *What the rotation cannot express* in
-[`reference/format.md`](reference/format.md) before you force an exercise into a
-grid it does not fit — the honest move is sometimes a correct per-station duration
-plus a note that the derived schedule does not apply.
+* `ring` — teams rotate, one team per station. The default, and most of a course day.
+* `together` — all teams work one station at a time and move on together.
+* `split` — several stations at once, with the teams divided between them.
+
+Choosing `together` or `split` costs one line; `ring` and `together` need nothing else at
+all, because the app generates the assignment. Only `split` asks you to author anything
+more — which stations run together, and which teams go to each — and that is a real
+decision the compiler cannot make for you.
+
+**`numberOfTeams` must be ≤ the station count in `ring` only.** One team per station is
+what a rotation means. `together` puts every team on one station on purpose, and `split`
+divides them into groups smaller than the team count by definition.
+
+**Never use `numberOfTeams: 1` to make an all-together phase come out right.** That was
+the workaround before modes existed, and it makes the brief name the merged group after
+its first team ("Lag 2.1") instead of all of them. Write `mode: together` and keep the
+real teams.
+
+**A long station makes a `ring` exercise longer, not uneven.** Every station is live every
+round, so the longest sets all of them and the teams on shorter posts wait. Put the
+duration on the station that has it — `executionTime` on the station overrides the
+exercise's — and read the derived clock before assuming it is what you meant. The whole
+rotation, `split` groups and the two rules that police them are in
+[`reference/format.md`](reference/format.md).
 
 ## Writing content that is worth reading
 
