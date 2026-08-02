@@ -52,6 +52,7 @@ import 'package:ringdrill/views/widgets/position_empty_state.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_scenario_map.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
+import 'package:ringdrill/views/widgets/view_segments.dart';
 
 class StationScreen extends StatefulWidget {
   final int stationIndex;
@@ -582,22 +583,26 @@ class _StationScreenState extends State<StationScreen>
   /// own selector) so three segments centre when they fit and scroll rather
   /// than overflow on a very narrow phone.
   Widget _buildViewSelector(AppLocalizations l10n) {
+    final display = segmentDisplayFor(context, segments: 3);
     final button = SegmentedButton<_StationDetailView>(
       segments: [
-        ButtonSegment<_StationDetailView>(
+        viewSegment(
           value: _StationDetailView.info,
-          label: Text(l10n.infoTab),
-          icon: const Icon(Icons.info_outline),
+          label: l10n.infoTab,
+          icon: Icons.info_outline,
+          display: display,
         ),
-        ButtonSegment<_StationDetailView>(
+        viewSegment(
           value: _StationDetailView.script,
-          label: Text(l10n.scriptTab),
-          icon: const Icon(Icons.theater_comedy),
+          label: l10n.scriptTab,
+          icon: Icons.theater_comedy,
+          display: display,
         ),
-        ButtonSegment<_StationDetailView>(
+        viewSegment(
           value: _StationDetailView.map,
-          label: Text(l10n.mapTab),
-          icon: const Icon(Icons.map),
+          label: l10n.mapTab,
+          icon: Icons.map,
+          display: display,
         ),
       ],
       selected: {_view},

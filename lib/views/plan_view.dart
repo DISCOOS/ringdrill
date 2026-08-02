@@ -31,6 +31,7 @@ import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
+import 'package:ringdrill/views/widgets/view_segments.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
@@ -600,7 +601,14 @@ class _PlanSegmentSwitcher extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final iconOnly = constraints.maxWidth < 340;
+        // One rule for every view selector now (`view_segments.dart`): the pane's
+        // own width decides, not the window's, since this one lives in a master
+        // pane that stays narrow on a wide screen.
+        final display = segmentDisplayFor(
+          context,
+          segments: 4,
+          paneWidth: constraints.maxWidth,
+        );
         return ValueListenableBuilder<PlanSegment>(
           valueListenable: controller.activeSegment,
           builder: (context, activeSegment, _) {
@@ -619,25 +627,25 @@ class _PlanSegmentSwitcher extends StatelessWidget {
                       value: PlanSegment.exercises,
                       icon: Icons.update,
                       label: localizations.exercise(2),
-                      iconOnly: iconOnly,
+                      display: display,
                     ),
                     _segment(
                       value: PlanSegment.stations,
                       icon: Icons.place,
                       label: localizations.stationsTab,
-                      iconOnly: iconOnly,
+                      display: display,
                     ),
                     _segment(
                       value: PlanSegment.script,
                       icon: Icons.theater_comedy,
                       label: localizations.scriptSegment,
-                      iconOnly: iconOnly,
+                      display: display,
                     ),
                     _segment(
                       value: PlanSegment.teams,
                       icon: Icons.group,
                       label: localizations.team(2),
-                      iconOnly: iconOnly,
+                      display: display,
                     ),
                   ],
                   selected: {activeSegment},
@@ -664,29 +672,15 @@ class _PlanSegmentSwitcher extends StatelessWidget {
     );
   }
 
+  /// Was a local helper that had already worked out "never icon and label
+  /// together" for four segments. That rule now lives in `view_segments.dart`,
+  /// where the other three selectors get it too.
   ButtonSegment<PlanSegment> _segment({
     required PlanSegment value,
     required IconData icon,
     required String label,
-    required bool iconOnly,
-  }) {
-    return ButtonSegment<PlanSegment>(
-      value: value,
-      // Never show icon and label together: four icon+label segments
-      // overflow the master pane (320-420 px) and wrap the label. Show the
-      // label only in normal mode, and fall back to icon-only (with a
-      // tooltip) when the pane is too narrow for text.
-      icon: iconOnly ? Tooltip(message: label, child: Icon(icon)) : null,
-      label: iconOnly
-          ? null
-          : Text(
-              label,
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-            ),
-    );
-  }
+    required SegmentDisplay display,
+  }) => viewSegment(value: value, icon: icon, label: label, display: display);
 }
 
 /// Collapsing read-only overview rendered above the segment switcher.

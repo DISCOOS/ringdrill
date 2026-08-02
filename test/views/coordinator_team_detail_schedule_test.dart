@@ -112,8 +112,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Switch from the default "Stations" segment to "Teams".
-      await tester.tap(find.byIcon(Icons.group).first);
+      // Switch from the default "Stations" segment to "Teams". By label, not by
+      // icon: a four-segment selector carries no icons — four labels plus four
+      // icons overflow a phone (`view_segments.dart`).
+      final l = await AppLocalizations.delegate.load(const Locale('en'));
+      await tester.tap(find.text(l.team(1)).first);
       await tester.pumpAndSettle();
 
       // Expand the (only) team row. The rotation timetable is no longer

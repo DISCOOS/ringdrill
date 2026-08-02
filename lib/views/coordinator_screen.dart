@@ -53,6 +53,7 @@ import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
+import 'package:ringdrill/views/widgets/view_segments.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
@@ -825,30 +826,35 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // does not feed SegmentedButton a value missing from its segments after
     // a resize.
     final selectedView = includeMap ? _view : _viewWithoutMap;
+    final display = segmentDisplayFor(context, segments: includeMap ? 4 : 3);
     final button = SegmentedButton<_CoordinatorView>(
       segments: [
-        ButtonSegment<_CoordinatorView>(
+        viewSegment(
           value: _CoordinatorView.info,
-          label: Text(localizations.infoTab),
-          icon: const Icon(Icons.info_outline),
+          label: localizations.infoTab,
+          icon: Icons.info_outline,
+          display: display,
         ),
-        ButtonSegment<_CoordinatorView>(
+        viewSegment(
           value: _CoordinatorView.stations,
-          label: Text(localizations.stationsTab),
-          icon: const Icon(Icons.location_on),
+          label: localizations.stationsTab,
+          icon: Icons.location_on,
+          display: display,
         ),
-        ButtonSegment<_CoordinatorView>(
+        viewSegment(
           // Plural-aware label, but no parenthetical count: with four segments
           // the row has to stay narrow enough for a compact phone.
           value: _CoordinatorView.teams,
-          label: Text(localizations.team(exercise.numberOfTeams)),
-          icon: const Icon(Icons.group),
+          label: localizations.team(exercise.numberOfTeams),
+          icon: Icons.group,
+          display: display,
         ),
         if (includeMap)
-          ButtonSegment<_CoordinatorView>(
+          viewSegment(
             value: _CoordinatorView.map,
-            label: Text(localizations.mapTab),
-            icon: const Icon(Icons.map),
+            label: localizations.mapTab,
+            icon: Icons.map,
+            display: display,
           ),
       ],
       selected: <_CoordinatorView>{selectedView},

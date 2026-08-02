@@ -56,6 +56,7 @@ import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/widgets/section_header.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
+import 'package:ringdrill/views/widgets/view_segments.dart';
 
 /// Read-only view of a single [RolePlay]. Shows the publishable scenario
 /// fields (name, age, description, background, behavior, station, position).
@@ -744,17 +745,20 @@ class _RolePlayScreenState extends State<RolePlayScreen>
   /// centres when it fits and scrolls rather than overflows on a very
   /// narrow phone.
   Widget _buildViewSelector(AppLocalizations l10n) {
+    final display = segmentDisplayFor(context, segments: 2);
     final button = SegmentedButton<_RolePlayDetailView>(
       segments: [
-        ButtonSegment<_RolePlayDetailView>(
+        viewSegment(
           value: _RolePlayDetailView.info,
-          label: Text(l10n.infoTab),
-          icon: const Icon(Icons.info_outline),
+          label: l10n.infoTab,
+          icon: Icons.info_outline,
+          display: display,
         ),
-        ButtonSegment<_RolePlayDetailView>(
+        viewSegment(
           value: _RolePlayDetailView.map,
-          label: Text(l10n.mapTab),
-          icon: const Icon(Icons.map),
+          label: l10n.mapTab,
+          icon: Icons.map,
+          display: display,
         ),
       ],
       selected: {_view},
