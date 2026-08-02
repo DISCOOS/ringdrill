@@ -18,6 +18,8 @@ import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/rollup.dart';
 import 'package:ringdrill/models/numbering.dart';
+import 'package:ringdrill/utils/exercise_share_format.dart';
+import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/views/widgets/exercise_groups_section.dart';
 import 'package:ringdrill/views/widgets/exercise_mode_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
@@ -623,6 +625,13 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     return RollupCard.withScrollable(
       context: context,
       sections: [
+        // The derived timetable, first, from the values in the form right now — not
+        // from the last save (ADR-0062, mockup panel 3). This is the answer to "what
+        // does this mode actually produce": the author reads the round table instead
+        // of working the clock out, and reads it here because the preview is where the
+        // brief's own rendering of it lives. Rendered by the same markdown path, from
+        // the same `rotationRoundTable` the brief calls.
+        ?_roundTablePreview(l10n),
         for (final section in _ExerciseSection.values)
           if (_activeSections.contains(section))
             RollupSection(
@@ -633,6 +642,52 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
             ),
       ],
     );
+  }
+
+  /// The round table for the values currently in the form, or null when they do not
+  /// yet describe a schedule.
+  ///
+  /// Built through `generateSchedule`, the same derivation save uses, so the preview
+  /// cannot disagree with what saving would produce. Null rather than a partial table
+  /// while the counters are mid-edit: `generateSchedule` asserts a ring route has at
+  /// least one station per team, and an author halfway through typing "4" over "1"
+  /// briefly does not.
+  RollupSection? _roundTablePreview(AppLocalizations l10n) {
+    final teams = int.tryParse(_numberOfTeamsController.text);
+    final stations = int.tryParse(_numberOfStationsController.text);
+    final rounds = int.tryParse(_numberOfRoundsController.text);
+    final execution = int.tryParse(_executionTimeController.text);
+    final evaluation = int.tryParse(_evaluationTimeController.text);
+    final rotation = int.tryParse(_rotationTimeController.text);
+    if (teams == null ||
+        stations == null ||
+        rounds == null ||
+        execution == null ||
+        evaluation == null ||
+        rotation == null ||
+        teams < 1 ||
+        stations < 1 ||
+        rounds < 1 ||
+        (_mode == ExerciseMode.ring && teams > stations)) {
+      return null;
+    }
+    final preview = PlanService.generateSchedule(
+      name: _nameController.text,
+      startTime: _startTime,
+      numberOfTeams: teams,
+      numberOfStations: stations,
+      numberOfRounds: rounds,
+      executionTime: execution,
+      evaluationTime: evaluation,
+      rotationTime: rotation,
+      localizations: l10n,
+      mode: _mode,
+      groups: _groups,
+      stations: widget.exercise?.stations ?? const [],
+    );
+    final table = rotationRoundTable(preview, l10n.brief);
+    if (table.isEmpty) return null;
+    return RollupSection(id: 'roundTable', label: l10n.roundTable, text: table);
   }
 
   /// Names declared for this editor's save-time undeclared-token check: the

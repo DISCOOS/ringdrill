@@ -174,4 +174,23 @@ void main() {
     expect(find.textContaining('Method for World'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('the rollup leads with the round table, derived from the form', (
+    tester,
+  ) async {
+    // ADR-0062, mockup panel 3. The author reads the timetable instead of working the
+    // clock out, and reads it in the preview because that is where the brief's own
+    // rendering of it lives. Derived from the values in the form, not from the last
+    // save, so a mode or duration change shows up before committing.
+    final l = await _pumpWideEditor(tester);
+
+    await tester.tap(find.byIcon(Icons.visibility_outlined));
+    await tester.pumpAndSettle();
+
+    // SectionHeader uppercases a rollup label, as it does for every section.
+    expect(find.text(l.roundTable.toUpperCase()), findsOne);
+    // One round of 15 + 10 + 5 from 08:00 — the fixture's own numbers, rendered as
+    // the round table's hhmm cells.
+    expect(find.textContaining('0800'), findsWidgets);
+  });
 }
