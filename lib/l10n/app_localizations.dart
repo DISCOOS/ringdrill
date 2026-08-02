@@ -3932,6 +3932,18 @@ abstract class AppLocalizations {
   /// **'How is it run?'**
   String get exerciseModePickerTitle;
 
+  /// ADR-0062: shown under the exercise's three phase fields when stations override them and every round still comes out the same length, as in ring mode.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 station overrides these} other{{count} stations override these}} — every round runs {minutes} min.'**
+  String exerciseStationsOverrideUniform(int count, int minutes);
+
+  /// ADR-0062: the same note where the rounds differ in length, as in together and split.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 station overrides these} other{{count} stations override these}} — rounds run {shortest}–{longest} min.'**
+  String exerciseStationsOverrideRange(int count, int shortest, int longest);
+
   /// ADR-0062: the derived round count in `together` mode, stated in the note under the counter row rather than in a disabled field.
   ///
   /// In en, this message translates to:

@@ -42,7 +42,11 @@ const _threeGroups = [
       GroupSlot(stationIndex: 3, teams: [2, 3]),
     ],
   ),
-  ExerciseGroup(stations: [GroupSlot(stationIndex: 0, teams: [0])]),
+  ExerciseGroup(
+    stations: [
+      GroupSlot(stationIndex: 0, teams: [0]),
+    ],
+  ),
 ];
 
 /// Mirrors the exercise editor's own composition: a token-aware text field at the top
@@ -127,7 +131,11 @@ void main() {
     );
     await tester.pumpAndSettle();
     final before = tester.state<ScrollableState>(scrollable).position.pixels;
-    expect(before, greaterThan(0), reason: 'the test must actually be scrolled');
+    expect(
+      before,
+      greaterThan(0),
+      reason: 'the test must actually be scrolled',
+    );
 
     await tester.tap(find.text(l.exerciseGroupAddTeam).last);
     await tester.pumpAndSettle();

@@ -4,6 +4,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/schedule.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -744,6 +745,89 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     BuildContext context,
     AppLocalizations localizations,
   ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTimeRow(localizations),
+        ?_buildStationOverrideNote(localizations),
+      ],
+    );
+  }
+
+  /// Says so when the stations have taken these three over.
+  ///
+  /// Without it these fields quietly stop describing the exercise: a station may own
+  /// any of the three (ADR-0062), so an author reading "15 | 10 | 5" here and 135-minute
+  /// rounds in the table below has no way to connect them. Null when no station
+  /// overrides anything, which is almost every exercise.
+  Widget? _buildStationOverrideNote(AppLocalizations localizations) {
+    final stations = widget.exercise?.stations ?? const <Station>[];
+    final overriding = stations
+        .where(
+          (s) =>
+              s.executionTime != null ||
+              s.evaluationTime != null ||
+              s.rotationTime != null,
+        )
+        .length;
+    if (overriding == 0) return null;
+
+    final execution = int.tryParse(_executionTimeController.text);
+    final evaluation = int.tryParse(_evaluationTimeController.text);
+    final rotation = int.tryParse(_rotationTimeController.text);
+    final rounds = _effectiveRounds();
+    if (execution == null ||
+        evaluation == null ||
+        rotation == null ||
+        rounds == null ||
+        rounds < 1) {
+      return null;
+    }
+
+    // Through the same derivation the schedule uses, so this note cannot claim a length
+    // the exercise does not have.
+    final fallback = (
+      execution: execution,
+      evaluation: evaluation,
+      rotation: rotation,
+    );
+    final totals = ExerciseSchedule.phaseMinutesFor(
+      mode: _mode,
+      numberOfRounds: rounds,
+      fallback: fallback,
+      stationMinutes: ExerciseSchedule.stationMinutesFrom(
+        stations: stations,
+        fallback: fallback,
+      ),
+      groups: [
+        for (final group in _groups)
+          [for (final slot in group.stations) slot.stationIndex],
+      ],
+    ).map((p) => p.execution + p.evaluation + p.rotation).toList()..sort();
+    if (totals.isEmpty) return null;
+
+    final text = totals.first == totals.last
+        ? localizations.exerciseStationsOverrideUniform(
+            overriding,
+            totals.first,
+          )
+        : localizations.exerciseStationsOverrideRange(
+            overriding,
+            totals.first,
+            totals.last,
+          );
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.tertiary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeRow(AppLocalizations localizations) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

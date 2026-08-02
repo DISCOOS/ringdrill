@@ -1224,6 +1224,8 @@
   "exerciseModeTogetherDescription": "Én post, alle lag. Alle arbeider på samme post og rykker videre sammen.",
   "exerciseModeSplitDescription": "Alt mellom. Du grupperer postene som går samtidig og sier hvilke lag som går hvor.",
   "exerciseModePickerTitle": "Hvordan gjennomføres den?",
+  "exerciseStationsOverrideUniform": "{count, plural, =1{1 post overstyrer disse} other{{count} poster overstyrer disse}} — hver runde varer {minutes} min.",
+  "exerciseStationsOverrideRange": "{count, plural, =1{1 post overstyrer disse} other{{count} poster overstyrer disse}} — rundene varer {shortest}–{longest} min.",
   "exerciseRoundsDerivedPerStation": "{count, plural, =1{1 runde — én per post} other{{count} runder — én per post}}",
   "exerciseRoundsDerivedPerGroup": "{count, plural, =1{1 runde — én per parallellgruppe} other{{count} runder — én per parallellgruppe}}",
   "exerciseModeSwitchTitle": "Endre gjennomføring?",

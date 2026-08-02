@@ -27,9 +27,7 @@ Exercise _exercise({
   rotationTime: 5,
   mode: mode,
   groups: groups,
-  stations: [
-    for (var i = 0; i < stations; i++) Station(index: i, name: 'S$i'),
-  ],
+  stations: [for (var i = 0; i < stations; i++) Station(index: i, name: 'S$i')],
   schedule: const [],
 );
 
@@ -138,7 +136,9 @@ void main() {
         stations: 2,
         groups: const [
           ExerciseGroup(
-            stations: [GroupSlot(stationIndex: 0, teams: [0, 1])],
+            stations: [
+              GroupSlot(stationIndex: 0, teams: [0, 1]),
+            ],
           ),
         ],
       );

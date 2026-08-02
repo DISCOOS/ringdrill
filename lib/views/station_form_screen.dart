@@ -127,21 +127,26 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// An override as a number, or null while its field is empty or not yet valid —
   /// which is also what gets saved.
   ///
-  /// Zero is an override, not an absence: a post with no debrief, or the next post at
-  /// the same spot with no walk between them, are both real. Only an empty field
-  /// inherits — which is why this cannot test `> 0`, as it did while typing 0 quietly
-  /// meant "use the exercise's".
-  int? _overridden(TextEditingController controller) {
+  /// Zero is an override, not an absence, for the phases where it means something: a
+  /// post with no debrief, or the next post at the same spot with no walk between them,
+  /// are both real. Only an empty field inherits — which is why this cannot test `> 0`
+  /// for those, as it did while typing 0 quietly meant "use the exercise's".
+  ///
+  /// [minimum] differs per phase because zero does not mean the same thing in each. A
+  /// post with no execution time is not a short post, it is not a post.
+  int? _overridden(TextEditingController controller, int minimum) {
     final text = controller.text.trim();
     if (text.isEmpty) return null;
     final minutes = int.tryParse(text);
-    return (minutes != null && minutes >= 0) ? minutes : null;
+    return (minutes != null && minutes >= minimum) ? minutes : null;
   }
 
-  int? get _overriddenExecutionMinutes => _overridden(_executionTimeController);
+  int? get _overriddenExecutionMinutes =>
+      _overridden(_executionTimeController, 1);
   int? get _overriddenEvaluationMinutes =>
-      _overridden(_evaluationTimeController);
-  int? get _overriddenRotationMinutes => _overridden(_rotationTimeController);
+      _overridden(_evaluationTimeController, 0);
+  int? get _overriddenRotationMinutes =>
+      _overridden(_rotationTimeController, 0);
 
   /// One phase's override field. [inherits] is the exercise's own value, shown as the
   /// hint so "inherit" says *what* it inherits — null is a legitimate state here,
@@ -152,6 +157,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
     required TextEditingController controller,
     required String label,
     required int? inherits,
+    required int minimum,
   }) => TextFormField(
     controller: controller,
     keyboardType: TextInputType.number,
@@ -170,9 +176,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
       final text = value?.trim() ?? '';
       if (text.isEmpty) return null;
       final minutes = int.tryParse(text);
-      // Zero is allowed, matching what the exercise's own three accept — a rule
-      // stricter on the override than on the value it overrides would only surprise.
-      return (minutes == null || minutes < 0)
+      // Zero is a real value for a debrief or a walk, and not one for execution: a
+      // post nobody spends time at is a void post, not a fast one.
+      return (minutes == null || minutes < minimum)
           ? l10n.pleaseEnterAValidNumber
           : null;
     },
@@ -1054,6 +1060,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                       controller: _executionTimeController,
                       label: l10n.executionTime,
                       inherits: widget.parentExercise?.executionTime,
+                      minimum: 1,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -1063,6 +1070,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                       controller: _evaluationTimeController,
                       label: l10n.evaluationTime,
                       inherits: widget.parentExercise?.evaluationTime,
+                      minimum: 0,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -1072,6 +1080,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                       controller: _rotationTimeController,
                       label: l10n.rotationTime,
                       inherits: widget.parentExercise?.rotationTime,
+                      minimum: 0,
                     ),
                   ),
                 ],

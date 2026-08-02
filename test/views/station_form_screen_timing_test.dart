@@ -114,11 +114,12 @@ void main() {
     }
   });
 
-  testWidgets('zero is an override, not an absence', (tester) async {
-    // A post with no debrief, or one whose successor is at the same spot, are both
-    // real — and the exercise's own three already accept zero, so a stricter rule on
-    // the override would only surprise. Typing 0 used to mean "inherit", which saved
-    // the exercise's value and gave the author no way to say "none".
+  testWidgets('zero debrief and zero walk are overrides, not absences', (
+    tester,
+  ) async {
+    // A post with no debrief, and a successor at the same spot with no walk between
+    // them, are both real. Typing 0 used to mean "inherit", which saved the exercise's
+    // value and gave the author no way to say "none".
     final l = await _pump(tester, const Station(index: 0, name: 'Post 1'));
 
     await tester.enterText(_field(l.evaluationTime), '0');
@@ -132,19 +133,36 @@ void main() {
     expect(
       find.text(l.pleaseEnterAValidNumber),
       findsNothing,
-      reason: 'zero is valid',
+      reason: 'zero is valid for these two',
     );
   });
 
-  testWidgets('a negative time is still rejected', (tester) async {
+  testWidgets('zero execution is rejected — that is a void post', (
+    tester,
+  ) async {
+    // The one phase where zero is not a value: a post nobody spends time at is not a
+    // fast post. So the minimum is per phase rather than shared.
     final l = await _pump(tester, const Station(index: 0, name: 'Post 1'));
 
-    await tester.enterText(_field(l.rotationTime), '-5');
+    await tester.enterText(_field(l.executionTime), '0');
+    await tester.pumpAndSettle();
+    tester.state<FormState>(find.byType(Form).first).validate();
+    await tester.pumpAndSettle();
+
+    expect(find.text(l.pleaseEnterAValidNumber), findsWidgets);
+  });
+
+  testWidgets('a negative time is rejected on every phase', (tester) async {
+    final l = await _pump(tester, const Station(index: 0, name: 'Post 1'));
+
+    for (final label in [l.executionTime, l.evaluationTime, l.rotationTime]) {
+      await tester.enterText(_field(label), '-5');
+    }
     await tester.pumpAndSettle();
     // The validator runs on save; force it the way the form does.
     tester.state<FormState>(find.byType(Form).first).validate();
     await tester.pumpAndSettle();
 
-    expect(find.text(l.pleaseEnterAValidNumber), findsWidgets);
+    expect(find.text(l.pleaseEnterAValidNumber), findsNWidgets(3));
   });
 }

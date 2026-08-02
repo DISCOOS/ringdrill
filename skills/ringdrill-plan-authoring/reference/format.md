@@ -66,20 +66,41 @@ group is one station with some teams on it. `ring` is every group holding one te
 across three stations is 2 + 1 + 1. `ring` and `together` are *generated*, which is why
 choosing them costs you nothing.
 
-A round is `execution + evaluationTime + rotationTime` minutes, where the execution is
-**the station's own** where it states one:
+A round is `execution + evaluation + rotation` minutes, and **all three can be the
+station's own** where it states them:
 
 ```yaml
 stations:
   - name: Assistanse turgåer
-    executionTime: 100      # this post takes 100 min; others inherit the exercise's
+    executionTime: 100      # this post takes 100 min
+    evaluationTime: 25      # and earns a longer debrief
+    rotationTime: 30        # and it is a long walk to the next one
+  - name: Bilcamping        # inherits all three from the exercise
 ```
 
-Write it on the station, because that is what a source document states — "post b takes
-100 minutes" is a fact about the post, not about a round. In `ring` every station is live
-every round, so **the longest one sets every round** and the teams on shorter posts wait;
-the exercise runs longer than its short stations suggest. In `together` and `split` a
-round is only as long as the station(s) it holds, which is what lets rounds differ.
+Write them on the station, because that is what a source document states — "post b takes
+100 minutes" is a fact about the post, not about a round. Terrain is why rotation belongs
+here too: the walk off a shoreline post is not the walk off the one beside the car park.
+`rotationTime` on a station is the time to **leave that post and reach the next**, the
+route being station order with a wrap.
+
+Absent means inherit. `0` is a real value for `evaluationTime` (no debrief) and
+`rotationTime` (the next post is at the same spot); `executionTime` must be at least 1,
+since a post nobody spends time at is a void post rather than a fast one.
+
+Per mode:
+
+| mode | a round's phases |
+| --- | --- |
+| `ring` | the longest of **each phase** across every station |
+| `together` | that station's own three, rotation included |
+| `split` | the longest of each phase within the group |
+
+Each phase is maximised on its own, because the post that runs longest is not
+necessarily the one furthest from the next. So in `ring` a long post makes the exercise
+longer rather than uneven — every station is live every round, and the teams on shorter
+posts wait. In `together` and `split` a round is only as long as the station(s) it
+holds, which is what lets rounds differ.
 
 `numberOfTeams` must be ≤ the number of stations **in `ring`** — one team per station is
 what a rotation means. `together` puts every team on one station on purpose, and `split`

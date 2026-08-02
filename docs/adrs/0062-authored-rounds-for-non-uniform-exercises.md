@@ -197,15 +197,15 @@ since neither stored anything the author typed. Leaving `split` discards the gro
 and their assignments, because a generated mode has nowhere to put hand-placed teams.
 The confirmation says which case it is rather than offering one generic warning.
 
-**An execution time on a station**, inherited from the exercise unless stated.
-Written in the station editor, next to the post it belongs to, because that is
-where the author already is when they know it.
+**A station's own phase times**, each inherited from the exercise unless stated.
+Written in the station editor, next to the post they belong to, because that is
+where the author already is when they know them. (Originally execution only; see
+the amendment below.)
 
-Everything else stays derived. A round's length is the execution time of the
-post(s) active in it, plus the exercise's evaluation and rotation. In `ring` with
-unequal posts that means the round is as long as its longest active post and the
-teams on shorter posts wait — which is what happens on the day, and is now shown in
-the editor instead of discovered on the field.
+Everything else stays derived. A round's length is the phase times of the post(s)
+active in it. In `ring` with unequal posts that means the round is as long as its
+longest active post and the teams on shorter posts wait — which is what happens on
+the day, and is now shown in the editor instead of discovered on the field.
 
 **Shown as the round table, not as a new chart.** All three modes render the same
 table the brief already prints (`{{exercise.roundTable}}`,
@@ -370,6 +370,68 @@ before anything was built:
 * Bad: `split`'s assignment is authored data with its own validation rules, and the
   only part of the design an author can get wrong.
 
+## Amendment 2026-08-02: all three phases are station-owned
+
+The decision above made a station's **execution** time its own and left evaluation
+and rotation the exercise's. That asymmetry does not survive contact with a real
+plan.
+
+A demanding post earns a longer debrief than a simple one, and the walk off a
+shoreline post is not the walk off the one beside the car park. Both content and
+terrain vary per post, so all three phases do. Keeping two of them exercise-wide
+forced the author back into the arithmetic this ADR exists to remove: to express a
+long walk they had to inflate the exercise's `rotationTime` for every post, or bury
+the real number in prose.
+
+So `Station` gains `evaluationTime` and `rotationTime` beside `executionTime`, each
+`int?`, each absent meaning inherit.
+
+**Rotation is an edge, not a property** — strictly, it is the gap between two posts
+rather than a fact about one. It is still well-defined, because the route is station
+order with a wrap: `station.rotationTime` is the time to leave *this* post and reach
+the next. That reading is exact in `together`, where a round *is* a station, and
+resolves to a maximum in the other two for the same reason execution does.
+
+**Each phase is maximised independently.** The post that runs longest is not
+necessarily the one furthest from the next, so `ring` takes the longest execution,
+the longest evaluation and the longest rotation separately rather than adopting the
+longest post's whole triple. Taking the triple would inflate the phases that post
+does not lead on, and would make the round longer than any post needs.
+
+Per mode, unchanged in shape from the execution-only rule:
+
+| mode | a round's phases |
+| --- | --- |
+| `ring` | the longest of each phase across every station |
+| `together` | that station's own three, rotation included |
+| `split` | the longest of each phase within the group |
+
+**Zero is an override, not an absence** — for evaluation and rotation. A post with
+no debrief, and a successor at the same spot with no walk between them, are both
+real, and only an absent key inherits. Execution keeps a minimum of 1: a post nobody
+spends time at is not a fast post, it is a void one. The minimums therefore differ
+per phase, which is the one place the three are not symmetric.
+
+**Consequences.**
+
+* `ExerciseSchedule.executionMinutesFor` becomes a thin wrapper over
+  `phaseMinutesFor`, which returns all three per round. `roundsFrom`/`endTimeFrom`
+  take per-round triples instead of an execution list and two scalars, so a long
+  walk moves the clock rather than only the total.
+* Resolving an override lives in `ExerciseSchedule.stationMinutesFrom`, not at the
+  two call sites — the app and the CLI must not be able to resolve it differently.
+* `{{station.duration}}` reads all three from the station. It previously mixed the
+  station's execution with the exercise's evaluation and rotation, which printed the
+  wrong total under a post in every booklet.
+* The exercise editor states when its own three have been taken over — how many
+  stations override, and what the rounds actually run — because otherwise those
+  fields silently stop describing the exercise they belong to.
+
+Rejected alternative: **a per-station total** (one "how long is this post" number)
+instead of three. Simpler to author, but it cannot say *where* the time goes, and
+the brief prints the phase breakdown under every post. It would also make the
+station and the exercise describe timing in two different vocabularies.
+
 ## Links
 
 * Related ADRs: [ADR-0058](./0058-source-format-and-plan-compiler.md),
@@ -389,3 +451,5 @@ before anything was built:
 * Revised 2026-08-01: Option B replaced by Option F, on the grounds that
   `rounds:` gave the author arithmetic the tool exists to do for them. The problem
   statement and the numbering analysis are unchanged.
+* Amended 2026-08-02: evaluation and rotation joined execution as station-owned. See
+  the amendment section above.

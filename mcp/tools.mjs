@@ -351,10 +351,17 @@ Rules the schema cannot express, and that are easy to get wrong:
   \`mode: split\` the teams divide between stations that run in parallel, so neither
   is bound by that rule. numberOfRounds is likewise authored only in \`ring\`; the
   others derive it, one round per station or per group.
-- A station may carry its own \`executionTime\`, overriding the exercise's. Write it
-  where the source document states it — "post b takes 100 minutes" is a fact about the
-  post, not about a round. In \`ring\` the longest station sets every round, so an
-  override there lengthens the whole exercise and leaves the other stations waiting.
+- A station may carry its own \`executionTime\`, \`evaluationTime\` and
+  \`rotationTime\`, overriding the exercise's. Write them where the source document
+  states them — "post b takes 100 minutes" is a fact about the post, not about a round
+  — and put a long walk on the post it leaves from rather than inflating the exercise's
+  \`rotationTime\` for every post. Absent inherits. \`0\` is real for evaluation (no
+  debrief) and rotation (next post at the same spot); execution must be at least 1.
+- In \`ring\` every station is live every round, so each phase is the longest of that
+  phase across all stations — maximised independently, since the post that runs longest
+  need not be the one furthest from the next. An override there lengthens the whole
+  exercise and leaves the other stations waiting. In \`together\` a round is a station,
+  so it takes that station's own three; in \`split\`, the longest in the group.
 - \`mode: split\` also takes \`groups\`: one entry per round, naming the stations that
   run at the same time and which teams go to each, by list position. A team in two
   stations of one group is an error — they run at once — and a team in none is a

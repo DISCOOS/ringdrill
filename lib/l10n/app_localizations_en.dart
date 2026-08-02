@@ -2305,6 +2305,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exerciseModePickerTitle => 'How is it run?';
 
   @override
+  String exerciseStationsOverrideUniform(int count, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stations override these',
+      one: '1 station overrides these',
+    );
+    return '$_temp0 — every round runs $minutes min.';
+  }
+
+  @override
+  String exerciseStationsOverrideRange(int count, int shortest, int longest) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stations override these',
+      one: '1 station overrides these',
+    );
+    return '$_temp0 — rounds run $shortest–$longest min.';
+  }
+
+  @override
   String exerciseRoundsDerivedPerStation(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

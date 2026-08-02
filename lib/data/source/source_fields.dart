@@ -253,7 +253,9 @@ class SourceScopes {
             '— "post b takes 100 minutes" is a fact about the post, not about '
             'a round. In `ring` the longest station sets every round, so an '
             'override there lengthens the whole exercise and leaves the other '
-            'stations waiting.',
+            'stations waiting. At least 1 — unlike evaluationTime and '
+            'rotationTime, 0 is not meaningful here: a post nobody spends time '
+            'at is a void post, not a fast one.',
       ),
       SourceField(
         'evaluationTime',

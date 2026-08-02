@@ -213,10 +213,10 @@ its first team ("Lag 2.1") instead of all of them. Write `mode: together` and ke
 real teams.
 
 **A long station makes a `ring` exercise longer, not uneven.** Every station is live every
-round, so the longest sets all of them and the teams on shorter posts wait. Put the
-duration on the station that has it — `executionTime` on the station overrides the
-exercise's — and read the derived clock before assuming it is what you meant. The whole
-rotation, `split` groups and the two rules that police them are in
+round, so the longest sets all of them and the teams on shorter posts wait. Put the timing
+on the station that has it — a station overrides any of `executionTime`, `evaluationTime`
+and `rotationTime` — and read the derived clock before assuming it is what you meant. The
+whole rotation, `split` groups and the two rules that police them are in
 [`reference/format.md`](reference/format.md).
 
 ## Writing content that is worth reading
@@ -237,7 +237,8 @@ nothing. What makes a plan usable:
   person" teaches one thing four times.
 - **Time it honestly.** `executionTime` is how long a team gets at a station.
   15 minutes is a short task; 90 is a full-scale scenario. `rotationTime` has to
-  cover the walk.
+  cover the walk — and a station can override it where that walk is long, rather
+  than inflating the exercise's for every post.
 - **Ask what the exercise is for.** If you were not told, ask, rather than
   guessing at learning goals.
 

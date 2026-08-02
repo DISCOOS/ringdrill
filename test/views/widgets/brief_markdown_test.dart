@@ -501,7 +501,11 @@ void main() {
       await tester.pumpWidget(buildWidget(data: table, width: 900));
       await tester.pumpAndSettle();
 
-      expect(_weightOf(tester, 'Rolle'), FontWeight.bold, reason: 'header cell');
+      expect(
+        _weightOf(tester, 'Rolle'),
+        FontWeight.bold,
+        reason: 'header cell',
+      );
       expect(
         _weightOf(tester, 'LSOR Deltakere'),
         isNot(FontWeight.bold),

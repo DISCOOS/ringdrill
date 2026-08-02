@@ -500,31 +500,26 @@ class PlanBuilder {
         // ensureStations does exactly this, which is why the label subset
         // includes `station`.
         'name': source['name'] ?? '${labels.plural('station', 1)} ${i + 1}',
-        // Absent inherits the exercise's, which is what almost every station does
-        // (ADR-0062). Present and non-positive is meaningless, so it is reported
-        // rather than silently making a zero-length round.
+        // Absent inherits the exercise's, which is what almost every station does for
+        // all three (ADR-0062). The minimums differ because zero does not mean the
+        // same thing in each.
         if (source['executionTime'] != null)
-          // Minimum 0, the same as the exercise's own three accept: a post with no
-          // debrief, or one whose successor is at the same spot, are both real. Absent
-          // is what inherits — zero is an override to zero.
+          // At least 1: a post nobody spends time at is a void post, not a fast one.
           'executionTime': _positiveInt(
             source['executionTime'],
             '$path.executionTime',
-            0,
+            1,
           ),
         if (source['evaluationTime'] != null)
-          // Minimum 0, the same as the exercise's own three accept: a post with no
-          // debrief, or one whose successor is at the same spot, are both real. Absent
-          // is what inherits — zero is an override to zero.
+          // Zero is allowed here and on rotation, and is an override rather than an
+          // absence: a post with no debrief, or one whose successor is at the same
+          // spot, are both real. Absent is what inherits.
           'evaluationTime': _positiveInt(
             source['evaluationTime'],
             '$path.evaluationTime',
             0,
           ),
         if (source['rotationTime'] != null)
-          // Minimum 0, the same as the exercise's own three accept: a post with no
-          // debrief, or one whose successor is at the same spot, are both real. Absent
-          // is what inherits — zero is an override to zero.
           'rotationTime': _positiveInt(
             source['rotationTime'],
             '$path.rotationTime',

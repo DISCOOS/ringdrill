@@ -2302,6 +2302,28 @@ class AppLocalizationsNb extends AppLocalizations {
   String get exerciseModePickerTitle => 'Hvordan gjennomføres den?';
 
   @override
+  String exerciseStationsOverrideUniform(int count, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count poster overstyrer disse',
+      one: '1 post overstyrer disse',
+    );
+    return '$_temp0 — hver runde varer $minutes min.';
+  }
+
+  @override
+  String exerciseStationsOverrideRange(int count, int shortest, int longest) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count poster overstyrer disse',
+      one: '1 post overstyrer disse',
+    );
+    return '$_temp0 — rundene varer $shortest–$longest min.';
+  }
+
+  @override
   String exerciseRoundsDerivedPerStation(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
