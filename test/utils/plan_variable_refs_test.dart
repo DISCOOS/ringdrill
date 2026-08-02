@@ -281,20 +281,24 @@ void main() {
   });
 
   group('renameVariable', () {
-    test('carries a facet path over unchanged (DESIGN-008 follow-up 11): '
-        '{{var.old.position}} becomes {{var.new.position}}, never a bare token', () {
-      final plan = _emptyPlan().copyWith(
-        variables: const [
-          DrillVariable(name: 'oppmote', type: VariableType.location),
-        ],
-        briefIntroMd: 'Møt på {{var.oppmote.position}} ({{var.oppmote.place}})',
-      );
-      final renamed = renameVariable(plan, 'oppmote', 'moetested');
-      expect(
-        renamed.briefIntroMd,
-        'Møt på {{var.moetested.position}} ({{var.moetested.place}})',
-      );
-    });
+    test(
+      'carries a facet path over unchanged (DESIGN-008 follow-up 11): '
+      '{{var.old.position}} becomes {{var.new.position}}, never a bare token',
+      () {
+        final plan = _emptyPlan().copyWith(
+          variables: const [
+            DrillVariable(name: 'oppmote', type: VariableType.location),
+          ],
+          briefIntroMd:
+              'Møt på {{var.oppmote.position}} ({{var.oppmote.place}})',
+        );
+        final renamed = renameVariable(plan, 'oppmote', 'moetested');
+        expect(
+          renamed.briefIntroMd,
+          'Møt på {{var.moetested.position}} ({{var.moetested.place}})',
+        );
+      },
+    );
 
     test(
       'rewrites every markdown field and override key, and the registry entry',
