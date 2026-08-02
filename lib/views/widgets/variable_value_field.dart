@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/views/widgets/adaptive_time_picker.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/services/geocoding_service.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart';
@@ -308,17 +309,11 @@ class _VariableValueFieldState extends State<VariableValueField> {
         minute: int.parse(parts[1]),
       );
     }
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: initial,
-      builder: (context, child) => MediaQuery(
-        // The canonical encoding is 24-hour HH:MM (DESIGN-008 follow-up
-        // 11), so the picker matches regardless of the device's 12-hour
-        // preference.
-        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-        child: child!,
-      ),
-    );
+    // Through the shared picker, which owns the 24-hour rule (DESIGN-008 follow-up
+    // 11) and the Cupertino wheel on iOS. This used to force the format itself and
+    // show the Material dialog everywhere, so it was the only surface where the app
+    // asked for a time in two different ways depending on where you were.
+    final picked = await pickAdaptiveTime(context, initialTime: initial);
     if (picked == null) return;
     _reportScalar(
       '${picked.hour.toString().padLeft(2, '0')}:'
