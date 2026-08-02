@@ -42,6 +42,7 @@ import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
 import 'package:ringdrill/views/widgets/map_placeholder.dart';
+import 'package:ringdrill/views/round_occupancy.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
@@ -628,14 +629,24 @@ class _StationScreenState extends State<StationScreen>
   ) {
     final l10n = AppLocalizations.of(context)!;
     final rows = List.generate(exercise.schedule.length, (roundIndex) {
-      final teamIndex = exercise.teamIndex(widget.stationIndex, roundIndex);
+      // Every team here, not the first of them (ADR-0062): `together` puts all of
+      // them on one station and `split` divides them, so a row that named one was
+      // naming an arbitrary member of the set.
+      final teams = exercise.teamsAt(widget.stationIndex, roundIndex);
+      // The tap opens *a* team, and with several here it opens the first. A row
+      // cannot open four sheets, and the label already says who else is present, so
+      // the first is the least surprising of the available wrong answers.
+      final teamIndex = teams.isEmpty ? -1 : teams.first;
       return ScheduleTableRow(
         roundIndex: roundIndex,
-        label: teamIndex == -1
-            ? '${l10n.team(1)} ×'
-            : '${l10n.team(1)} ${teamIndex + 1}',
-        muted: teamIndex == -1,
-        onTap: teamIndex == -1
+        label: RoundOccupancy.label(
+          l10n,
+          exercise,
+          widget.stationIndex,
+          roundIndex,
+        ),
+        muted: teams.isEmpty,
+        onTap: teams.isEmpty
             ? null
             : () => ContextSheet.of(context).replace(
                 TeamSheetTarget(
@@ -1287,13 +1298,12 @@ class _StationStatusCard extends StatelessWidget {
     required int roundIndex,
     required bool isNow,
   }) {
-    final teamIndex = exercise.teamIndex(stationIndex, roundIndex);
     return PlayerStatusCell(
       icon: Icons.groups,
       label: isNow ? l10n.statusNow : l10n.nextLabel,
-      value: teamIndex == -1
-          ? l10n.statusNotActiveNow
-          : '${l10n.team(1)} ${teamIndex + 1}',
+      value: RoundOccupancy.isActive(exercise, stationIndex, roundIndex)
+          ? RoundOccupancy.label(l10n, exercise, stationIndex, roundIndex)
+          : l10n.statusNotActiveNow,
       isNow: isNow,
     );
   }
@@ -1310,13 +1320,14 @@ class _StationStatusCard extends StatelessWidget {
       roundIndex < exercise.schedule.length;
       roundIndex++
     ) {
-      final teamIndex = exercise.teamIndex(stationIndex, roundIndex);
-      if (teamIndex == -1) continue;
+      if (!RoundOccupancy.isActive(exercise, stationIndex, roundIndex)) {
+        continue;
+      }
       return PlayerStatusCell(
         icon: Icons.arrow_forward,
         label: l10n.nextLabel,
         time: exercise.schedule[roundIndex][0].toString(),
-        value: '${l10n.team(1)} ${teamIndex + 1}',
+        value: RoundOccupancy.label(l10n, exercise, stationIndex, roundIndex),
       );
     }
     return finishFallbackCell(l10n, exercise, icon: Icons.arrow_forward);

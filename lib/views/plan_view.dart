@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ringdrill/views/round_occupancy.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/utils/markdown_text.dart';
@@ -1240,7 +1241,11 @@ class _ExerciseCardState extends State<ExerciseCard> {
         final station = exercise.stations[stationIndex];
         final isLive =
             liveEvent?.isRunning == true &&
-            exercise.teamIndex(stationIndex, liveEvent!.currentRound) >= 0;
+            RoundOccupancy.isActive(
+              exercise,
+              stationIndex,
+              liveEvent!.currentRound,
+            );
         final accent = LiveAccent.of(context, isLive: isLive);
         // Show the same numbered badge as the Poster segment so a station
         // reads as "1a", "2c" etc. here too. `stationIndex` is already the

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ringdrill/views/round_occupancy.dart';
+import 'package:ringdrill/views/widgets/exercise_mode_field.dart';
 import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -1335,6 +1337,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         // as the first column's header is redundant. Every row here is one
         // round, so "Round"/"Runde" describes the column instead.
         headerLabel: localizations.round(1),
+        // How the exercise is run (ADR-0062). Until this line the only way to tell a
+        // `split` exercise from a ring route was to notice that its rows named
+        // several teams, which is inference rather than information.
+        subtitle:
+            '${localizations.exerciseMode}: '
+            '${exerciseModeLabel(localizations, exercise.mode)}',
         labelWidth: 90,
         event: event,
         exercise: exercise,
@@ -1403,7 +1411,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       // A station is "live" when the current round assigns a team to it.
       final isLive =
           event.isRunning &&
-          exercise.teamIndex(stationIndex, event.currentRound) >= 0;
+          RoundOccupancy.isActive(exercise, stationIndex, event.currentRound);
       final accent = LiveAccent.of(context, isLive: isLive);
 
       final badge = StationNumberBadge(
@@ -1439,8 +1447,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           ...List<Widget>.generate(exercise.schedule.length, (roundIndex) {
             final isCurrent =
                 event.isRunning && roundIndex == event.currentRound;
-            final teamIndex = exercise.teamIndex(stationIndex, roundIndex) + 1;
-            final none = teamIndex == 0;
+            // Every team at this station this round, not the first of them
+            // (ADR-0062): "1", "1,2" or "1–4", and "×" for nobody. The numeric form
+            // is what fits a cell this narrow — "Lag 1, Lag 2" does not, and in
+            // `together` the cell would have to hold every team the plan has.
+            final teams = exercise.teamsAt(stationIndex, roundIndex);
+            final none = teams.isEmpty;
+            final label = RoundOccupancy.numbers(teams);
             return Container(
               padding: const EdgeInsets.all(4),
               color: isCurrent
@@ -1449,7 +1462,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                         : Colors.blueAccent
                   : Colors.transparent,
               child: Text(
-                '${none ? '×' : teamIndex}',
+                label,
                 style: TextStyle(
                   fontSize: kDrillAccentFontSize,
                   fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,

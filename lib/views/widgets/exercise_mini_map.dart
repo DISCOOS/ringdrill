@@ -8,6 +8,7 @@ import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
+import 'package:ringdrill/views/round_occupancy.dart';
 import 'package:ringdrill/views/drill_player/drill_player_scope.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
@@ -52,7 +53,7 @@ List<MapMarkerSpec<int>> exerciseStationMarkers(
     final isLive =
         liveEvent != null &&
         liveEvent.isRunning &&
-        exercise.teamIndex(stationIndex, liveEvent.currentRound) >= 0;
+        RoundOccupancy.isActive(exercise, stationIndex, liveEvent.currentRound);
     final numbering = stationNumbering(exercise, station);
     markers.add(
       MapMarkerSpec<int>(

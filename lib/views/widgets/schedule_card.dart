@@ -50,6 +50,7 @@ class ScheduleCard extends StatelessWidget {
     this.icon = Icons.access_time_filled,
     this.labelWidth = 90,
     this.collapsedSummary,
+    this.subtitle,
   });
 
   /// Optional one-line summary appended to [title] in the header while the
@@ -57,6 +58,14 @@ class ScheduleCard extends StatelessWidget {
   /// (duration)"), so the reader sees it without expanding. Null keeps the
   /// plain icon + title header.
   final String? collapsedSummary;
+
+  /// One line above the table, for what the rows do not say themselves.
+  ///
+  /// Added for the exercise's conduct mode (ADR-0062): a reader could tell a `split`
+  /// exercise from a ring route only by noticing that its round rows named several
+  /// teams, which is inference rather than information. Available to every card that
+  /// shows a round table, not only the exercise's.
+  final String? subtitle;
 
   /// Stable identifier for the persisted collapsed preference (DESIGN-010
   /// follow-up: collapsible-section-cards) — distinct per kind of schedule
@@ -93,13 +102,27 @@ class ScheduleCard extends StatelessWidget {
             ),
       body: Padding(
         padding: const EdgeInsets.all(12),
-        child: ScheduleTable(
-          headerLabel: headerLabel,
-          labelWidth: labelWidth,
-          rows: rows,
-          event: event,
-          exercise: exercise,
-          bordered: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (subtitle != null) ...[
+              Text(
+                subtitle!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            ScheduleTable(
+              headerLabel: headerLabel,
+              labelWidth: labelWidth,
+              rows: rows,
+              event: event,
+              exercise: exercise,
+              bordered: true,
+            ),
+          ],
         ),
       ),
     );

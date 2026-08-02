@@ -30,6 +30,7 @@ import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/wide_detail_map_split.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
+import 'package:ringdrill/views/round_occupancy.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
 import 'package:ringdrill/views/widgets/card_section_header.dart';
@@ -1318,7 +1319,7 @@ class _RoleplayStatusCard extends StatelessWidget {
       roundIndex < exercise.schedule.length;
       roundIndex++
     ) {
-      if (exercise.teamIndex(stationIndex, roundIndex) != -1) {
+      if (RoundOccupancy.isActive(exercise, stationIndex, roundIndex)) {
         return exercise.schedule[roundIndex][0];
       }
     }
@@ -1332,13 +1333,12 @@ class _RoleplayStatusCard extends StatelessWidget {
     int roundIndex, {
     required bool isNow,
   }) {
-    final teamIndex = exercise.teamIndex(stationIndex, roundIndex);
     return PlayerStatusCell(
       icon: Icons.theater_comedy,
       label: isNow ? l10n.statusNow : l10n.nextLabel,
-      value: teamIndex == -1
-          ? l10n.statusNotActiveNow
-          : '${l10n.team(1)} ${teamIndex + 1}',
+      value: RoundOccupancy.isActive(exercise, stationIndex, roundIndex)
+          ? RoundOccupancy.label(l10n, exercise, stationIndex, roundIndex)
+          : l10n.statusNotActiveNow,
       isNow: isNow,
     );
   }
@@ -1355,13 +1355,14 @@ class _RoleplayStatusCard extends StatelessWidget {
       roundIndex < exercise.schedule.length;
       roundIndex++
     ) {
-      final teamIndex = exercise.teamIndex(stationIndex, roundIndex);
-      if (teamIndex == -1) continue;
+      if (!RoundOccupancy.isActive(exercise, stationIndex, roundIndex)) {
+        continue;
+      }
       return PlayerStatusCell(
         icon: Icons.arrow_forward,
         label: l10n.nextLabel,
         time: exercise.schedule[roundIndex][0].toString(),
-        value: '${l10n.team(1)} ${teamIndex + 1}',
+        value: RoundOccupancy.label(l10n, exercise, stationIndex, roundIndex),
       );
     }
     return finishFallbackCell(l10n, exercise, icon: Icons.arrow_forward);
@@ -1395,19 +1396,24 @@ class _ActiveScheduleCard extends StatelessWidget {
         roundIndex < exercise.schedule.length;
         roundIndex++
       )
-        if (exercise.teamIndex(stationIndex, roundIndex) != -1)
+        if (RoundOccupancy.isActive(exercise, stationIndex, roundIndex))
           ScheduleTableRow(
             roundIndex: roundIndex,
-            label:
-                '${AppLocalizations.of(context)!.team(1)} '
-                '${exercise.teamIndex(stationIndex, roundIndex) + 1}',
+            label: RoundOccupancy.label(
+              AppLocalizations.of(context)!,
+              exercise,
+              stationIndex,
+              roundIndex,
+            ),
             // The team staffing this post this round is tappable, mirroring
             // the Post viewer's Tidsplan card (station_screen._buildTimingCard):
             // every row here is an active round, so no muted/non-tappable case.
+            // With several teams present the tap opens the first — a row cannot
+            // open four sheets, and the label names the rest (ADR-0062).
             onTap: () => ContextSheet.of(context).replace(
               TeamSheetTarget(
                 exerciseUuid: exercise.uuid,
-                teamIndex: exercise.teamIndex(stationIndex, roundIndex),
+                teamIndex: exercise.teamsAt(stationIndex, roundIndex).first,
               ),
             ),
           ),
