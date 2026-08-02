@@ -964,8 +964,20 @@ class _RolePlayCard extends StatelessWidget {
       ? roleplayValue
       : personValue;
 
+  /// Every affordance on this card opens the same roleplay, so one gate serves them
+  /// all (ADR-0057). Role-only, and deliberately so: editing a roleplay is the live
+  /// lock's one exemption — adjusting a markør mid-scenario is what the exemption
+  /// exists for — so a running exercise changes nothing here.
+  ///
+  /// Through [EditGate] rather than a synchronous read, because this card sits in a
+  /// screen that does not listen to `appUserRole`; the gate does.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => EditGate(
+    target: EditTarget.rolePlay,
+    builder: (context, mayEdit) => _build(context, mayEdit: mayEdit),
+  );
+
+  Widget _build(BuildContext context, {required bool mayEdit}) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final briefTheme = BriefTheme.of(context);
@@ -1125,13 +1137,13 @@ class _RolePlayCard extends StatelessWidget {
       ),
       // The identity is edited on the roleplay's own "Rolle" section (person
       // selection + per-marker overrides), not the scenario Person directly.
-      onTap: () => onEditSection('roleplay'),
+      onTap: mayEdit ? () => onEditSection('roleplay') : null,
     );
 
     if ((description ?? '').isNotEmpty) {
       addSection(
         labeled(l10n.roleDescription, resolvedText(description!)),
-        onTap: () => onEditSection('roleplay'),
+        onTap: mayEdit ? () => onEditSection('roleplay') : null,
       );
     }
 
@@ -1149,7 +1161,7 @@ class _RolePlayCard extends StatelessWidget {
           BriefMarkdownBlock(data: resolved, theme: briefTheme, gutter: 0),
           markdown: true,
         ),
-        onTap: () => onEditSection(sectionId),
+        onTap: mayEdit ? () => onEditSection(sectionId) : null,
       );
     }
 
@@ -1177,7 +1189,7 @@ class _RolePlayCard extends StatelessWidget {
           // CastPill chip as the collapsed tile's face chip and
           // roleplays_view's cast row.
           InkWell(
-            onTap: onEditCast,
+            onTap: mayEdit ? onEditCast : null,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
@@ -1201,7 +1213,12 @@ class _RolePlayCard extends StatelessWidget {
                       CastPill(
                         variant: CastPillVariant.cast,
                         label: l10n.castedByLine(actor.realName),
-                        onTap: () => _openCastPicker(context, rolePlay),
+                        // Its own tap wins over the footer's, so it needs the gate
+                        // too — gating only the outer `InkWell` would leave this
+                        // pill live.
+                        onTap: mayEdit
+                            ? () => _openCastPicker(context, rolePlay)
+                            : null,
                       ),
                       // A full chip (copy icon and all), not plain tappable text — tap
                       // dials, the icon copies (ADR-0050, DESIGN-013).
@@ -1257,7 +1274,7 @@ class _RolePlayCard extends StatelessWidget {
         icon: actor != null
             ? Icon(Icons.face, color: theme.colorScheme.primary)
             : AddFaceIcon(color: theme.colorScheme.onSurfaceVariant),
-        onPressed: onEditCast,
+        onPressed: mayEdit ? onEditCast : null,
       ),
       body: body,
     );

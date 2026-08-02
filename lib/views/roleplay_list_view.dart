@@ -346,15 +346,21 @@ class _RolePlayListViewState extends State<RolePlayListView> {
     Staff? actor,
   ) {
     final scheme = Theme.of(context).colorScheme;
-    return IconButton(
-      tooltip: actor != null ? localizations.editCast : localizations.addCast,
-      // The actor (face) glyph: cast shows a plain face, uncast the face + plus
-      // "assign an actor" affordance. person/add-person is reserved for the
-      // character (a Person), not who enacts it (the actor).
-      icon: actor != null
-          ? Icon(Icons.face, color: scheme.primary)
-          : AddFaceIcon(color: scheme.onSurfaceVariant),
-      onPressed: () => _openCastPicker(rolePlay),
+    // Casting is a roleplay edit, so director or actor — and it survives the live
+    // lock, which is the point of that exemption (ADR-0057). Hidden rather than
+    // disabled for a role that will never have it.
+    return IfEditable(
+      target: EditTarget.rolePlay,
+      child: IconButton(
+        tooltip: actor != null ? localizations.editCast : localizations.addCast,
+        // The actor (face) glyph: cast shows a plain face, uncast the face + plus
+        // "assign an actor" affordance. person/add-person is reserved for the
+        // character (a Person), not who enacts it (the actor).
+        icon: actor != null
+            ? Icon(Icons.face, color: scheme.primary)
+            : AddFaceIcon(color: scheme.onSurfaceVariant),
+        onPressed: () => _openCastPicker(rolePlay),
+      ),
     );
   }
 
@@ -422,10 +428,18 @@ class _RolePlayListViewState extends State<RolePlayListView> {
   ) {
     if (actor == null) {
       // Uncast — the same tappable cast pill the Post surfaces use.
-      return CastPill(
-        variant: CastPillVariant.uncast,
-        label: l10n.noCastLine,
-        onTap: () => _openCastPicker(rolePlay),
+      return IfEditable(
+        target: EditTarget.rolePlay,
+        // A viewer still sees that nobody is cast; they just cannot change it.
+        replacement: CastPill(
+          variant: CastPillVariant.uncast,
+          label: l10n.noCastLine,
+        ),
+        child: CastPill(
+          variant: CastPillVariant.uncast,
+          label: l10n.noCastLine,
+          onTap: () => _openCastPicker(rolePlay),
+        ),
       );
     }
     // No `⋮` menu here (DESIGN-010 browser tile polish): edit/clear moved
@@ -440,10 +454,19 @@ class _RolePlayListViewState extends State<RolePlayListView> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            CastPill(
-              variant: CastPillVariant.cast,
-              label: l10n.castedByLine(actor.realName),
-              onTap: () => _openCastPicker(rolePlay),
+            IfEditable(
+              target: EditTarget.rolePlay,
+              // Who plays this markør is information a viewer needs; recasting is
+              // not, so the pill stays and only its tap goes.
+              replacement: CastPill(
+                variant: CastPillVariant.cast,
+                label: l10n.castedByLine(actor.realName),
+              ),
+              child: CastPill(
+                variant: CastPillVariant.cast,
+                label: l10n.castedByLine(actor.realName),
+                onTap: () => _openCastPicker(rolePlay),
+              ),
             ),
             // A full chip (copy icon and all), not plain tappable text — tap
             // dials, the icon copies (ADR-0050, DESIGN-013).

@@ -280,12 +280,7 @@ class _StationScreenState extends State<StationScreen>
                         ? null
                         : () => _editStation(context, exercise),
                     tooltip: _isStarted
-                        ? localizations.stopExerciseFirst(
-                            substitutePlanVariables(
-                              exercise.name,
-                              _overridesFor(exercise),
-                            ),
-                          )
+                        ? _liveLockTooltip(localizations, exercise)
                         : localizations.editStation,
                   ),
                 ),
@@ -386,7 +381,13 @@ class _StationScreenState extends State<StationScreen>
       // for the block holding the position field; 'id' matched nothing, so the CTA
       // and the bar tap opened the form scrolled to the top instead of to the field
       // they are about.
-      onTap: () => _editStation(context, exercise, initialSectionId: 'station'),
+      // The bar opens the station editor at the position field, so it is the same
+      // act as the AppBar pencil and takes the same gate. Only the *empty state's*
+      // CTA was gated, which left the bar tap open on a station that has a position
+      // — the common case.
+      onTap: canEdit(_role, EditTarget.station) && !_isStarted
+          ? () => _editStation(context, exercise, initialSectionId: 'station')
+          : null,
       emptyStyle: PositionEmptyStyle.card,
       emptyState: _buildPositionEmptyState(exercise, station),
     );
@@ -693,6 +694,16 @@ class _StationScreenState extends State<StationScreen>
   /// shown inline via `personsSectionEnactedByAction` (the same label
   /// `PersonsSection`'s own editor row uses) rather than a separate marker
   /// list. Omitted entirely when the station has none.
+  /// The live lock's explanation, with the exercise's name resolved.
+  ///
+  /// Shared by every affordance the run disables rather than repeated per call site:
+  /// they all say the same thing, and the variable substitution is easy to forget on
+  /// the fourth copy.
+  String _liveLockTooltip(AppLocalizations l10n, Exercise exercise) =>
+      l10n.stopExerciseFirst(
+        substitutePlanVariables(exercise.name, _overridesFor(exercise)),
+      );
+
   Widget _buildPersonsCard(Exercise exercise, Station station) {
     if (station.persons.isEmpty) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context)!;
@@ -701,9 +712,17 @@ class _StationScreenState extends State<StationScreen>
       icon: Icons.people,
       title: l10n.personsSectionTitle,
       collapsedTitleSuffix: '${station.persons.length}',
-      trailing: _HeaderAddAction(
-        label: l10n.personsSectionAddAction,
-        onTap: () => _addPerson(exercise, station),
+      // A station's persons are part of building the scenario, so they answer as
+      // `station` (ADR-0057's matrix is deliberately coarser than the model). The
+      // pencil in the AppBar has been gated since that ADR; this action reached the
+      // same editor by another door, and stayed live during a running drill.
+      trailing: IfCreatable(
+        target: EditTarget.station,
+        child: _HeaderAddAction(
+          label: l10n.personsSectionAddAction,
+          onTap: _isStarted ? null : () => _addPerson(exercise, station),
+          disabledTooltip: _liveLockTooltip(l10n, exercise),
+        ),
       ),
       // Each row already draws its own leading (top) divider.
       dividedBody: true,
@@ -762,25 +781,35 @@ class _StationScreenState extends State<StationScreen>
     // Trailing cast pill: create the RolePlay (no marker yet), or assign/edit
     // the actor (RolePlay present) via the shared cast picker — not the Spill
     // viewer.
+    // Two different permissions, because these are two different acts. *Creating*
+    // the RolePlay has no live exemption — canCreate freezes it like any other
+    // structure. *Casting* an existing one is a roleplay edit, which survives the
+    // run by design and which an actor may do: adjusting who plays a markør
+    // mid-scenario is what the exemption exists for (ADR-0057).
+    final mayAddRolePlay = canCreate(_role, EditTarget.rolePlay) && !_isStarted;
+    final mayCastRolePlay = canEdit(_role, EditTarget.rolePlay);
+
     final CastPill pill;
     if (rolePlay == null) {
       pill = CastPill(
         variant: CastPillVariant.add,
         label: l10n.personsSectionAddMarkerAction,
-        onTap: () => _addRolePlayForPerson(exercise, station, person),
+        onTap: mayAddRolePlay
+            ? () => _addRolePlayForPerson(exercise, station, person)
+            : null,
       );
     } else if (castActor == null) {
       pill = CastPill(
         variant: CastPillVariant.uncast,
         label: l10n.noCastLine,
-        onTap: () => _castRolePlay(rolePlay),
+        onTap: mayCastRolePlay ? () => _castRolePlay(rolePlay) : null,
       );
     } else {
       pill = CastPill(
         variant: CastPillVariant.cast,
         // Just the actor name — the face icon already reads "enacted by".
         label: castActor.realName,
-        onTap: () => _castRolePlay(rolePlay),
+        onTap: mayCastRolePlay ? () => _castRolePlay(rolePlay) : null,
       );
     }
 
@@ -788,8 +817,19 @@ class _StationScreenState extends State<StationScreen>
     // spill is the richer entity and would otherwise be unreachable from the
     // person list (DESIGN-012 follow-up); without one, it opens the person
     // editor. The trailing cast pill is its own inner tap target.
+    // Which permission the row needs depends on what it would open: the person
+    // editor is station work and freezes with the run, the spill editor is a
+    // roleplay edit and does not. The row stays visible either way — it is content,
+    // not an affordance, and hiding a person because you may not edit them would
+    // hide the scenario.
+    final mayOpenRow = rolePlay == null
+        ? canEdit(_role, EditTarget.station) && !_isStarted
+        : mayCastRolePlay;
+
     return InkWell(
-      onTap: rolePlay == null
+      onTap: !mayOpenRow
+          ? null
+          : rolePlay == null
           ? () => _editPerson(exercise, station, person)
           : () => _editRolePlay(exercise, rolePlay),
       child: Container(
@@ -934,9 +974,13 @@ class _StationScreenState extends State<StationScreen>
       icon: Icons.location_pin,
       title: l10n.locationsSectionTitle,
       collapsedTitleSuffix: '${station.locations.length}',
-      trailing: _HeaderAddAction(
-        label: l10n.locationsSectionAddAction,
-        onTap: () => _addLocation(exercise, station),
+      trailing: IfCreatable(
+        target: EditTarget.station,
+        child: _HeaderAddAction(
+          label: l10n.locationsSectionAddAction,
+          onTap: _isStarted ? null : () => _addLocation(exercise, station),
+          disabledTooltip: _liveLockTooltip(l10n, exercise),
+        ),
       ),
       // Each row already draws its own leading (top) divider.
       dividedBody: true,
@@ -960,8 +1004,11 @@ class _StationScreenState extends State<StationScreen>
     final subtitle = location.place.isNotEmpty
         ? location.place
         : (location.position == null ? '' : formatUtm(location.position));
+    // Station work, so both questions apply. The row itself stays — a location is
+    // what a marker reads off the screen during the drill.
+    final mayEdit = canEdit(_role, EditTarget.station) && !_isStarted;
     return InkWell(
-      onTap: () => _editLocation(exercise, station, location),
+      onTap: mayEdit ? () => _editLocation(exercise, station, location) : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
@@ -1229,15 +1276,29 @@ class _StationScreenState extends State<StationScreen>
 /// smaller than a `TextButton.icon`'s default tap target, matching the
 /// mockup's inline link style rather than a full button.
 class _HeaderAddAction extends StatelessWidget {
-  const _HeaderAddAction({required this.label, required this.onTap});
+  const _HeaderAddAction({
+    required this.label,
+    this.onTap,
+    this.disabledTooltip,
+  });
 
   final String label;
-  final VoidCallback onTap;
+
+  /// Null renders the action inert and greyed, which is what the live lock wants:
+  /// a temporary freeze should say why rather than vanish (ADR-0057 — the role
+  /// hides, the run disables). A role that never gets this action is handled by
+  /// the caller's `IfCreatable`, which removes it entirely.
+  final VoidCallback? onTap;
+
+  /// Why it is inert. Shown only while [onTap] is null.
+  final String? disabledTooltip;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
+    final enabled = onTap != null;
+    final color = enabled ? theme.colorScheme.primary : theme.disabledColor;
+    final action = InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(4),
       child: Padding(
@@ -1245,18 +1306,19 @@ class _HeaderAddAction extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add, size: 15, color: theme.colorScheme.primary),
+            Icon(Icons.add, size: 15, color: color),
             const SizedBox(width: 3),
             Text(
               label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
+              style: theme.textTheme.bodySmall?.copyWith(color: color),
             ),
           ],
         ),
       ),
     );
+    final tooltip = disabledTooltip;
+    if (enabled || tooltip == null) return action;
+    return Tooltip(message: tooltip, child: action);
   }
 }
 
