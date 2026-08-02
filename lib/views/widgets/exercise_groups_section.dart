@@ -23,6 +23,7 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
+import 'package:ringdrill/views/widgets/border_shell.dart';
 import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 
@@ -113,36 +114,48 @@ class ExerciseGroupsSection extends StatelessWidget {
         confirmLabel: l10n.exerciseGroupRemove,
       ),
       onDismissed: (_) => onChanged([...groups]..removeAt(g)),
-      child: Card(
-        margin: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ListTile(
-              dense: true,
-              // A group *is* a round, which is the whole reason the round count is
-              // derived in this mode.
-              title: Text('${l10n.round(1)} ${g + 1}'),
-              trailing: TextButton.icon(
-                onPressed: () => _addStation(context, l10n, g),
-                icon: const Icon(Icons.add, size: 18),
-                label: Text(l10n.exerciseGroupAddStation),
-              ),
-            ),
-            if (group.stations.isEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Text(
-                  l10n.exerciseGroupNoStations,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+      // [BorderShell], not a `Card`: the editors' own card treatment is flat with an
+      // `outlineVariant` hairline, as the station editor's placement card is, and a
+      // raised card among underlined fields reads as something that could be dragged.
+      //
+      // No horizontal padding either — the cards line up with the section header's
+      // divider above them, which spans the section's full width. An 8px inset made the
+      // stack of rounds look like it belonged to something narrower than its header.
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: BorderShell(
+          // Opaque, so the swipe-to-delete reveal behind this shows only in the space
+          // the card vacates and not through the card itself.
+          color: theme.colorScheme.surfaceContainerLow,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ListTile(
+                dense: true,
+                // A group *is* a round, which is the whole reason the round count is
+                // derived in this mode.
+                title: Text('${l10n.round(1)} ${g + 1}'),
+                trailing: TextButton.icon(
+                  onPressed: () => _addStation(context, l10n, g),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(l10n.exerciseGroupAddStation),
                 ),
               ),
-            for (var i = 0; i < group.stations.length; i++)
-              _stationRow(context, l10n, g, i, placed),
-            ..._diagnostics(context, l10n, group, placed),
-          ],
+              if (group.stations.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Text(
+                    l10n.exerciseGroupNoStations,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              for (var i = 0; i < group.stations.length; i++)
+                _stationRow(context, l10n, g, i, placed),
+              ..._diagnostics(context, l10n, group, placed),
+            ],
+          ),
         ),
       ),
     );

@@ -10,6 +10,8 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
+import 'package:ringdrill/views/widgets/border_shell.dart';
+import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/exercise_groups_section.dart';
 
 const _stations = [
@@ -68,6 +70,37 @@ const _uneven = [
 ];
 
 void main() {
+  testWidgets('a group card lines up with the section header above it', (
+    tester,
+  ) async {
+    // The cards used to carry an 8px side margin, which read as a stack of rounds
+    // belonging to something narrower than its own header — the header's rule ran past
+    // them on both sides.
+    await _pump(tester, groups: _uneven);
+
+    final header = tester.getRect(find.byType(CardSectionHeader));
+    final card = tester.getRect(find.byType(BorderShell).first);
+
+    expect(card.left, header.left);
+    expect(card.right, header.right);
+  });
+
+  testWidgets('a group card is flat and bordered, like the editors\' others', (
+    tester,
+  ) async {
+    // A raised `Card` among underlined fields reads as something that could be dragged.
+    // The editors' treatment is [BorderShell] — flat, `outlineVariant` hairline — which
+    // the station editor's placement card already uses; this asserts the group cards did
+    // not quietly keep a Material `Card` of their own.
+    await _pump(tester, groups: _uneven);
+
+    expect(find.byType(BorderShell), findsOne);
+    expect(find.byType(Card), findsNothing);
+    // Opaque, so a swipe-to-delete reveal cannot show through the card body.
+    final shell = tester.widget<BorderShell>(find.byType(BorderShell));
+    expect(shell.color, isNotNull);
+  });
+
   testWidgets('an empty section says what a group is', (tester) async {
     final l = await _pump(tester, groups: const []);
     expect(find.text(l.exerciseGroupsEmpty), findsOne);
@@ -122,7 +155,9 @@ void main() {
       tester,
       groups: const [
         ExerciseGroup(
-          stations: [GroupSlot(stationIndex: 0, teams: [0, 1, 2])],
+          stations: [
+            GroupSlot(stationIndex: 0, teams: [0, 1, 2]),
+          ],
         ),
       ],
     );
@@ -136,10 +171,7 @@ void main() {
     // A group with no stations yet is mid-edit, not wrong. Warning about all four
     // teams the moment "New parallel group" is tapped would be noise the author
     // caused by starting.
-    await _pump(
-      tester,
-      groups: const [ExerciseGroup(stations: [])],
-    );
+    await _pump(tester, groups: const [ExerciseGroup(stations: [])]);
     expect(find.byIcon(Icons.info_outline), findsNothing);
   });
 
@@ -206,11 +238,7 @@ void main() {
 
   testWidgets('removing a team chip drops just that team', (tester) async {
     List<ExerciseGroup>? saved;
-    await _pump(
-      tester,
-      groups: _uneven,
-      onChanged: (groups) => saved = groups,
-    );
+    await _pump(tester, groups: _uneven, onChanged: (groups) => saved = groups);
 
     await tester.tap(
       find.descendant(

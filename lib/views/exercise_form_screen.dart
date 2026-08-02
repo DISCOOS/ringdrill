@@ -517,7 +517,17 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
               ],
               // Above the counters, because it decides what they mean: outside a ring
               // route the round count is derived rather than authored (ADR-0062).
-              ExerciseModeField(mode: _mode, onChanged: _onModeChanged),
+              //
+              // The gap is here rather than in the field: a framed box between two rows
+              // of underlined ones needs room to read as its own thing, and that is a
+              // fact about this layout, not about the control.
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12.0),
+                child: ExerciseModeField(
+                  mode: _mode,
+                  onChanged: _onModeChanged,
+                ),
+              ),
               Row(
                 children: [
                   Expanded(
