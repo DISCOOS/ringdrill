@@ -2235,6 +2235,42 @@ class AppLocalizationsEn extends AppLocalizations {
       'Where the role is placed, as a coordinate the reader can tap.';
 
   @override
+  String get exerciseGroupsSection => 'Parallel groups';
+
+  @override
+  String get exerciseGroupsEmpty =>
+      'No groups yet. Each group is one round: the stations running at the same time, and which teams go to each.';
+
+  @override
+  String get exerciseGroupAdd => 'New parallel group';
+
+  @override
+  String get exerciseGroupAddStation => 'Add station';
+
+  @override
+  String get exerciseGroupAddTeam => 'Add team';
+
+  @override
+  String get exerciseGroupRemove => 'Remove group';
+
+  @override
+  String get exerciseGroupRemoveMessage =>
+      'The stations in this round and their team assignments are removed.';
+
+  @override
+  String exerciseGroupTeamCollision(String team) {
+    return '$team is at two stations at once. These stations run at the same time.';
+  }
+
+  @override
+  String exerciseGroupTeamsUnplaced(String teams) {
+    return '$teams have no station in this round.';
+  }
+
+  @override
+  String get exerciseGroupNoStations => 'No stations in this group yet.';
+
+  @override
   String get exerciseMode => 'Conduct';
 
   @override

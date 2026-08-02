@@ -2398,6 +2398,48 @@
   "@tokenDescRoleplayPosition": {
     "description": "Token browser (ADR-0067): one line explaining what a token resolves to, shown under its value."
   },
+  "exerciseGroupsSection": "Parallel groups",
+  "@exerciseGroupsSection": {
+    "description": "ADR-0062: parallel-group editor for split mode."
+  },
+  "exerciseGroupsEmpty": "No groups yet. Each group is one round: the stations running at the same time, and which teams go to each.",
+  "@exerciseGroupsEmpty": {
+    "description": "ADR-0062: parallel-group editor for split mode."
+  },
+  "exerciseGroupAdd": "New parallel group",
+  "@exerciseGroupAdd": {
+    "description": "ADR-0062: parallel-group editor for split mode."
+  },
+  "exerciseGroupAddStation": "Add station",
+  "@exerciseGroupAddStation": {
+    "description": "ADR-0062: parallel-group editor for split mode."
+  },
+  "exerciseGroupAddTeam": "Add team",
+  "@exerciseGroupAddTeam": {
+    "description": "ADR-0062: parallel-group editor for split mode."
+  },
+  "exerciseGroupRemove": "Remove group",
+  "@exerciseGroupRemove": {
+    "description": "ADR-0062: parallel-group editor for split mode."
+  },
+  "exerciseGroupRemoveMessage": "The stations in this round and their team assignments are removed.",
+  "@exerciseGroupRemoveMessage": {
+    "description": "ADR-0062: parallel-group editor for split mode."
+  },
+  "exerciseGroupTeamCollision": "{team} is at two stations at once. These stations run at the same time.",
+  "@exerciseGroupTeamCollision": {
+    "description": "ADR-0062: parallel-group editor for split mode.",
+    "placeholders": { "team": { "type": "String" } }
+  },
+  "exerciseGroupTeamsUnplaced": "{teams} have no station in this round.",
+  "@exerciseGroupTeamsUnplaced": {
+    "description": "ADR-0062: parallel-group editor for split mode.",
+    "placeholders": { "teams": { "type": "String" } }
+  },
+  "exerciseGroupNoStations": "No stations in this group yet.",
+  "@exerciseGroupNoStations": {
+    "description": "ADR-0062: parallel-group editor for split mode."
+  },
   "exerciseMode": "Conduct",
   "@exerciseMode": {
     "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."

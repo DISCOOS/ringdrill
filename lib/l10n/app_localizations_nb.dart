@@ -2232,6 +2232,42 @@ class AppLocalizationsNb extends AppLocalizations {
       'Hvor rollen står, som en koordinat leseren kan trykke på.';
 
   @override
+  String get exerciseGroupsSection => 'Parallellgrupper';
+
+  @override
+  String get exerciseGroupsEmpty =>
+      'Ingen grupper ennå. Hver gruppe er én runde: postene som går samtidig, og hvilke lag som går hvor.';
+
+  @override
+  String get exerciseGroupAdd => 'Ny parallellgruppe';
+
+  @override
+  String get exerciseGroupAddStation => 'Legg til post';
+
+  @override
+  String get exerciseGroupAddTeam => 'Legg til lag';
+
+  @override
+  String get exerciseGroupRemove => 'Fjern gruppe';
+
+  @override
+  String get exerciseGroupRemoveMessage =>
+      'Postene i denne runden og lagfordelingen blir fjernet.';
+
+  @override
+  String exerciseGroupTeamCollision(String team) {
+    return '$team står på to poster samtidig. Disse postene går på samme tid.';
+  }
+
+  @override
+  String exerciseGroupTeamsUnplaced(String teams) {
+    return '$teams har ingen post i denne runden.';
+  }
+
+  @override
+  String get exerciseGroupNoStations => 'Ingen poster i denne gruppa ennå.';
+
+  @override
   String get exerciseMode => 'Gjennomføring';
 
   @override

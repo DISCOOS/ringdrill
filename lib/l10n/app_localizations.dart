@@ -3812,6 +3812,66 @@ abstract class AppLocalizations {
   /// **'Where the role is placed, as a coordinate the reader can tap.'**
   String get tokenDescRoleplayPosition;
 
+  /// ADR-0062: parallel-group editor for split mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Parallel groups'**
+  String get exerciseGroupsSection;
+
+  /// ADR-0062: parallel-group editor for split mode.
+  ///
+  /// In en, this message translates to:
+  /// **'No groups yet. Each group is one round: the stations running at the same time, and which teams go to each.'**
+  String get exerciseGroupsEmpty;
+
+  /// ADR-0062: parallel-group editor for split mode.
+  ///
+  /// In en, this message translates to:
+  /// **'New parallel group'**
+  String get exerciseGroupAdd;
+
+  /// ADR-0062: parallel-group editor for split mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Add station'**
+  String get exerciseGroupAddStation;
+
+  /// ADR-0062: parallel-group editor for split mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Add team'**
+  String get exerciseGroupAddTeam;
+
+  /// ADR-0062: parallel-group editor for split mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove group'**
+  String get exerciseGroupRemove;
+
+  /// ADR-0062: parallel-group editor for split mode.
+  ///
+  /// In en, this message translates to:
+  /// **'The stations in this round and their team assignments are removed.'**
+  String get exerciseGroupRemoveMessage;
+
+  /// ADR-0062: parallel-group editor for split mode.
+  ///
+  /// In en, this message translates to:
+  /// **'{team} is at two stations at once. These stations run at the same time.'**
+  String exerciseGroupTeamCollision(String team);
+
+  /// ADR-0062: parallel-group editor for split mode.
+  ///
+  /// In en, this message translates to:
+  /// **'{teams} have no station in this round.'**
+  String exerciseGroupTeamsUnplaced(String teams);
+
+  /// ADR-0062: parallel-group editor for split mode.
+  ///
+  /// In en, this message translates to:
+  /// **'No stations in this group yet.'**
+  String get exerciseGroupNoStations;
+
   /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
   ///
   /// In en, this message translates to:

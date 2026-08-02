@@ -17,6 +17,8 @@ import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/rollup.dart';
+import 'package:ringdrill/models/numbering.dart';
+import 'package:ringdrill/views/widgets/exercise_groups_section.dart';
 import 'package:ringdrill/views/widgets/exercise_mode_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
@@ -593,6 +595,23 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                 ],
               ),
               ?_buildStationsRoundNote(l10n),
+              // Only in split: the other modes generate their grouping, so there is
+              // nothing here for an author to decide (ADR-0062).
+              if (_mode == ExerciseMode.split) ...[
+                const SizedBox(height: 8),
+                ExerciseGroupsSection(
+                  groups: _groups,
+                  stations: widget.exercise?.stations ?? const [],
+                  teams: PlanService().activePlan?.teams ?? const [],
+                  numberOfTeams:
+                      int.tryParse(_numberOfTeamsController.text) ?? 1,
+                  exerciseNumber: (widget.exercise?.index ?? 0) + 1,
+                  stationNumberFormat:
+                      PlanService().activePlan?.stationNumberFormat ??
+                      StationNumberFormat.dotted,
+                  onChanged: (groups) => setState(() => _groups = groups),
+                ),
+              ],
             ],
           ),
         ),
