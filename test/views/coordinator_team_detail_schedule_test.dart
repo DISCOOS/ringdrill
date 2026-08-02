@@ -8,6 +8,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/widgets/card_section_header.dart';
+import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -39,7 +40,9 @@ Exercise _exercise() => Exercise(
   evaluationTime: 5,
   rotationTime: 2,
   stations: const [
-    Station(index: 0, name: 'Post 1'),
+    // A description, so the expanded body has content whose left edge can be
+    // compared with the header's.
+    Station(index: 0, name: 'Post 1', description: 'Eidene. Finsøk rundt IPP.'),
     Station(index: 1, name: 'Post 2'),
   ],
   schedule: const [
@@ -103,88 +106,138 @@ void main() {
     await _seedAndInit();
   });
 
-  testWidgets(
-    'the team-detail schedule renders via the shared ScheduleCard, not '
-    'PhaseHeaders + Card-wrapped ScheduleRows',
-    (tester) async {
-      await tester.pumpWidget(
-        _harness(const CoordinatorScreen(uuid: _exerciseUuid)),
-      );
-      await tester.pumpAndSettle();
+  testWidgets('the team-detail schedule renders via the shared ScheduleCard, not '
+      'PhaseHeaders + Card-wrapped ScheduleRows', (tester) async {
+    await tester.pumpWidget(
+      _harness(const CoordinatorScreen(uuid: _exerciseUuid)),
+    );
+    await tester.pumpAndSettle();
 
-      // Switch from the default "Stations" segment to "Teams". By label, not by
-      // icon: a four-segment selector carries no icons — four labels plus four
-      // icons overflow a phone (`view_segments.dart`).
-      final l = await AppLocalizations.delegate.load(const Locale('en'));
-      await tester.tap(find.text(l.team(1)).first);
-      await tester.pumpAndSettle();
+    // Switch from the default "Stations" segment to "Teams". By label, not by
+    // icon: a four-segment selector carries no icons — four labels plus four
+    // icons overflow a phone (`view_segments.dart`).
+    final l = await AppLocalizations.delegate.load(const Locale('en'));
+    await tester.tap(find.text(l.team(1)).first);
+    await tester.pumpAndSettle();
 
-      // Expand the (only) team row. The rotation timetable is no longer
-      // pinned above the selector — it moved into the Info segment — so on
-      // the Teams segment the team tile's own chevron is the only one.
-      await tester.tap(find.byIcon(Icons.expand_more).last);
-      await tester.pumpAndSettle();
+    // Expand the (only) team row. The rotation timetable is no longer
+    // pinned above the selector — it moved into the Info segment — so on
+    // the Teams segment the team tile's own chevron is the only one.
+    await tester.tap(find.byIcon(Icons.expand_more).last);
+    await tester.pumpAndSettle();
 
-      // Renders through the shared ScheduleCard (CardSectionHeader + bordered
-      // ScheduleTable) — same as the Post/Spill viewers and the other team
-      // surfaces — not the old bare per-round Card-wrapped rows. The rotation
-      // timetable used to be a second ScheduleCard pinned above the selector;
-      // it now lives in the Info segment, so the team-detail card is the only
-      // one on this segment.
-      final scheduleCardFinders = find.byType(ScheduleCard);
-      expect(scheduleCardFinders, findsOneWidget);
-      final scheduleCardFinder = scheduleCardFinders.first;
-      expect(
-        find.descendant(
-          of: scheduleCardFinder,
-          matching: find.byType(CardSectionHeader),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.text(l10n.stationTimingCardTitle.toUpperCase()),
-        findsOneWidget,
-        reason: 'the ScheduleCard section header carries the shared title',
-      );
+    // Renders through the shared ScheduleCard (CardSectionHeader + bordered
+    // ScheduleTable) — same as the Post/Spill viewers and the other team
+    // surfaces — not the old bare per-round Card-wrapped rows. The rotation
+    // timetable used to be a second ScheduleCard pinned above the selector;
+    // it now lives in the Info segment, so the team-detail card is the only
+    // one on this segment.
+    final scheduleCardFinders = find.byType(ScheduleCard);
+    expect(scheduleCardFinders, findsOneWidget);
+    final scheduleCardFinder = scheduleCardFinders.first;
 
-      final tableWithinCard = find.descendant(
+    // Reported from a phone: the expanded body stepped in past its own header.
+    // `ExpandableTile` already insets the body to the same 16 its header uses, so
+    // a wrapper `Padding` here put the card 8 further in than the team name above
+    // it. Asserted against the header's own left edge rather than a number, so it
+    // cannot drift back.
+    // The header's own title, which is the first Text in the tile's tree — the
+    // header is built before the body. Comparing against it rather than against a
+    // number means the assertion survives a change to the tile's insets.
+    final headerTitle = find
+        .descendant(
+          of: find.byType(ExpandableTile).first,
+          matching: find.byType(Text),
+        )
+        .first;
+    expect(
+      tester.getTopLeft(scheduleCardFinder).dx,
+      tester.getTopLeft(headerTitle).dx,
+      reason:
+          'the nested card starts where the team name does, not one wrapper '
+          'further in',
+    );
+    expect(
+      find.descendant(
         of: scheduleCardFinder,
-        matching: find.byType(ScheduleTable),
-      );
-      expect(tableWithinCard, findsOneWidget);
-      expect(
-        find.descendant(of: tableWithinCard, matching: find.byType(Card)),
-        findsNothing,
-        reason: 'the old per-round Card-wrapped rows are gone',
-      );
+        matching: find.byType(CardSectionHeader),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(l10n.stationTimingCardTitle.toUpperCase()),
+      findsOneWidget,
+      reason: 'the ScheduleCard section header carries the shared title',
+    );
 
-      // Both stations' rounds are listed, in order (now prefixed with the
-      // formatted post number, e.g. "1.1 Post 1").
-      expect(find.textContaining('Post 1'), findsOneWidget);
-      expect(find.textContaining('Post 2'), findsOneWidget);
+    final tableWithinCard = find.descendant(
+      of: scheduleCardFinder,
+      matching: find.byType(ScheduleTable),
+    );
+    expect(tableWithinCard, findsOneWidget);
+    expect(
+      find.descendant(of: tableWithinCard, matching: find.byType(Card)),
+      findsNothing,
+      reason: 'the old per-round Card-wrapped rows are gone',
+    );
 
-      // The team-detail table's own header row, still scoped to the card.
-      expect(
-        find.descendant(
-          of: tableWithinCard,
-          matching: find.text(l10n.drill.toUpperCase()),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: tableWithinCard,
-          matching: find.text(l10n.eval.toUpperCase()),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: tableWithinCard,
-          matching: find.text(l10n.roll.toUpperCase()),
-        ),
-        findsOneWidget,
-      );
-    },
-  );
+    // Both stations' rounds are listed, in order (now prefixed with the
+    // formatted post number, e.g. "1.1 Post 1").
+    expect(find.textContaining('Post 1'), findsOneWidget);
+    expect(find.textContaining('Post 2'), findsOneWidget);
+
+    // The team-detail table's own header row, still scoped to the card.
+    expect(
+      find.descendant(
+        of: tableWithinCard,
+        matching: find.text(l10n.drill.toUpperCase()),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: tableWithinCard,
+        matching: find.text(l10n.eval.toUpperCase()),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: tableWithinCard,
+        matching: find.text(l10n.roll.toUpperCase()),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('an expanded station body lines up with its own header too', (
+    tester,
+  ) async {
+    // The other half of the report, and the worse half: this body had a wrapper
+    // `Padding` *and* one per child, putting the description 32 in while the station
+    // badge in the header stayed at 16.
+    await tester.pumpWidget(
+      _harness(const CoordinatorScreen(uuid: _exerciseUuid)),
+    );
+    await tester.pumpAndSettle();
+
+    // Stations is the default segment, so only the row needs expanding.
+    await tester.tap(find.byIcon(Icons.expand_more).first);
+    await tester.pumpAndSettle();
+
+    final tile = find.byType(ExpandableTile).first;
+    // The station badge is the leftmost thing in the header, so its *box* is what the
+    // body lines up with — not the text inside it, which the badge's own padding
+    // indents a further 4.
+    final leading = tester.widget<ExpandableTile>(tile).leading;
+    expect(leading, isNotNull, reason: 'the station tile carries a badge');
+    final description = find.textContaining('Finsøk rundt IPP');
+    expect(description, findsOneWidget, reason: 'the body is expanded');
+
+    expect(
+      tester.getTopLeft(description).dx,
+      tester.getTopLeft(find.byWidget(leading!)).dx,
+      reason: 'the description starts where the header content does',
+    );
+  });
 }

@@ -1643,54 +1643,47 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     return StationScope.forStation(
       exercise: exercise,
       station: station,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (description != null && description.isNotEmpty)
-              InkWell(
-                onTap: () => ContextSheet.of(context).show(
-                  context,
-                  StationSheetTarget(
-                    exerciseUuid: widget.uuid,
-                    stationIndex: stationIndex,
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-                  child: RingDrillText.rich(
-                    description,
-                    overrides: _overridesFor(exercise, station: station),
-                  ),
+      // No horizontal padding of its own, and none on the children either.
+      // `ExpandableTile` already insets its body to 16 — the same 16 its header
+      // uses — so a wrapper here and another per child put the content 32 in while
+      // the header's badge stayed at 16. Only vertical rhythm belongs at this level.
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (description != null && description.isNotEmpty)
+            InkWell(
+              onTap: () => ContextSheet.of(context).show(
+                context,
+                StationSheetTarget(
+                  exerciseUuid: widget.uuid,
+                  stationIndex: stationIndex,
                 ),
               ),
-            // Shared panel handles both the "Posisjon ... pin coords"
-            // label row and the tappable mini-map (which opens the
-            // interactive variant in a bottom sheet). The ValueKey on
-            // the embedded mini-map keeps each station's MapView state
-            // isolated — without it, expanding station A and then B
-            // would briefly share camera state. PageStorageKey would
-            // collide with SelectableText scroll-state, hence ValueKey.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-              child: StationPositionPanel(
-                exercise: exercise,
-                station: station,
-                miniMapKey: ValueKey<String>(
-                  'coordinator-station-map-$stationIndex',
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 8),
+                child: RingDrillText.rich(
+                  description,
+                  overrides: _overridesFor(exercise, station: station),
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-              child: StationRoleSummary(
-                exercise: exercise,
-                stationIndex: stationIndex,
-              ),
+          // Shared panel handles both the "Posisjon ... pin coords"
+          // label row and the tappable mini-map (which opens the
+          // interactive variant in a bottom sheet). The ValueKey on
+          // the embedded mini-map keeps each station's MapView state
+          // isolated — without it, expanding station A and then B
+          // would briefly share camera state. PageStorageKey would
+          // collide with SelectableText scroll-state, hence ValueKey.
+          StationPositionPanel(
+            exercise: exercise,
+            station: station,
+            miniMapKey: ValueKey<String>(
+              'coordinator-station-map-$stationIndex',
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+          StationRoleSummary(exercise: exercise, stationIndex: stationIndex),
+        ],
       ),
     );
   }
@@ -1860,49 +1853,48 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         StationNumberFormat.dotted;
     final exNum = PlanService().getExerciseNumber(exercise.uuid);
     final exerciseNumber = exNum < 1 ? 1 : exNum;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-      child: ScheduleCard(
-        sectionId: 'coordinatorTeamDetailSchedule',
-        title: localizations.stationTimingCardTitle,
-        // "Round", not localizations.schedule — see the coordinator's own
-        // round-table ScheduleCard above for why.
-        headerLabel: localizations.round(1),
-        labelWidth: 78,
-        event: event,
-        exercise: exercise,
-        rows: List<ScheduleTableRow>.generate(exercise.schedule.length, (
-          roundIndex,
-        ) {
-          final stationIndex = exercise.stationIndex(teamIndex, roundIndex);
-          final none = stationIndex < 0;
-          return ScheduleTableRow(
-            roundIndex: roundIndex,
-            label: none
-                ? '${localizations.station(1)} ×'
-                : exercise.stations[stationIndex].numberAndName(
-                    format,
-                    exerciseNumber: exerciseNumber,
+    // Flush with the tile's own body inset, so the nested card's edge lines up with
+    // the team name in the header above it rather than stepping in again.
+    return ScheduleCard(
+      sectionId: 'coordinatorTeamDetailSchedule',
+      title: localizations.stationTimingCardTitle,
+      // "Round", not localizations.schedule — see the coordinator's own
+      // round-table ScheduleCard above for why.
+      headerLabel: localizations.round(1),
+      labelWidth: 78,
+      event: event,
+      exercise: exercise,
+      rows: List<ScheduleTableRow>.generate(exercise.schedule.length, (
+        roundIndex,
+      ) {
+        final stationIndex = exercise.stationIndex(teamIndex, roundIndex);
+        final none = stationIndex < 0;
+        return ScheduleTableRow(
+          roundIndex: roundIndex,
+          label: none
+              ? '${localizations.station(1)} ×'
+              : exercise.stations[stationIndex].numberAndName(
+                  format,
+                  exerciseNumber: exerciseNumber,
+                ),
+          muted: none,
+          // Mirror the description tap in _buildStationDetail: a round
+          // row here represents "team T at station S in round R", so a
+          // tap should open the same StationScreen the
+          // station-list path leads to. Rounds where the team has no
+          // station (`none`) get no tap handler so the dead cell can't
+          // trigger navigation.
+          onTap: none
+              ? null
+              : () => ContextSheet.of(context).show(
+                  context,
+                  StationSheetTarget(
+                    exerciseUuid: widget.uuid,
+                    stationIndex: stationIndex,
                   ),
-            muted: none,
-            // Mirror the description tap in _buildStationDetail: a round
-            // row here represents "team T at station S in round R", so a
-            // tap should open the same StationScreen the
-            // station-list path leads to. Rounds where the team has no
-            // station (`none`) get no tap handler so the dead cell can't
-            // trigger navigation.
-            onTap: none
-                ? null
-                : () => ContextSheet.of(context).show(
-                    context,
-                    StationSheetTarget(
-                      exerciseUuid: widget.uuid,
-                      stationIndex: stationIndex,
-                    ),
-                  ),
-          );
-        }),
-      ),
+                ),
+        );
+      }),
     );
   }
 }
