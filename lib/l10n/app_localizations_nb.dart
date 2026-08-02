@@ -2302,7 +2302,26 @@ class AppLocalizationsNb extends AppLocalizations {
   String get exerciseModePickerTitle => 'Hvordan gjennomføres den?';
 
   @override
-  String get exerciseModeRoundsDerived => '= antall poster';
+  String exerciseRoundsDerivedPerStation(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count runder — én per post',
+      one: '1 runde — én per post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String exerciseRoundsDerivedPerGroup(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count runder — én per parallellgruppe',
+      one: '1 runde — én per parallellgruppe',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get exerciseModeSwitchTitle => 'Endre gjennomføring?';

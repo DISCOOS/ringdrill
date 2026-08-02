@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/schedule.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -572,31 +573,29 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                       },
                     ),
                   ),
-                  const SizedBox(width: 16.0),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _numberOfRoundsController,
-                      keyboardType: TextInputType.number,
-                      // Derived outside a ring route — one round per station, or per
-                      // parallel group — so the field is read-only there and says
-                      // where the number came from rather than accepting one it will
-                      // then ignore.
-                      enabled: _mode == ExerciseMode.ring,
-                      decoration: InputDecoration(
-                        labelText: l10n.numberOfRounds,
-                        helperText: _mode == ExerciseMode.ring
-                            ? null
-                            : l10n.exerciseModeRoundsDerived,
+                  // A round count is an input in a ring route and a consequence
+                  // everywhere else — `together` runs one round per station and `split`
+                  // one per parallel group (ADR-0062). So outside ring the field is not
+                  // shown at all: a disabled input reads as something the app has
+                  // broken, and the number belongs with the other things the form
+                  // derives from these counters, in the note below.
+                  if (_mode == ExerciseMode.ring) ...[
+                    const SizedBox(width: 16.0),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _numberOfRoundsController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: l10n.numberOfRounds,
+                        ),
+                        onChanged: (_) => setState(() {}),
+                        validator: (value) => _validateCounter(value, l10n),
                       ),
-                      onChanged: (_) => setState(() {}),
-                      validator: (value) => _mode == ExerciseMode.ring
-                          ? _validateCounter(value, l10n)
-                          : null,
                     ),
-                  ),
+                  ],
                 ],
               ),
-              ?_buildStationsRoundNote(l10n),
+              ?_buildRoundsNote(l10n),
               // Only in split: the other modes generate their grouping, so there is
               // nothing here for an author to decide (ADR-0062).
               if (_mode == ExerciseMode.split) ...[
@@ -655,7 +654,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   RollupSection? _roundTablePreview(AppLocalizations l10n) {
     final teams = int.tryParse(_numberOfTeamsController.text);
     final stations = int.tryParse(_numberOfStationsController.text);
-    final rounds = int.tryParse(_numberOfRoundsController.text);
+    final rounds = _effectiveRounds();
     final execution = int.tryParse(_executionTimeController.text);
     final evaluation = int.tryParse(_evaluationTimeController.text);
     final rotation = int.tryParse(_rotationTimeController.text);
@@ -892,7 +891,11 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       final name = _nameController.text.trim();
       final numberOfTeams = int.parse(_numberOfTeamsController.text);
       final numberOfStations = int.parse(_numberOfStationsController.text);
-      final numberOfRounds = int.parse(_numberOfRoundsController.text);
+      // Not `int.parse` of the controller: the field is absent outside a ring route, so
+      // its text is only as good as the last save — and can be empty, if the author
+      // cleared it in ring and then changed the mode.
+      final numberOfRounds =
+          _effectiveRounds() ?? int.parse(_numberOfStationsController.text);
       final executionTime = int.parse(_executionTimeController.text);
       final evaluationTime = int.parse(_evaluationTimeController.text);
       final rotationTime = int.parse(_rotationTimeController.text);
@@ -1005,31 +1008,72 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     return null;
   }
 
-  Widget? _buildStationsRoundNote(AppLocalizations localizations) {
-    final numberOfRounds = int.tryParse(_numberOfRoundsController.text);
+  /// The round count the schedule will actually have, from the form as it stands.
+  ///
+  /// Only a ring route takes this from the author. `together` runs one round per
+  /// station and `split` one per parallel group, so there the controller holds whatever
+  /// was last saved and nothing keeps it true — which is how the form came to report
+  /// four rounds for a split whose groups derive three. Null while the counters are
+  /// mid-edit.
+  int? _effectiveRounds() {
+    final authored = int.tryParse(_numberOfRoundsController.text);
+    if (_mode == ExerciseMode.ring) return authored;
+    final stations = int.tryParse(_numberOfStationsController.text);
+    if (stations == null || stations < 1) return null;
+    // `roundsForMode` falls back to the station count for a split with no groups yet.
+    // True, but not a rule to teach: the groups section below is already asking for the
+    // first group, so the note stays quiet until there is one.
+    if (_mode == ExerciseMode.split && _groups.isEmpty) return null;
+    return ExerciseSchedule.roundsForMode(
+      mode: _mode,
+      numberOfRounds: authored ?? stations,
+      numberOfStations: stations,
+      numberOfGroups: _groups.length,
+    );
+  }
+
+  /// What the counters above imply, in one line: how the rounds and the stations
+  /// divide up in a ring route, and where the round count came from in the modes that
+  /// derive it.
+  Widget? _buildRoundsNote(AppLocalizations localizations) {
+    final numberOfRounds = _effectiveRounds();
     final numberOfStations = int.tryParse(_numberOfStationsController.text);
     if (numberOfRounds == null ||
         numberOfStations == null ||
         numberOfRounds <= 0 ||
-        numberOfStations <= 0 ||
-        numberOfRounds == numberOfStations) {
+        numberOfStations <= 0) {
       return null;
     }
 
-    final colorScheme = Theme.of(context).colorScheme;
-    final text = numberOfRounds > numberOfStations
-        ? localizations.stationsRevisitNote(numberOfRounds, numberOfStations)
-        : localizations.stationsUnderCoverageNote(
-            numberOfRounds,
-            numberOfStations,
-          );
+    final String text;
+    switch (_mode) {
+      case ExerciseMode.ring:
+        // Revisits and under-coverage are ring-route facts — they compare a rotation's
+        // length against the stations it rotates through. Outside ring there is no
+        // rotation to be short of, so this stays where it belongs.
+        if (numberOfRounds == numberOfStations) return null;
+        text = numberOfRounds > numberOfStations
+            ? localizations.stationsRevisitNote(
+                numberOfRounds,
+                numberOfStations,
+              )
+            : localizations.stationsUnderCoverageNote(
+                numberOfRounds,
+                numberOfStations,
+              );
+      case ExerciseMode.together:
+        text = localizations.exerciseRoundsDerivedPerStation(numberOfRounds);
+      case ExerciseMode.split:
+        text = localizations.exerciseRoundsDerivedPerGroup(numberOfRounds);
+    }
+
     return Padding(
       padding: const EdgeInsets.only(top: 8.0),
       child: Text(
         text,
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(color: colorScheme.tertiary),
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.tertiary,
+        ),
       ),
     );
   }

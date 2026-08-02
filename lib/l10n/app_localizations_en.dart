@@ -2305,7 +2305,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exerciseModePickerTitle => 'How is it run?';
 
   @override
-  String get exerciseModeRoundsDerived => '= number of stations';
+  String exerciseRoundsDerivedPerStation(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rounds — one per station',
+      one: '1 round — one per station',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String exerciseRoundsDerivedPerGroup(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rounds — one per parallel group',
+      one: '1 round — one per parallel group',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get exerciseModeSwitchTitle => 'Change conduct?';

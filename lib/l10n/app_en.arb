@@ -2480,9 +2480,23 @@
   "@exerciseModePickerTitle": {
     "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
   },
-  "exerciseModeRoundsDerived": "= number of stations",
-  "@exerciseModeRoundsDerived": {
-    "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."
+  "exerciseRoundsDerivedPerStation": "{count, plural, =1{1 round — one per station} other{{count} rounds — one per station}}",
+  "@exerciseRoundsDerivedPerStation": {
+    "description": "ADR-0062: the derived round count in `together` mode, stated in the note under the counter row rather than in a disabled field.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "exerciseRoundsDerivedPerGroup": "{count, plural, =1{1 round — one per parallel group} other{{count} rounds — one per parallel group}}",
+  "@exerciseRoundsDerivedPerGroup": {
+    "description": "ADR-0062: the derived round count in `split` mode, where one round runs each parallel group.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "exerciseModeSwitchTitle": "Change conduct?",
   "@exerciseModeSwitchTitle": {

@@ -3932,11 +3932,17 @@ abstract class AppLocalizations {
   /// **'How is it run?'**
   String get exerciseModePickerTitle;
 
-  /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
+  /// ADR-0062: the derived round count in `together` mode, stated in the note under the counter row rather than in a disabled field.
   ///
   /// In en, this message translates to:
-  /// **'= number of stations'**
-  String get exerciseModeRoundsDerived;
+  /// **'{count, plural, =1{1 round — one per station} other{{count} rounds — one per station}}'**
+  String exerciseRoundsDerivedPerStation(int count);
+
+  /// ADR-0062: the derived round count in `split` mode, where one round runs each parallel group.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 round — one per parallel group} other{{count} rounds — one per parallel group}}'**
+  String exerciseRoundsDerivedPerGroup(int count);
 
   /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
   ///
