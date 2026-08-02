@@ -656,11 +656,22 @@ class _StationScreenState extends State<StationScreen>
               ),
       );
     });
+    // A station no round uses — possible from ADR-0062, where a round is a group of
+    // stations rather than a rotation over all of them. Its timetable was every row
+    // struck through, which says "never used" only by implication and asks the reader
+    // to notice an absence across four rows.
+    final used = [
+      for (var round = 0; round < exercise.schedule.length; round++)
+        if (RoundOccupancy.isActive(exercise, widget.stationIndex, round))
+          round,
+    ];
     return ScheduleCard(
       sectionId: 'schedule',
       title: l10n.stationTimingCardTitle,
       headerLabel: l10n.team(1),
-      rows: rows,
+      badge: used.isEmpty ? l10n.stationNotUsedBadge : null,
+      emptyNote: l10n.stationNotUsedInExercise,
+      rows: used.isEmpty ? const [] : rows,
       event: event,
       exercise: exercise,
       // Collapsed-header summary: the whole exercise window and its duration,

@@ -1337,12 +1337,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         // as the first column's header is redundant. Every row here is one
         // round, so "Round"/"Runde" describes the column instead.
         headerLabel: localizations.round(1),
-        // How the exercise is run (ADR-0062). Until this line the only way to tell a
+        // How the exercise is run (ADR-0062). Until this the only way to tell a
         // `split` exercise from a ring route was to notice that its rows named
-        // several teams, which is inference rather than information.
-        subtitle:
-            '${localizations.exerciseMode}: '
-            '${exerciseModeLabel(localizations, exercise.mode)}',
+        // several teams, which is inference rather than information. The mode name
+        // alone in the header — "Gjennomføring:" was a label for a value that needs
+        // no label beside a schedule.
+        badge: exerciseModeLabel(localizations, exercise.mode),
         labelWidth: 90,
         event: event,
         exercise: exercise,

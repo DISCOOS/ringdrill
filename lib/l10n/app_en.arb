@@ -2440,6 +2440,14 @@
   "@exerciseGroupNoStations": {
     "description": "ADR-0062: parallel-group editor for split mode."
   },
+  "stationNotUsedInExercise": "Not used in this exercise. No round has teams at this station.",
+  "@stationNotUsedInExercise": {
+    "description": "ADR-0062: a station that no round uses — possible once rounds are groups rather than a rotation over every station."
+  },
+  "stationNotUsedBadge": "Not in use",
+  "@stationNotUsedBadge": {
+    "description": "ADR-0062: a station that no round uses — possible once rounds are groups rather than a rotation over every station."
+  },
   "exerciseMode": "Conduct",
   "@exerciseMode": {
     "description": "ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override."

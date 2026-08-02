@@ -2271,6 +2271,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exerciseGroupNoStations => 'No stations in this group yet.';
 
   @override
+  String get stationNotUsedInExercise =>
+      'Not used in this exercise. No round has teams at this station.';
+
+  @override
+  String get stationNotUsedBadge => 'Not in use';
+
+  @override
   String get exerciseMode => 'Conduct';
 
   @override

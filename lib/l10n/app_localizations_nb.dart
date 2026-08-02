@@ -2268,6 +2268,13 @@ class AppLocalizationsNb extends AppLocalizations {
   String get exerciseGroupNoStations => 'Ingen poster i denne gruppa ennå.';
 
   @override
+  String get stationNotUsedInExercise =>
+      'Ikke i bruk i denne øvelsen. Ingen runde har lag på denne posten.';
+
+  @override
+  String get stationNotUsedBadge => 'Ikke i bruk';
+
+  @override
   String get exerciseMode => 'Gjennomføring';
 
   @override

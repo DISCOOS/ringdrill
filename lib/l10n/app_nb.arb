@@ -1214,6 +1214,8 @@
   "exerciseGroupTeamCollision": "{team} står på to poster samtidig. Disse postene går på samme tid.",
   "exerciseGroupTeamsUnplaced": "{teams} har ingen post i denne runden.",
   "exerciseGroupNoStations": "Ingen poster i denne gruppa ennå.",
+  "stationNotUsedInExercise": "Ikke i bruk i denne øvelsen. Ingen runde har lag på denne posten.",
+  "stationNotUsedBadge": "Ikke i bruk",
   "exerciseMode": "Gjennomføring",
   "exerciseModeTogether": "Samlet",
   "exerciseModeSplit": "Delt",

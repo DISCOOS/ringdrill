@@ -3872,6 +3872,18 @@ abstract class AppLocalizations {
   /// **'No stations in this group yet.'**
   String get exerciseGroupNoStations;
 
+  /// ADR-0062: a station that no round uses — possible once rounds are groups rather than a rotation over every station.
+  ///
+  /// In en, this message translates to:
+  /// **'Not used in this exercise. No round has teams at this station.'**
+  String get stationNotUsedInExercise;
+
+  /// ADR-0062: a station that no round uses — possible once rounds are groups rather than a rotation over every station.
+  ///
+  /// In en, this message translates to:
+  /// **'Not in use'**
+  String get stationNotUsedBadge;
+
   /// ADR-0062: exercise conduct mode (ring route / together / split) and the station duration override.
   ///
   /// In en, this message translates to:
