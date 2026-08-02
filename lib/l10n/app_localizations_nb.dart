@@ -3107,6 +3107,14 @@ class AppLocalizationsNb extends AppLocalizations {
       'Markøren følger posten, men posten har ingen posisjon. Sett posisjon på posten, eller gi markøren sin egen.';
 
   @override
+  String get noPositionExerciseBody =>
+      'Ingen post i denne øvelsen har posisjon ennå. Sett posisjon på en post, så vises den i kartet.';
+
+  @override
+  String get noStationsForMapBody =>
+      'Det finnes ingen poster å plassere ennå. Legg til en post i øvelsen, og gi den posisjon.';
+
+  @override
   String get setPosition => 'Sett posisjon';
 
   @override

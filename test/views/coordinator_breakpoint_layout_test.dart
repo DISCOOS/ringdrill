@@ -156,8 +156,9 @@ void main() {
 
       // Still on the default "Stations" segment (never tapped Kart/Lag),
       // yet the map pane's placeholder is already showing — proof it is a
-      // permanent pane, not gated behind the segment.
-      expect(find.text(l10n.noLocation), findsOneWidget);
+      // permanent pane, not gated behind the segment. The placeholder is the
+      // teaching empty state now, so its title is what identifies it.
+      expect(find.text(l10n.noPositionTitle), findsOneWidget);
       await stop(tester);
     },
   );

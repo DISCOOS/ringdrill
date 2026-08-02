@@ -45,7 +45,7 @@ import 'package:ringdrill/views/widgets/exercise_mini_map.dart'
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
-import 'package:ringdrill/views/widgets/map_placeholder.dart';
+import 'package:ringdrill/views/widgets/position_empty_state.dart';
 import 'package:ringdrill/views/widgets/notification_permission_help.dart';
 import 'package:ringdrill/views/widgets/plan_text.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
@@ -883,6 +883,26 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
+  /// The teaching state inside one station's expanded card, with its action gated the
+  /// same way this screen's other edit affordances are (ADR-0057): the role hides it,
+  /// the run disables it and says why.
+  ///
+  /// Unlike the all-stations map above, this one *can* offer the action — it knows
+  /// which station, so "Set position" opens that station's editor at the position
+  /// field rather than asking the reader to find it.
+  Widget _buildStationPositionEmptyState(Exercise exercise, int stationIndex) {
+    return StationPositionEmptyState(
+      onSetPosition: _isStarted
+          ? null
+          : () => _editStation(exercise, stationIndex),
+      disabledTooltip: _isStarted
+          ? context.l10n.stopExerciseFirst(
+              substitutePlanVariables(exercise.name, _overridesFor(exercise)),
+            )
+          : null,
+    );
+  }
+
   /// Placeholder shown in place of the all-stations map when no station has
   /// a position yet — shared by the compact/medium `Kart` segment and the
   /// expanded body's permanent map pane. [height] is the clamped map height
@@ -893,14 +913,24 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     Exercise exercise, {
     double? height,
   }) {
-    return MapPlaceholder(
+    // [PositionEmptyState], not a bare [MapPlaceholder]: an icon and the words "No
+    // location" say what is missing and leave the reader to guess the fix. This is the
+    // same teaching state a single station's own card shows, so the two read as one
+    // component — the map is just the plural case.
+    //
+    // No action. A single station's card can offer "Set position" because it knows
+    // which station; here there may be a dozen, and picking one for the reader would
+    // be a guess. The two segments beside this one are where they choose.
+    final noStations = exercise.stations.isEmpty;
+    return PositionEmptyState(
       height: height,
-      icon: exercise.stations.isEmpty
-          ? Icons.wrong_location
-          : Icons.location_off,
-      message: exercise.stations.isEmpty
+      icon: noStations ? Icons.wrong_location : Icons.location_off,
+      title: noStations
           ? localizations.notStationsCreated
-          : localizations.noLocation,
+          : localizations.noPositionTitle,
+      body: noStations
+          ? localizations.noStationsForMapBody
+          : localizations.noPositionExerciseBody,
     );
   }
 
@@ -1680,6 +1710,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             miniMapKey: ValueKey<String>(
               'coordinator-station-map-$stationIndex',
             ),
+            // The teaching card, not the bare "Posisjon … Ikke satt" row this
+            // defaulted to. A station with a position shows a mini-map here, so the
+            // empty case showing one line of text read as a different component
+            // rather than the same card with nothing to draw.
+            emptyStyle: PositionEmptyStyle.card,
+            emptyState: _buildStationPositionEmptyState(exercise, stationIndex),
           ),
           const SizedBox(height: 8),
           StationRoleSummary(exercise: exercise, stationIndex: stationIndex),

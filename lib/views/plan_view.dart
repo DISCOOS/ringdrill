@@ -49,6 +49,7 @@ import 'package:ringdrill/views/widgets/resolved_markdown_text.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/start_here_pill.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
+import 'package:ringdrill/views/widgets/position_empty_state.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
@@ -1434,6 +1435,17 @@ class _ExerciseCardState extends State<ExerciseCard> {
             mapHeight: 140,
             miniMapKey: ValueKey<String>(
               'exercise-card-station-map-${exercise.uuid}-${station.index}',
+            ),
+            // As in the Stations tab: the teaching card, not the bare row.
+            emptyStyle: PositionEmptyStyle.card,
+            emptyState: StationPositionEmptyState(
+              height: 140,
+              onSetPosition: () => _openStationForm(
+                context,
+                AppLocalizations.of(context)!,
+                exercise,
+                station,
+              ),
             ),
           ),
           const SizedBox(height: 12),

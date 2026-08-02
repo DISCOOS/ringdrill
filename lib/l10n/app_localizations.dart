@@ -5270,6 +5270,18 @@ abstract class AppLocalizations {
   /// **'This markør follows its station, but the station has no position. Set a position on the station, or give the markør its own.'**
   String get noPositionRolePlayBody;
 
+  /// Body of the no-position empty state on the all-stations map. Plural: the map has nothing to draw because no station is placed, so it names the fix rather than the loss (a single station's own card says what is lost).
+  ///
+  /// In en, this message translates to:
+  /// **'No station in this exercise has a position yet. Set one on a station and it appears on the map.'**
+  String get noPositionExerciseBody;
+
+  /// Body of the all-stations map empty state when the exercise has no stations at all — a different fix from an unplaced station, and one step earlier.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no stations to place yet. Add one to this exercise, then give it a position.'**
+  String get noStationsForMapBody;
+
   /// Action on the no-position empty state for a station.
   ///
   /// In en, this message translates to:

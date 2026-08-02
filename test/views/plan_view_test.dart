@@ -210,13 +210,20 @@ void main() {
     await tester.pump();
     await tester.tap(find.byIcon(Icons.expand_more).hitTestable());
     await tester.pumpAndSettle();
-    // Expanded station tile shows the role name.
+    // Expanded station tile shows the role name. Scrolled to first: an unplaced
+    // station's body now carries the teaching empty state where its mini-map would
+    // go, which is taller than the one-line "Ikke satt" row it replaced, so the role
+    // row below it starts off-screen on this harness's height.
+    await tester.scrollUntilVisible(find.text('Segment Role'), 120);
+    await tester.pumpAndSettle();
     expect(find.text('Segment Role').hitTestable(), findsOneWidget);
 
     // Switching away and back keeps the expansion.
     _select(controllers, PlanSegment.script);
     await tester.pump();
     _select(controllers, PlanSegment.stations);
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Segment Role'), 120);
     await tester.pumpAndSettle();
     expect(find.text('Segment Role').hitTestable(), findsOneWidget);
   });

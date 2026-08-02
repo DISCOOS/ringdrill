@@ -2167,6 +2167,8 @@
   "@noPositionRolePlayBody": {
     "description": "Body of the no-position empty state on a markør. Names both causes, because the central position is null only when neither the markør nor its station has one."
   },
+  "noPositionExerciseBody": "Ingen post i denne øvelsen har posisjon ennå. Sett posisjon på en post, så vises den i kartet.",
+  "noStationsForMapBody": "Det finnes ingen poster å plassere ennå. Legg til en post i øvelsen, og gi den posisjon.",
   "setPosition": "Sett posisjon",
   "@setPosition": {
     "description": "Action on the no-position empty state for a station."

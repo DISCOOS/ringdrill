@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/services/edit_permissions.dart';
+import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/map_placeholder.dart';
 
 /// The teaching empty state for a map slot with no position to plot.
@@ -206,6 +209,62 @@ class PositionEmptyState extends StatelessWidget {
       child: (onAction == null && disabledTooltip != null)
           ? Tooltip(message: disabledTooltip!, child: button)
           : button,
+    );
+  }
+}
+
+/// [PositionEmptyState] for a *station* with no position, role-gated (ADR-0057).
+///
+/// Four surfaces show this exact thing — the station viewer, the coordinator's
+/// expanded row, the plan's Stations tab and the exercise card's station list — and
+/// each had assembled it from the same three parts: the shared title and body, an
+/// `IfEditable` wrapper, and a `setPosition` action. The strings are not the risk; the
+/// *gate* is. A fourth hand-rolled copy is a fourth chance to forget it, which is how
+/// the coordinator ended up with the bare one-line row and no teaching at all.
+///
+/// The role hides the action and the run disables it, which is ADR-0057's stated
+/// division: pass null for [onSetPosition] with a [disabledTooltip] to show it
+/// unavailable, or a callback to offer it. Callers whose own editor entry point
+/// already refuses while an exercise runs (it shows a snackbar saying which one to
+/// stop) pass the callback unconditionally and let that speak.
+class StationPositionEmptyState extends StatelessWidget {
+  const StationPositionEmptyState({
+    super.key,
+    required this.onSetPosition,
+    this.disabledTooltip,
+    this.height,
+  });
+
+  /// Null renders the action *disabled* rather than absent — an action that exists
+  /// but not right now. Absence is the role gate's business, below.
+  final VoidCallback? onSetPosition;
+
+  /// Why the action is unavailable. Shown only when [onSetPosition] is null.
+  final String? disabledTooltip;
+
+  final double? height;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return IfEditable(
+      target: EditTarget.station,
+      // A viewer gets the explanation without a dead button. Without a `replacement`
+      // IfEditable collapses to nothing, leaving the card's map slot empty — worse
+      // than the row this replaced.
+      replacement: PositionEmptyState(
+        title: l10n.noPositionTitle,
+        body: l10n.noPositionStationBody,
+        height: height,
+      ),
+      child: PositionEmptyState(
+        title: l10n.noPositionTitle,
+        body: l10n.noPositionStationBody,
+        height: height,
+        actionLabel: l10n.setPosition,
+        onAction: onSetPosition,
+        disabledTooltip: onSetPosition == null ? disabledTooltip : null,
+      ),
     );
   }
 }

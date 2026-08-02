@@ -9,6 +9,7 @@ import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
+import 'package:ringdrill/views/widgets/position_empty_state.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -239,5 +240,52 @@ void main() {
       tester.getTopLeft(find.byWidget(leading!)).dx,
       reason: 'the description starts where the header content does',
     );
+  });
+
+  group('a station with no position teaches, rather than just reporting', () {
+    testWidgets('the expanded card shows the teaching state and its action', (
+      tester,
+    ) async {
+      // Was the bare "Posisjon … Ikke satt" row: it says what is missing and leaves
+      // the reader to work out the fix. A positioned station shows a mini-map in this
+      // slot, so the empty case has to be the same card with teaching where the map
+      // goes — not a different-looking one-liner.
+      await tester.pumpWidget(
+        _harness(const CoordinatorScreen(uuid: _exerciseUuid)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.expand_more).first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PositionEmptyState), findsWidgets);
+      expect(find.text(l10n.noPositionStationBody), findsOneWidget);
+      expect(
+        find.text(l10n.setPosition),
+        findsOneWidget,
+        reason: 'a director can fix it from here, so the action is offered',
+      );
+    });
+
+    testWidgets('the all-stations map names the fix, not just the absence', (
+      tester,
+    ) async {
+      // The map pane had an icon and the words "No location". Plural case, so no
+      // action: with a dozen stations, picking one for the reader would be a guess.
+      await tester.pumpWidget(
+        _harness(const CoordinatorScreen(uuid: _exerciseUuid)),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.mapTab));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.noPositionTitle), findsOneWidget);
+      expect(find.text(l10n.noPositionExerciseBody), findsOneWidget);
+      expect(
+        find.text(l10n.setPosition),
+        findsNothing,
+        reason: 'the map cannot know which station to open',
+      );
+    });
   });
 }

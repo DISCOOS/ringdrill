@@ -403,29 +403,11 @@ class _StationScreenState extends State<StationScreen>
   /// distinction the pencil draws a few lines up.
   Widget _buildPositionEmptyState(Exercise exercise, Station station) {
     final l10n = AppLocalizations.of(context)!;
-    return IfEditable(
-      target: EditTarget.station,
-      // A viewer cannot set a position, so they get the explanation without a dead
-      // affordance. Without a `replacement` IfEditable collapses to a zero-size
-      // box, which would leave the card's thumbnail slot empty.
-      replacement: PositionEmptyState(
-        title: l10n.noPositionTitle,
-        body: l10n.noPositionStationBody,
-      ),
-      child: PositionEmptyState(
-        title: l10n.noPositionTitle,
-        body: l10n.noPositionStationBody,
-        actionLabel: l10n.setPosition,
-        onAction: _isStarted
-            ? null
-            : () =>
-                  _editStation(context, exercise, initialSectionId: 'station'),
-        disabledTooltip: _isStarted
-            ? l10n.stopExerciseFirst(
-                substitutePlanVariables(exercise.name, _overridesFor(exercise)),
-              )
-            : null,
-      ),
+    return StationPositionEmptyState(
+      onSetPosition: _isStarted
+          ? null
+          : () => _editStation(context, exercise, initialSectionId: 'station'),
+      disabledTooltip: _isStarted ? _liveLockTooltip(l10n, exercise) : null,
     );
   }
 

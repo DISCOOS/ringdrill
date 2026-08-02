@@ -3108,6 +3108,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'This markør follows its station, but the station has no position. Set a position on the station, or give the markør its own.';
 
   @override
+  String get noPositionExerciseBody =>
+      'No station in this exercise has a position yet. Set one on a station and it appears on the map.';
+
+  @override
+  String get noStationsForMapBody =>
+      'There are no stations to place yet. Add one to this exercise, then give it a position.';
+
+  @override
   String get setPosition => 'Set position';
 
   @override

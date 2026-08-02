@@ -30,6 +30,7 @@ import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/station_description_rollup.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
+import 'package:ringdrill/views/widgets/position_empty_state.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
@@ -466,6 +467,17 @@ class _StationListViewState extends State<StationListView> {
         station: station,
         key: ValueKey<String>(
           'stations-list-map-${exercise.uuid}-${station.index}',
+        ),
+        // A positioned station shows a 140px mini-map in this slot, so the empty
+        // case is the same card with teaching where the map goes — not the
+        // one-line "Posisjon … Ikke satt" row it defaulted to.
+        emptyStyle: PositionEmptyStyle.card,
+        // Unconditional: `_openStationForm` refuses on its own while an exercise
+        // runs, naming the one to stop, so a second guard here would only
+        // disagree with it.
+        emptyState: StationPositionEmptyState(
+          height: 140,
+          onSetPosition: () => _openStationForm(exercise, station),
         ),
       ),
       if (hasRoles)

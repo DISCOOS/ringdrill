@@ -157,7 +157,7 @@ void main() {
       // Still on the default "Stations" segment — the expanded body's
       // permanent map pane would show this placeholder without any
       // interaction; its absence confirms the expanded body was not used.
-      expect(find.text(l10n.noLocation), findsNothing);
+      expect(find.text(l10n.noPositionTitle), findsNothing);
 
       await _stop(tester);
     },
@@ -172,7 +172,7 @@ void main() {
       expect(tester.takeException(), isNull);
 
       expect(find.text(l10n.mapTab), findsNothing);
-      expect(find.text(l10n.noLocation), findsOneWidget);
+      expect(find.text(l10n.noPositionTitle), findsOneWidget);
 
       await _stop(tester);
     },
