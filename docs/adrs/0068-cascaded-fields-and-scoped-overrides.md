@@ -70,13 +70,23 @@ neither what it is called nor what ADR-0046 says it does — and an author canno
 which fields those are without knowing the cascade. A is the only option where setting
 an override does what setting an override looks like it does.
 
-**The cost, accepted rather than dismissed:** the same authored text now renders
-differently per station. That is powerful in the way that is hard to debug — a talk
-group that changes depending on which post you are reading is the point here and would
-be baffling in a field where nobody expected it. Two things keep it legible: the
-variable is declared once at plan level so a reader has one place to look, and the
-overriding station shows its own value in its own variables section. The mitigation is
-documentation, which is why C rides along and is not optional.
+**The cost is narrower than it first appears.** An early draft of this ADR called it
+"the same authored text renders differently per station", which overstates it. Three
+things have to coincide for any divergence at all: the cascaded text references
+`{{var.x}}`, the borrowing station overrides *that same* `x`, and its value differs.
+Absent any one of them the station's effective map is the exercise's, so resolution is
+byte-identical — which is every station in every plan today.
+
+So the divergence is opt-in, not emergent: it happens exactly where an author asked for
+it, on the variable they asked for it on. That is the argument *for* A, not a cost of it.
+
+What genuinely remains is a legibility concern, and only in the rendered output: a
+reader comparing two posts sees two values under one section heading, with nothing in
+the brief saying which station overrode what. Mitigated by the variable being declared
+once at plan level, and by the overriding station showing its own value in its own
+variables section — but a reader of the printed brief has neither in front of them. That
+is a documentation problem rather than a design one, which is why C rides along and is
+not optional.
 
 **Implementation is not yet designed.** Accepting A settles what should happen, not what
 it costs. First step is the open question above — enumerate the cascading fields — since
