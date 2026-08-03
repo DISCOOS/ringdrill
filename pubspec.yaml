@@ -165,6 +165,27 @@ sentry:
   # per-file enumeration that `debug` emits during source-map and dSYM
   # upload. Bump back to `debug` when troubleshooting a failed upload.
   log_level: info
+  # Keep the `upload_sources` sweep to our own Dart, not every dependency's
+  # JavaScript.
+  #
+  # sentry_dart_plugin builds ONE `releases files upload-sourcemaps` call with
+  # two upload paths — `build/web --ext js --ext map` and, when
+  # `upload_sources` is on, `./ --ext dart`. sentry-cli unions the `--ext`
+  # flags across the whole command, so the repo root inherits `js` and `map`
+  # too and `./` picks up 33k files under node_modules. (The plugin carries a
+  # TODO about not being able to scope flags per path, so this is upstream
+  # behaviour, not a mistake here.)
+  #
+  # These entries become `--ignore` args on that same call, which is why they
+  # reach the `./` sweep despite the "web" in the option name. They must not
+  # match anything under build/web or web symbolication breaks: none of them
+  # do — `site/**` is anchored, so it does not catch
+  # build/web/.well-known/apple-app-site-association.
+  ignore_web_source_paths:
+    - "**/node_modules/**"
+    - "site/**"
+    - "netlify/**"
+    - ".dart_tool/**"
 
 executables:
   ringdrill: ringdrill
