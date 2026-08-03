@@ -122,19 +122,24 @@ class BriefRenderer {
 
     final planVars = _planVariables(plan);
     final planRefContext = _planRefContext(plan);
-    final planName = resolver.substituteTypedVariables(
+    final planName = _resolveName(
       plan.name,
-      planVars,
-      l10n,
+      scope: 'plan',
+      vars: planVars,
+      l10n: l10n,
+      refContext: planRefContext,
     );
-    // Through the full resolver, not the variable-only pass the names above use:
-    // `description` is prose, and the one plan-scope field that most invites the
-    // counts an author would otherwise type ("sju øvelser, fire lag"), which is
-    // exactly what {{plan.exerciseCount}} exists to replace. It was grouped with
-    // the names by *shape* — a scalar string rather than a markdown field — where
-    // it behaves like the markdown ones. The names stay on the variable-only pass:
-    // a short identifying label has no prose to carry a cross-reference, and the
-    // mustache pass is all-or-nothing per field (ADR-0048).
+    // Through the full resolver: `description` is prose, and the one plan-scope
+    // field that most invites the counts an author would otherwise type ("sju
+    // øvelser, fire lag"), which is exactly what {{plan.exerciseCount}} exists to
+    // replace. It was grouped with the names by *shape* — a scalar string rather
+    // than a markdown field — where it behaves like the markdown ones.
+    //
+    // Not via [_resolveName], which the names above do use: this is body prose, so
+    // a resolved coordinate should keep the copy chip that prose wants, and there
+    // is no self-reference to guard against — `{{plan.description}}` inside
+    // `description` is a field referencing itself, which the picker already
+    // refuses (DESIGN-009 follow-up 4c) and the pass loop bounds either way.
     //
     // Never null here: `resolveField` returns null only for null input, and
     // `Plan.description` is non-nullable.
@@ -232,10 +237,12 @@ class BriefRenderer {
       );
     }).toList();
 
-    final exerciseName = resolver.substituteTypedVariables(
+    final exerciseName = _resolveName(
       exercise.name,
-      exerciseVars,
-      l10n,
+      scope: 'exercise',
+      vars: exerciseVars,
+      l10n: l10n,
+      refContext: exerciseRefContext,
     );
     // Anchor id for table of contents: lowercase, spaces to hyphens. Derived
     // from the resolved name so the in-doc contents link matches the heading
@@ -358,10 +365,14 @@ class BriefRenderer {
       exercise: exercise,
       station: station,
     );
-    final resolvedStationName = resolver.substituteTypedVariables(
+    final resolvedStationName = _resolveName(
       cleanName,
-      stationVars,
-      l10n,
+      scope: 'station',
+      vars: stationVars,
+      l10n: l10n,
+      refContext: stationRefContext,
+      scenarioStation: station,
+      scenarioRolePlays: rolePlays,
     );
 
     String? resolveField(String? content) => resolver.resolveField(
@@ -390,11 +401,6 @@ class BriefRenderer {
           };
         }
       }
-      final resolvedRpName = resolver.substituteTypedVariables(
-        rp.name,
-        stationVars,
-        l10n,
-      );
       // Cascades station (+ exercise + plan) on top of this roleplay's
       // own {{roleplay.*}} — roleplay fields resolve through the station's
       // effective variables too, per DESIGN-008 ("a roleplay reads through
@@ -410,6 +416,17 @@ class BriefRenderer {
       };
       String? resolveRoleplayField(String? content) => resolver.resolveField(
         content,
+        vars: stationVars,
+        l10n: l10n,
+        refContext: roleplayRefContext,
+        scenarioStation: station,
+        scenarioRolePlays: rolePlays,
+      );
+      // After roleplayRefContext, so the name resolves against the roleplay's
+      // own facets too — not only the station's.
+      final resolvedRpName = _resolveName(
+        rp.name,
+        scope: 'roleplay',
         vars: stationVars,
         l10n: l10n,
         refContext: roleplayRefContext,
@@ -739,6 +756,54 @@ String _organisationBlock(
     );
   }
   return buf.toString().trimRight();
+}
+
+/// A name resolved for display: the full pipeline, then chip markup stripped.
+///
+/// Names run through the same resolver as prose, so `{{exercise.name}}` in a
+/// station name resolves rather than printing itself. They used to run the
+/// variable-only pass, which made the brief resolve *less* in a name than the
+/// app does — `resolveModelField` has always built the full cross-reference
+/// context for a map marker's or search result's caption, and documented itself
+/// as matching the brief. One of the two was wrong; this is the half that was.
+///
+/// The strip is what makes a name different from prose, and it is about the
+/// surface rather than the field: a name lands in a markdown *heading* and in a
+/// table-of-contents *link label*, where a resolved `{{station.position}}`
+/// would render as inline code in the heading and as backticks inside the
+/// contents link's `[...]`. `RingDrillText.plain` reduces the same two chip
+/// shapes for the same reason, which is why [resolver.stripChipMarkup] is
+/// shared rather than reimplemented here.
+///
+/// A cross-reference whose scope is absent still takes the whole name back to
+/// literal — the resolver is all-or-nothing per field (ADR-0048) — which is why
+/// each name gets the richest context its position offers.
+///
+/// [scope] is the name's own scope key (`plan`, `exercise`, `station`,
+/// `roleplay`), whose `name` facet is dropped before resolving — see below.
+///
+/// Never null: `resolveField` returns null only for null input.
+String _resolveName(
+  String name, {
+  required String scope,
+  required Map<String, DrillVariable> vars,
+  required BriefLabels l10n,
+  required Map<String, dynamic> refContext,
+  Station? scenarioStation,
+  List<RolePlay> scenarioRolePlays = const [],
+}) {
+  return resolver.stripChipMarkup(
+    resolver.resolveField(
+      name,
+      vars: vars,
+      l10n: l10n,
+      // A name may not reference itself — see `refContextForName`, shared with
+      // the app's name resolution so the two cannot disagree.
+      refContext: resolver.refContextForName(refContext, scope),
+      scenarioStation: scenarioStation,
+      scenarioRolePlays: scenarioRolePlays,
+    )!,
+  );
 }
 
 /// The comms text [exercise] and its stations render: the exercise's own,

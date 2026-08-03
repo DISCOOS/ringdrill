@@ -183,6 +183,28 @@ reference everything up to `{{program.*}}`.
 author edits in the station's own base section, so referencing it there would
 recurse on itself (DESIGN-009 follow-up 4c).
 
+### Names resolve too — with two differences
+
+A **name** (the plan's, an exercise's, a station's, a role play's) resolves the
+same tokens a markdown field does, so `{{exercise.name}}` in a station name or
+`{{plan.exerciseCount}}` in a plan name comes out as a value. Two things about a
+name are different:
+
+* **Chip markup is stripped.** A name lands in a heading, a contents-list link
+  label, a map marker caption — plain surfaces. A resolved `{{station.position}}`
+  that is a copy pill in prose reads as bare text here, because backticks inside
+  a heading would render as inline code and inside a link's `[...]` as literal
+  characters.
+* **A name may not reference itself.** `{{station.name}}` inside a station's own
+  name resolves to nothing and stays a visible token. The token picker will not
+  offer it, and a hand-written one is left literal rather than expanded — the
+  value a facet carries is the *authored* text, so substituting it would inject
+  the same token again and each resolution pass would add another copy.
+
+Referencing a *different* scope's name is fine and is the useful case: a station
+named `Post i {{exercise.name}}` resolves, including a `{{plan.name}}` nested
+inside the exercise name it picks up.
+
 ### Roleplay — the open roleplay; available only in roleplay fields
 
 | Token | Description |

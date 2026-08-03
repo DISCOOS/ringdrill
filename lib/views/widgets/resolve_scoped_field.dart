@@ -131,6 +131,12 @@ String? resolveScopedField(
 /// The plan level and the declared variables still come from the ambient
 /// [PlanScope] (every map/search surface has one); [overrides] shadows a
 /// declared value the same way [resolveScopedField]'s does.
+///
+/// [selfScope] says that [content] *is* one entity's name (`exercise`,
+/// `station`, `roleplay`, `plan`), so that scope's own `name` facet is withheld
+/// and a name referencing itself stays a visible token instead of expanding into
+/// repeated copies of itself — see [resolver.refContextForName], which the
+/// brief's names share.
 String? resolveModelField(
   BuildContext context,
   String? content, {
@@ -138,6 +144,7 @@ String? resolveModelField(
   Station? station,
   RolePlay? roleplay,
   Map<String, String> overrides = const {},
+  String? selfScope,
 }) {
   if (content == null || content.isEmpty) return content;
   final l10n = AppLocalizations.of(context)!;
@@ -184,7 +191,9 @@ String? resolveModelField(
     content,
     vars: vars,
     l10n: l10n.brief,
-    refContext: refContext,
+    refContext: selfScope == null
+        ? refContext
+        : resolver.refContextForName(refContext, selfScope),
     scenarioStation: scenarioStation,
     chips: const resolver.ActionChipFormatter(),
   );

@@ -143,6 +143,7 @@ MapMarkerSpec<K>? roleMarker<K>(
               station: station,
               roleplay: rolePlay,
               overrides: overrides,
+              selfScope: 'roleplay',
             ) ??
             rolePlay.name;
   return MapMarkerSpec(

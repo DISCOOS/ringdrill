@@ -355,4 +355,64 @@ void main() {
       expect(errors, isEmpty);
     },
   );
+
+  testWidgets(
+    'selfScope keeps a name that references itself literal, the same way the '
+    'brief does',
+    (tester) async {
+      // The map-marker and search-result labels resolve an entity's own *name*
+      // with that entity in scope, so `{{roleplay.name}}` inside a roleplay's
+      // name would substitute a copy of the name — token included — and the pass
+      // loop would expand it once per pass. The brief guards this for its own
+      // headings; sharing `refContextForName` is what stops the two from
+      // disagreeing about the same name (ADR-0048).
+      late BuildContext captured;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('nb'),
+          home: PlanScope(
+            variables: const [],
+            planName: 'Plan One',
+            child: Builder(
+              builder: (context) {
+                captured = context;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+
+      final selfNamed = _rolePlay.copyWith(name: 'Markør {{roleplay.name}}');
+
+      // Without the guard: "Markør Markør Markør … {{roleplay.name}}".
+      expect(
+        resolveModelField(
+          captured,
+          selfNamed.name,
+          exercise: _exercise(),
+          station: const Station(index: 0, name: 'Station A'),
+          roleplay: selfNamed,
+          selfScope: 'roleplay',
+        ),
+        'Markør {{roleplay.name}}',
+      );
+
+      // The guard drops one facet, not the cascade — the other scopes still
+      // resolve in a name.
+      expect(
+        resolveModelField(
+          captured,
+          'Markør på {{station.name}}',
+          exercise: _exercise(),
+          station: const Station(index: 0, name: 'Station A'),
+          roleplay: selfNamed,
+          selfScope: 'roleplay',
+        ),
+        'Markør på Station A',
+      );
+    },
+  );
 }

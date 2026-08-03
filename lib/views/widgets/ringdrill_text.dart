@@ -1,26 +1,13 @@
 import 'package:flutter/widgets.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/services/brief/field_resolver.dart' as resolver;
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/plan_text.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
-
-/// Matches an (ADR-0050) `ringdrill://chip` action-chip link —
-/// `[display](ringdrill://chip?...)` — so [RingDrillText.plain] can strip it
-/// down to its display text, the same way it strips a backtick copy chip
-/// down to its bare value. The `ringdrill://chip` URI must never leak into a
-/// plain surface as raw markup.
-final _chipLinkPattern = RegExp(r'\[([^\]]*)\]\(ringdrill://chip\?[^)]*\)');
-
-/// Strips chip markup a plain surface never wants to show: a
-/// `ringdrill://chip` action-chip link collapses to its display text, then
-/// any remaining backtick copy-chip markers are dropped.
-String _stripChipMarkup(String text) => text
-    .replaceAllMapped(_chipLinkPattern, (m) => m.group(1) ?? '')
-    .replaceAll('`', '');
 
 /// Read-only counterpart to [Text] that resolves the full DESIGN-010 token
 /// pipeline before rendering — `{{var.<name>}}` (ADR-0046), plus whatever
@@ -155,7 +142,7 @@ class RingDrillText extends StatelessWidget {
     // as plain text rather than leaking a literal backtick or an (ADR-0050)
     // ringdrill://chip link into a title or list row.
     return Text(
-      _stripChipMarkup(resolved),
+      resolver.stripChipMarkup(resolved),
       style: style,
       maxLines: maxLines,
       overflow: overflow,

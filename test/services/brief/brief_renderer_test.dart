@@ -440,24 +440,177 @@ void main() {
       expect(result, isNot(contains('{{plan.exerciseCount}}')));
     });
 
-    test('a name keeps a cross-reference literal — the names stay on the '
-        'variable-only pass', () async {
-      // Deliberate, not an oversight: a short identifying label has no prose to
-      // carry a cross-reference, and the mustache pass is all-or-nothing per field
-      // (ADR-0048), so one bad token in a name would take the whole heading with
-      // it. {{var.*}} does resolve in a name — that is the pass the names run.
-      final plan = _emptyPlan().copyWith(
-        name: 'Plan med {{plan.exerciseCount}}',
-        exercises: [_designExercise()],
-      );
+    // The names ran the variable-only pass, so the brief resolved *less* in a name
+    // than the app did: `resolveModelField` has always built the full
+    // cross-reference context for a marker caption or search result and documented
+    // itself as matching the brief. The brief was the wrong half.
+    group('a name resolves cross-references, like the app already did', () {
+      test('every scope resolves in its own name', () async {
+        final plan = _emptyPlan().copyWith(
+          name: 'Plan med {{plan.exerciseCount}} øvelser',
+          exercises: [
+            _designExercise().copyWith(
+              name: 'Øvelse for {{exercise.numberOfTeams}} lag',
+              stations: [
+                _designStation().copyWith(
+                  name: 'Post {{station.stationCode}} i {{exercise.name}}',
+                ),
+              ],
+            ),
+          ],
+          rolePlays: [_rolePlay.copyWith(name: 'Markør på {{station.name}}')],
+          staff: [_actor],
+        );
 
-      final result = await renderer.render(
-        plan: plan,
-        audience: BriefAudience.participant,
-        l10n: _l10n.brief,
-      );
+        final result = await renderer.render(
+          plan: plan,
+          audience: BriefAudience.director,
+          l10n: _l10n.brief,
+        );
 
-      expect(result, contains('# Plan med {{plan.exerciseCount}}'));
+        expect(result, contains('# Plan med 1 øvelser'));
+        expect(result, contains('## Øvelse for 4 lag'));
+        // A station name reaching up to its exercise — and the exercise name it
+        // reads is the raw one, since a refContext facet is the authored value and
+        // the pass loop resolves what it injects.
+        expect(result, contains('### 1.1 – Post 1.1 i Øvelse for 4 lag'));
+        expect(result, contains('Markørspill (Markør på Post 1.1 i'));
+        expect(result, isNot(contains('{{station.stationCode}}')));
+        expect(result, isNot(contains('{{exercise.numberOfTeams}}')));
+      });
+
+      test('the heading and its contents link agree', () async {
+        // The anchor is derived from the resolved name, so resolving more in a name
+        // has to keep the in-doc TOC pointing at the heading it names.
+        final plan = _emptyPlan().copyWith(
+          exercises: [
+            _designExercise().copyWith(
+              stations: [
+                _designStation().copyWith(name: 'Post {{station.stationCode}}'),
+              ],
+            ),
+          ],
+        );
+
+        final result = await renderer.render(
+          plan: plan,
+          audience: BriefAudience.participant,
+          l10n: _l10n.brief,
+        );
+
+        expect(result, contains('### 1.1 – Post 1.1'));
+        final anchor = BriefRenderer.toAnchor('1.1 – Post 1.1');
+        expect(result, contains('[1.1 – Post 1.1](#$anchor)'));
+      });
+
+      test('a coordinate in a name reads as plain text, not a code chip', () async {
+        // A name lands in a heading and in a contents link label — plain surfaces.
+        // The copy chip that is right in prose would render as inline code inside
+        // the heading, and as literal backticks inside the link's [...].
+        final plan = _emptyPlan().copyWith(
+          exercises: [
+            _designExercise().copyWith(
+              stations: [
+                _designStation().copyWith(
+                  name: 'Post ved {{station.position}}',
+                ),
+              ],
+            ),
+          ],
+        );
+
+        final result = await renderer.render(
+          plan: plan,
+          audience: BriefAudience.participant,
+          l10n: _l10n.brief,
+        );
+
+        final utm = BriefRenderer.formatUtm(const LatLng(58.99, 10.43));
+        expect(result, contains('### 1.1 – Post ved $utm'));
+        expect(
+          result,
+          isNot(contains('Post ved `$utm`')),
+          reason: 'a heading is a plain surface — no chip markup',
+        );
+      });
+
+      test('a name referencing itself stays literal instead of expanding', () async {
+        // A refContext facet carries the *authored* value, so {{station.name}}
+        // inside a station's own name substitutes a copy of that name — token and
+        // all — and the pass loop expands it once per pass: without the guard this
+        // heading read "Post Post Post Post Post Post Post Post Post Post Post
+        // {{station.name}}". Bounded, but garbage that looks deliberate, where an
+        // unresolved token at least looks unresolved.
+        final plan = _emptyPlan().copyWith(
+          exercises: [
+            _designExercise().copyWith(
+              name: 'Øvelse {{exercise.name}}',
+              stations: [
+                _designStation().copyWith(name: 'Post {{station.name}}'),
+              ],
+            ),
+          ],
+        );
+
+        final result = await renderer.render(
+          plan: plan,
+          audience: BriefAudience.participant,
+          l10n: _l10n.brief,
+        );
+
+        expect(result, contains('### 1.1 – Post {{station.name}}'));
+        expect(result, contains('## Øvelse {{exercise.name}}'));
+        expect(result, isNot(contains('Post Post')));
+      });
+
+      test('only the name\'s own scope is withheld, not the ones above it', () async {
+        // The guard drops one facet, not the cascade: a station name still reads
+        // its exercise, and an exercise name still reads its plan.
+        final plan = _emptyPlan().copyWith(
+          name: 'Vinterøvelse',
+          exercises: [
+            _designExercise().copyWith(
+              name: '{{plan.name}} – dag 1',
+              stations: [
+                _designStation().copyWith(name: 'Post i {{exercise.name}}'),
+              ],
+            ),
+          ],
+        );
+
+        final result = await renderer.render(
+          plan: plan,
+          audience: BriefAudience.participant,
+          l10n: _l10n.brief,
+        );
+
+        expect(result, contains('## Vinterøvelse – dag 1'));
+        // Two hops in one field: {{exercise.name}} injects the *authored* exercise
+        // name, which still holds {{plan.name}}, and the next pass resolves that —
+        // the nested-token behaviour the pass loop exists for.
+        expect(result, contains('### 1.1 – Post i Vinterøvelse – dag 1'));
+      });
+
+      test('an out-of-scope reference takes the whole name literal', () async {
+        // The all-or-nothing rule (ADR-0048), unchanged: a plan name has no
+        // exercise in scope, so the resolvable half goes literal with the rest
+        // rather than resolving on its own. Honest, and never a crash.
+        final plan = _emptyPlan().copyWith(
+          name: '{{plan.exerciseCount}} øvelser for {{exercise.name}}',
+          exercises: [_designExercise()],
+        );
+
+        final result = await renderer.render(
+          plan: plan,
+          audience: BriefAudience.participant,
+          l10n: _l10n.brief,
+        );
+
+        expect(
+          result,
+          contains('# {{plan.exerciseCount}} øvelser for {{exercise.name}}'),
+        );
+      });
     });
 
     test(

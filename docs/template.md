@@ -105,7 +105,7 @@ A **station** exposes, among others:
 
 | Key | Description |
 |-----|-------------|
-| `name` | The station's resolved name. |
+| `name` | The station's resolved name — cross-references and variables resolved, chip markup stripped (a heading is a plain surface), and its own `{{station.name}}` withheld so a self-reference cannot expand. See [`variables.md`](./variables.md#names-resolve-too--with-two-differences). |
 | `stationCode` | The station's numbered code, e.g. `3.1`. |
 | `stationAnchor` | The in-document link target for this station. |
 | `variantSuffix` | The station's optional variant suffix. |

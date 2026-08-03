@@ -404,6 +404,62 @@ String _resolveLocationFacet(
 /// code span so the brief renders it as a copy chip. Empty stays empty.
 String briefCopyChip(String value) => value.isEmpty ? '' : '`$value`';
 
+/// [refContext] with [scope]'s own `name` facet removed — for resolving that
+/// entity's *name*, which may not reference itself.
+///
+/// A refContext facet carries the *authored* value, so `{{station.name}}` inside
+/// a station's own name substitutes a copy of that name with the token still in
+/// it, and the pass loop expands it once per pass before the cap stops it:
+/// "Post Post Post … {{station.name}}". Without the facet the non-lenient
+/// mustache pass throws, the field falls back whole, and the token stays visible
+/// — garbage that looks deliberate is worse than an unresolved token that looks
+/// unresolved.
+///
+/// Only that one facet goes: a station name reading `{{exercise.name}}` still
+/// resolves, and so does a `{{plan.name}}` nested inside the value that injects.
+///
+/// Shared by the brief's names and the app's (`resolveModelField`) so the two
+/// cannot disagree about the same name — the divergence ADR-0048 exists to
+/// prevent, and the one this guard would have created had it lived in only one
+/// of them. The token picker already refuses to *offer* a self-reference
+/// (DESIGN-009 follow-up 4c); this is the hand-written case it cannot prevent.
+Map<String, dynamic> refContextForName(
+  Map<String, dynamic> refContext,
+  String scope,
+) {
+  final facets = refContext[scope];
+  if (facets is! Map<String, dynamic>) return refContext;
+  return {
+    ...refContext,
+    scope: {...facets}..remove('name'),
+  };
+}
+
+/// Matches an (ADR-0050) `ringdrill://chip` action-chip link —
+/// `[display](ringdrill://chip?...)` — so [stripChipMarkup] can reduce it to
+/// its display text. The `ringdrill://chip` URI must never leak into a plain
+/// surface as raw markup.
+final _chipLinkPattern = RegExp(r'\[([^\]]*)\]\(ringdrill://chip\?[^)]*\)');
+
+/// Strips chip markup a plain surface never wants to show: an action-chip link
+/// collapses to its display text, then any remaining backtick copy-chip
+/// markers are dropped.
+///
+/// A *plain* surface is one whose output is not rendered as markdown body — a
+/// heading, a table-of-contents label, a window title, a list row. Both chip
+/// shapes are markdown, so a resolved `{{station.position}}` that is correct in
+/// prose arrives as `` `32V …` `` in a heading, or as inline code inside a
+/// link's label in a contents list.
+///
+/// Lives here rather than in the view layer because both callers need it and
+/// there is one right answer: the brief's names (`BriefRenderer`) and the app's
+/// `RingDrillText.plain`. It was the view's private helper until the brief
+/// started resolving cross-references in names, and a second copy is the drift
+/// ADR-0048 exists to prevent.
+String stripChipMarkup(String text) => text
+    .replaceAllMapped(_chipLinkPattern, (m) => m.group(1) ?? '')
+    .replaceAll('`', '');
+
 /// Sensible bare-token default: the address as its own copy chip plus, when a
 /// position is set, the coordinate chip (formatted per [format]) wrapped in
 /// parentheses — two chips side by side, e.g. `[Meiselen 14] ([32V …])`.

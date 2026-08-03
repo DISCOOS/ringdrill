@@ -776,6 +776,7 @@ class _StationsViewState extends State<StationsView>
                 exercise.name,
                 exercise: exercise,
                 overrides: exerciseOverrides,
+                selfScope: 'exercise',
               ) ??
               exercise.name,
           exercisePoints,
@@ -806,7 +807,7 @@ class _StationsViewState extends State<StationsView>
           exerciseNumber: exercises.indexOf(exercise) + 1,
         );
         final label =
-            '${resolveModelField(context, exercise.name, exercise: exercise, station: station, overrides: stationOverrides) ?? exercise.name} '
+            '${resolveModelField(context, exercise.name, exercise: exercise, station: station, overrides: stationOverrides, selfScope: 'exercise') ?? exercise.name} '
             '| ${resolveModelField(context, postLabel, exercise: exercise, station: station, overrides: stationOverrides) ?? postLabel}';
         targets.add(
           SearchResult.points(
