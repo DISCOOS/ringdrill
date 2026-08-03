@@ -7,6 +7,8 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 
 void main() {
+  group('rotationPhaseBreakdown', _phaseBreakdownTests);
+
   group('formatExerciseForShare', () {
     test('matches the agreed Norwegian share format exactly', () {
       // Golden mirrors the format the user signed off on: header,
@@ -272,4 +274,108 @@ Exercise _exerciseTwo() {
     schedule: schedule,
     endTime: const SimpleTimeOfDay(hour: 12, minute: 30),
   );
+}
+
+// `{{exercise.phaseBreakdown}}` is what the authoring guidance tells authors to write
+// instead of typing "15 | 10 | 5" by hand — so it has to be at least as accurate as the
+// literal it replaces. It read the exercise's own three and ignored every station
+// override, which made the recommended token *less* true than the copy.
+void _phaseBreakdownTests() {
+  Exercise base({
+    ExerciseMode mode = ExerciseMode.ring,
+    List<Station> stations = const [
+      Station(index: 0, name: 'a'),
+      Station(index: 1, name: 'b'),
+    ],
+    List<ExerciseGroup> groups = const [],
+    int rounds = 2,
+  }) => Exercise(
+    uuid: 'e',
+    name: 'E',
+    startTime: const SimpleTimeOfDay(hour: 9, minute: 0),
+    endTime: const SimpleTimeOfDay(hour: 11, minute: 0),
+    numberOfTeams: 2,
+    numberOfRounds: rounds,
+    executionTime: 15,
+    evaluationTime: 10,
+    rotationTime: 5,
+    mode: mode,
+    groups: groups,
+    stations: stations,
+    schedule: const [],
+  );
+
+  test('unchanged where no station overrides anything', () {
+    // The common case, and the one every existing plan is: it must read exactly as it
+    // always did.
+    expect(rotationPhaseBreakdown(base()), '15 | 10 | 5');
+  });
+
+  test('ring: the longest station sets every round, so one number each', () {
+    // Not a span: in `ring` the rounds really are uniform — every station is live in
+    // every round — so 100 is what each round takes, not the top of a range.
+    expect(
+      rotationPhaseBreakdown(
+        base(
+          stations: const [
+            Station(index: 0, name: 'a', executionTime: 100),
+            Station(index: 1, name: 'b'),
+          ],
+        ),
+      ),
+      '100 | 10 | 5',
+    );
+  });
+
+  test('together: rounds differ, so the phase that varies reads as a span', () {
+    // A lone maximum would say every round takes 100. A span says what to expect.
+    expect(
+      rotationPhaseBreakdown(
+        base(
+          mode: ExerciseMode.together,
+          stations: const [
+            Station(index: 0, name: 'a', executionTime: 70),
+            Station(
+              index: 1,
+              name: 'b',
+              executionTime: 100,
+              evaluationTime: 25,
+            ),
+          ],
+        ),
+      ),
+      '70–100 | 10–25 | 5',
+    );
+  });
+
+  test('split: read per group, not per station', () {
+    // Two stations at once in one round, one in the next: the first round is as long as
+    // the longer of the pair.
+    expect(
+      rotationPhaseBreakdown(
+        base(
+          mode: ExerciseMode.split,
+          stations: const [
+            Station(index: 0, name: 'a', executionTime: 60),
+            Station(index: 1, name: 'b', executionTime: 90),
+            Station(index: 2, name: 'c', executionTime: 30),
+          ],
+          groups: const [
+            ExerciseGroup(
+              stations: [
+                GroupSlot(stationIndex: 0, teams: [0]),
+                GroupSlot(stationIndex: 1, teams: [1]),
+              ],
+            ),
+            ExerciseGroup(
+              stations: [
+                GroupSlot(stationIndex: 2, teams: [0, 1]),
+              ],
+            ),
+          ],
+        ),
+      ),
+      '30–90 | 10 | 5',
+    );
+  });
 }

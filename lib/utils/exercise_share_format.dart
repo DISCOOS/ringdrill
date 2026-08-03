@@ -1,5 +1,6 @@
 import 'package:ringdrill/services/brief/brief_labels.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/schedule.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 
 /// Formats [t] as a four-digit clock string without a colon ("0930").
@@ -124,12 +125,62 @@ String stationDurationLabel(
   return '$total min ($execution | $evaluation | $rotation)';
 }
 
-/// Returns the phase pipe-join string for [exercise]:
-/// `"executionTime | evaluationTime | rotationTime"` (all in minutes).
-String rotationPhaseBreakdown(Exercise exercise) =>
-    '${exercise.executionTime} | '
-    '${exercise.evaluationTime} | '
-    '${exercise.rotationTime}';
+/// The phase pipe-join for [exercise]: `"15 | 10 | 5"`, in minutes, as the rounds
+/// actually run rather than as the exercise declares.
+///
+/// Backs `{{exercise.phaseBreakdown}}`, which the authoring guidance tells authors to
+/// write *instead of* typing the numbers — so it has to be at least as accurate as the
+/// literal it replaces. It was not: it read the exercise's own three and ignored every
+/// station override.
+String rotationPhaseBreakdown(Exercise exercise) {
+  final minutes = effectivePhaseMinutes(exercise);
+  return '${_span(minutes.map((m) => m.execution))} | '
+      '${_span(minutes.map((m) => m.evaluation))} | '
+      '${_span(minutes.map((m) => m.rotation))}';
+}
+
+/// What the rounds of [exercise] actually take, per round, in order.
+///
+/// Through the one derivation the schedule uses, so a label cannot claim a phase the
+/// clock does not have. This used to read the exercise's own three and nothing else,
+/// which was wrong the moment a station overrode one (ADR-0062) — and wrong in `ring`
+/// too, not only in the modes with uneven rounds, because there the longest station
+/// sets every round.
+List<PhaseMinutes> effectivePhaseMinutes(Exercise exercise) {
+  final fallback = (
+    execution: exercise.executionTime,
+    evaluation: exercise.evaluationTime,
+    rotation: exercise.rotationTime,
+  );
+  return ExerciseSchedule.phaseMinutesFor(
+    mode: exercise.mode,
+    numberOfRounds: exercise.numberOfRounds,
+    fallback: fallback,
+    stationMinutes: ExerciseSchedule.stationMinutesFrom(
+      stations: exercise.stations,
+      fallback: fallback,
+    ),
+    groups: [
+      for (final group in exercise.groups)
+        [for (final slot in group.stations) slot.stationIndex],
+    ],
+  );
+}
+
+/// One phase across every round: a single number where they agree, a span where they
+/// do not.
+///
+/// A span rather than a maximum, because the point of the breakdown is what a reader
+/// should expect and "45–100" is that; a lone 100 would read as every round taking it.
+/// In `ring` the rounds are uniform by construction, so this reduces to one number —
+/// which is why the common case looks exactly as it always did.
+String _span(Iterable<int> values) {
+  final sorted = values.toList()..sort();
+  if (sorted.isEmpty) return '0';
+  return sorted.first == sorted.last
+      ? '${sorted.first}'
+      : '${sorted.first}–${sorted.last}';
+}
 
 /// Clock-time span for [exercise]: "08:30–10:30". "Tid" in copy is reserved
 /// for clock-time, never duration. Shared by `BriefRenderer` (the
