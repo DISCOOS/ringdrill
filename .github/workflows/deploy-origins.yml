@@ -96,9 +96,27 @@ jobs:
             fi
           }
 
+          # Each pattern must cover everything the matching job actually reads,
+          # or a change ships without the job that would have caught it ever
+          # running. That is not hypothetical: a Makefile-only fix to
+          # `strip-source-maps-web` passed CI green twice while the pwa job was
+          # skipped, because Makefile was not listed here.
+          #
+          #   functions: `npm ci` at the repo root, then `netlify deploy
+          #              --functions=netlify/functions`. So the root
+          #              package.json/lock are inputs — a dependabot bump to a
+          #              function dependency otherwise deploys nothing.
+          #              netlify/tests/ is deliberately absent: it does not ship.
+          #   pwa:       `make build-web`, so Makefile is an input, as is
+          #              assets/ (templates and images are bundled into the web
+          #              artifact) and pubspec.lock (a lock-only bump changes
+          #              the build without touching pubspec.yaml).
+          #   site:      `npm ci && npm run build` inside site/, with no make at
+          #              all — so ^site/ is complete, and Makefile does NOT
+          #              belong here.
           {
-            echo "functions=$(match '^(netlify/functions/|netlify\.toml)')"
-            echo "pwa=$(match '^(lib/|pubspec\.yaml|web/)')"
+            echo "functions=$(match '^(netlify/functions/|netlify\.toml|package\.json|package-lock\.json)')"
+            echo "pwa=$(match '^(lib/|assets/|web/|pubspec\.(yaml|lock)|Makefile)')"
             echo "site=$(match '^site/')"
           } >> "$GITHUB_OUTPUT"
 
