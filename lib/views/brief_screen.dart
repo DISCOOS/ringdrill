@@ -75,7 +75,15 @@ class _BriefScreenState extends State<BriefScreen> {
   bool _searchOpen = false;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  bool _wideTocSidebar = false;
+  // Whether the last render was built for the wide (TOC sidebar) layout. Only
+  // the LayoutBuilder knows this — the brief can sit in a sheet or a
+  // master-detail pane, so MediaQuery's width is not the pane's width — so the
+  // render future is created lazily from inside it, keyed on the inputs below,
+  // rather than eagerly in didChangeDependencies. Building it eagerly meant a
+  // wide viewport always rendered once for the narrow layout, threw that
+  // document away, flashed the spinner and rendered again.
+  bool? _renderedWide;
+  BriefAudience? _renderedAudience;
 
   // Search-cycle state. _matchCount is recomputed when the rendered markdown
   // arrives or when the query changes. _currentMatchIndex is what the user
@@ -87,14 +95,22 @@ class _BriefScreenState extends State<BriefScreen> {
   String? _renderedMarkdown;
 
   // GlobalKey attached to the currently-highlighted match in the rendered
-  // markdown (the <curr-mark> WidgetSpan child). On next/previous we use
-  // it to call Scrollable.ensureVisible, scrolling the match into view.
-  // BriefMarkdown renders an eager Column, so the key's context is present
-  // whenever a match exists; the scroll only no-ops before the first frame.
+  // markdown (the <curr-mark> WidgetSpan child). On next/previous we hand it
+  // to BriefMarkdownController.ensureKeyVisible to scroll the match into view.
+  // BriefMarkdown's viewport is lazy (ADR-0069), so a match outside the built
+  // window has no context yet — which is why that call also takes
+  // _currentMatchFraction, and why it is not a plain ensureVisible.
   final GlobalKey _currentMatchKey = GlobalKey();
 
-  // Re-assigned when audience or layout changes so FutureBuilder re-runs.
-  late Future<String> _renderFuture;
+  // Re-assigned when audience, layout or locale changes so FutureBuilder
+  // re-runs. Null means "not rendered yet for the current inputs".
+  Future<String>? _renderFuture;
+
+  /// Where the active search match sits in the rendered markdown, as a
+  /// fraction of its length. The document's viewport is lazy, so a match
+  /// further down than the built window has no widget to scroll to; this gives
+  /// the controller somewhere to jump first. Null when there is no match.
+  double? _currentMatchFraction;
 
   @override
   void initState() {
@@ -132,11 +148,29 @@ class _BriefScreenState extends State<BriefScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Re-build on first mount (replaces initState) and whenever l10n changes.
-    _renderFuture = _buildRenderFuture(AppLocalizations.of(context)!);
+    // Invalidate on first mount (replaces initState) and whenever l10n
+    // changes. The future itself is created inside the LayoutBuilder, once the
+    // pane's own width — and so the wide/narrow variant — is known.
+    _renderFuture = null;
   }
 
-  Future<String> _buildRenderFuture(AppLocalizations l10n) {
+  /// The rendered document for the current audience and layout, created on
+  /// first use and reused until one of those inputs changes.
+  ///
+  /// Called from `build`, which is safe because it only memoises: it never
+  /// notifies listeners or calls setState.
+  Future<String> _futureFor(AppLocalizations l10n, bool isWide) {
+    if (_renderFuture == null ||
+        _renderedWide != isWide ||
+        _renderedAudience != _audience) {
+      _renderedWide = isWide;
+      _renderedAudience = _audience;
+      _renderFuture = _buildRenderFuture(l10n, isWide);
+    }
+    return _renderFuture!;
+  }
+
+  Future<String> _buildRenderFuture(AppLocalizations l10n, bool wide) {
     final plan = PlanService().activePlan;
     if (plan == null) return Future.value('');
 
@@ -154,22 +188,14 @@ class _BriefScreenState extends State<BriefScreen> {
       exercise: exercise,
       audience: _audience,
       l10n: l10n.brief,
-      wideTocSidebar: _wideTocSidebar,
+      wideTocSidebar: wide,
     );
   }
 
   void _setAudience(BriefAudience audience) {
     setState(() {
       _audience = audience;
-      _renderFuture = _buildRenderFuture(AppLocalizations.of(context)!);
-    });
-  }
-
-  void _setWideTocSidebar(bool isWide) {
-    if (!mounted) return;
-    setState(() {
-      _wideTocSidebar = isWide;
-      _renderFuture = _buildRenderFuture(AppLocalizations.of(context)!);
+      _renderFuture = null;
     });
   }
 
@@ -248,11 +274,6 @@ class _BriefScreenState extends State<BriefScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth >= _kWideBreakpoint;
-            if (isWide != _wideTocSidebar) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _setWideTocSidebar(isWide);
-              });
-            }
             return Scaffold(
               appBar: _buildAppBar(
                 context,
@@ -487,7 +508,7 @@ class _BriefScreenState extends State<BriefScreen> {
     bool isWide,
   ) {
     return FutureBuilder<String>(
-      future: _renderFuture,
+      future: _futureFor(localizations, isWide),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -535,11 +556,21 @@ class _BriefScreenState extends State<BriefScreen> {
   /// `<curr-mark>` so it visually stands out from the other matches.
   /// Returns the original string unchanged when the query is empty.
   String _applySearch(String markdown) {
-    if (_searchQuery.isEmpty) return markdown;
+    if (_searchQuery.isEmpty) {
+      _currentMatchFraction = null;
+      return markdown;
+    }
     final pattern = RegExp(RegExp.escape(_searchQuery), caseSensitive: false);
     var i = 0;
+    _currentMatchFraction = null;
     return markdown.replaceAllMapped(pattern, (m) {
-      final tag = (i == _currentMatchIndex) ? 'curr-mark' : 'mark';
+      final isCurrent = i == _currentMatchIndex;
+      if (isCurrent && markdown.isNotEmpty) {
+        // Where the active match sits in the source, for the lazy viewport to
+        // jump to when the match is outside the built window.
+        _currentMatchFraction = m.start / markdown.length;
+      }
+      final tag = isCurrent ? 'curr-mark' : 'mark';
       final wrapped = '<$tag>${m.group(0)}</$tag>';
       i++;
       return wrapped;
@@ -564,13 +595,22 @@ class _BriefScreenState extends State<BriefScreen> {
 
   /// Called from the FutureBuilder once the renderer finishes. Caches the
   /// markdown and recomputes the match count if the result changed.
+  ///
+  /// Deliberately not a blanket `setState`. Nothing on screen reads this cache
+  /// except the search bar's match counter — the document itself is driven by
+  /// the FutureBuilder's own snapshot — so rebuilding unconditionally re-laid
+  /// out the whole brief purely to store a string, which for a real plan's
+  /// brief was a second full document build on every open.
   void _onRenderCompleted(String markdown) {
     if (!mounted) return;
     if (_renderedMarkdown == markdown) return;
-    setState(() {
-      _renderedMarkdown = markdown;
-      _recomputeMatchCount();
-    });
+    final hadMarkdown = _renderedMarkdown != null;
+    final previousCount = _matchCount;
+    _renderedMarkdown = markdown;
+    _recomputeMatchCount();
+    if (_searchOpen && (_matchCount != previousCount || !hadMarkdown)) {
+      setState(() {});
+    }
   }
 
   void _goToNextMatch() {
@@ -717,19 +757,22 @@ class _BriefScreenState extends State<BriefScreen> {
 
   /// Schedules a post-frame scroll so the active `<curr-mark>` widget is
   /// brought into view. The markdown re-renders after setState, then the
-  /// callback fires once the widget tree has settled. If the match's widget
-  /// isn't in the render tree yet, `currentContext` is null and we no-op.
+  /// callback fires once the widget tree has settled.
+  ///
+  /// Goes through the controller rather than calling `ensureVisible` directly:
+  /// the document's viewport is lazy, so a match below the built window has no
+  /// widget yet, and `_currentMatchFraction` is what tells the controller
+  /// roughly where to jump so that it does.
   void _scheduleScrollToCurrentMatch() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ctx = _currentMatchKey.currentContext;
-      if (ctx == null) return;
-      Scrollable.ensureVisible(
-        ctx,
-        duration: const Duration(milliseconds: 200),
+      if (!mounted) return;
+      // ignore: discarded_futures
+      _briefController.ensureKeyVisible(
+        _currentMatchKey,
+        documentFraction: _currentMatchFraction,
         // Position the match a third of the way down the viewport so the
         // reader has surrounding context above and below.
         alignment: 0.3,
-        curve: Curves.easeOut,
       );
     });
   }

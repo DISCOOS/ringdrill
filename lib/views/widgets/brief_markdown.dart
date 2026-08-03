@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:markdown/markdown.dart' as m;
 import 'package:markdown_widget/markdown_widget.dart';
 import 'package:ringdrill/utils/external_links.dart';
@@ -226,14 +229,18 @@ class _CurrentHighlightNode extends ElementNode {
 /// keys for a [BriefMarkdown].
 ///
 /// This replaces markdown_widget's `TocController`, which is wired only to
-/// that package's internal `ListView`. [BriefMarkdown] no longer uses
-/// `MarkdownWidget`: it renders an eager `Column` inside a single
-/// [SingleChildScrollView] so a [SelectionArea] can sit *inside* the
-/// scrollable (the layout Flutter requires to keep text selectable without
-/// tripping the `!_selectionStartsInScrollable` assertion — see
-/// https://github.com/flutter/flutter/issues/115787). Heading navigation is
-/// therefore driven by `Scrollable.ensureVisible` against per-heading
-/// [GlobalKey]s instead of `ListView` indices.
+/// that package's internal `ListView`. [BriefMarkdown] does not use
+/// `MarkdownWidget`: it splits the parsed document into *sections* at every
+/// H2/H3 heading and renders those through a lazy `SliverList`, so only the
+/// sections near the viewport are ever laid out (ADR-0069).
+///
+/// A lazy viewport is what makes heading navigation non-trivial: a heading
+/// outside the built window has no `BuildContext`, so `ensureVisible` alone
+/// would silently do nothing — which is precisely what a TOC tap on a
+/// far-away exercise needs to do *something* about. Hence
+/// [jumpToWidgetIndex] first brings the owning section into the built window
+/// by estimating its scroll offset from the extents of the sections that
+/// have been laid out so far, and only then scrolls exactly.
 class BriefMarkdownController extends ChangeNotifier {
   BriefMarkdownController() {
     scrollController.addListener(_handleScroll);
@@ -244,8 +251,24 @@ class BriefMarkdownController extends ChangeNotifier {
 
   // widgetIndex (Toc.widgetIndex / position in the generated widget list) ->
   // the GlobalKey attached to that block. Stable across rebuilds so selection
-  // state and scroll targets survive re-renders.
+  // state and scroll targets survive re-renders. Only the headings inside a
+  // *built* section have a context; see [jumpToWidgetIndex].
   final Map<int, GlobalKey> _headingKeys = {};
+
+  // Section index -> the GlobalKey on that section's block group.
+  final Map<int, GlobalKey> _sectionKeys = {};
+
+  // Section index -> the main-axis extent it measured the last time it was
+  // laid out. Only built sections can be measured, so this fills in as the
+  // reader scrolls; [_estimatedOffsetOfSection] substitutes the running
+  // average for the sections that have never been on screen.
+  final Map<int, double> _sectionExtents = {};
+
+  /// `widgetIndex` of the first block of each section, ascending. The first
+  /// entry is always 0 (the pre-heading preamble: the H1 title and any
+  /// plan-level prose above the first exercise).
+  List<int> _sectionStarts = const [0];
+  int get sectionCount => _sectionStarts.length;
 
   List<Toc> _tocList = const [];
 
@@ -254,7 +277,7 @@ class BriefMarkdownController extends ChangeNotifier {
 
   /// `widgetIndex` of the heading currently scrolled to the top of the
   /// viewport (the last one whose top has passed the viewport top). `-1`
-  /// before the first scroll or when no heading is mounted.
+  /// before the first scroll or while the preamble is still on screen.
   int _activeWidgetIndex = -1;
   int get activeWidgetIndex => _activeWidgetIndex;
 
@@ -263,14 +286,24 @@ class BriefMarkdownController extends ChangeNotifier {
   GlobalKey keyFor(int widgetIndex) =>
       _headingKeys.putIfAbsent(widgetIndex, () => GlobalKey());
 
-  /// Replaces the cached TOC. No-op (and no notification) when the heading
-  /// set is unchanged, so the post-frame call from every [BriefMarkdown]
-  /// build doesn't churn listeners.
-  void updateToc(List<Toc> toc) {
-    if (_sameWidgetIndices(toc)) return;
+  /// Returns the stable key for section [index]. [BriefMarkdown] attaches
+  /// these to the section block groups the `SliverList` builds.
+  GlobalKey sectionKeyFor(int index) =>
+      _sectionKeys.putIfAbsent(index, () => GlobalKey());
+
+  /// Replaces the cached TOC and section layout. No-op (and no notification)
+  /// when both are unchanged, so the post-frame call from every
+  /// [BriefMarkdown] build doesn't churn listeners.
+  void updateDocument({required List<Toc> toc, required List<int> sections}) {
+    if (_sameWidgetIndices(toc) && _sameSections(sections)) return;
     _tocList = List.unmodifiable(toc);
-    final valid = toc.map((t) => t.widgetIndex).toSet();
-    _headingKeys.removeWhere((index, _) => !valid.contains(index));
+    _sectionStarts = List.unmodifiable(sections);
+    final validHeadings = toc.map((t) => t.widgetIndex).toSet();
+    _headingKeys.removeWhere((index, _) => !validHeadings.contains(index));
+    _sectionKeys.removeWhere((index, _) => index >= sections.length);
+    // Extents belong to the previous document's section boundaries; keeping
+    // them would make the first jump into the new one land at random.
+    _sectionExtents.clear();
     notifyListeners();
   }
 
@@ -282,14 +315,150 @@ class BriefMarkdownController extends ChangeNotifier {
     return true;
   }
 
+  bool _sameSections(List<int> sections) {
+    if (sections.length != _sectionStarts.length) return false;
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i] != _sectionStarts[i]) return false;
+    }
+    return true;
+  }
+
+  /// The index of the section that owns the block at [widgetIndex] — the last
+  /// section whose first block is at or before it.
+  int sectionIndexForWidgetIndex(int widgetIndex) {
+    var lo = 0;
+    var hi = _sectionStarts.length - 1;
+    var found = 0;
+    while (lo <= hi) {
+      final mid = (lo + hi) ~/ 2;
+      if (_sectionStarts[mid] <= widgetIndex) {
+        found = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return found;
+  }
+
+  /// Records the laid-out extent of every currently built section, so the
+  /// offset estimate for the ones that have never been on screen improves as
+  /// the reader moves through the document.
+  void recordBuiltSectionExtents() {
+    for (final entry in _sectionKeys.entries) {
+      final ro = entry.value.currentContext?.findRenderObject();
+      if (ro is RenderBox && ro.hasSize) {
+        _sectionExtents[entry.key] = ro.size.height;
+      }
+    }
+  }
+
+  double get _averageSectionExtent {
+    if (_sectionExtents.isEmpty) return 0;
+    var sum = 0.0;
+    for (final extent in _sectionExtents.values) {
+      sum += extent;
+    }
+    return sum / _sectionExtents.length;
+  }
+
+  /// Best guess at the scroll offset where section [index] begins: measured
+  /// extents where we have them, the running average everywhere else.
+  double _estimatedOffsetOfSection(int index) {
+    final average = _averageSectionExtent;
+    var offset = 0.0;
+    for (var i = 0; i < index; i++) {
+      offset += _sectionExtents[i] ?? average;
+    }
+    return offset;
+  }
+
+  /// Scrolls until section [index] is inside the lazy viewport's built
+  /// window, so its heading has a [BuildContext] to scroll to exactly.
+  ///
+  /// Each attempt jumps to the current estimate and lets one frame build,
+  /// which measures more sections and sharpens the next estimate — so this
+  /// converges rather than merely guessing once. Already-built sections cost
+  /// nothing: the loop exits on the first check.
+  Future<void> _ensureSectionBuilt(int index) async {
+    if (!scrollController.hasClients) return;
+    for (var attempt = 0; attempt < 5; attempt++) {
+      if (_sectionKeys[index]?.currentContext != null) return;
+      final position = scrollController.position;
+      final target = _estimatedOffsetOfSection(
+        index,
+      ).clamp(position.minScrollExtent, position.maxScrollExtent);
+      if (target == position.pixels && attempt > 0) return;
+      scrollController.jumpTo(target);
+      await SchedulerBinding.instance.endOfFrame;
+      recordBuiltSectionExtents();
+    }
+  }
+
   /// Scrolls the heading at [widgetIndex] so it sits at [alignment] of the
-  /// viewport (0.0 = top). No-op when that heading isn't mounted.
+  /// viewport (0.0 = top).
   Future<void> jumpToWidgetIndex(
     int widgetIndex, {
     double alignment = 0.0,
   }) async {
-    final ctx = _headingKeys[widgetIndex]?.currentContext;
-    if (ctx == null) return;
+    final section = sectionIndexForWidgetIndex(widgetIndex);
+    await _ensureSectionBuilt(section);
+    // Prefer the heading itself; fall back to the section group, whose first
+    // block *is* that heading for every section but the preamble.
+    final ctx =
+        _headingKeys[widgetIndex]?.currentContext ??
+        _sectionKeys[section]?.currentContext;
+    // Read after the await above, so this is a fresh context, not one held
+    // across the gap; `mounted` states that for the analyzer.
+    if (ctx == null || !ctx.mounted) return;
+    await Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 200),
+      alignment: alignment,
+      curve: Curves.easeOut,
+    );
+  }
+
+  /// Scrolls [key] into view at [alignment], for a target that is not a
+  /// heading — the active search match.
+  ///
+  /// [documentFraction] is where the target sits in the markdown source, as a
+  /// fraction of its length. It is only consulted when [key] is outside the
+  /// built window: character position tracks scroll position closely enough
+  /// in running prose to land in the right neighbourhood, after which the
+  /// exact scroll takes over.
+  ///
+  /// Iterates for the same reason [_ensureSectionBuilt] does, with one extra
+  /// wrinkle: until every section has been laid out at least once, a lazy
+  /// viewport's own `maxScrollExtent` is an estimate too, so a fraction of it
+  /// is a moving target. Each attempt measures more sections and lands closer.
+  Future<void> ensureKeyVisible(
+    GlobalKey key, {
+    double? documentFraction,
+    double alignment = 0.0,
+  }) async {
+    if (documentFraction != null && scrollController.hasClients) {
+      var previous = double.nan;
+      for (var attempt = 0; attempt < 6; attempt++) {
+        if (key.currentContext != null) break;
+        final position = scrollController.position;
+        final target = (documentFraction * position.maxScrollExtent).clamp(
+          position.minScrollExtent,
+          position.maxScrollExtent,
+        );
+        // The estimate has stopped moving and still has not built the target —
+        // further attempts would jump to the same place.
+        if (target == previous) break;
+        previous = target;
+        scrollController.jumpTo(target);
+        await SchedulerBinding.instance.endOfFrame;
+        recordBuiltSectionExtents();
+      }
+    }
+    final ctx = key.currentContext;
+    // Read after the possible await above — a fresh context, not one held
+    // across the gap; `mounted` states that for the analyzer.
+    if (ctx == null || !ctx.mounted) return;
     await Scrollable.ensureVisible(
       ctx,
       duration: const Duration(milliseconds: 200),
@@ -300,24 +469,39 @@ class BriefMarkdownController extends ChangeNotifier {
 
   void _handleScroll() {
     if (_tocList.isEmpty || !scrollController.hasClients) return;
+    recordBuiltSectionExtents();
     final offset = scrollController.offset;
-    var active = -1;
-    for (final toc in _tocList) {
-      final ro = _headingKeys[toc.widgetIndex]?.currentContext
-          ?.findRenderObject();
-      if (ro == null) continue;
+
+    // Sections before the built window have scrolled off the top, so the last
+    // of them counts as passed even though it has no render object to measure.
+    var firstBuilt = -1;
+    for (var i = 0; i < _sectionStarts.length; i++) {
+      if (_sectionKeys[i]?.currentContext != null) {
+        firstBuilt = i;
+        break;
+      }
+    }
+    if (firstBuilt < 0) return;
+    var active = firstBuilt - 1;
+
+    for (var i = firstBuilt; i < _sectionStarts.length; i++) {
+      final ro = _sectionKeys[i]?.currentContext?.findRenderObject();
+      if (ro == null) break;
       final viewport = RenderAbstractViewport.maybeOf(ro);
-      if (viewport == null) continue;
-      // Scroll offset at which this heading reaches the viewport top.
+      if (viewport == null) break;
+      // Scroll offset at which this section reaches the viewport top.
       final reveal = viewport.getOffsetToReveal(ro, 0.0).offset;
       if (reveal <= offset + 4.0) {
-        active = toc.widgetIndex;
+        active = i;
       } else {
         break;
       }
     }
-    if (active != _activeWidgetIndex) {
-      _activeWidgetIndex = active;
+
+    // Section 0 is the preamble, which owns no navigable heading.
+    final activeIndex = active <= 0 ? -1 : _sectionStarts[active];
+    if (activeIndex != _activeWidgetIndex) {
+      _activeWidgetIndex = activeIndex;
       notifyListeners();
     }
   }
@@ -333,16 +517,76 @@ class BriefMarkdownController extends ChangeNotifier {
 // BriefMarkdown
 // ---------------------------------------------------------------------------
 
+/// The heading levels a brief is split into sections at — the same range
+/// [BriefScreen]'s outline offers as navigation targets, so a section always
+/// begins at something the reader can jump to.
+const int _kSectionMinLevel = 2;
+const int _kSectionMaxLevel = 3;
+
+/// A run of top-level markdown blocks beginning at one H2/H3 heading and
+/// running to just before the next. The unit a [BriefMarkdown]'s lazy
+/// viewport builds, lays out and discards as a whole.
+class _Section {
+  const _Section({required this.start, required this.end});
+
+  /// Index of the first block, into the flat generated widget list.
+  final int start;
+
+  /// Index one past the last block.
+  final int end;
+}
+
+/// The parsed form of one markdown string: the flat block list
+/// [MarkdownGenerator] produced, its table of contents, and the section
+/// grouping the lazy viewport builds from.
+///
+/// Cached by [_BriefMarkdownState] and rebuilt only when an input that
+/// actually affects parsing changes. Without that cache every `setState` on
+/// the screen re-parsed the whole document — 55 ms and ~740 freshly
+/// constructed block widgets for a real plan's brief, per keystroke.
+class _ParsedBrief {
+  const _ParsedBrief({
+    required this.blocks,
+    required this.toc,
+    required this.sections,
+  });
+
+  final List<Widget> blocks;
+  final List<Toc> toc;
+  final List<_Section> sections;
+
+  /// `widgetIndex` of each section's first block — what the controller needs
+  /// to map a heading to the section that owns it.
+  List<int> get sectionStarts => [for (final s in sections) s.start];
+}
+
 /// Renders brief markdown as a selectable, scrollable reading surface styled
 /// entirely through [BriefTheme].
 ///
 /// Unlike markdown_widget's `MarkdownWidget` (which wraps its internal
-/// `ListView` in a `SelectionArea`), this builds the markdown into an eager
-/// `Column` via [MarkdownGenerator.buildWidgets] and places a single
-/// [SelectionArea] *inside* one [SingleChildScrollView]. That nesting keeps
-/// partial text selection working without the framework's
-/// `!_selectionStartsInScrollable` assertion firing on long-press scroll
-/// (https://github.com/flutter/flutter/issues/115787).
+/// `ListView` in a `SelectionArea`), this parses the markdown itself via
+/// [MarkdownGenerator.buildWidgets], groups the resulting blocks into
+/// sections at each H2/H3 heading, and renders those through a lazy
+/// `SliverList` with one [SelectionArea] around the whole scroll view
+/// (ADR-0069).
+///
+/// The laziness is the point. A real plan's brief is ~69 KB of markdown —
+/// 737 blocks, some 72,000 px tall. Laying all of that out eagerly, which an
+/// earlier `SingleChildScrollView` + `Column` did, cost ~590 ms and 18,600
+/// elements before the first frame; the lazy viewport builds only the two or
+/// so sections around the reading position, for ~56 ms and ~1,300 elements.
+///
+/// That earlier eager `Column` existed to keep [SelectionArea] *inside* the
+/// scrollable, working around the framework's `!_selectionStartsInScrollable`
+/// assertion on long-press scroll
+/// (https://github.com/flutter/flutter/issues/115787). That assertion no
+/// longer fires on Flutter 3.44 for either touch or mouse drag, which is what
+/// made the lazy viewport available — see
+/// `test/views/widgets/brief_markdown_selection_test.dart`, which fails if it
+/// comes back. What the lazy viewport does cost is selection *reach*: text
+/// scrolled out of the built window leaves the selection tree, so a drag
+/// cannot select more than roughly a screenful either side. Copying the whole
+/// document is the copy-markdown button's job, not selection's.
 ///
 /// Scroll position, the table of contents and heading anchors are owned by a
 /// [BriefMarkdownController]; all style decisions flow through [BriefTheme].
@@ -355,7 +599,7 @@ class BriefMarkdownController extends ChangeNotifier {
 ///   controller: _briefController,
 /// )
 /// ```
-class BriefMarkdown extends StatelessWidget {
+class BriefMarkdown extends StatefulWidget {
   const BriefMarkdown({
     super.key,
     required this.data,
@@ -407,10 +651,124 @@ class BriefMarkdown extends StatelessWidget {
   /// Web treats as a full navigation).
   final ValueChanged<String>? onAnchorTap;
 
+  /// Number of times any [BriefMarkdown] has parsed its markdown. A rebuild
+  /// with unchanged inputs must not move this — that is the regression
+  /// `test/views/widgets/brief_markdown_performance_test.dart` pins.
+  @visibleForTesting
+  static int debugParseCount = 0;
+
   @override
-  Widget build(BuildContext context) {
-    final generator = MarkdownGenerator(
-      linesMargin: linesMargin ?? const EdgeInsets.symmetric(vertical: 8),
+  State<BriefMarkdown> createState() => _BriefMarkdownState();
+}
+
+class _BriefMarkdownState extends State<BriefMarkdown> {
+  late _ParsedBrief _parsed;
+
+  @override
+  void initState() {
+    super.initState();
+    _parsed = _parse();
+    _publishDocument();
+  }
+
+  @override
+  void didUpdateWidget(BriefMarkdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only the inputs the parse actually consumes invalidate the cache. Note
+    // `theme` is safe to compare by identity: BriefTheme.of returns one of two
+    // const instances, so it is stable across rebuilds.
+    if (oldWidget.data != widget.data ||
+        oldWidget.theme != widget.theme ||
+        oldWidget.linesMargin != widget.linesMargin ||
+        oldWidget.currentMatchKey != widget.currentMatchKey ||
+        oldWidget.onAnchorTap != widget.onAnchorTap) {
+      _parsed = _parse();
+      _publishDocument();
+    }
+  }
+
+  /// Surfaces the TOC and section layout to the controller after the frame so
+  /// we never notify listeners during build.
+  void _publishDocument() {
+    final toc = _parsed.toc;
+    final sections = _parsed.sectionStarts;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.controller.updateDocument(toc: toc, sections: sections);
+      widget.controller.recordBuiltSectionExtents();
+    });
+  }
+
+  _ParsedBrief _parse() {
+    BriefMarkdown.debugParseCount++;
+    final generator = _buildGenerator();
+    final toc = <Toc>[];
+    // Copy into a growable list: the generated list may be unmodifiable, and
+    // we replace heading entries with keyed wrappers below.
+    final blocks = List<Widget>.of(
+      generator.buildWidgets(
+        widget.data,
+        config: _briefMarkdownConfig(
+          widget.theme,
+          onAnchorTap: widget.onAnchorTap,
+        ),
+        onTocList: (list) {
+          toc
+            ..clear()
+            ..addAll(list);
+        },
+      ),
+    );
+
+    // Attach the controller's stable keys to heading blocks so TOC taps,
+    // anchor links and active-heading tracking can target them.
+    for (final entry in toc) {
+      final i = entry.widgetIndex;
+      if (i < 0 || i >= blocks.length) continue;
+      blocks[i] = KeyedSubtree(
+        key: widget.controller.keyFor(i),
+        child: blocks[i],
+      );
+    }
+
+    return _ParsedBrief(
+      blocks: blocks,
+      toc: List.unmodifiable(toc),
+      sections: _splitIntoSections(blocks.length, toc),
+    );
+  }
+
+  /// Groups [blockCount] blocks into sections at every H2/H3 heading.
+  ///
+  /// The first section is whatever precedes the first such heading — the H1
+  /// title and any plan-level prose — and is present even when empty so that
+  /// section indices and [_ParsedBrief.sectionStarts] stay aligned. A document
+  /// with no H2/H3 at all (a short preview) yields a single section, which is
+  /// simply the old eager behaviour and correct for content that small.
+  List<_Section> _splitIntoSections(int blockCount, List<Toc> toc) {
+    final starts = <int>[0];
+    for (final entry in toc) {
+      final level = headingTag2Level[entry.node.headingConfig.tag] ?? 1;
+      if (level < _kSectionMinLevel || level > _kSectionMaxLevel) continue;
+      final index = entry.widgetIndex;
+      if (index <= 0 || index >= blockCount) continue;
+      if (index == starts.last) continue;
+      starts.add(index);
+    }
+    return [
+      for (var i = 0; i < starts.length; i++)
+        _Section(
+          start: starts[i],
+          end: i + 1 < starts.length ? starts[i + 1] : blockCount,
+        ),
+    ];
+  }
+
+  MarkdownGenerator _buildGenerator() {
+    final theme = widget.theme;
+    return MarkdownGenerator(
+      linesMargin:
+          widget.linesMargin ?? const EdgeInsets.symmetric(vertical: 8),
       // Register HTML-like `<mark>` and `<curr-mark>` inline syntaxes so
       // BriefScreen's search-highlight wrapping renders as styled spans
       // instead of plain literal text.
@@ -446,7 +804,7 @@ class BriefMarkdown extends StatelessWidget {
         SpanNodeGeneratorWithTag(
           tag: 'curr-mark',
           generator: (e, config, visitor) {
-            final key = currentMatchKey;
+            final key = widget.currentMatchKey;
             if (key == null) {
               // No scroll target requested — fall through to a flat
               // backgroundColor like the non-current matches.
@@ -464,83 +822,73 @@ class BriefMarkdown extends StatelessWidget {
         ),
       ],
     );
+  }
 
-    // Build the markdown into a flat widget list and capture the TOC in the
-    // same synchronous pass. `onTocList` fires during `buildWidgets`.
-    final toc = <Toc>[];
-    // Copy into a growable list: the generated list may be unmodifiable, and
-    // we replace heading entries with keyed wrappers below.
-    final widgets = List<Widget>.of(
-      generator.buildWidgets(
-        data,
-        config: _buildConfig(),
-        onTocList: (list) {
-          toc
-            ..clear()
-            ..addAll(list);
-        },
-      ),
-    );
+  @override
+  Widget build(BuildContext context) {
+    final theme = widget.theme;
+    final sections = _parsed.sections;
 
-    // Attach the controller's stable keys to heading blocks so TOC taps,
-    // anchor links and active-heading tracking can target them.
-    for (final entry in toc) {
-      final i = entry.widgetIndex;
-      if (i < 0 || i >= widgets.length) continue;
-      widgets[i] = KeyedSubtree(key: controller.keyFor(i), child: widgets[i]);
-    }
-
-    // Surface the captured TOC to the controller after the frame so we never
-    // notify listeners during build.
+    // Record extents for whatever this frame ended up building, so the
+    // controller's estimate for the sections that have never been on screen
+    // keeps improving as the reader moves through the document.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.updateToc(toc);
+      if (!mounted) return;
+      widget.controller.recordBuiltSectionExtents();
     });
 
-    return Scrollbar(
-      controller: controller.scrollController,
-      child: SingleChildScrollView(
-        controller: controller.scrollController,
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: theme.spacing.readingColumnMax,
-            ),
-            // Forces the column to actually fill up to readingColumnMax
-            // instead of shrink-wrapping to its content's own (narrower)
-            // width — otherwise short content sizes smaller than the cap,
-            // and Align then visibly centers that shrunk box instead of
-            // sitting it flush left. A SizedBox(width: infinity) inside a
-            // maxWidth-constrained ancestor clamps to that max (or to the
-            // available width on a narrower screen, where the cap never
-            // applies), so the reading column is always genuinely that
-            // wide — on a very wide screen it is centered as a full
-            // 720px-ish column (the intended effect), and on a narrower one
-            // it simply fills the screen, making Align's centering moot.
-            child: SizedBox(
-              width: double.infinity,
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: gutter ?? theme.spacing.gutter,
-                ),
-                // SelectionArea sits *inside* the scroll view, wrapping the
-                // non-scrolling Column. See class doc / issue #115787.
-                child: SelectionArea(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: widgets,
+    // SelectionArea sits *outside* the scrollable now, which is what lets the
+    // viewport be lazy at all — see the class doc for the assertion this used
+    // to work around and the selection reach it costs.
+    return SelectionArea(
+      child: Scrollbar(
+        controller: widget.controller.scrollController,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // The reading column is capped and centred with padding on the
+            // sliver rather than a box inside the scroll view, so the
+            // scrollbar stays at the pane's own right edge instead of moving
+            // in to the column's. Geometry is otherwise identical to the box
+            // version: the cap is centred in the available width, and the
+            // gutter is inset within it.
+            final available = constraints.maxWidth;
+            final columnWidth = math.min(
+              available,
+              theme.spacing.readingColumnMax,
+            );
+            final inset =
+                (available - columnWidth) / 2 +
+                (widget.gutter ?? theme.spacing.gutter);
+
+            return CustomScrollView(
+              controller: widget.controller.scrollController,
+              slivers: [
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: inset),
+                  sliver: SliverList.builder(
+                    itemCount: sections.length,
+                    itemBuilder: (context, index) {
+                      final section = sections[index];
+                      return KeyedSubtree(
+                        key: widget.controller.sectionKeyFor(index),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: _parsed.blocks.sublist(
+                            section.start,
+                            section.end,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
-            ),
-          ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
-
-  MarkdownConfig _buildConfig() =>
-      _briefMarkdownConfig(theme, onAnchorTap: onAnchorTap);
 }
 
 /// The heading/link/code/table styling both [BriefMarkdown] (the full-page
