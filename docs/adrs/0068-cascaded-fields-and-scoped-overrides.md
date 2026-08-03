@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-08-03
 deciders: ["kengu"]
 consulted: []
@@ -55,27 +55,35 @@ station owns.
 * **B — leave it. Cascade borrows text; overriding requires owning the field.** 7b gets
   its own `comms`.
 * **C — make the rule explicit either way and say so in the authoring guidance**, rather
-  than leaving it as an emergent property of two features.
+  than leaving it as an emergent property of two features. Not an alternative to A or B:
+  whichever is chosen has to be written down, because this behaviour was reached by
+  composing two documented features and nothing documented the composition.
 
 ## Decision outcome
 
-**Not yet decided.** Recorded so the problem statement survives the session that found
-it.
+**A — a cascaded field resolves in the borrowing entity's scope**, plus C: the rule is
+stated in the authoring guidance rather than left to be discovered.
 
-The author of this ADR leans to **A**, on one argument: under B, a station's
-`variableOverrides` silently means "for the fields this station happens to own", which
-is not what the field is called and not what ADR-0046 says it does. A is the only option
-where the name is honest.
+The deciding argument is that B makes a field's name a lie. A station's
+`variableOverrides` would mean "for the fields this station happens to own", which is
+neither what it is called nor what ADR-0046 says it does — and an author cannot see
+which fields those are without knowing the cascade. A is the only option where setting
+an override does what setting an override looks like it does.
 
-Against A, and worth weighing before accepting it: the same authored text then renders
-differently per station, which is a new thing a reader of a plan has to hold. That is
-powerful in exactly the way that is hard to debug — a talk group that changes depending
-on which post you are reading is correct here and would be baffling somewhere else.
+**The cost, accepted rather than dismissed:** the same authored text now renders
+differently per station. That is powerful in the way that is hard to debug — a talk
+group that changes depending on which post you are reading is the point here and would
+be baffling in a field where nobody expected it. Two things keep it legible: the
+variable is declared once at plan level so a reader has one place to look, and the
+overriding station shows its own value in its own variables section. The mitigation is
+documentation, which is why C rides along and is not optional.
 
-**C is not an alternative to A or B.** Whichever is chosen, the guidance has to state
-it: this behaviour was reached by composing two documented features, and nothing
-documented the composition. That is the same shape as most of the findings on
-2026-08-03 — a rule correct in one place and unstated where it mattered.
+**Implementation is not yet designed.** Accepting A settles what should happen, not what
+it costs. First step is the open question above — enumerate the cascading fields — since
+the change applies to all of them and the blast radius was never established. It must
+also land in one place: the app and the CLI share one resolver (ADR-0048), and a
+per-scope cascade implemented twice is exactly the drift that made
+`{{exercise.roundTable}}` resolve in the brief and not in the editor.
 
 ## Links
 
