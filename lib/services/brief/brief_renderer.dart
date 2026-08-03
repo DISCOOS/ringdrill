@@ -609,16 +609,39 @@ int _exerciseNumber(Plan plan, Exercise exercise) {
   return idx < 0 ? 1 : idx + 1;
 }
 
+/// What the Organisering line calls this exercise's conduct.
+///
+/// `ring` keeps the route noun the brief has always used; the other two name what a
+/// reader will actually see. Not `exerciseModeLabel` — that lives under `lib/views/`,
+/// which this layer cannot import (it is Flutter-free, because the CLI renders briefs
+/// too), so the brief's own label set carries them.
+String _conductLabel(Exercise exercise, BriefLabels l10n) =>
+    switch (exercise.mode) {
+      ExerciseMode.ring => l10n.briefRingRoute,
+      ExerciseMode.together => l10n.briefModeTogether,
+      ExerciseMode.split => l10n.briefModeSplit,
+    };
+
 /// Full Organisering markdown block used in the brief template.
 String _organisationBlock(Plan plan, Exercise exercise, BriefLabels l10n) {
   final phases = rotationPhaseBreakdown(exercise);
-  // Ringløype line: keep config + legend on the same physical line so the
+  // The conduct line: keep config + legend on the same physical line so the
   // legend doesn't wrap unnecessarily on wide screens. Markdown reflows the
   // line if the viewport is too narrow to fit both.
+  //
+  // Two things here used to be true of every exercise and are now true of `ring`
+  // alone (ADR-0062). The label said "Ringløype" whatever the mode, which tells a
+  // veileder to expect one team per post rotating — something they might brief teams
+  // on. And `N x (phases)` asserts a *uniform* cycle, which is exactly the claim the
+  // modes exist to stop making: with rounds of differing length it multiplied a cycle
+  // that does not exist, and beside a spanned breakdown it reads as nonsense.
+  final rounds = exercise.numberOfRounds;
+  final minutes = effectivePhaseMinutes(exercise);
+  final uniform = minutes.every((m) => m == minutes.first);
   final buf = StringBuffer()
     ..writeln(
-      '**${l10n.briefRingRoute}:** '
-      '${exercise.numberOfRounds} x ($phases) '
+      '**${_conductLabel(exercise, l10n)}:** '
+      '${uniform ? '$rounds x ($phases)' : '$rounds ${l10n.round(rounds).toLowerCase()} ($phases)'} '
       '_(${l10n.rotationShareLegendPhases})_',
     )
     ..writeln();

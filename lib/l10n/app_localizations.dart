@@ -3128,6 +3128,18 @@ abstract class AppLocalizations {
   /// **'Ring Route'**
   String get briefRingRoute;
 
+  /// ADR-0062: the same Organisering line for `mode: together`. Spelled out rather than the picker's one-word "Together", because the brief has room and a veileder reading it has no picker beside it for context.
+  ///
+  /// In en, this message translates to:
+  /// **'All teams together'**
+  String get briefModeTogether;
+
+  /// ADR-0062: the same Organisering line for `mode: split`. Names what the reader sees on the ground — several posts running at once — rather than the mode's own name.
+  ///
+  /// In en, this message translates to:
+  /// **'Parallel stations'**
+  String get briefModeSplit;
+
   /// Snackbar message shown after clicking an inline code chip in the brief copies its content to the clipboard.
   ///
   /// In en, this message translates to:

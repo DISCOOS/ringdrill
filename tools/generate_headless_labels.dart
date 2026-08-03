@@ -36,6 +36,8 @@ const headlessKeys = <String>[
   // closure too and adds the rest.
   'round',
   'briefRingRoute',
+  'briefModeTogether',
+  'briefModeSplit',
   'briefStationNoPosition',
   'briefUnknownReference',
   'briefUnknownVariable',

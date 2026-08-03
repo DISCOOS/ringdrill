@@ -1854,6 +1854,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get briefRingRoute => 'Ring Route';
 
   @override
+  String get briefModeTogether => 'All teams together';
+
+  @override
+  String get briefModeSplit => 'Parallel stations';
+
+  @override
   String get briefCodeCopied => 'Copied';
 
   @override

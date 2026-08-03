@@ -842,6 +842,8 @@
     "description": "Suffix for exercise duration breakdown in the brief, e.g. '90 min (30 min pr oppdrag)'."
   },
   "briefRingRoute": "Ringløype",
+  "briefModeTogether": "Samlet gjennomføring",
+  "briefModeSplit": "Parallelle poster",
   "@briefRingRoute": {
     "description": "Label for the ring-rotation configuration line in the brief Organisering section."
   },

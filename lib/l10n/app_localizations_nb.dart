@@ -1850,6 +1850,12 @@ class AppLocalizationsNb extends AppLocalizations {
   String get briefRingRoute => 'Ringløype';
 
   @override
+  String get briefModeTogether => 'Samlet gjennomføring';
+
+  @override
+  String get briefModeSplit => 'Parallelle poster';
+
+  @override
   String get briefCodeCopied => 'Kopiert';
 
   @override

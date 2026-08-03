@@ -169,6 +169,58 @@ void main() {
       expect(nb, isNot(en));
     });
 
+    // ADR-0062 changed the model and left the brief asserting a uniform ring route.
+    // Two claims on one line: what the conduct is, and whether the rounds share a
+    // cycle. Both were true of every exercise once and are now true of `ring` alone.
+    group('the Organisering conduct line', () {
+      Future<String> renderWith(Exercise Function(Exercise) edit) {
+        final plan = _plan();
+        return BriefRenderer().render(
+          plan: plan.copyWith(exercises: [edit(plan.exercises.first)]),
+          audience: BriefAudience.director,
+          l10n: HeadlessBriefLabels(languageCode: 'nb'),
+        );
+      }
+
+      test('ring keeps its route noun and its multiplied cycle', () async {
+        // Uniform by construction, so the product is a true statement and the line
+        // reads exactly as it always has.
+        final markdown = await renderWith((e) => e);
+        expect(markdown, contains('Ringløype'));
+        expect(markdown, contains('6 x (15 | 10 | 5)'));
+      });
+
+      test('together names itself and stops multiplying', () async {
+        // Rounds of differing length: "2 x (…)" would invent a cycle, and the phases
+        // are a span, so a product of a span is not even arithmetic.
+        final markdown = await renderWith(
+          (e) => e.copyWith(
+            mode: ExerciseMode.together,
+            stations: [
+              e.stations.first.copyWith(executionTime: 70),
+              e.stations.first.copyWith(index: 1, executionTime: 100),
+            ],
+          ),
+        );
+        expect(markdown, contains('Samlet gjennomføring'));
+        expect(markdown, isNot(contains('Ringløype')));
+        expect(markdown, contains('(70–100 | 10 | 5)'));
+        expect(
+          markdown,
+          isNot(contains('x (70–100')),
+          reason: 'a span has no cycle to multiply',
+        );
+      });
+
+      test('split names what the reader sees on the ground', () async {
+        final markdown = await renderWith(
+          (e) => e.copyWith(mode: ExerciseMode.split),
+        );
+        expect(markdown, contains('Parallelle poster'));
+        expect(markdown, isNot(contains('Ringløype')));
+      });
+    });
+
     test('an unsupported language falls back rather than failing', () async {
       // A plan may name a language the app has no ARB for; a brief should still
       // render, in the fallback, rather than throwing at the reader.

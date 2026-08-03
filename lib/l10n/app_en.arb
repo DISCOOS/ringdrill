@@ -1905,6 +1905,14 @@
   "@briefRingRoute": {
     "description": "Label for the ring-rotation configuration line in the brief Organisering section."
   },
+  "briefModeTogether": "All teams together",
+  "@briefModeTogether": {
+    "description": "ADR-0062: the same Organisering line for `mode: together`. Spelled out rather than the picker's one-word \"Together\", because the brief has room and a veileder reading it has no picker beside it for context."
+  },
+  "briefModeSplit": "Parallel stations",
+  "@briefModeSplit": {
+    "description": "ADR-0062: the same Organisering line for `mode: split`. Names what the reader sees on the ground — several posts running at once — rather than the mode's own name."
+  },
   "briefCodeCopied": "Copied",
   "@briefCodeCopied": {
     "description": "Snackbar message shown after clicking an inline code chip in the brief copies its content to the clipboard."

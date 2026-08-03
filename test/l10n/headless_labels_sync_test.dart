@@ -124,6 +124,11 @@ void main() {
         '‹missing variable: talegruppe›',
       );
       expect(labels.message('briefRingRoute'), 'Ring Route');
+      // The two modes the brief gained with ADR-0062. In the subset because the CLI
+      // renders briefs too, and a key missing from it throws at render rather than at
+      // build.
+      expect(labels.message('briefModeTogether'), 'All teams together');
+      expect(labels.message('briefModeSplit'), 'Parallel stations');
     });
 
     test(

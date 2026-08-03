@@ -37,7 +37,14 @@ abstract class BriefLabels {
 
   // Brief rendering (brief_renderer.dart).
   String get briefStationNoPosition;
+
+  /// What the Organisering block calls the exercise's conduct. `ring` keeps the route
+  /// noun it always had; the other two get their own, because a `together` exercise
+  /// labelled "Ringløype" tells a veileder to expect one team per post rotating — and
+  /// they might brief teams on it (ADR-0062).
   String get briefRingRoute;
+  String get briefModeTogether;
+  String get briefModeSplit;
   String get rotationShareTitle;
   String get rotationShareLegendPhases;
 
@@ -95,6 +102,12 @@ class HeadlessBriefLabels implements BriefLabels {
 
   @override
   String get briefRingRoute => _labels.message('briefRingRoute');
+
+  @override
+  String get briefModeTogether => _labels.message('briefModeTogether');
+
+  @override
+  String get briefModeSplit => _labels.message('briefModeSplit');
 
   @override
   String get rotationShareTitle => _labels.message('rotationShareTitle');

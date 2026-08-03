@@ -36,6 +36,12 @@ class AppBriefLabels implements BriefLabels {
   String get briefRingRoute => _l10n.briefRingRoute;
 
   @override
+  String get briefModeTogether => _l10n.briefModeTogether;
+
+  @override
+  String get briefModeSplit => _l10n.briefModeSplit;
+
+  @override
   String get rotationShareTitle => _l10n.rotationShareTitle;
 
   @override
