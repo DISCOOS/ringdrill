@@ -219,14 +219,29 @@ class ExerciseSchedule {
         }
         return [
           for (final group in groups)
-            _longest(
-              group
-                  .where((i) => i >= 0 && i < stationMinutes.length)
-                  .map((i) => stationMinutes[i]),
-              fallback,
-            ),
+            _groupPhases(group, stationMinutes, fallback),
         ];
     }
+  }
+
+  /// One `split` round: the longest of each phase among the stations running in it.
+  ///
+  /// [fallback] is used **only** when the group names no station that exists — a stale
+  /// index survives a station being deleted, and the round still has to have a length.
+  /// It is deliberately not a floor: a group whose stations all set a phase *below* the
+  /// exercise's must shorten with them, exactly as `ring` does. Flooring it kept a
+  /// group with `rotationTime: 0` waiting out the exercise's default rotation, which
+  /// made `endTime` disagree with the round table by those minutes.
+  static PhaseMinutes _groupPhases(
+    List<int> group,
+    List<PhaseMinutes> stationMinutes,
+    PhaseMinutes fallback,
+  ) {
+    final live = [
+      for (final i in group)
+        if (i >= 0 && i < stationMinutes.length) stationMinutes[i],
+    ];
+    return live.isEmpty ? fallback : _longest(live, null);
   }
 
   /// Phase-by-phase maximum.

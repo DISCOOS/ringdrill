@@ -179,7 +179,12 @@ class Audit {
         final rp = _list(station, 'roleplays');
         roleplays += rp.length;
         for (var r = 0; r < rp.length; r++) {
-          _scope('roleplay', rp[r], '$sAt.roleplays[$r]');
+          _scope(
+            'roleplay',
+            rp[r],
+            '$sAt.roleplays[$r]',
+            personsOnStation: _list(station, 'persons'),
+          );
         }
       }
     }
@@ -198,11 +203,26 @@ class Audit {
   }
 
   /// Checks one entity: its expected field, its name, and its prose.
-  void _scope(String scope, Object? node, String at) {
+  ///
+  /// [personsOnStation] is passed for a roleplay so an inherited field does not read as
+  /// a missing one. ADR-0047's effective identity: a roleplay's own value wins, the
+  /// portrayed person's is used otherwise, and `PlanBuilder` denormalizes the result
+  /// onto the roleplay — so the app shows the person's description and nudges about
+  /// nothing. Reading the YAML directly is what makes this invisible, which is the
+  /// price of auditing documents that do not compile; it is worth paying with this one
+  /// lookup rather than by reporting thirteen findings an author would learn to ignore.
+  void _scope(
+    String scope,
+    Object? node,
+    String at, {
+    List<dynamic> personsOnStation = const [],
+  }) {
     if (node is! Map) return;
 
     final expected = _expected[scope];
-    if (expected != null && _blank(node[expected])) {
+    if (expected != null &&
+        _blank(node[expected]) &&
+        !_inheritsFromPerson(node, expected, personsOnStation)) {
       findings.add(
         Finding(
           'missing-expected-field',
@@ -230,6 +250,22 @@ class Audit {
       if (text == null || text.trim().isEmpty) continue;
       _checkProse(text, '$at.$field');
     }
+  }
+
+  /// Whether [field] is filled by the person this roleplay portrays.
+  bool _inheritsFromPerson(
+    Map node,
+    String field,
+    List<dynamic> personsOnStation,
+  ) {
+    final ref = _str(node, 'personRef');
+    if (ref == null || ref.isEmpty) return false;
+    for (final person in personsOnStation) {
+      if (person is! Map) continue;
+      if (_str(person, 'slug') != ref) continue;
+      return !_blank(person[field]);
+    }
+    return false;
   }
 
   void _checkProse(String text, String at) {

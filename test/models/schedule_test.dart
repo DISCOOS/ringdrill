@@ -293,6 +293,53 @@ void main() {
       );
     });
 
+    test('split: a group overriding downward shortens with it, no floor', () {
+      // Found by converting a real booklet: øvelse 7's last group sets
+      // `rotationTime: 0` — nobody walks anywhere after the final post — and the
+      // exercise's own 5 was used instead, so `endTime` came out five minutes past
+      // what the round table showed. `ring` already had no floor; `split` kept one it
+      // inherited from the execution-only version.
+      expect(
+        ExerciseSchedule.phaseMinutesFor(
+          mode: ExerciseMode.split,
+          numberOfRounds: 1,
+          fallback: exercise,
+          stationMinutes: const [
+            (execution: 100, evaluation: 15, rotation: 0),
+            (execution: 90, evaluation: 15, rotation: 0),
+          ],
+          groups: const [
+            [0, 1],
+          ],
+        ),
+        const [(execution: 100, evaluation: 15, rotation: 0)],
+      );
+    });
+
+    test('split: and endTime then agrees with the last round it shows', () {
+      // The symptom, end to end. The table's last column is the evaluation end; the
+      // trailing rotation is counted deliberately, so the two only line up when that
+      // rotation is really zero.
+      final minutes = ExerciseSchedule.phaseMinutesFor(
+        mode: ExerciseMode.split,
+        numberOfRounds: 1,
+        fallback: exercise,
+        stationMinutes: const [(execution: 60, evaluation: 15, rotation: 0)],
+        groups: const [
+          [0],
+        ],
+      );
+      final rounds = ExerciseSchedule.roundsFrom(
+        startTime: _nine,
+        minutes: minutes,
+      );
+      expect(_flat(rounds), ['0900-1000-1015']);
+      expect(
+        _hhmm(ExerciseSchedule.endTimeFrom(startTime: _nine, minutes: minutes)),
+        '1015',
+      );
+    });
+
     test('a long walk moves the clock, not just the total', () {
       // End to end: the rotation override has to land between the rounds, or the phase
       // boundaries a marker reads off the brief are wrong even when the total is right.
