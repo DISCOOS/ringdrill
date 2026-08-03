@@ -276,6 +276,30 @@ marker's script in `behavior`, the intel to withhold in `leader_answers`, and
 station whose whole scenario is one `director_notes` blob is an artefact of the
 days when that was the only gated field.
 
+**"Utstyr" is two fields, and the split is by audience.** A source booklet has one
+equipment column; the format has station `equipment`, which a participant reads, and
+roleplay `props`, which only staff do. Kit the team may as well see goes in
+`equipment` — a house to search, a stretcher, radios. Kit that *is* the find, or that
+gives it away, goes in the marker's `props`:
+
+```yaml
+- name: Økt selvmordsrisiko
+  equipment: |
+    Access to the barn and the field behind it.       # the team may know this
+  roleplays:
+    - personRef: anne
+      props: |
+        Anne-dukke and a rope, placed in the barn.     # this is the find
+```
+
+Getting it the wrong way round prints the find in the participant handout, which is
+the worst failure this format has: it is invisible in the source, invisible in the
+director brief, and only visible in the one output nobody re-reads before handing it
+out. `render_plan --audience=participant` is how you check.
+
+If the post has no marker — a dummy with no roleplay to own it — there is no `props`
+field, and `director_notes` is then the right home rather than a fallback.
+
 A withheld field renders as nothing, and an audience that can see none of the
 role-play fields gets no role-play section at all — otherwise the heading and the
 marker's name would still announce that the station has one.

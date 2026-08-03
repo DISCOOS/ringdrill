@@ -377,6 +377,11 @@ Rules the schema cannot express, and that are easy to get wrong:
   stations of one group is an error — they run at once — and a team in none is a
   warning that \`--strict\` promotes. Keep a concurrent phase in one exercise: split it
   across two and the later stations renumber, losing the codes the source document uses.
+- "Equipment" is two fields split by audience: a station's \`equipment\` is
+  participant-visible, a roleplay's \`props\` is staff-only. A house to search goes in
+  \`equipment\`; anything that *is* the find — a dummy, the rope beside it — goes in
+  the marker's \`props\`, or \`director_notes\` where the post has no marker. Backwards
+  prints the find in the participant handout. Check with audience=participant.
 - A markdown field is visible only to the audiences it declares, so a spoiler is
   withheld only if it sits in the field that owns it: the marker's script in
   \`behavior\`, intel to withhold in \`leader_answers\`.

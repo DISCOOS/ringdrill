@@ -244,6 +244,14 @@ nothing. What makes a plan usable:
   notes to whoever runs the station — not a bucket for everything sensitive. Each is
   withheld from participants on its own declaration, so the structure survives.
   Note that none of them is stripped at publish: that applies to Staff only.
+- **"Utstyr" is two fields, split by audience.** A booklet has one equipment column;
+  the format has station `equipment`, which a **participant reads**, and roleplay
+  `props`, which only staff do. A house to search or a stretcher goes in `equipment`.
+  Anything that *is* the find — a dummy, the rope beside it — goes in the marker's
+  `props`, or in `director_notes` if the post has no marker to own it. Getting it
+  backwards prints the find in the participant handout, and that is invisible
+  everywhere except the one output nobody re-reads. Check with
+  `render_plan --audience=participant`.
 - **Vary the stations.** A rotation where every station is "search for a missing
   person" teaches one thing four times.
 - **Time it honestly.** `executionTime` is how long a team gets at a station.
