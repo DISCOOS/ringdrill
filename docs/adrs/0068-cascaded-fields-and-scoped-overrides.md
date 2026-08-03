@@ -40,13 +40,20 @@ station owns.
 * A competent author set an override, got no effect, and found a workaround. That is the
   signal that the current behaviour reads as a defect rather than as a rule — whichever
   way the decision goes, the ambiguity is the problem.
-* `comms` is not the only cascading field. Whatever is decided applies to all of them,
-  so the blast radius needs establishing before, not after. **Open question: enumerate
-  them.**
+* **Answered 2026-08-03: `comms` is the only cascading field.** Exactly one cross-entity
+  fallback exists in the resolution path — `brief_renderer.dart:691`,
+  `exercise.commsMd ?? plan.commsMd` — surfaced as `effectiveCommsMd` in four template
+  slots. So A is one field across its borrowing scopes, not a family, and the blast
+  radius is far smaller than this driver assumed. (Verified by grep over
+  `lib/services/brief/`, `resolve_scoped_field.dart` and `plan_variables.dart`.)
 * Resolution has one implementation for the app and the CLI (ADR-0048). A change here
   must not give the two different answers.
 * The workaround is worse than either outcome: it puts a talk group in
   *Administration and supplies*, where a reader looking for Samband will not find it.
+* **Replicated.** A second conversion run hit the same trap independently, without having
+  read this ADR, and reached the same wrong-section workaround. Two authors, one
+  ambiguity, one bad outcome — which is the evidence that this is a design defect rather
+  than one agent's mistake.
 
 ## Considered options
 
@@ -88,12 +95,16 @@ variables section — but a reader of the printed brief has neither in front of 
 is a documentation problem rather than a design one, which is why C rides along and is
 not optional.
 
-**Implementation is not yet designed.** Accepting A settles what should happen, not what
-it costs. First step is the open question above — enumerate the cascading fields — since
-the change applies to all of them and the blast radius was never established. It must
-also land in one place: the app and the CLI share one resolver (ADR-0048), and a
-per-scope cascade implemented twice is exactly the drift that made
-`{{exercise.roundTable}}` resolve in the brief and not in the editor.
+**Implementation is not yet designed**, but it is now bounded: one fallback at
+`brief_renderer.dart:691` and the four template slots reading `effectiveCommsMd`.
+
+**Settle one thing first.** No comms cascade was found on the app side at all —
+`plan_view.dart:730` resolves `plan.commsMd` only. That may be benign (the app may
+simply have no surface that shows an exercise's or a station's *effective* comms, in
+which case there is nothing to keep in step) or it may mean the app and the brief
+already disagree about the cascade itself, which is a defect independent of this ADR.
+Establish which before implementing A, because it decides whether ADR-0048's
+one-resolver constraint binds here or applies to the brief path alone.
 
 ## Links
 
