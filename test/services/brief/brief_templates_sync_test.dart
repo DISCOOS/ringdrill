@@ -53,6 +53,56 @@ void main() {
     );
   });
 
+  // The other axis of the same failure, and the one nothing checked: this file
+  // guarded asset-against-baked, per file, so a slot added to one *locale* and
+  // forgotten in the other passed. That failure is silent in the worse direction —
+  // a template that omits a slot drops the content without error (only a missing
+  // *context key* throws), so English readers would quietly lose a section that
+  // Norwegian readers see, with nothing in either output to say so.
+  test('the locale variants of a template carry the same slots', () {
+    final byFamily = <String, Map<String, String>>{};
+    for (final entry in briefTemplateSources.entries) {
+      // assets/templates/<family>.<locale>.md.mustache
+      final base = entry.key.split('/').last.replaceAll('.md.mustache', '');
+      final dot = base.lastIndexOf('.');
+      if (dot < 0) continue;
+      byFamily.putIfAbsent(
+        base.substring(0, dot),
+        () => {},
+      )[base.substring(dot + 1)] = entry.value;
+    }
+
+    final tag = RegExp(r'\{\{[#^/&]?\s*([\w.]+)\s*\}\}');
+    // The full ordered tag sequence, not a set: order and nesting are structure,
+    // so a section moved or a loop closed in the wrong place is drift too.
+    List<String> slots(String source) =>
+        tag.allMatches(source).map((m) => m.group(0)!).toList();
+
+    expect(byFamily, isNotEmpty, reason: 'no template families found');
+    for (final family in byFamily.entries) {
+      final locales = family.value.keys.toList()..sort();
+      expect(
+        locales.length,
+        greaterThan(1),
+        reason:
+            '${family.key} has only ${locales.first} — add the other locale '
+            'or drop the locale suffix',
+      );
+      final reference = slots(family.value[locales.first]!);
+      for (final locale in locales.skip(1)) {
+        expect(
+          slots(family.value[locale]!),
+          reference,
+          reason:
+              '${family.key}.$locale renders a different set or order of slots '
+              'than ${family.key}.${locales.first}. A slot present in one locale '
+              'and absent in the other silently drops that content for readers '
+              'of the second.',
+        );
+      }
+    }
+  });
+
   test('every registered template resolves to a baked-in source', () async {
     // The registry is what the renderer asks; the source is what answers. A
     // registered template with no source is a runtime failure in the CLI only —
