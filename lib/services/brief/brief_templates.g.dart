@@ -109,8 +109,8 @@ const briefTemplateSources = <String, String>{
 {{/propsMd}}
 {{#actor}}
 **Actor:** {{realName}}{{#phone}} {{{phone}}}{{/phone}}
-
 {{/actor}}
+
 {{/roleplays}}
 {{#situationMd}}
 #### Situation
@@ -251,8 +251,8 @@ const briefTemplateSources = <String, String>{
 {{/propsMd}}
 {{#actor}}
 **Markør:** {{realName}}{{#phone}} {{{phone}}}{{/phone}}
-
 {{/actor}}
+
 {{/roleplays}}
 {{#situationMd}}
 #### Situasjon

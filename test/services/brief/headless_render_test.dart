@@ -264,6 +264,44 @@ void main() {
       },
     );
 
+    // The blank line before a heading lived inside the `{{#actor}}` block, so an
+    // *uncast* marker's block ran straight into the next heading and markdown rendered
+    // "#### Situasjon" as body text. Every fixture had a cast marker, which is why it
+    // survived: the bug was in the branch nobody had a fixture for.
+    test(
+      'an uncast marker still leaves a blank line before the next heading',
+      () async {
+        final plan = _plan();
+        final markdown = await BriefRenderer().render(
+          // Same plan with nobody cast: the roleplay keeps its behaviour, loses its actor.
+          plan: plan.copyWith(
+            staff: const [],
+            rolePlays: [
+              for (final r in plan.rolePlays) r.copyWith(staffUuid: null),
+            ],
+          ),
+          audience: BriefAudience.director,
+          l10n: HeadlessBriefLabels(languageCode: 'nb'),
+        );
+
+        for (final heading
+            in markdown
+                .split('\n')
+                .asMap()
+                .entries
+                .where((e) => e.value.startsWith('#### '))) {
+          final before = markdown.split('\n')[heading.key - 1];
+          expect(
+            before.trim(),
+            isEmpty,
+            reason:
+                'heading "\${heading.value}" has "\$before" directly above it, so '
+                'markdown reads it as body text',
+          );
+        }
+      },
+    );
+
     test('an unsupported language falls back rather than failing', () async {
       // A plan may name a language the app has no ARB for; a brief should still
       // render, in the fallback, rather than throwing at the reader.
