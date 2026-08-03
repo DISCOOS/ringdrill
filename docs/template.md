@@ -115,7 +115,7 @@ A **station** exposes, among others:
 | `descriptionMd` | Resolved description (markdown). |
 | `equipmentMd`, `situationMd`, `missionMd`, `logisticsMd`, `criticalQuestionsMd`, `leaderAnswersMd` | Resolved long-form markdown bodies. |
 | `directorNotesMd` | Director's notes (director / instructor audiences only). |
-| `effectiveCommsMd` | Effective communications block (markdown). |
+| `effectiveCommsMd` | Effective communications block (markdown) — the exercise's `comms`, or the program's, resolved in *this station's* scope ([ADR-0068](./adrs/0068-cascaded-fields-and-scoped-overrides.md)), so a station's `variableOverrides` applies to the block it inherits. |
 | `roleplays` | List of this station's roleplays (see below). |
 | `if_director` | Section flag — true for the director audience (actor PII). |
 | `if_instructor_or_director` | Section flag — true for instructor and director (director notes). |
@@ -138,6 +138,7 @@ An **exercise** exposes its own facets and metadata labels:
 | `durationLabel` | Total duration with per-round breakdown. |
 | `setupLabel` | The organisation/setup label. |
 | `methodMd`, `learningGoalsMd`, `trainingFocusMd`, `orderFormatMd`, `executionTipsMd`, `effectiveCommsMd` | Resolved long-form markdown blocks. |
+| `organisationBlock` | The full Organisering block: conduct line, the program's `before_round`, and the rotation round list. The program's text, resolved in *this exercise's* scope ([ADR-0068](./adrs/0068-cascaded-fields-and-scoped-overrides.md)). |
 
 ## The copy-chip and action-chip convention
 

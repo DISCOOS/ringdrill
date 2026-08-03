@@ -5,6 +5,7 @@ import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/l10n/app_localizations_en.dart';
 import 'package:ringdrill/l10n/app_localizations_nb.dart';
 import 'package:ringdrill/models/staff.dart';
+import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/plan.dart';
@@ -140,6 +141,32 @@ class _ThrowingTemplateSource extends BriefTemplateSource {
 /// at line endings don't cause false failures.
 String _normalizeLines(String s) =>
     s.split('\n').map((l) => l.trimRight()).join('\n');
+
+/// The slice of [brief] that belongs to the station whose `### ` heading
+/// contains [nameFragment] — for asserting that two stations under one
+/// exercise render the *same* cascaded field differently (ADR-0068).
+///
+/// Splitting on `^### ` is safe against the field headings: those are `####`,
+/// whose fourth character is not the space the pattern requires.
+String _stationSection(String brief, String nameFragment) {
+  final sections = brief.split(RegExp(r'^### ', multiLine: true));
+  return sections.firstWhere(
+    (s) => s.split('\n').first.contains(nameFragment),
+    orElse: () => throw StateError('No station section for "$nameFragment"'),
+  );
+}
+
+/// The slice of [brief] that belongs to the exercise whose `## ` heading
+/// contains [nameFragment], up to its first station. Where the Organisering
+/// block — and so `before_round` — lives.
+String _exerciseHead(String brief, String nameFragment) {
+  final sections = brief.split(RegExp(r'^## ', multiLine: true));
+  final section = sections.firstWhere(
+    (s) => s.split('\n').first.contains(nameFragment),
+    orElse: () => throw StateError('No exercise section for "$nameFragment"'),
+  );
+  return section.split(RegExp(r'^### ', multiLine: true)).first;
+}
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -741,6 +768,245 @@ void main() {
       );
       expect(result, contains('PROG COMMS'));
     });
+  });
+
+  group('BriefRenderer — cascaded fields resolve in the rendering scope '
+      '(ADR-0068)', () {
+    // The reported case: station 7b runs on a different talegruppe from the
+    // rest of its exercise, and its Samband block comes from the exercise's
+    // `comms`. A `variableOverrides` on the station has to mean the same thing
+    // in a field the station borrows as in one it owns.
+    Plan planWithCascadedComms({
+      required String commsMd,
+      Map<String, String> exerciseOverrides = const {},
+      Map<String, String> stationOverrides = const {},
+      bool commsOnPlan = false,
+    }) {
+      final exercise = Exercise(
+        uuid: 'ex-1',
+        name: 'Øvelse 1',
+        startTime: _start,
+        endTime: _end,
+        numberOfTeams: 2,
+        numberOfRounds: 2,
+        executionTime: 30,
+        evaluationTime: 5,
+        rotationTime: 5,
+        stations: [
+          const Station(index: 0, name: 'Hussøk'),
+          Station(
+            index: 1,
+            name: 'Elvesøk',
+            variableOverrides: stationOverrides,
+          ),
+        ],
+        schedule: const [],
+        variableOverrides: exerciseOverrides,
+        commsMd: commsOnPlan ? null : commsMd,
+      );
+      return _emptyPlan().copyWith(
+        exercises: [exercise],
+        commsMd: commsOnPlan ? commsMd : null,
+        variables: const [
+          DrillVariable(name: 'talegruppe', value: 'RK-FELLES'),
+        ],
+      );
+    }
+
+    test(
+      'a station override applies to the exercise comms it inherits',
+      () async {
+        final plan = planWithCascadedComms(
+          commsMd: '**Talegruppe:** {{var.talegruppe}}',
+          exerciseOverrides: const {'talegruppe': 'RK-ØV2'},
+          stationOverrides: const {'talegruppe': 'RK-7B'},
+        );
+
+        final result = await renderer.render(
+          plan: plan,
+          audience: BriefAudience.participant,
+          l10n: _l10n.brief,
+        );
+
+        // The overriding station's Samband shows its own value...
+        expect(
+          _stationSection(result, 'Elvesøk'),
+          contains('**Talegruppe:** RK-7B'),
+        );
+        // ...and every other rendering of the same authored text is unchanged:
+        // the exercise's own Comms block and the station that overrode nothing.
+        expect(
+          _stationSection(result, 'Hussøk'),
+          contains('**Talegruppe:** RK-ØV2'),
+        );
+        expect(
+          _exerciseHead(result, 'Øvelse 1'),
+          contains('**Talegruppe:** RK-ØV2'),
+        );
+        expect(result, isNot(contains('RK-FELLES')));
+      },
+    );
+
+    test('a station override applies to the plan comms it inherits', () async {
+      final plan = planWithCascadedComms(
+        commsMd: '**Talegruppe:** {{var.talegruppe}}',
+        stationOverrides: const {'talegruppe': 'RK-7B'},
+        commsOnPlan: true,
+      );
+
+      final result = await renderer.render(
+        plan: plan,
+        audience: BriefAudience.participant,
+        l10n: _l10n.brief,
+      );
+
+      expect(
+        _stationSection(result, 'Elvesøk'),
+        contains('**Talegruppe:** RK-7B'),
+      );
+      expect(
+        _stationSection(result, 'Hussøk'),
+        contains('**Talegruppe:** RK-FELLES'),
+      );
+    });
+
+    test(
+      'an exercise override applies to the plan before_round it renders',
+      () async {
+        final exercise = Exercise(
+          uuid: 'ex-1',
+          name: 'Øvelse 1',
+          startTime: _start,
+          endTime: _end,
+          numberOfTeams: 1,
+          numberOfRounds: 1,
+          executionTime: 30,
+          evaluationTime: 5,
+          rotationTime: 5,
+          stations: const [Station(index: 0, name: 'Post')],
+          schedule: const [],
+          variableOverrides: const {'talegruppe': 'RK-ØV1'},
+        );
+        final other = exercise.copyWith(
+          uuid: 'ex-2',
+          name: 'Øvelse 2',
+          variableOverrides: const {},
+        );
+        final plan = _emptyPlan().copyWith(
+          exercises: [exercise, other],
+          beforeRoundMd: 'Meld deg på {{var.talegruppe}} før hver post.',
+          variables: const [
+            DrillVariable(name: 'talegruppe', value: 'RK-FELLES'),
+          ],
+        );
+
+        final result = await renderer.render(
+          plan: plan,
+          audience: BriefAudience.participant,
+          l10n: _l10n.brief,
+        );
+
+        expect(
+          _exerciseHead(result, 'Øvelse 1'),
+          contains('Meld deg på RK-ØV1 før hver post.'),
+        );
+        expect(
+          _exerciseHead(result, 'Øvelse 2'),
+          contains('Meld deg på RK-FELLES før hver post.'),
+        );
+      },
+    );
+
+    test('plan before_round resolves {{exercise.*}} in the exercise that '
+        'renders it', () async {
+      final exercise = Exercise(
+        uuid: 'ex-1',
+        name: 'Skogsøvelse',
+        startTime: _start,
+        endTime: _end,
+        numberOfTeams: 3,
+        numberOfRounds: 1,
+        executionTime: 30,
+        evaluationTime: 5,
+        rotationTime: 5,
+        stations: const [Station(index: 0, name: 'Post')],
+        schedule: const [],
+      );
+      final plan = _emptyPlan().copyWith(
+        exercises: [exercise],
+        beforeRoundMd: 'Still opp lagvis — {{exercise.numberOfTeams}} lag.',
+      );
+
+      final result = await renderer.render(
+        plan: plan,
+        audience: BriefAudience.participant,
+        l10n: _l10n.brief,
+      );
+
+      expect(result, contains('Still opp lagvis — 3 lag.'));
+      expect(result, isNot(contains('{{exercise.numberOfTeams}}')));
+    });
+
+    test('a cascaded comms resolves {{station.*}} in the station that renders '
+        'it', () async {
+      final plan = planWithCascadedComms(
+        commsMd: 'Kall opp KO som «Post {{station.stationCode}}».',
+      );
+
+      final result = await renderer.render(
+        plan: plan,
+        audience: BriefAudience.participant,
+        l10n: _l10n.brief,
+      );
+
+      expect(
+        _stationSection(result, 'Hussøk'),
+        contains('Kall opp KO som «Post 1.1».'),
+      );
+      expect(
+        _stationSection(result, 'Elvesøk'),
+        contains('Kall opp KO som «Post 1.2».'),
+      );
+      // The exercise's own Comms block has no station in scope, so the token
+      // stays literal there — the resolver's documented all-or-nothing rule
+      // (ADR-0048), unchanged by this ADR.
+      expect(
+        _exerciseHead(result, 'Øvelse 1'),
+        contains('{{station.stationCode}}'),
+      );
+    });
+
+    test(
+      'no override on the borrowing station leaves the output identical',
+      () async {
+        // The ADR's bound on the cost: divergence needs the cascaded text to
+        // reference {{var.x}}, the station to override that same x, and the
+        // value to differ. Absent any one, resolution is byte-identical — which
+        // is every station in every plan authored before this change.
+        final withOverride = planWithCascadedComms(
+          commsMd: '**Talegruppe:** {{var.talegruppe}}',
+          exerciseOverrides: const {'talegruppe': 'RK-ØV2'},
+          stationOverrides: const {'talegruppe': 'RK-ØV2'},
+        );
+        final withoutOverride = planWithCascadedComms(
+          commsMd: '**Talegruppe:** {{var.talegruppe}}',
+          exerciseOverrides: const {'talegruppe': 'RK-ØV2'},
+        );
+
+        final a = await renderer.render(
+          plan: withOverride,
+          audience: BriefAudience.participant,
+          l10n: _l10n.brief,
+        );
+        final b = await renderer.render(
+          plan: withoutOverride,
+          audience: BriefAudience.participant,
+          l10n: _l10n.brief,
+        );
+
+        expect(a, b);
+      },
+    );
   });
 
   group('BriefRenderer — template fallback', () {

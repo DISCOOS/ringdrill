@@ -75,6 +75,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0065 | [Ship the authoring conventions over MCP, not only as a local skill](./0065-authoring-guidance-over-mcp.md) | Accepted |
 | ADR-0066 | [A team scope for cross-reference tokens](./0066-team-scope-for-cross-reference-tokens.md) | Rejected |
 | ADR-0067 | [Give tokens a searchable browser sheet, and leave the caret menu as the fast path](./0067-token-browser-sheet.md) | Accepted |
+| ADR-0068 | [Decide whether a cascaded field resolves in the borrowing scope](./0068-cascaded-fields-and-scoped-overrides.md) | Accepted |
 
 ## When to write an ADR
 

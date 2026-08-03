@@ -53,6 +53,49 @@ otherwise the enclosing exercise's override, otherwise the program's declared
 default. The chain is `program → exercise → station`; a roleplay reads through
 its station's overrides.
 
+### Where a field is rendered, not where it was written
+
+Some fields cascade by entity: a station with no `comms` of its own renders its
+exercise's, falling back to the program's, and every exercise renders the
+program's `before_round` inside its own Organisation block. **A cascaded field
+resolves in the scope it is rendered under, not the scope it was authored in**
+([ADR-0068](./adrs/0068-cascaded-fields-and-scoped-overrides.md)).
+
+So a `variableOverrides` means the same thing in every field the entity
+renders, not only in the fields it owns. A station that runs on its own talk
+group sets the override and nothing else:
+
+```yaml
+exercises:
+  - name: Øvelse 3
+    variableOverrides: {talegruppe: RK-ØV2}
+    comms: "**Talegruppe:** {{var.talegruppe}}"
+    stations:
+      - name: Hussøk          # Samband: RK-ØV2 — the exercise's value
+      - name: Elvesøk
+        variableOverrides: {talegruppe: RK-7B}   # Samband: RK-7B
+```
+
+Do not work around a missing override by writing the token into a field the
+station happens to own: `{{var.talegruppe}}` in `logistics` does resolve, and
+prints the talk group under *Administration and supplies*, where a reader
+looking for Samband will not find it.
+
+Two things follow for a reader of the finished brief. Divergence is opt-in — it
+takes the cascaded text referencing `{{var.x}}`, the borrowing entity
+overriding that same `x`, and the values differing; absent any one of the
+three, every post renders the shared text identically. And when it does
+diverge, the brief does not say which post overrode what: two posts show
+different values under one section heading, and only the plan's variable table
+records the default. Prefer an override where a post genuinely differs, not as
+a way to phrase the same thing twice.
+
+Cross-references follow the same rule, and so gain rather than lose: a cascaded
+`comms` containing `{{station.stationCode}}` resolves per post. The
+[all-or-nothing gotcha](#the-all-or-nothing-gotcha) still applies to the
+exercise's own copy of that block, which has no station in scope — a token that
+only makes sense per station belongs in a field only stations render.
+
 ### Types
 
 Every variable has a declared `type` (DESIGN-008 follow-up 11) that drives the

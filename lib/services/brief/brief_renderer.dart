@@ -192,8 +192,12 @@ class BriefRenderer {
       ...planRefContext,
       ..._exerciseRefContext(exercise, l10n),
     };
+    // The *authored* cascaded text, not a resolved string: each station
+    // resolves it again in its own scope (ADR-0068), so what travels down is
+    // the source, and this resolution is the exercise's own Comms block only.
+    final commsSource = _effectiveCommsMd(plan, exercise);
     final effectiveComms = resolver.resolveField(
-      _effectiveCommsMd(plan, exercise),
+      commsSource,
       vars: exerciseVars,
       l10n: l10n,
       refContext: exerciseRefContext,
@@ -210,7 +214,7 @@ class BriefRenderer {
         rolePlays: rolePlays
             .where((rp) => rp.stationIndex == station.index)
             .toList(),
-        effectiveCommsMd: effectiveComms,
+        commsSource: commsSource,
         l10n: l10n,
         exerciseRefContext: exerciseRefContext,
       );
@@ -266,7 +270,16 @@ class BriefRenderer {
         refContext: exerciseRefContext,
       ),
       'effectiveCommsMd': effectiveComms,
-      'organisationBlock': _organisationBlock(plan, exercise, l10n),
+      // Resolved with *this exercise's* variables and cross-references even
+      // though the text is the plan's: the block is rendered under the
+      // exercise's Organisation heading (ADR-0068).
+      'organisationBlock': _organisationBlock(
+        plan,
+        exercise,
+        l10n,
+        vars: exerciseVars,
+        refContext: exerciseRefContext,
+      ),
       'stations': stationContexts,
     });
   }
@@ -279,7 +292,12 @@ class BriefRenderer {
     required BriefAudience audience,
     required Map<String, Staff> actorMap,
     required List<RolePlay> rolePlays,
-    required String? effectiveCommsMd,
+    // The authored comms text this station renders — its exercise's own, or
+    // the plan's (see `_effectiveCommsMd`). Unresolved on purpose: a station
+    // borrows the *text*, and resolves it in its own scope (ADR-0068), so a
+    // `variableOverrides` on this station means the same thing here as in a
+    // field the station owns.
+    required String? commsSource,
     required BriefLabels l10n,
     required Map<String, dynamic> exerciseRefContext,
   }) {
@@ -423,7 +441,7 @@ class BriefRenderer {
       'criticalQuestionsMd': resolveField(station.criticalQuestionsMd),
       'leaderAnswersMd': resolveField(station.leaderAnswersMd),
       'directorNotesMd': _quoted(resolveField(station.directorNotesMd)),
-      'effectiveCommsMd': effectiveCommsMd,
+      'effectiveCommsMd': resolveField(commsSource),
       'roleplays': _showsRolePlays(audience) ? roleplayContexts : const [],
     });
   }
@@ -503,13 +521,24 @@ class BriefRenderer {
     rotationTime: rotationTime,
   );
 
-  /// Full Organisering markdown block.
+  /// Full Organisering markdown block, resolved in [exercise]'s scope — the
+  /// same context [_buildExerciseContext] assembles for the fields the
+  /// exercise owns (ADR-0068).
   @visibleForTesting
   static String organisationBlock(
     Plan plan,
     Exercise exercise,
     BriefLabels l10n,
-  ) => _organisationBlock(plan, exercise, l10n);
+  ) => _organisationBlock(
+    plan,
+    exercise,
+    l10n,
+    vars: _effectiveVariables(plan, exercise: exercise),
+    refContext: {
+      ..._planRefContext(plan),
+      ..._exerciseRefContext(exercise, l10n),
+    },
+  );
 
   /// Formats [latLng] as "32V 0580414E 6552008N" (UTM, easting before
   /// northing). Returns empty string when [latLng] is null.
@@ -643,7 +672,20 @@ String _conductLabel(Exercise exercise, BriefLabels l10n) =>
     };
 
 /// Full Organisering markdown block used in the brief template.
-String _organisationBlock(Plan plan, Exercise exercise, BriefLabels l10n) {
+///
+/// [vars] and [refContext] are [exercise]'s, not the plan's, and are what
+/// `plan.beforeRoundMd` resolves against: the block is emitted under this
+/// exercise's Organisation heading, so it resolves in this exercise's scope
+/// (ADR-0068). Passed in rather than rebuilt here so there is one assembly of
+/// the exercise-scope context per exercise, shared with the fields the
+/// exercise owns.
+String _organisationBlock(
+  Plan plan,
+  Exercise exercise,
+  BriefLabels l10n, {
+  required Map<String, DrillVariable> vars,
+  required Map<String, dynamic> refContext,
+}) {
   final phases = rotationPhaseBreakdown(exercise);
   // The conduct line: keep config + legend on the same physical line so the
   // legend doesn't wrap unnecessarily on wide screens. Markdown reflows the
@@ -667,9 +709,9 @@ String _organisationBlock(Plan plan, Exercise exercise, BriefLabels l10n) {
     ..writeln();
   final beforeRound = resolver.resolveField(
     plan.beforeRoundMd,
-    vars: _planVariables(plan),
+    vars: vars,
     l10n: l10n,
-    refContext: _planRefContext(plan),
+    refContext: refContext,
   );
   if (beforeRound != null && beforeRound.isNotEmpty) {
     buf
@@ -687,6 +729,10 @@ String _organisationBlock(Plan plan, Exercise exercise, BriefLabels l10n) {
   return buf.toString().trimRight();
 }
 
+/// The comms text [exercise] and its stations render: the exercise's own,
+/// falling back to the plan's. The cascade picks the *authored* text and
+/// nothing more — resolution happens once per rendering scope, so a station
+/// borrowing this reads its own `variableOverrides` (ADR-0068).
 String? _effectiveCommsMd(Plan plan, Exercise exercise) {
   return exercise.commsMd ?? plan.commsMd;
 }

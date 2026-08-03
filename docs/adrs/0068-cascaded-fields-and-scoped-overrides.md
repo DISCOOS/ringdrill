@@ -104,19 +104,64 @@ variables section — but a reader of the printed brief has neither in front of 
 is a documentation problem rather than a design one, which is why C rides along and is
 not optional.
 
-**Implementation is not yet designed.** It is bounded by *rendering position*, not by a
-field list: every place the renderer emits text under an entity's section has to resolve
-with that entity's variables. Two are known — `effectiveCommsMd` (four template slots)
-and `beforeRoundMd` — and the audit is over the template slots rather than over `??`
-operators, since that is what missed the second one.
+**Implementation.** Bounded by *rendering position*, not by a field list: every place
+the renderer emits text under an entity's section has to resolve with that entity's
+variables. The audit ran over the template slots rather than over `??` operators, since
+that is what missed the second instance. It found exactly the two already known and no
+third:
 
-**Settle one thing first.** No comms cascade was found on the app side at all —
-`plan_view.dart:730` resolves `plan.commsMd` only. That may be benign (the app may
-simply have no surface that shows an exercise's or a station's *effective* comms, in
-which case there is nothing to keep in step) or it may mean the app and the brief
-already disagree about the cascade itself, which is a defect independent of this ADR.
-Establish which before implementing A, because it decides whether ADR-0048's
-one-resolver constraint binds here or applies to the brief path alone.
+| Template slot | Rendered under | Resolved with (before) | Resolved with (now) |
+|---|---|---|---|
+| `plan.name`, `plan.description`, `plan.briefIntroMd`, `plan.commsMd` | the plan | plan | unchanged |
+| `name`, `methodMd`, `learningGoalsMd`, `trainingFocusMd`, `orderFormatMd`, `executionTipsMd`, `effectiveCommsMd` | an exercise | exercise | unchanged |
+| `organisationBlock` (carries `plan.beforeRoundMd`) | an exercise | **plan** | exercise |
+| `name`, `descriptionMd`, `equipmentMd`, `situationMd`, `missionMd`, `logisticsMd`, `criticalQuestionsMd`, `leaderAnswersMd`, `directorNotesMd` | a station | station | unchanged |
+| `effectiveCommsMd` | a station | **exercise** | station |
+| `behavior`, `background`, `propsMd` | a roleplay | station (a roleplay declares no overrides) | unchanged |
+
+Mechanically, the cascade now selects the *authored* text and resolution runs once per
+rendering scope: `_effectiveCommsMd` returns `exercise.commsMd ?? plan.commsMd`
+unresolved, the exercise resolves it for its own Comms block, and each station resolves
+the same source again through its own `resolveField` closure. `_organisationBlock` takes
+the exercise's variable map and refContext instead of rebuilding the plan's.
+
+Cross-references came along, because "the scope it is rendered under" is one context and
+not two: a cascaded `comms` referencing `{{station.stationCode}}` now resolves per post.
+That is strictly a gain — at the station slot the exercise's refContext is a subset of
+the station's, so nothing that resolved before stops resolving. The exercise's own copy
+of that block still has no station in scope and leaves such a token literal, which is
+ADR-0048's all-or-nothing rule doing what it already does.
+
+**The settled precondition.** The app has no surface that renders an entity's
+*effective* comms, so there was nothing to keep in step and no pre-existing disagreement
+about the cascade. `plan_view.dart:730` is the plan overview card showing the plan's own
+fields at plan scope, and `exercise_description_rollup.dart:43` shows `exercise.commsMd`
+— the exercise's own, deliberately: it is an authoring surface, and "this exercise has
+written no comms" is what an editor needs to see, where "what will a reader of this post
+be told" is what the brief answers. ADR-0048's one-resolver constraint binds at
+`field_resolver.dart`, which is unchanged; the cascade itself is a brief-layer concern,
+so A is implemented in `brief_renderer.dart` alone and the app and CLI cannot diverge.
+
+### Consequences
+
+* Good: an override does what setting an override looks like it does, in every field the
+  entity renders. The reported station 7b needs its `variableOverrides` and nothing else.
+* Good: the wrong-section workaround is no longer needed, so a talk group stops landing
+  in *Administration and supplies*.
+* Good: `before_round` is fixed by the same rule rather than left for the next author to
+  rediscover, and a `{{exercise.*}}` token in it now resolves instead of staying literal.
+* Good: no archive, `contentHash` or schema-shape change. The cascade selects the same
+  text as before; only the scope it resolves in moved.
+* Neutral: output is byte-identical for every plan authored before this change, since
+  divergence needs the cascaded text to reference `{{var.x}}`, the borrowing entity to
+  override that same `x`, and the values to differ. A regression test pins that.
+* Bad: the same authored text can render two ways under one section heading, and the
+  brief does not say which post overrode what. This is the legibility cost accepted
+  above; it is why C is not optional, and the authoring guidance states it as a reason
+  to override only where a post genuinely differs.
+* Bad: resolution now runs once per station for the cascaded field rather than once per
+  exercise. Immaterial at plan sizes (tens of stations, a bounded pass loop per field),
+  and the price of the field meaning the same thing everywhere.
 
 ## Links
 
@@ -124,6 +169,10 @@ one-resolver constraint binds here or applies to the brief path alone.
   [ADR-0048](./0048-flutter-free-field-resolver.md) (one resolver for app and CLI),
   [ADR-0063](./0063-per-field-brief-visibility.md) (per-field audiences, the other
   per-field rule a reader has to know)
+* Authoring guidance (option C): [`variables.md`](../variables.md) §"Where a field is
+  rendered, not where it was written"; the `variableOverrides` field descriptions in
+  `lib/data/source/source_fields.dart`, which is what an authoring agent reads out of
+  `schema` (ADR-0065)
 * Related code: `lib/utils/plan_variables.dart` (`effectivePlanVariables`),
   `lib/services/brief/brief_renderer.dart` (the cascade), `lib/views/widgets/
   resolve_scoped_field.dart` (the editor's copy of resolution)
