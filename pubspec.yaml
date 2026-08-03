@@ -61,7 +61,7 @@ dependencies:
   freezed_annotation: ^3.1.0
   shared_preferences: ^2.5.3
   shorebird_code_push: ^2.0.7
-  flutter_local_notifications: ^21.0.0
+  flutter_local_notifications: ^22.2.0
 
   flutter_native_splash: ^2.4.8
   flutter_localizations:
