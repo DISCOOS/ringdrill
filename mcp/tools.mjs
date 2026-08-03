@@ -399,6 +399,11 @@ Rules the schema cannot express, and that are easy to get wrong:
   which the author can then edit in one place. Sweep for these once the draft is
   written: promote a literal that appears in three or more fields, or one decided
   late or changed on the day. Do not promote a word that merely recurs in prose.
+- A \`variableOverrides\` applies to every field that entity *renders*, not only the
+  ones it owns. A station with no \`comms\` shows its exercise's, resolved against the
+  station — so a post on its own talegruppe needs the override and nothing else. Never
+  write \`{{var.talegruppe}}\` into \`logistics\` to force a per-post value: it resolves,
+  and prints the talk group in the administration section instead of Samband.
 
 Order of work: schema, read a published plan with get_plan, create_plan, write,
 analyze_plan and fix everything it reports, render_plan and actually read it, then

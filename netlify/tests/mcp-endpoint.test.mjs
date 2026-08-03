@@ -157,6 +157,10 @@ test("instructions do not drift from the skill they summarise", async () => {
         /numbering/i,
         /never invent staff|real person|real people/i,
         /numberOfTeams/,
+        // ADR-0068: an override reaches the fields an entity inherits, so the
+        // workaround two conversion runs found (writing the token into
+        // `logistics`) must stay named in both channels.
+        /applies to every field/i,
     ]) {
         assert.match(guide, rule, `the skill no longer covers ${rule}`);
         assert.match(INSTRUCTIONS, rule, `instructions no longer cover ${rule}`);

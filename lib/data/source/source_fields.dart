@@ -311,7 +311,13 @@ class SourceScopes {
         shape: SourceShape.stringMap,
         description:
             'Overrides plan variable values for this station. Never '
-            'declares new variables (ADR-0046).',
+            'declares new variables (ADR-0046). It applies to every field '
+            'this post renders, including the ones it inherits: overriding '
+            'the variable an exercise\'s comms references changes the comms '
+            'block under this post and no other (ADR-0068). So a post on its '
+            'own talk group needs the override and nothing else — do not '
+            'repeat the token in logistics, which prints the talk group in '
+            'the administration section where no reader looks for it.',
       ),
       SourceField(
         'equipment',
@@ -446,7 +452,17 @@ class SourceScopes {
         description: 'Minutes to rotate between stations.',
       ),
       SourceField('templateId', shape: SourceShape.string),
-      SourceField('variableOverrides', shape: SourceShape.stringMap),
+      SourceField(
+        'variableOverrides',
+        shape: SourceShape.stringMap,
+        description:
+            'Overrides plan variable values for this exercise and its '
+            'stations. Never declares new variables (ADR-0046). It applies to '
+            'every field this exercise renders, including the plan-level ones '
+            'it inherits — before_round, and comms when the exercise has none '
+            'of its own (ADR-0068). A station may override the same key again '
+            'for itself.',
+      ),
       SourceField(
         'method',
         shape: SourceShape.markdown,

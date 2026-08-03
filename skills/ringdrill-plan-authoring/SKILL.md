@@ -171,6 +171,32 @@ mechanism and produces prose that goes stale.
 **A variable is declared once, on the plan.** Exercises and stations may only
 *override its value*. `variableOverrides` cannot introduce a name.
 
+**An override applies to every field the entity renders, not only the ones it
+owns.** Some fields cascade: a station with no `comms` of its own shows its
+exercise's, falling back to the plan's, and every exercise renders the plan's
+`before_round` in its Organisering block. A cascaded field resolves in the scope
+it is *rendered* under, so an override reaches it (ADR-0068). A post that runs on
+its own talegruppe therefore needs the override and nothing else:
+
+```yaml
+- name: Øvelse 3
+  variableOverrides: {talegruppe: RK-ØV2}
+  comms: "**Talegruppe:** {{var.talegruppe}}"
+  stations:
+    - name: Hussøk                            # Samband: RK-ØV2
+    - name: Elvesøk
+      variableOverrides: {talegruppe: RK-7B}  # Samband: RK-7B
+```
+
+Never write `{{var.talegruppe}}` into `logistics` to force a per-post value. It
+resolves — and prints the talk group under *Administrasjon og forsyninger*, where
+a reader looking for Samband will not find it. Two conversion runs reached that
+workaround independently; the override is the answer both times.
+
+Override where a post genuinely differs, not to phrase the same thing twice: the
+brief does not say which post overrode what, so two posts showing different
+values under one Samband heading is only legible if the difference is real.
+
 **Scenario data belongs to a station.** A location or a person is declared under
 the station that uses it, and addressed by slug from that station's prose only. A
 `{{station.loc.lkp}}` in a plan-level field cannot resolve anywhere.
