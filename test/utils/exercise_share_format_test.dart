@@ -7,6 +7,8 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 
 void main() {
+  group('share note is a ring-route claim', _shareNoteModeTests);
+
   group('rotationRoundTable station column', _roundTableStationColumnTests);
 
   group('rotationPhaseBreakdown', _phaseBreakdownTests);
@@ -472,5 +474,67 @@ void _roundTableStationColumnTests() {
     final headerCells = lines.first.split('|').length;
     expect(lines[1].split('|').length, headerCells);
     expect(lines[2].split('|').length, headerCells);
+  });
+}
+
+// The revisit / under-coverage note is a ring-route claim: it compares a rotation's
+// length against the posts it rotates through. The editor's copy was made ring-only
+// when the modes shipped (465ec2c7); this one was missed, and in `split` it reported a
+// shortfall that does not exist by comparing groups against stations.
+void _shareNoteModeTests() {
+  Exercise base(ExerciseMode mode) => Exercise(
+    uuid: 'e',
+    name: 'E',
+    startTime: const SimpleTimeOfDay(hour: 9, minute: 0),
+    endTime: const SimpleTimeOfDay(hour: 11, minute: 0),
+    numberOfTeams: 2,
+    // Two rounds over three stations: a real shortfall in `ring`, and meaningless in
+    // the other two.
+    numberOfRounds: 2,
+    executionTime: 15,
+    evaluationTime: 10,
+    rotationTime: 5,
+    mode: mode,
+    stations: const [
+      Station(index: 0, name: 'a'),
+      Station(index: 1, name: 'b'),
+      Station(index: 2, name: 'c'),
+    ],
+    schedule: const [
+      [
+        SimpleTimeOfDay(hour: 9, minute: 0),
+        SimpleTimeOfDay(hour: 9, minute: 15),
+        SimpleTimeOfDay(hour: 9, minute: 25),
+      ],
+      [
+        SimpleTimeOfDay(hour: 9, minute: 30),
+        SimpleTimeOfDay(hour: 9, minute: 45),
+        SimpleTimeOfDay(hour: 9, minute: 55),
+      ],
+    ],
+  );
+
+  final l10n = AppLocalizationsEn().brief;
+  final shortfall = l10n.shareNoteUnderCoverage(2, 3);
+
+  test('ring still says a team misses a post', () {
+    expect(
+      formatExerciseForShare(base(ExerciseMode.ring), l10n),
+      contains(shortfall),
+    );
+  });
+
+  test('together does not — every team visits every post', () {
+    expect(
+      formatExerciseForShare(base(ExerciseMode.together), l10n),
+      isNot(contains(shortfall)),
+    );
+  });
+
+  test('split does not — the count to compare is groups, not stations', () {
+    expect(
+      formatExerciseForShare(base(ExerciseMode.split), l10n),
+      isNot(contains(shortfall)),
+    );
   });
 }

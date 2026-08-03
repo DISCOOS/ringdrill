@@ -334,7 +334,14 @@ String formatExerciseForShare(
         '${l10n.station(exercise.stations.length).toLowerCase()}',
   ].join(' | ');
   buf.writeln(meta);
-  if (exercise.numberOfRounds != exercise.stations.length) {
+  // Ring only. Revisits and under-coverage compare a rotation's length against the
+  // posts it rotates through, which is not a question the other modes ask: `together`
+  // sends every team to every station by construction, and in `split` the count to
+  // compare against is the groups, not the stations — so there the note fired and
+  // reported a shortfall that does not exist. The exercise editor's copy of this note
+  // was made ring-only when the modes shipped; this one was missed.
+  if (exercise.mode == ExerciseMode.ring &&
+      exercise.numberOfRounds != exercise.stations.length) {
     buf.writeln(
       exercise.numberOfRounds > exercise.stations.length
           ? l10n.shareNoteRevisits(
