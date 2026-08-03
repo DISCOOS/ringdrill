@@ -145,7 +145,7 @@ const briefTemplateSources = <String, String>{
 {{#directorNotesMd}}
 > **Notes for instructor/exercise control**
 >
-> {{{directorNotesMd}}}
+{{{directorNotesMd}}}
 
 {{/directorNotesMd}}
 ---
@@ -287,7 +287,7 @@ const briefTemplateSources = <String, String>{
 {{#directorNotesMd}}
 > **Notater til instruktør/øvingsledelse**
 >
-> {{{directorNotesMd}}}
+{{{directorNotesMd}}}
 
 {{/directorNotesMd}}
 ---

@@ -7,6 +7,8 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 
 void main() {
+  group('rotationRoundTable station column', _roundTableStationColumnTests);
+
   group('rotationPhaseBreakdown', _phaseBreakdownTests);
 
   group('formatExerciseForShare', () {
@@ -377,5 +379,98 @@ void _phaseBreakdownTests() {
       ),
       '30–90 | 10 | 5',
     );
+  });
+}
+
+// ADR-0062 specified a Station column for the modes where a round *is* a station or a
+// group of them. It was written into the ADR and never into the table, so a `together`
+// brief printed a clock with no way to tell which post each row belonged to.
+void _roundTableStationColumnTests() {
+  Exercise base({
+    ExerciseMode mode = ExerciseMode.ring,
+    List<ExerciseGroup> groups = const [],
+  }) => Exercise(
+    uuid: 'e',
+    name: 'E',
+    startTime: const SimpleTimeOfDay(hour: 9, minute: 0),
+    endTime: const SimpleTimeOfDay(hour: 11, minute: 0),
+    numberOfTeams: 2,
+    numberOfRounds: 2,
+    executionTime: 15,
+    evaluationTime: 10,
+    rotationTime: 5,
+    mode: mode,
+    groups: groups,
+    stations: const [
+      Station(index: 0, name: 'Fisker'),
+      Station(index: 1, name: 'Løper'),
+    ],
+    schedule: const [
+      [
+        SimpleTimeOfDay(hour: 9, minute: 0),
+        SimpleTimeOfDay(hour: 9, minute: 15),
+        SimpleTimeOfDay(hour: 9, minute: 25),
+      ],
+      [
+        SimpleTimeOfDay(hour: 9, minute: 30),
+        SimpleTimeOfDay(hour: 9, minute: 45),
+        SimpleTimeOfDay(hour: 9, minute: 55),
+      ],
+    ],
+  );
+
+  final l10n = AppLocalizationsEn().brief;
+
+  test('ring has no Station column — every post is busy every round', () {
+    // Naming one would be arbitrary, and the column would be the same set on every
+    // row. The table also has to keep rendering exactly as it did for every plan in
+    // the catalog.
+    final table = rotationRoundTable(base(), l10n);
+    expect(table, isNot(contains(l10n.station(1))));
+    expect(
+      table.split('\n').first,
+      '| ${l10n.round(1)} | Execution | Evaluation | Rotation |',
+    );
+  });
+
+  test('together names the station the round is at', () {
+    final table = rotationRoundTable(base(mode: ExerciseMode.together), l10n);
+    expect(table, contains('| ${l10n.round(1)} | ${l10n.station(1)} |'));
+    expect(table, contains('| 1 | Fisker |'));
+    expect(table, contains('| 2 | Løper |'));
+  });
+
+  test('split names every station running at once', () {
+    final table = rotationRoundTable(
+      base(
+        mode: ExerciseMode.split,
+        groups: const [
+          ExerciseGroup(
+            stations: [
+              GroupSlot(stationIndex: 0, teams: [0]),
+              GroupSlot(stationIndex: 1, teams: [1]),
+            ],
+          ),
+          ExerciseGroup(
+            stations: [
+              GroupSlot(stationIndex: 1, teams: [0, 1]),
+            ],
+          ),
+        ],
+      ),
+      l10n,
+    );
+    expect(table, contains('| 1 | Fisker, Løper |'));
+    expect(table, contains('| 2 | Løper |'));
+  });
+
+  test('the separator row keeps the column count', () {
+    // A header and body that disagree is not a table at all — and the separator is
+    // where an off-by-one shows up as silently unrendered markdown.
+    final table = rotationRoundTable(base(mode: ExerciseMode.together), l10n);
+    final lines = table.split('\n');
+    final headerCells = lines.first.split('|').length;
+    expect(lines[1].split('|').length, headerCells);
+    expect(lines[2].split('|').length, headerCells);
   });
 }

@@ -422,7 +422,7 @@ class BriefRenderer {
       'logisticsMd': resolveField(station.logisticsMd),
       'criticalQuestionsMd': resolveField(station.criticalQuestionsMd),
       'leaderAnswersMd': resolveField(station.leaderAnswersMd),
-      'directorNotesMd': resolveField(station.directorNotesMd),
+      'directorNotesMd': _quoted(resolveField(station.directorNotesMd)),
       'effectiveCommsMd': effectiveCommsMd,
       'roleplays': _showsRolePlays(audience) ? roleplayContexts : const [],
     });
@@ -607,6 +607,26 @@ final _kStationNamePrefix = RegExp(r'^[0-9]+[a-z]\)\s*');
 int _exerciseNumber(Plan plan, Exercise exercise) {
   final idx = plan.exercises.indexWhere((e) => e.uuid == exercise.uuid);
   return idx < 0 ? 1 : idx + 1;
+}
+
+/// Prefixes every line with `> `, so a multi-paragraph field stays inside its
+/// blockquote.
+///
+/// The template used to carry the marker itself — `> {{{directorNotesMd}}}` — which
+/// quotes the *first* line and nothing else, because mustache interpolates the value
+/// raw. A one-paragraph note looked right; from the second paragraph on, staff notes
+/// silently left the quote and read as body text. Blank lines become a bare `>` so the
+/// quote is not broken by the paragraph break that markdown needs.
+///
+/// Null and empty pass through untouched: the template's `{{#directorNotesMd}}` block
+/// must still see a falsy value and emit nothing.
+String? _quoted(String? markdown) {
+  if (markdown == null || markdown.trim().isEmpty) return markdown;
+  return markdown
+      .trimRight()
+      .split('\n')
+      .map((line) => line.trim().isEmpty ? '>' : '> $line')
+      .join('\n');
 }
 
 /// What the Organisering line calls this exercise's conduct.

@@ -79,6 +79,15 @@ String rotationRoundTable(Exercise exercise, BriefLabels l10n) {
       ? [l10n.execution, l10n.evaluation, l10n.rotation]
       : [l10n.rotationShareLegendPhases];
 
+  // A Station column outside `ring` (ADR-0062). There a round is a rotation and every
+  // post is busy, so naming one would be arbitrary; in `together` a round *is* a
+  // station and in `split` it is a group of them, so without this the reader gets a
+  // clock with no way to tell which post each row belongs to.
+  final stationsPerRound = [
+    for (var r = 0; r < rounds.length; r++) _stationsInRound(exercise, r),
+  ];
+  final withStations = exercise.mode != ExerciseMode.ring;
+
   // Every cell needs escaping: a pipe in a header or a value ends the cell early
   // and silently changes the table's column count. The legend is the one that bit
   // — unescaped, it turned a three-column header into five.
@@ -88,15 +97,49 @@ String rotationRoundTable(Exercise exercise, BriefLabels l10n) {
   // "neste"/"retur" goes in parentheses after the rotation time rather than in a
   // column of its own: it is a note about that time, and a column with no header was
   // a cell the reader had to guess the meaning of.
+  final columns = phaseHeaders.length + (withStations ? 2 : 1);
   final buf = StringBuffer()
-    ..writeln(row([l10n.round(1), ...phaseHeaders]))
-    ..writeln('|${'---|' * (phaseHeaders.length + 1)}');
-  for (final r in rounds) {
+    ..writeln(
+      row([l10n.round(1), if (withStations) l10n.station(1), ...phaseHeaders]),
+    )
+    ..writeln('|${'---|' * columns}');
+  for (var i = 0; i < rounds.length; i++) {
+    final r = rounds[i];
     final phases = splitPhases ? [...r.times] : [r.timesText];
     phases[phases.length - 1] = '${phases.last} (${r.suffix})';
-    buf.writeln(row(['${r.index}', ...phases]));
+    buf.writeln(
+      row([
+        '${r.index}',
+        if (withStations) stationsPerRound[i].join(', '),
+        ...phases,
+      ]),
+    );
   }
   return buf.toString().trimRight();
+}
+
+/// The names of the stations live in [roundIndex], for the round table's Station
+/// column.
+///
+/// Names rather than codes: a code needs the plan's `stationNumberFormat`, which an
+/// `Exercise` does not carry, and inventing a default here would print a code that
+/// disagrees with every other surface. Empty where the round names nothing that
+/// exists — a stale index survives a station being deleted.
+List<String> _stationsInRound(Exercise exercise, int roundIndex) {
+  List<String> named(Iterable<int> indices) => [
+    for (final i in indices)
+      if (i >= 0 && i < exercise.stations.length) exercise.stations[i].name,
+  ];
+  return switch (exercise.mode) {
+    ExerciseMode.ring => const [],
+    ExerciseMode.together => named([roundIndex]),
+    ExerciseMode.split =>
+      roundIndex < exercise.groups.length
+          ? named(
+              exercise.groups[roundIndex].stations.map((s) => s.stationIndex),
+            )
+          : named([roundIndex]),
+  };
 }
 
 /// Per-round duration with phase breakdown for one station: "30 min (15 | 10 | 5)".

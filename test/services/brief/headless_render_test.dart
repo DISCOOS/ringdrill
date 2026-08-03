@@ -221,6 +221,49 @@ void main() {
       });
     });
 
+    // A blockquote the template opened and the content walked out of. `>` prefixed the
+    // first line only, because mustache interpolates raw — so a one-paragraph note
+    // looked correct and hid it, and from paragraph two on, staff notes read as body
+    // text inside the brief.
+    test(
+      'a multi-paragraph director note stays inside its blockquote',
+      () async {
+        final plan = _plan();
+        final station = plan.exercises.first.stations.first;
+        final markdown = await BriefRenderer().render(
+          plan: plan.copyWith(
+            exercises: [
+              plan.exercises.first.copyWith(
+                stations: [
+                  station.copyWith(
+                    directorNotesMd:
+                        'Markør bak paviljongen.\n'
+                        '\n'
+                        'Rom 105 er låst med vilje.\n'
+                        '\n'
+                        'Lås døra etterpå.',
+                  ),
+                ],
+              ),
+            ],
+          ),
+          audience: BriefAudience.director,
+          l10n: HeadlessBriefLabels(languageCode: 'nb'),
+        );
+
+        // Every line of the note, not just the first.
+        expect(markdown, contains('> Markør bak paviljongen.'));
+        expect(markdown, contains('> Rom 105 er låst med vilje.'));
+        expect(markdown, contains('> Lås døra etterpå.'));
+        // And the paragraph breaks stay inside the quote rather than ending it.
+        expect(
+          markdown,
+          isNot(contains('\n\nRom 105')),
+          reason: 'a bare paragraph would have left the blockquote',
+        );
+      },
+    );
+
     test('an unsupported language falls back rather than failing', () async {
       // A plan may name a language the app has no ARB for; a brief should still
       // render, in the fallback, rather than throwing at the reader.
