@@ -40,12 +40,15 @@ station owns.
 * A competent author set an override, got no effect, and found a workaround. That is the
   signal that the current behaviour reads as a defect rather than as a rule — whichever
   way the decision goes, the ambiguity is the problem.
-* **Answered 2026-08-03: `comms` is the only cascading field.** Exactly one cross-entity
-  fallback exists in the resolution path — `brief_renderer.dart:691`,
-  `exercise.commsMd ?? plan.commsMd` — surfaced as `effectiveCommsMd` in four template
-  slots. So A is one field across its borrowing scopes, not a family, and the blast
-  radius is far smaller than this driver assumed. (Verified by grep over
-  `lib/services/brief/`, `resolve_scoped_field.dart` and `plan_variables.dart`.)
+* **Asked and answered badly, then re-answered.** The first enumeration counted `??`
+  fallbacks and found one (`exercise.commsMd ?? plan.commsMd`, `brief_renderer.dart:691`),
+  concluding this was a one-field change. That counted the wrong thing. What matters is
+  a field **rendered in a scope other than the one it was authored in**, and a fallback
+  is only one way to get there. `plan.beforeRoundMd` is the other: resolved with
+  `_planVariables(plan)` at `brief_renderer.dart:670` and rendered inside *each
+  exercise's* Organisation block, so an exercise overriding a variable it uses never sees
+  its own value. Two instances, two mechanisms, one defect — which is why the fix is a
+  rule and not a patch.
 * Resolution has one implementation for the app and the CLI (ADR-0048). A change here
   must not give the two different answers.
 * The workaround is worse than either outcome: it puts a talk group in
@@ -68,8 +71,14 @@ station owns.
 
 ## Decision outcome
 
-**A — a cascaded field resolves in the borrowing entity's scope**, plus C: the rule is
-stated in the authoring guidance rather than left to be discovered.
+**A, generalised: a markdown field resolves in the scope it is rendered under, not the
+scope it was authored in** — for every field and every variable, not for `comms` alone.
+Plus C: the rule is stated in the authoring guidance rather than left to be discovered.
+
+Scoping this to the one field that was reported would leave `before_round` wrong in the
+same way and the next borrowed field wrong again, and would make "does my override
+apply?" a question about which field an author happened to pick. A station's
+`variableOverrides` should mean the same thing in every field that station renders.
 
 The deciding argument is that B makes a field's name a lie. A station's
 `variableOverrides` would mean "for the fields this station happens to own", which is
@@ -95,8 +104,11 @@ variables section — but a reader of the printed brief has neither in front of 
 is a documentation problem rather than a design one, which is why C rides along and is
 not optional.
 
-**Implementation is not yet designed**, but it is now bounded: one fallback at
-`brief_renderer.dart:691` and the four template slots reading `effectiveCommsMd`.
+**Implementation is not yet designed.** It is bounded by *rendering position*, not by a
+field list: every place the renderer emits text under an entity's section has to resolve
+with that entity's variables. Two are known — `effectiveCommsMd` (four template slots)
+and `beforeRoundMd` — and the audit is over the template slots rather than over `??`
+operators, since that is what missed the second one.
 
 **Settle one thing first.** No comms cascade was found on the app side at all —
 `plan_view.dart:730` resolves `plan.commsMd` only. That may be benign (the app may
