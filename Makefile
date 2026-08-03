@@ -276,16 +276,28 @@ strip-source-maps-web:
 	# the browser and Sentry's source scraper still try to fetch the now-404
 	# map and log it as a download error. Removing the comment stops that.
 	#
-	# perl, not `sed -i`, because this target has to run on both hosts that
-	# invoke it: CI on ubuntu-latest (GNU sed, where `-i` takes no argument)
-	# and a maintainer's macOS box (BSD sed, where `-i` takes the backup
-	# suffix as a separate argument). BSD sed therefore swallowed the script
-	# as the suffix and tried to parse the first filename as the program,
-	# failing with "undefined label 'uild/web/flutter_bootstrap.js'". There is
-	# no single `sed -i` spelling that works on both; perl's -i needs no
-	# argument and is present on both hosts.
+	# perl, not `sed -i`, because this target runs on both hosts that invoke
+	# it: CI on ubuntu-latest (GNU sed, where `-i` takes no argument) and a
+	# maintainer's macOS box (BSD sed, where `-i` takes the backup suffix as a
+	# separate argument). BSD sed therefore swallowed the script as the suffix
+	# and tried to parse the first filename as the program, failing with
+	# "undefined label 'uild/web/flutter_bootstrap.js'". There is no single
+	# `sed -i` spelling that works on both; perl's -i needs no argument.
+	#
+	# The substitution uses `|` delimiters, NOT `s{...}{}`, and that is load
+	# bearing: GNU find counts every `{}` in the -exec argument list and
+	# rejects more than one with `+` ("Only one instance of {} is supported"),
+	# so a brace-delimited perl script breaks CI even though BSD find accepts
+	# it. Keep exactly one `{}` here — the file-list placeholder.
+	#
+	# `-exec ... +` rather than `xargs`: it does not run at all on an empty
+	# file list, whereas GNU xargs would invoke perl with no files and hang on
+	# stdin (and BSD xargs has no portable `-r` to prevent that).
+	#
+	# `\R?`, not `\R`, so the comment is stripped even when it is the last
+	# line with no trailing newline.
 	find build/web -type f -name '*.js' \
-		-exec perl -pi -e 's{^//\# sourceMappingURL=.*\R}{}' {} +
+		-exec perl -pi -e 's|^//\# sourceMappingURL=.*\R?||' {} +
 
 # Refuse to build a release from a working tree that has uncommitted
 # changes. Without this gate, $(DART_DEFINE_GIT) would tag the binary
