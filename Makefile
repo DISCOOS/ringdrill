@@ -275,7 +275,17 @@ strip-source-maps-web:
 	# Deleting the .map file alone leaves the reference in main.dart.js, so
 	# the browser and Sentry's source scraper still try to fetch the now-404
 	# map and log it as a download error. Removing the comment stops that.
-	find build/web -type f -name '*.js' -exec sed -i '/^\/\/# sourceMappingURL=/d' {} +
+	#
+	# perl, not `sed -i`, because this target has to run on both hosts that
+	# invoke it: CI on ubuntu-latest (GNU sed, where `-i` takes no argument)
+	# and a maintainer's macOS box (BSD sed, where `-i` takes the backup
+	# suffix as a separate argument). BSD sed therefore swallowed the script
+	# as the suffix and tried to parse the first filename as the program,
+	# failing with "undefined label 'uild/web/flutter_bootstrap.js'". There is
+	# no single `sed -i` spelling that works on both; perl's -i needs no
+	# argument and is present on both hosts.
+	find build/web -type f -name '*.js' \
+		-exec perl -pi -e 's{^//\# sourceMappingURL=.*\R}{}' {} +
 
 # Refuse to build a release from a working tree that has uncommitted
 # changes. Without this gate, $(DART_DEFINE_GIT) would tag the binary
