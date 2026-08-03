@@ -20,6 +20,7 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
+import 'package:ringdrill/utils/exercise_share_format.dart';
 
 /// One markdown field of one scope, as the summary names it.
 typedef _Field = ({String label, String? content});
@@ -71,14 +72,28 @@ String renderBriefSummary({
     // Station codes already work this way, so the two agree by construction.
     final number = ex.index + 1;
     final code = Numbering.exercise(plan.exerciseNumberFormat, number);
+    // Both corrections the Organisering line got (ADR-0062), because this line
+    // made the same two claims. The phases come from the rounds the schedule
+    // actually has rather than the exercise's own three, which stopped being the
+    // answer the moment a station overrode one — and are wrong in `ring` too, not
+    // only in the uneven modes, since there the longest station sets every round.
+    // And `×` asserts a uniform cycle, so it stands only where the rounds share
+    // one: a product of a span is not arithmetic.
+    //
+    // The mode is named for the same reason the brief names its conduct. `ring`
+    // stays silent and so renders byte-identically: it is the default, and the
+    // absence is what says so.
+    final minutes = effectivePhaseMinutes(ex);
+    final uniform = minutes.every((m) => m == minutes.first);
     out
       ..writeln()
       ..writeln('## $code ${ex.name}')
       ..writeln()
       ..writeln(
-        '${ex.numberOfRounds} round(s) × '
-        '(${ex.executionTime} | ${ex.evaluationTime} | ${ex.rotationTime}) min, '
-        '${ex.numberOfTeams} team(s), ${ex.stations.length} station(s)',
+        '${ex.numberOfRounds} round(s)${uniform ? ' ×' : ''} '
+        '(${rotationPhaseBreakdown(ex)}) min, '
+        '${ex.numberOfTeams} team(s), ${ex.stations.length} station(s)'
+        '${ex.mode == ExerciseMode.ring ? '' : ', mode: ${ex.mode.name}'}',
       );
     _writeScope(
       out,
