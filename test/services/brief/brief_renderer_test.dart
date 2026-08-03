@@ -414,6 +414,52 @@ void main() {
       expect(result, isNot(contains('{{plan.description}}')));
     });
 
+    test('plan.description resolves cross-references, like the markdown '
+        'fields do', () async {
+      // It was grouped with the *names* — a scalar string rather than a markdown
+      // field — where it behaves like the markdown ones: it is the plan-scope field
+      // that most invites the counts an author would otherwise type, which is what
+      // {{plan.exerciseCount}} exists to replace. The skill's token table already
+      // told authors to write the token here; the resolver was the inconsistent half.
+      final plan = _emptyPlan().copyWith(
+        exercises: [
+          _designExercise(),
+          _designExercise().copyWith(uuid: 'ex-4'),
+        ],
+        description:
+            '{{plan.exerciseCount}} øvelser, {{plan.stationCount}} poster.',
+      );
+
+      final result = await renderer.render(
+        plan: plan,
+        audience: BriefAudience.participant,
+        l10n: _l10n.brief,
+      );
+
+      expect(result, contains('2 øvelser, 2 poster.'));
+      expect(result, isNot(contains('{{plan.exerciseCount}}')));
+    });
+
+    test('a name keeps a cross-reference literal — the names stay on the '
+        'variable-only pass', () async {
+      // Deliberate, not an oversight: a short identifying label has no prose to
+      // carry a cross-reference, and the mustache pass is all-or-nothing per field
+      // (ADR-0048), so one bad token in a name would take the whole heading with
+      // it. {{var.*}} does resolve in a name — that is the pass the names run.
+      final plan = _emptyPlan().copyWith(
+        name: 'Plan med {{plan.exerciseCount}}',
+        exercises: [_designExercise()],
+      );
+
+      final result = await renderer.render(
+        plan: plan,
+        audience: BriefAudience.participant,
+        l10n: _l10n.brief,
+      );
+
+      expect(result, contains('# Plan med {{plan.exerciseCount}}'));
+    });
+
     test(
       'exercise-scope cross-references resolve inside exercise-scope markdown fields',
       () async {

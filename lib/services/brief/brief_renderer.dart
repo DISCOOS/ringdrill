@@ -127,11 +127,23 @@ class BriefRenderer {
       planVars,
       l10n,
     );
-    final planDescription = resolver.substituteTypedVariables(
+    // Through the full resolver, not the variable-only pass the names above use:
+    // `description` is prose, and the one plan-scope field that most invites the
+    // counts an author would otherwise type ("sju øvelser, fire lag"), which is
+    // exactly what {{plan.exerciseCount}} exists to replace. It was grouped with
+    // the names by *shape* — a scalar string rather than a markdown field — where
+    // it behaves like the markdown ones. The names stay on the variable-only pass:
+    // a short identifying label has no prose to carry a cross-reference, and the
+    // mustache pass is all-or-nothing per field (ADR-0048).
+    //
+    // Never null here: `resolveField` returns null only for null input, and
+    // `Plan.description` is non-nullable.
+    final planDescription = resolver.resolveField(
       plan.description,
-      planVars,
-      l10n,
-    );
+      vars: planVars,
+      l10n: l10n,
+      refContext: planRefContext,
+    )!;
 
     final exerciseContexts = exercises.map((ex) {
       return _buildExerciseContext(
