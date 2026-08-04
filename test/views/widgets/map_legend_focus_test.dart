@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/map_view.dart';
+import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/map_camera_link.dart';
 import 'package:ringdrill/views/widgets/map_legend.dart';
 
@@ -150,19 +151,19 @@ void main() {
       return controller;
     }
 
-    testWidgets('a single-position entry centres on it at the current zoom', (
-      tester,
-    ) async {
+    // Scoped to the legend: the map draws its own label for the same marker, so
+    // a bare text finder matches twice under this group.
+    Future<void> tapLegend(WidgetTester tester, String label) => tester.tap(
+      find.descendant(of: find.byType(MapLegend), matching: find.text(label)),
+    );
+
+    testWidgets('a single-position entry zooms in on it', (tester) async {
       final controller = await pump(tester, const [
         MapLegendEntry(color: Colors.red, label: 'LKP', points: [bergen]),
       ]);
       final zoomBefore = controller.camera.zoom;
 
-      // Scoped to the legend: the map draws its own label for the same marker,
-      // so a bare text finder matches twice here.
-      await tester.tap(
-        find.descendant(of: find.byType(MapLegend), matching: find.text('LKP')),
-      );
+      await tapLegend(tester, 'LKP');
       await tester.pump();
 
       expect(controller.camera.center.latitude, closeTo(bergen.latitude, 1e-6));
@@ -170,11 +171,30 @@ void main() {
         controller.camera.center.longitude,
         closeTo(bergen.longitude, 1e-6),
       );
+      // Panning at the card's opening zoom would leave the reader on a dot among
+      // dots. The detail zoom is where a marker's chip expands to its full
+      // label, so arriving at a marker is exactly when its name shows.
       expect(
         controller.camera.zoom,
-        zoomBefore,
-        reason: 'centring on one marker must not also change the zoom',
+        MapConfig.labelDetailZoomFor(WindowSizeClass.fromWidth(360)),
       );
+      expect(controller.camera.zoom, greaterThan(zoomBefore));
+    });
+
+    // A reader already closer in than the detail threshold asked to go
+    // somewhere, not to give up their zoom level.
+    testWidgets('a single-position entry never zooms out', (tester) async {
+      final controller = await pump(tester, const [
+        MapLegendEntry(color: Colors.red, label: 'LKP', points: [bergen]),
+      ]);
+      controller.move(const LatLng(63.4, 10.4), 18);
+      await tester.pump();
+
+      await tapLegend(tester, 'LKP');
+      await tester.pump();
+
+      expect(controller.camera.center.latitude, closeTo(bergen.latitude, 1e-6));
+      expect(controller.camera.zoom, 18);
     });
 
     // A legend entry can stand for several markers — the Post viewer has one
@@ -193,7 +213,7 @@ void main() {
       controller.move(const LatLng(63.4, 10.4), 12);
       await tester.pump();
 
-      await tester.tap(find.text('Locations'));
+      await tapLegend(tester, 'Locations');
       await tester.pump();
 
       expect(controller.camera.visibleBounds.contains(oslo), isTrue);

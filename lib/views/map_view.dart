@@ -1492,7 +1492,24 @@ class _MapViewState<K> extends State<MapView<K>> {
   void _focusOn(List<LatLng> points) {
     if (points.isEmpty) return;
     if (points.length < 2) {
-      _mapController.move(points.first, _mapController.camera.zoom);
+      // Zoom in, not just pan. Unlike the "centre" command — which frames
+      // everything and so has to stay at an overview zoom — this is a request
+      // for one specific marker, and landing on it at the card's opening zoom
+      // leaves the reader where they started: a dot among dots, with the map
+      // recentred and nothing else gained. `labelDetailZoomFor` is the app's
+      // existing answer to "close enough to be looking at this one thing" (it
+      // is where a marker's chip expands to its full label), so the two agree
+      // by construction: arriving at a marker is exactly when its name shows.
+      //
+      // Never zooms *out*: a reader already closer in than that threshold asked
+      // to go somewhere, not to give up their zoom level.
+      final detail = MapConfig.labelDetailZoomFor(
+        WindowSizeClass.fromWidth(_effectiveViewport(context).width),
+      );
+      _mapController.move(
+        points.first,
+        math.max(_mapController.camera.zoom, detail),
+      );
       return;
     }
     // Fit the markers that sit at these points, not bare coordinates, so the
