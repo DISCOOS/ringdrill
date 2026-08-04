@@ -80,45 +80,22 @@ function memoryStore() {
 /// exercising the degraded path. Rate-limiting behaviour itself is covered in
 /// mcp-rate-limit.test.mjs and in the 429 test below, which pass their own limiter.
 function unlimited() {
-    // Note the `() => store`, not `counterStore`. `blobs` is called on every consume,
-    // so handing it the factory would build a fresh empty store per call and no
-    // counter would ever persist — which is exactly how the 429 test below passed
-    // while asserting nothing.
-    const store = counterStore();
-    return createRateLimiter({ limit: Number.MAX_SAFE_INTEGER, blobs: () => store });
-}
-
-/// An in-memory store with the split-read shape the limiter uses (`getMetadata` for
-/// the ETag, `get` for the value) and honest conditional-write semantics.
-///
-/// Mirroring the real call shape matters: an earlier version of these fakes
-/// implemented `getWithMetadata`, which the limiter no longer calls, so every test
-/// silently ran the fail-open path and a 429 assertion could not have failed.
-function counterStore() {
     const entries = new Map();
     let sequence = 0;
-    return {
-        async getMetadata(key) {
-            const hit = entries.get(key);
-            return hit ? { etag: hit.etag } : null;
-        },
-        async get(key) {
-            const hit = entries.get(key);
-            return hit ? JSON.parse(hit.value) : null;
-        },
-        async set(key, value, condition = {}) {
-            const hit = entries.get(key);
-            if (condition.onlyIfNew === true && hit) {
-                return { modified: false, etag: hit.etag };
-            }
-            if (condition.onlyIfMatch != null && hit?.etag !== condition.onlyIfMatch) {
-                return { modified: false, etag: hit?.etag };
-            }
-            sequence += 1;
-            entries.set(key, { value, etag: `etag-${sequence}` });
-            return { modified: true, etag: `etag-${sequence}` };
-        },
-    };
+    return createRateLimiter({
+        limit: Number.MAX_SAFE_INTEGER,
+        blobs: () => ({
+            async getWithMetadata(key) {
+                const hit = entries.get(key);
+                return hit ? { data: JSON.parse(hit.value), etag: hit.etag } : null;
+            },
+            async set(key, value) {
+                sequence += 1;
+                entries.set(key, { value, etag: `etag-${sequence}` });
+                return { modified: true, etag: `etag-${sequence}` };
+            },
+        }),
+    });
 }
 
 function handlerWith(overrides = {}) {
@@ -840,8 +817,34 @@ test("a caller over the limit gets 429 with Retry-After, and no compile runs", a
     let compiles = 0;
     const handler = handlerWith({
         limiter: (() => {
-            const store = counterStore();
-            return createRateLimiter({ limit: 2, blobs: () => store });
+            const entries = new Map();
+            let sequence = 0;
+            return createRateLimiter({
+                limit: 2,
+                blobs: () => ({
+                    async getWithMetadata(key) {
+                        const hit = entries.get(key);
+                        return hit
+                            ? { data: JSON.parse(hit.value), etag: hit.etag }
+                            : null;
+                    },
+                    async set(key, value, condition = {}) {
+                        const hit = entries.get(key);
+                        if (condition.onlyIfNew === true && hit) {
+                            return { modified: false, etag: hit.etag };
+                        }
+                        if (
+                            condition.onlyIfMatch != null &&
+                            hit?.etag !== condition.onlyIfMatch
+                        ) {
+                            return { modified: false, etag: hit?.etag };
+                        }
+                        sequence += 1;
+                        entries.set(key, { value, etag: `etag-${sequence}` });
+                        return { modified: true, etag: `etag-${sequence}` };
+                    },
+                }),
+            });
         })(),
         invoke: async (request) => {
             compiles += 1;

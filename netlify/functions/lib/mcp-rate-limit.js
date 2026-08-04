@@ -56,13 +56,10 @@ export const WINDOW_MS = 60_000;
 /// never collide with a document, an artefact or a published plan.
 const RATE_LIMIT_NS = "mcp-rate-limit";
 
-/// Compare-and-swap attempts before a contended call is waved through.
-///
-/// Only genuine contention consumes these — a store that ignores the condition
-/// outright is detected on the first rejection and does not loop. Eight is well past
-/// what a parallel client produces on one key, and bounded because this sits in front
-/// of a compile: a caller must never wait long to be told a number.
-const MAX_CAS_ATTEMPTS = 8;
+/// How many times to retry a lost compare-and-swap before giving up and allowing the
+/// request. Contention is per-caller, so the realistic depth is the number of
+/// requests one client has in flight at once.
+const MAX_CAS_ATTEMPTS = 5;
 
 /// Tool calls that do not count against the limit.
 ///
@@ -133,10 +130,6 @@ export function createRateLimiter({
     limit = WINDOW_LIMIT,
     windowMs = WINDOW_MS,
     maxAttempts = MAX_CAS_ATTEMPTS,
-    // Backoff between lost races, injectable so tests neither sleep nor depend on
-    // timing. Tiny: the collision it waits out is one store round-trip.
-    pause = (attempt) =>
-        new Promise((resolve) => setTimeout(resolve, Math.min(20 * (attempt + 1), 80))),
 } = {}) {
     return {
         /// Spends `cost` against `key`'s budget.
@@ -165,25 +158,9 @@ export function createRateLimiter({
                 let etag;
 
                 try {
-                    // ETag from `getMetadata`, value from `get`, in that order.
-                    //
-                    // Not `getWithMetadata`, which returns both in one call and is
-                    // the obvious thing to reach for — its ETag is not what `set`
-                    // compares against, so `onlyIfMatch` never matched and every
-                    // write after the very first one failed. The counter sat at 1
-                    // while the endpoint served everything. `drills-admin.js` has
-                    // been doing it this way (`getBlobEtag` -> `getMetadata`) all
-                    // along; this now matches the pattern that works.
-                    //
-                    // Two reads race, and the order picks which way. ETag first
-                    // means a write landing between them leaves the value newer than
-                    // the ETag, so the CAS fails and we retry — safe. The reverse
-                    // would let a stale value pass a fresh ETag and silently
-                    // undercount.
-                    etag = (await s.getMetadata(key))?.etag ?? undefined;
-                    entry = etag === undefined
-                        ? null
-                        : await s.get(key, { type: "json" });
+                    const read = await s.getWithMetadata(key, { type: "json" });
+                    entry = read?.data ?? null;
+                    etag = read?.etag;
                 } catch {
                     // Fail open: an unreadable counter must not refuse the request.
                     return { allowed: true, remaining: limit, degraded: true };
@@ -212,9 +189,9 @@ export function createRateLimiter({
                 }
 
                 const next = { windowStart, count: used + cost };
-                // A fresh window may be replacing an expired entry that still exists,
-                // so `onlyIfNew` is only right when there was nothing to read.
-                // Otherwise match the ETag the count was based on.
+                // A fresh window may be replacing an expired entry that still
+                // exists, so `onlyIfNew` is only right when there was nothing to
+                // read. Otherwise match the ETag we based the count on.
                 const condition =
                     etag === undefined ? { onlyIfNew: true } : { onlyIfMatch: etag };
 
@@ -228,63 +205,13 @@ export function createRateLimiter({
                 if (modified) {
                     return { allowed: true, remaining: limit - next.count };
                 }
-
-                // The write was rejected, and *why* decides what to do. These are two
-                // very different situations that the first two versions of this file
-                // conflated, once in each direction — allowing everything, then
-                // refusing everything.
-                //
-                // Re-read the ETag. If it moved, another request wrote in between:
-                // genuine contention, so retry and recount against what landed. The
-                // limit stays exact, which is the whole reason for the CAS.
-                //
-                // If it did not move, our condition was rejected while the value we
-                // matched is still current — the condition is not being honoured at
-                // all. That is a broken store contract, not a race, and retrying
-                // cannot fix it: this is what silently pinned the counter at 1 in
-                // production. Write unconditionally so the count still advances, and
-                // say the answer is approximate.
-                let settled;
-                try {
-                    settled = (await s.getMetadata(key))?.etag;
-                } catch {
-                    return { allowed: true, remaining: limit, degraded: true };
-                }
-
-                if (etag !== undefined && settled === etag) {
-                    try {
-                        await s.set(key, JSON.stringify(next), {});
-                    } catch {
-                        return { allowed: true, remaining: limit, degraded: true };
-                    }
-                    return {
-                        allowed: true,
-                        remaining: limit - next.count,
-                        approximate: true,
-                    };
-                }
-
-                // Real contention. Pause so the retry reads settled state instead of
-                // re-entering the same collision.
-                await pause(attempt);
+                // Lost the race. Loop and recount against whatever landed.
             }
 
-            // Eight lost races, every one of them against a counter that moved. This
-            // is refused, and getting here now means something specific: a single
-            // caller has at least eight metered calls in flight at once.
-            //
-            // An earlier version refused here too and took the endpoint down, because
-            // back then this branch also caught a permanently broken condition — the
-            // second metered call of every session landed here. That cause is now
-            // detected above and handled with an unconditional write, so what remains
-            // is genuine concurrency from one caller, which no authoring session
-            // produces and which is the shape of the burst this exists to stop.
-            //
-            // Allowing instead would leak in exactly the case that matters: with
-            // enough callers arriving together, every one of them exhausts its retries
-            // and every one gets served. Refusing with a one-second Retry-After costs
-            // a busy client a moment and costs an abuser their burst.
-            return { allowed: false, remaining: 0, retryAfterSeconds: 1, contended: true };
+            // Sustained contention on one caller's key. Allowing it is the lesser
+            // evil: the alternative is refusing a request we never proved was over
+            // budget, and the next call re-reads a counter that by now has settled.
+            return { allowed: true, remaining: 0, degraded: true };
         },
     };
 }
