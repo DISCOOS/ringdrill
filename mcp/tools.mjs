@@ -179,10 +179,12 @@ export function toolsFor(backend) {
         {
             name: 'search_catalog',
             description:
-                'List published plans in the open catalog, with their tags. The ' +
-                'catalog is the corpus: read a few plans with `get_plan` before ' +
-                'writing one, so a generated plan matches how real ones are ' +
-                'written.',
+                'List published plans in the open catalog, with their tags. Read ' +
+                'one or two with `get_plan` for **scope and prose** — how much a ' +
+                'station really carries, what tone a brief uses. Take the format ' +
+                'itself from `schema` and `create_plan` instead: the catalog is a ' +
+                'shared, wiki-model corpus, so a published plan may predate the ' +
+                'current format and is not a template to copy.',
             inputSchema: {
                 type: 'object',
                 properties: {
@@ -218,9 +220,12 @@ export function toolsFor(backend) {
             name: 'get_plan',
             description:
                 'Download a published plan and return it as a *source document* ' +
-                '— the same format you write, not the raw archive. This is how to ' +
-                'read the corpus: the uuids it carries mean an edited copy ' +
-                'rebuilds onto the same plan rather than a duplicate.',
+                '— the same format you write, not the raw archive. The uuids it ' +
+                'carries mean an edited copy rebuilds onto the same plan rather ' +
+                'than a duplicate. Read it for scope and prose, not for structure: ' +
+                'a published plan can be older than the format, so it may carry ' +
+                'flat descriptions, values that belong in variables, or numbering ' +
+                'written into a name. `analyze_plan` will tell you which.',
             inputSchema: {
                 type: 'object',
                 properties: {
@@ -512,10 +517,14 @@ Rules the schema cannot express, and that are easy to get wrong:
   KB of base64 you cannot read and that many clients silently truncate, which is the
   reason the handle exists, but an unreachable handle is worse than large bytes.
 
-Order of work: schema, read a published plan with get_plan, create_plan, write,
+Order of work: schema, create_plan, then read a published plan with get_plan, write,
 analyze_plan and fix everything it reports, render_plan and actually read it, then
-build_plan. Run analyze_plan before calling a document finished — tokens are stored
-raw, so a bad reference is invisible until a reader is holding the brief.
+build_plan. Scaffold *before* reading the catalog, and take structure from the
+scaffold: it demonstrates the current format, while a published plan can be older
+than the format and is worth reading for scope and prose rather than as a template.
+Run analyze_plan before calling a document finished — tokens are stored raw, so a bad
+reference is invisible until a reader is holding the brief, and its suggestions are
+where a plan that merely transcribes its source differs from one an author can edit.
 
 The full conventions ship as the ringdrill-plan-authoring skill.`;
 
