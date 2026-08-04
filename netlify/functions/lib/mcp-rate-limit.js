@@ -26,30 +26,34 @@
 // That is the safe direction to be wrong in: every remaining tool reaches the
 // cross-compiled Dart, which is synchronous CPU the function cannot yield during.
 //
-// ## Approximate on purpose, after two attempts at exact
+// ## The counter, and the one default that broke it three times
 //
-// The counter is a plain read-modify-write. Netlify Blobs has no atomic increment, so
-// the obvious way to make this exact is a compare-and-swap on an ETag, the way
-// `shared.js` does for the slug index. That was tried twice and cost an outage each
-// time, and the record is worth keeping because both failures were invisible offline:
+// Read, decide, write, against a **strongly consistent** store. That flag is the whole
+// story, and it is worth the space because three different-looking failures were all
+// the same bug wearing different clothes.
 //
-//   1. ETag from `getWithMetadata`. `set` does not compare against that one, so
-//      `onlyIfMatch` never matched, every write after the first failed, and the
-//      counter sat at 1 while the endpoint served everything. Silent.
-//   2. ETag from `getMetadata`, the way `drills-admin.js` does it, plus logic to tell
-//      real contention from a broken condition. Also never matched — the ETag differs
-//      between reads here — so the retries exhausted and the branch that refuses on
-//      contention started refusing the second metered call of every session. The
-//      smoke test caught it; a client would have caught it first.
+// Netlify Blobs reads are eventually consistent by default. A write lands and a read
+// moments later can still return the previous value, or nothing. Every attempt at this
+// counter was built on reads that were quietly stale:
 //
-// So `onlyIfMatch` is not a usable primitive on this store, and the honest response is
-// to stop depending on it. Read, decide, write.
+//   1. Plain read-modify-write. Never accumulated: each request read a value from
+//      before its predecessor's write, so the count hovered near zero and the endpoint
+//      served everything while reporting a limit.
+//   2. Compare-and-swap on the ETag from `getWithMetadata`. Diagnosed as "the wrong
+//      ETag source". It was not — the ETag came back stale, so `onlyIfMatch` could not
+//      match, every write after the first failed, and the counter sat at 1.
+//   3. Compare-and-swap on the ETag from `getMetadata`, with logic to tell genuine
+//      contention from a rejected condition. The stale ETag kept changing between
+//      reads, so that logic concluded contention every time, exhausted its retries,
+//      and refused the second metered call of every session. That one took the
+//      endpoint down.
 //
-// The cost is undercounting under concurrency: several calls arriving together read
-// the same value, and the last write wins. What survives is the bound on a client
+// Two outages and three diagnoses, none of which named the default. With strong reads
+// the simplest version is also the correct one, so there is no compare-and-swap here:
+// Blobs has no atomic increment, so concurrent callers can still read the same value
+// and the last write wins. Under concurrency this undercounts. It bounds a client
 // looping, which is what a runaway script and a stuck agent both are, and between them
-// the realistic way this gets hammered. A loose bound that works beats an exact one
-// that turns store behaviour into 429s.
+// the realistic way this endpoint gets hammered.
 //
 // ## Fail open, and now only ever open
 //
@@ -93,7 +97,23 @@ const UNMETERED_METHODS = new Set([
 function store() {
     // Constructed per call, never memoized — the client bakes in an access token
     // Netlify refreshes per invocation. See the writeup in shared.js.
-    return getStore(RATE_LIMIT_NS);
+    //
+    // `consistency: "strong"` is load-bearing, and its absence is the single fault
+    // behind every failure this file records. Netlify Blobs reads are **eventually
+    // consistent by default**: a write lands, and a read moments later can still
+    // return the previous value or nothing at all. A counter cannot be built on that.
+    //
+    // It explains all three symptoms at once, which is why they resisted three
+    // separate fixes. The plain read-modify-write never accumulated, because each
+    // request read a value from before its predecessor's write. Both ETag
+    // compare-and-swaps failed for the same reason one layer down — the ETag read back
+    // was the stale one, so `onlyIfMatch` could not match, and the code that tried to
+    // tell contention from a broken condition saw a changing ETag and concluded
+    // contention. None of it was about ETag semantics. It was a stale read.
+    //
+    // Strong reads cost a little latency per metered call, in front of a compile that
+    // costs far more.
+    return getStore(RATE_LIMIT_NS, { consistency: "strong" });
 }
 
 /// Counts how many metered tool calls a request body represents.
