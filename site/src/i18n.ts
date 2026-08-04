@@ -12,11 +12,25 @@ export const strings = {
     nav: {
       features: 'Funksjoner',
       catalog: 'Katalog',
+      docs: 'Dokumentasjon',
       download: 'Last ned',
       openWeb: 'Åpne på web',
       langSwitch: 'English',
       langSwitchHref: '/en/',
       menu: 'Meny',
+    },
+
+    // Sibling navigation for the /docs pages, rendered by DocsLayout.astro. Order is
+    // the reading order for someone starting from scratch, not alphabetical: what the
+    // format is, then the two ways to write one.
+    docs: {
+      eyebrow: 'Dokumentasjon',
+      pages: [
+        { label: 'Oversikt', href: '/docs' },
+        { label: 'Planformat', href: '/docs/plan-format' },
+        { label: 'Kommandolinje', href: '/docs/cli' },
+        { label: 'MCP for KI', href: '/docs/mcp' },
+      ],
     },
 
     hero: {
@@ -105,6 +119,7 @@ export const strings = {
         { label: 'Åpne på web', href: 'https://web.ringdrill.app/' },
         { label: 'Kildekode på GitHub', href: 'https://github.com/DISCOOS/ringdrill' },
         { label: 'API', href: 'https://ringdrill.app/api/docs' },
+        { label: 'Dokumentasjon', href: '/docs' },
       ],
       colLegal: 'Juridisk',
       legal: [
@@ -126,11 +141,22 @@ export const strings = {
     nav: {
       features: 'Features',
       catalog: 'Catalog',
+      docs: 'Docs',
       download: 'Download',
       openWeb: 'Open on web',
       langSwitch: 'Norsk',
       langSwitchHref: '/',
       menu: 'Menu',
+    },
+
+    docs: {
+      eyebrow: 'Documentation',
+      pages: [
+        { label: 'Overview', href: '/en/docs' },
+        { label: 'Plan format', href: '/en/docs/plan-format' },
+        { label: 'Command line', href: '/en/docs/cli' },
+        { label: 'MCP for AI', href: '/en/docs/mcp' },
+      ],
     },
 
     hero: {
@@ -219,6 +245,7 @@ export const strings = {
         { label: 'Open on web', href: 'https://web.ringdrill.app/' },
         { label: 'Source on GitHub', href: 'https://github.com/DISCOOS/ringdrill' },
         { label: 'API', href: 'https://ringdrill.app/api/docs' },
+        { label: 'Documentation', href: '/en/docs' },
       ],
       colLegal: 'Legal',
       legal: [

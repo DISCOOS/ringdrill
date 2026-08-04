@@ -15,6 +15,7 @@ const switchHref = langHref ?? c.nav.langSwitchHref;
     <div class="nav__links">
       <a class="nav__hide-sm" href={`${home}#features`}>{c.nav.features}</a>
       <a class="nav__hide-sm" href={`${home}catalog`}>{c.nav.catalog}</a>
+      <a class="nav__hide-sm" href={`${home}docs`}>{c.nav.docs}</a>
       <a class="nav__hide-sm" href={switchHref}>{c.nav.langSwitch}</a>
       <a class="btn btn--ghost btn--sm" href={c.hero.secondaryHref} target="_blank" rel="noopener noreferrer">{c.nav.openWeb}</a>
       <button
@@ -34,12 +35,13 @@ const switchHref = langHref ?? c.nav.langSwitchHref;
     </div>
   </div>
   <!-- Same destinations as the .nav__hide-sm links above, which the
-       640px breakpoint (BaseLayout.astro) hides outright rather than
+       768px breakpoint (BaseLayout.astro) hides outright rather than
        just visually collapsing them — below that width they have no
        other way in from the nav bar without this panel. -->
   <div class="nav__menu" id="nav-menu" hidden>
     <a href={`${home}#features`}>{c.nav.features}</a>
     <a href={`${home}catalog`}>{c.nav.catalog}</a>
+    <a href={`${home}docs`}>{c.nav.docs}</a>
     <a href={switchHref}>{c.nav.langSwitch}</a>
   </div>
 </nav>
@@ -78,10 +80,10 @@ const switchHref = langHref ?? c.nav.langSwitchHref;
     if (event.key === 'Escape') closeMenu();
   });
 
-  // The toggle button itself is only shown below the 640px breakpoint
+  // The toggle button itself is only shown below the 768px breakpoint
   // (BaseLayout.astro) -- if a still-open panel is left stranded by
   // resizing back past it (e.g. rotating a tablet), close it too.
   window.addEventListener('resize', () => {
-    if (window.matchMedia('(min-width: 641px)').matches) closeMenu();
+    if (window.matchMedia('(min-width: 769px)').matches) closeMenu();
   });
 </script>

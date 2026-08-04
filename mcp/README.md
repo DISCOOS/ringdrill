@@ -251,6 +251,13 @@ Claude Code: `claude mcp add --transport http ringdrill https://api.ringdrill.ap
 Claude Desktop and Codex CLI take a `url` in place of `command`/`args`. In VS Code,
 `.vscode/mcp.json` takes `{"type": "http", "url": "…"}`.
 
+The same setup, written for someone who is not reading this repo, is published at
+[ringdrill.app/docs/mcp](https://ringdrill.app/docs/mcp) (English: `/en/docs/mcp`).
+That page, not this file, is where the retention behaviour is stated for users, per
+ADR-0060, so keep the two in step: it names all three cases (nothing by default,
+`cache: true`, and the archive `build_plan` holds) and the 60-request-per-minute
+rate limit.
+
 ### ChatGPT
 
 ChatGPT's MCP connectors take a **remote HTTPS endpoint** and cannot launch a local

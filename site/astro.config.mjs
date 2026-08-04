@@ -8,6 +8,14 @@ import cloudflare from '@astrojs/cloudflare';
 export default defineConfig({
   site: 'https://ringdrill.app',
   adapter: cloudflare(),
+  markdown: {
+    // Shiki ships its own theme as inline styles on the <pre>, which would win over
+    // the .prose code/pre rules in BaseLayout.astro and leave one dark block on an
+    // otherwise light page (and no way to answer prefers-color-scheme). The snippets
+    // on /mcp are a URL and a few lines of JSON, so highlighting buys nothing worth
+    // a second, competing colour system.
+    syntaxHighlight: false,
+  },
   i18n: {
     defaultLocale: 'nb',
     locales: ['nb', 'en'],

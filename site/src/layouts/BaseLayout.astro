@@ -105,6 +105,13 @@ const altPath =
 
         --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
                      "Inter", "Helvetica Neue", Arial, sans-serif;
+        --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+                     "Liberation Mono", monospace;
+
+        /* Code, in prose. Its own pair rather than --canvas-band/--body, because a
+           snippet has to stay legible against a band that is itself tinted. */
+        --code-bg: #f4f8f9;
+        --code-ink: #0f3d47;
       }
 
       @media (prefers-color-scheme: dark) {
@@ -123,6 +130,8 @@ const altPath =
           --link-underline: rgba(95, 210, 221, 0.5);
           --chip-bg: #0e5066;
           --chip-ink: #9fd3de;
+          --code-bg: #0a2c38;
+          --code-ink: #cfe6ea;
           --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4),
                          0 6px 18px rgba(0, 0, 0, 0.4);
           --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.5),
@@ -250,6 +259,55 @@ const altPath =
       .prose a { color: var(--link); }
       .prose hr { border: 0; border-top: 1px solid var(--border); margin: 32px 0; }
       .prose__meta { color: var(--muted); font-size: 0.9375rem; margin-bottom: 32px; }
+      .prose blockquote {
+        border-left: 3px solid var(--border-strong);
+        padding-left: 16px;
+        margin-bottom: 16px;
+        color: var(--muted);
+      }
+      .prose code {
+        font-family: var(--font-mono);
+        font-size: 0.875em;
+        background: var(--code-bg);
+        color: var(--code-ink);
+        padding: 0.15em 0.4em;
+        border-radius: 4px;
+        /* A long identifier -- an endpoint URL, a snake_case argument -- must be
+           allowed to break rather than push the article wider than the viewport. */
+        overflow-wrap: break-word;
+      }
+      .prose pre {
+        font-family: var(--font-mono);
+        background: var(--code-bg);
+        color: var(--code-ink);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 14px 16px;
+        margin-bottom: 16px;
+        /* Wrap rather than scroll, and never let the block set the page width -- a
+           snippet wide enough to do that scrolls the whole article sideways on a
+           phone. `pre-wrap` keeps the indentation of a JSON config (whose lines are
+           short and wrap anyway) while letting the one genuinely long line here --
+           the `claude mcp add` command -- break at its spaces instead of running off
+           the edge. It is the line a reader most needs to see whole, and a hidden
+           horizontal scrollbar is a poor way to offer it. `overflow-x` stays as the
+           backstop for a single unbreakable token. */
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+        overflow-x: auto;
+        font-size: 0.875rem;
+        line-height: 1.55;
+      }
+      /* Inline styling is for inline code only; inside a pre the block already
+         carries the background, padding and colour. */
+      .prose pre code {
+        background: none;
+        color: inherit;
+        padding: 0;
+        border-radius: 0;
+        font-size: inherit;
+        overflow-wrap: normal;
+      }
 
       /* ----- Nav ----- */
       .nav {
@@ -270,12 +328,25 @@ const altPath =
       .nav__links a { color: var(--body); text-decoration: none; font-size: 0.9375rem; font-weight: 500; }
       .nav__links a:hover { color: var(--heading); }
       .nav__lang { color: var(--muted); font-size: 0.875rem; }
-      @media (max-width: 640px) {
+      /* ---- Nav collapse breakpoint: 768px ----
+         Hard-coded in four places below plus one matchMedia in Nav.astro, because
+         a media query cannot read a custom property. Change all five together.
+
+         768 is not arbitrary and it is not free headroom either. The Norwegian
+         labels are the widest case (Funksjoner / Katalog / Dokumentasjon / English
+         + the "Åpne på web" button) and measure 511px of link row; with the 85px
+         brand and the 16px gap between them the bar needs 612px of container,
+         which the gutters put at roughly 676px of viewport before the links start
+         overlapping the wordmark. It was 640px, and adding "Dokumentasjon" is what
+         pushed it past that -- the symptom was the brand and the first link
+         colliding, not the links wrapping. Add another top-level link and this
+         number has to be re-measured, not nudged. */
+      @media (max-width: 768px) {
         .nav__links .nav__hide-sm { display: none; }
       }
-      /* Hamburger toggle for the links .nav__hide-sm hides below 640px
-         (Funksjoner/Katalog/language switch) -- without it they had no
-         way into the nav on a narrow screen at all, only "Åpne på web"
+      /* Hamburger toggle for the links .nav__hide-sm hides below that breakpoint
+         (Funksjoner/Katalog/Dokumentasjon/language switch) -- without it they had
+         no way into the nav on a narrow screen at all, only "Åpne på web"
          stayed visible. Desktop never sees the button or the panel it
          opens (Nav.astro). */
       .nav__toggle {
@@ -293,7 +364,7 @@ const altPath =
         cursor: pointer;
       }
       .nav__toggle svg { width: 18px; height: 18px; }
-      @media (max-width: 640px) {
+      @media (max-width: 768px) {
         .nav__toggle { display: inline-flex; }
       }
       .nav__menu {
@@ -316,9 +387,9 @@ const altPath =
         padding: 10px 2px;
       }
       .nav__menu a:hover { color: var(--heading); }
-      @media (min-width: 641px) {
+      @media (min-width: 769px) {
         /* Belt-and-suspenders: the toggle that opens this is already
-           gone above 640px, but this guarantees the panel can never be
+           gone above the breakpoint, but this guarantees the panel can never be
            left visibly stuck open by a resize the script's own listener
            missed. */
         .nav__menu { display: none !important; }

@@ -1,0 +1,97 @@
+---
+// Prose layout for /docs, split from LegalLayout because a docs section needs one
+// thing a privacy policy does not: a way to reach its siblings. Everything else --
+// BaseLayout, Nav, Footer, .prose, the canonicalPath/altHref pairing -- is the same.
+import BaseLayout from './BaseLayout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import { t, type Lang } from '../i18n';
+
+const { frontmatter } = Astro.props;
+const lang = (frontmatter.lang as Lang) ?? 'en';
+const canonicalPath: string = frontmatter.canonicalPath ?? Astro.url.pathname;
+// Same page in the other language (slugs stay English), matching LegalLayout.
+const altHref =
+  lang === 'nb' ? `/en${canonicalPath}` : canonicalPath.replace(/^\/en/, '') || '/';
+const c = t(lang);
+// Trailing slashes vary by how a link was written; compare without one so the
+// current page is marked whether it was reached as /docs/cli or /docs/cli/.
+const here = canonicalPath.replace(/\/$/, '');
+---
+<BaseLayout
+  lang={lang}
+  title={frontmatter.title}
+  description={frontmatter.description}
+  canonicalPath={canonicalPath}
+>
+  <Nav lang={lang} langHref={altHref} />
+  <main class="section">
+    <div class="container">
+      <nav class="docsnav" aria-label={c.docs.eyebrow}>
+        <span class="docsnav__eyebrow">{c.docs.eyebrow}</span>
+        <ul>
+          {c.docs.pages.map((p) => (
+            <li>
+              <a
+                href={p.href}
+                class="docsnav__link"
+                aria-current={p.href.replace(/\/$/, '') === here ? 'page' : undefined}
+              >{p.label}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <article class="prose">
+        <slot />
+      </article>
+    </div>
+  </main>
+  <Footer lang={lang} langHref={altHref} />
+</BaseLayout>
+
+<style>
+  .docsnav {
+    max-width: 760px;
+    margin-bottom: 36px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .docsnav__eyebrow {
+    display: block;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  /* Wraps rather than scrolls: four short labels fit on one line on a laptop and on
+     two on a phone, and a wrapped row needs no scroll affordance to look complete. */
+  .docsnav ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    list-style: none;
+  }
+  .docsnav__link {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-strong);
+    color: var(--body);
+    text-decoration: none;
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+  .docsnav__link:hover {
+    color: var(--heading);
+    border-color: var(--accent);
+  }
+  /* The current page stays in the row rather than being dropped from it, so the row
+     doubles as "where am I" and the set never changes shape between pages. */
+  .docsnav__link[aria-current='page'] {
+    background: var(--chip-bg);
+    border-color: transparent;
+    color: var(--chip-ink);
+  }
+</style>
