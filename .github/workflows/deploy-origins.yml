@@ -30,6 +30,17 @@ name: Deploy origins
 # deploy` command is replaced with an echo. Set `dry_run: false` to publish
 # for real from workflow_dispatch; push events always publish for real.
 #
+# Republishing one origin: workflow_dispatch also takes `origins`, which
+# overrides the path gating entirely and deploys exactly what you name.
+#
+#   gh workflow run deploy-origins.yml -f origins=pwa -f dry_run=false
+#
+# That is the recovery path for an origin whose job did not run — the diff
+# is per-push, so `needs: functions` skipping `pwa` (on a failure, or on a
+# cancellation from the concurrency groups) strands work that no later
+# push's diff will contain. The `report` job fails the run and names the
+# command whenever that happens, so the gap is visible rather than silent.
+#
 # Required secrets, all on the PROD environment
 # (Settings -> Environments -> PROD -> Secrets):
 #   NETLIFY_AUTH_TOKEN     - used by the `functions` job.
@@ -46,6 +57,18 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
+      origins:
+        description: >-
+          Which origins to deploy, ignoring what changed. Pick one to republish
+          an origin whose job was skipped in an earlier run without rebuilding
+          the other two.
+        type: choice
+        options:
+          - all
+          - functions
+          - pwa
+          - site
+        default: all
       dry_run:
         description: >-
           Run every job for real (build, secrets, ordering, path gating) but
@@ -70,26 +93,48 @@ jobs:
 
       - name: Diff against the previous commit
         id: filter
+        env:
+          # Empty on a push; "all" or one origin name on workflow_dispatch.
+          FORCE: ${{ inputs.origins }}
         run: |
-          case "${{ github.event_name }}" in
-            workflow_dispatch)
-              # No targeted "before" commit on a manual run: deploy everything.
-              files="ALL"
-              ;;
-            *)
-              before="${{ github.event.before }}"
-              if [ -z "$before" ] || ! git cat-file -e "$before" 2>/dev/null; then
-                files="ALL"
-              else
-                files=$(git diff --name-only "$before" "${{ github.sha }}")
-              fi
-              ;;
-          esac
+          before="${{ github.event.before }}"
+          if [ -z "$before" ] || ! git cat-file -e "$before" 2>/dev/null; then
+            files="ALL"
+          else
+            files=$(git diff --name-only "$before" "${{ github.sha }}")
+          fi
 
+          # A push deploys what its diff says. A manual run deploys what you
+          # asked for and nothing else, which is the recovery path when an
+          # origin's job did not run.
+          #
+          # It needs one, because the diff is per-push and a job that does not
+          # run leaves its origin behind: `needs: functions` skips pwa and site
+          # when functions fails or is cancelled (the concurrency groups below
+          # use cancel-in-progress, so two quick pushes do it), and the next
+          # push's diff no longer contains the stranded work. That happened on
+          # 2026-08-04 — a lib/views/ fix sat unpublished for two hours after a
+          # failed functions job, until an unrelated Makefile edit happened to
+          # match the pwa pattern. The `report` job at the bottom is what tells
+          # you to come here; this is what you run.
+          #
+          #   gh workflow run deploy-origins.yml -f origins=pwa -f dry_run=false
           match() {
+            origin="$1"
+            pattern="$2"
+
+            if [ -n "$FORCE" ]; then
+              if [ "$FORCE" = "all" ] || [ "$FORCE" = "$origin" ]; then
+                echo "true"
+              else
+                echo "false"
+              fi
+              return
+            fi
+
             if [ "$files" = "ALL" ]; then
               echo "true"
-            elif echo "$files" | grep -qE "$1"; then
+            elif echo "$files" | grep -qE "$pattern"; then
               echo "true"
             else
               echo "false"
@@ -123,9 +168,9 @@ jobs:
           #              all — so ^site/ is complete, and Makefile does NOT
           #              belong here.
           {
-            echo "functions=$(match '^(netlify/functions/|mcp/|skills/ringdrill-plan-authoring/|netlify\.toml|package\.json|package-lock\.json)')"
-            echo "pwa=$(match '^(lib/|assets/|web/|pubspec\.(yaml|lock)|Makefile)')"
-            echo "site=$(match '^site/')"
+            echo "functions=$(match functions '^(netlify/functions/|mcp/|skills/ringdrill-plan-authoring/|netlify\.toml|package\.json|package-lock\.json)')"
+            echo "pwa=$(match pwa '^(lib/|assets/|web/|pubspec\.(yaml|lock)|Makefile)')"
+            echo "site=$(match site '^site/')"
           } >> "$GITHUB_OUTPUT"
 
   functions:
@@ -359,3 +404,60 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
         run: |
           echo "DRY RUN: would run 'wrangler deploy --config dist/server/wrangler.json' (from site/)"
+
+  report:
+    name: Report undeployed origins
+    needs: [changes, functions, pwa, site]
+    # always(), or this is skipped by the very failures it exists to describe.
+    if: always()
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Fail if an origin had changes but did not publish
+        # The gap the manual override exists to close is *noticing*. An origin
+        # whose job is skipped because `needs: functions` failed or was cancelled
+        # leaves no trace of its own: the next push is green, its diff no longer
+        # contains the stranded work, and the origin quietly serves old code.
+        # Today that ran for two hours.
+        #
+        # So the run stays red until every origin that had changes has actually
+        # published, and it prints the command that fixes it. No permissions, no
+        # state, no tokens — this job only reads the other jobs' results.
+        env:
+          WANT_FUNCTIONS: ${{ needs.changes.outputs.functions }}
+          WANT_PWA: ${{ needs.changes.outputs.pwa }}
+          WANT_SITE: ${{ needs.changes.outputs.site }}
+          GOT_FUNCTIONS: ${{ needs.functions.result }}
+          GOT_PWA: ${{ needs.pwa.result }}
+          GOT_SITE: ${{ needs.site.result }}
+        run: |
+          stranded=""
+          check() {
+            # $1 origin, $2 did it have changes, $3 what its job did
+            if [ "$2" = "true" ] && [ "$3" != "success" ]; then
+              echo "::warning title=$1 not deployed::$1 had changes in this run" \
+                "but its job ended '$3', so the origin is still on older code." \
+                "The next push will not pick this up — its diff will not contain" \
+                "these commits. Republish with:" \
+                "gh workflow run deploy-origins.yml -f origins=$1 -f dry_run=false"
+              stranded="$stranded $1"
+            fi
+          }
+          check functions "$WANT_FUNCTIONS" "$GOT_FUNCTIONS"
+          check pwa "$WANT_PWA" "$GOT_PWA"
+          check site "$WANT_SITE" "$GOT_SITE"
+
+          if [ -z "$stranded" ]; then
+            echo "Every origin with changes published." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          {
+            echo "### Origins still to publish"
+            echo
+            for origin in $stranded; do
+              echo "- \`$origin\` — \`gh workflow run deploy-origins.yml" \
+                "-f origins=$origin -f dry_run=false\`"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
