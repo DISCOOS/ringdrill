@@ -429,9 +429,15 @@ Rules the schema cannot express, and that are easy to get wrong:
   staff refer to it ("house search for a missing woman with dementia"), the second is
   the scenario as the team meets it. If one would repeat the other, cut the
   description to the line that tells this post apart from the one before it.
-- Never put a real person in any field. \`persons\` are fictional scenario subjects,
-  and \`director_notes\` is NOT stripped at publish — a marker roster or a duty
-  phone number there ships to the public catalog.
+- Never put a real person in any field. \`persons\` are fictional scenario subjects, and
+  a marker roster or a named contact belongs nowhere in a plan — drop the name, keep the
+  role ("markør tildeles av veileder"). An operational *value* is different and does
+  belong: a duty phone number, a KO number, a talegruppe. Declare it as a plan variable
+  and write {{var.<slug>}}, never the literal in prose — it is decided late and changed
+  on the day, which is exactly what a variable is for. And nothing in a markdown field is
+  stripped at publish: not \`director_notes\`, not \`behavior\`, not a station
+  \`description\`. Only the Staff layer is private, so anything you write as prose ships
+  to the open catalog verbatim.
 - An exercise says how its teams relate to its stations with \`mode\`: \`ring\` (the
   default — teams rotate, one per station), \`together\` (all teams on one station at a
   time) or \`split\` (several stations at once, teams divided). Not every exercise is a
