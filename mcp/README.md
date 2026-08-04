@@ -297,6 +297,32 @@ Two constraints worth knowing before touching it:
   needs it. The same applied to `_shared.js` and `_drill_pii.js`, which predated
   this and were live in production as functions returning 502; they moved to
   `lib/shared.js` and `lib/drill-pii.js` for the same reason.
+* **A deployed function has a different shape from the checkout, and the tests must
+  see that shape.** The bundler inlines every local import into a single
+  `netlify/functions/mcp.mjs` and copies `included_files` in at their repo-relative
+  paths, so `import.meta.url` inside what was `lib/mcp-compiler.js` names the
+  functions *root* — one directory above the bundle. Resolving the bundle beside it
+  was correct in a checkout and wrong once deployed, and the endpoint spent weeks
+  answering `initialize`, `tools/list`, `resources/read` and `search_catalog`
+  correctly while every compiler tool returned `ENOENT: no such file or directory,
+  open '/var/task/netlify/functions/mcp-compiler-bundle.js'`. Read `process.cwd()`,
+  which is the package root, the way `mcp.js` already does for the guide resources.
+
+### Testing it
+
+Three layers, because the interesting failures are not in the handler:
+
+| | what it covers | when |
+| --- | --- | --- |
+| `netlify/tests/mcp-endpoint.test.mjs` | the handler and the protocol, imported from the checkout | `npm test` |
+| `netlify/tests/mcp-packaging.test.mjs` | the function **as Netlify packages it** — real `netlify.toml`, real `included_files`, called with the package root as cwd | `npm test`, and again in the deploy job before publishing |
+| `tools/mcp-smoke.mjs` | the **live origin** — redirects, blob bindings, whatever actually shipped | after a deploy: `npm run smoke:mcp [url]` |
+
+The rule the smoke test encodes, learned the hard way: *introspection passing is not
+the endpoint working*. A client can connect, list ten tools and report the server
+healthy while every tool that does real work is failing, so each check calls
+something that has to reach the compiler, read an included file, or read the
+catalog.
 
 ## The raw protocol
 
