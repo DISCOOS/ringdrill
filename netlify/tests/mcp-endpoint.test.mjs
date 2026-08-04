@@ -291,6 +291,65 @@ test("a store that cannot hold the archive still yields the build", async () => 
     );
 });
 
+test("a modelling suggestion is reported, and cannot block --strict", async () => {
+    // ADR-0071's load-bearing invariant, asserted across the JS boundary because
+    // that is where it would break silently: every rule that produces a suggestion
+    // is a heuristic, and `!isError` used to mean "warning" in six places — so a
+    // third severity would have made `build --strict` refuse over a naming hint.
+    const withCoordinate = DOCUMENT.replace(
+        'situation: "Noe skjer."',
+        'situation: "Savnet sist sett 32V 0580307E 6552025N."',
+    );
+    const handler = handlerWith();
+
+    const analyzed = payload(
+        (
+            await rpc(handler, {
+                jsonrpc: "2.0",
+                id: 1,
+                method: "tools/call",
+                params: {
+                    name: "analyze_plan",
+                    arguments: { document: withCoordinate, strict: true },
+                },
+            })
+        ).body,
+    );
+    assert.equal(analyzed.ok, true, "a suggestion must not fail strict analyze");
+    assert.equal(analyzed.errors, 0);
+    assert.equal(analyzed.warnings, 0);
+    assert.ok(
+        analyzed.suggestions > 0,
+        `expected a coordinate suggestion, got ${JSON.stringify(analyzed)}`,
+    );
+    assert.ok(
+        analyzed.diagnostics.some(
+            (d) => d.severity === "suggestion" && /coordinate/.test(d.message),
+        ),
+        "the suggestion must say what it found",
+    );
+
+    const built = payload(
+        (
+            await rpc(handler, {
+                jsonrpc: "2.0",
+                id: 1,
+                method: "tools/call",
+                params: {
+                    name: "build_plan",
+                    arguments: { document: withCoordinate, strict: true },
+                },
+            })
+        ).body,
+    );
+    assert.equal(
+        built.ok,
+        true,
+        `--strict refused a build over a suggestion: ${JSON.stringify(built.error)}`,
+    );
+    assert.equal(built.archive.kind, "url");
+});
+
 test("output_path is refused with a reason that names the alternative", async () => {
     // Same asymmetry as document_path (ADR-0064): the parameter keeps one meaning in
     // the shared table, and the transport that cannot honour it says so. The message

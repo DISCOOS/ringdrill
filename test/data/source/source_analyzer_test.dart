@@ -21,8 +21,11 @@ List<SourceDiagnostic> _analyze(String yaml) {
 List<SourceDiagnostic> _errors(String yaml) =>
     _analyze(yaml).where((d) => d.isError).toList();
 
+/// Warnings only — not "everything that is not an error". ADR-0071 added
+/// `suggestion`, so `!isError` would fold the modelling rules into every
+/// expectation in this file. `source_modelling_test.dart` covers those.
 List<SourceDiagnostic> _warnings(String yaml) =>
-    _analyze(yaml).where((d) => !d.isError).toList();
+    _analyze(yaml).where((d) => d.isWarning).toList();
 
 /// One exercise, one station, with [station] extending the station body.
 String _doc({String plan = '', String station = '', String exercise = ''}) =>

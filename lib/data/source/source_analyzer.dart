@@ -21,6 +21,7 @@
 library;
 
 import 'package:ringdrill/data/source/source_diagnostic.dart';
+import 'package:ringdrill/data/source/source_modelling.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
@@ -66,6 +67,17 @@ class SourceAnalyzer {
     _checkUnusedVariables(plan, diagnostics);
     _checkPersonLocRefs(plan, diagnostics);
     _checkUuidUniqueness(plan, diagnostics);
+
+    // Modelling shortcuts (ADR-0071) — a different question from the rest of this
+    // file, which is why it lives in its own. Handed the same field walk rather
+    // than one of its own, so the two cannot disagree about which fields exist.
+    SourceModelling.analyze(
+      plan,
+      _fields(
+        plan,
+      ).map((f) => (path: f.path, content: f.content, station: f.station)),
+      diagnostics,
+    );
   }
 
   /// [analyze] layered on [seed] — the diagnostics compilation already

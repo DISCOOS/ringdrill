@@ -13,6 +13,18 @@ enum DiagnosticSeverity {
 
   /// Buildable, but probably not what the author meant.
   warning,
+
+  /// Correct as written, but a shortcut past something the format models
+  /// (ADR-0071) — a coordinate typed into prose, a talegruppe repeated in eleven
+  /// fields, a role play that invents the person it portrays.
+  ///
+  /// Its own level rather than a warning because `build --strict` refuses a
+  /// document with warnings, and every rule that produces one of these is a
+  /// heuristic. A heuristic that can fail a build is a heuristic someone turns
+  /// off, so a suggestion never blocks and never changes an exit code. It is
+  /// also why [isError] is not the negation of "warning" anywhere: see
+  /// [isWarning].
+  suggestion,
 }
 
 /// One finding about a source document.
@@ -40,6 +52,14 @@ class SourceDiagnostic {
         hint: hint,
       );
 
+  SourceDiagnostic.suggestion(String path, String message, {String? hint})
+    : this(
+        severity: DiagnosticSeverity.suggestion,
+        path: path,
+        message: message,
+        hint: hint,
+      );
+
   final DiagnosticSeverity severity;
 
   /// Where in the document, as a dotted path with list indices —
@@ -54,6 +74,21 @@ class SourceDiagnostic {
 
   bool get isError => severity == DiagnosticSeverity.error;
 
+  /// True only for [DiagnosticSeverity.warning].
+  ///
+  /// Exists because `!isError` used to mean "warning" in six places, and adding
+  /// [DiagnosticSeverity.suggestion] silently made every one of them wrong — most
+  /// damagingly `build --strict`, which would have started refusing a document over
+  /// a naming suggestion. Ask for what you mean.
+  bool get isWarning => severity == DiagnosticSeverity.warning;
+
+  /// True only for [DiagnosticSeverity.suggestion]. Never blocks a build.
+  bool get isSuggestion => severity == DiagnosticSeverity.suggestion;
+
+  /// Whether this is something `--strict` may refuse a build over — an error or a
+  /// warning, never a suggestion.
+  bool get isBlockingUnderStrict => !isSuggestion;
+
   Map<String, dynamic> toJson() => {
     'severity': severity.name,
     'path': path,
@@ -62,10 +97,8 @@ class SourceDiagnostic {
   };
 
   @override
-  String toString() {
-    final label = severity == DiagnosticSeverity.error ? 'error' : 'warning';
-    return '$label: $path: $message${hint == null ? '' : ' — $hint'}';
-  }
+  String toString() =>
+      '${severity.name}: $path: $message${hint == null ? '' : ' — $hint'}';
 }
 
 /// Thrown when a document cannot be built. Carries every diagnostic found, not
@@ -95,6 +128,9 @@ class DiagnosticSink {
 
   void warn(String path, String message, {String? hint}) =>
       _items.add(SourceDiagnostic.warning(path, message, hint: hint));
+
+  void suggest(String path, String message, {String? hint}) =>
+      _items.add(SourceDiagnostic.suggestion(path, message, hint: hint));
 
   void addAll(Iterable<SourceDiagnostic> other) => _items.addAll(other);
 

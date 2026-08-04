@@ -5,12 +5,13 @@
     "lib/data/drill_migrations.dart": "448fa8499087f0daf6c64c4e1a3f5c1ccd52f03437e1f59ab0e6bdc4402d0aa4",
     "lib/data/source/plan_builder.dart": "9a8ea7f212354d597b3e2c9cdeef6d2c92bbb5476e70afd7fb7d20be15fdf6b8",
     "lib/data/source/plan_decompiler.dart": "214749dd04b373836050a4062ae66fbc9580801f1accbd9f495bf3914b3fe042",
-    "lib/data/source/source_analyzer.dart": "e48ddc6e8ab69b9d2e196552aa09e2a575aeb8a7ee0f91eb19f223e32c6ecffc",
+    "lib/data/source/source_analyzer.dart": "07f73f5a6186056b6a7e45d50c1facb5fcdceecd117abfdb2e927a164e6ff801",
     "lib/data/source/source_compiler.dart": "cd2b0b50c19604dd527583b52da244def0ad8bcf8836d100b31c142040d9d33d",
-    "lib/data/source/source_diagnostic.dart": "7e1f2ef35c43d9fe24c0b964f6a519f549e963887cdbfb87887dac77e66e36d1",
+    "lib/data/source/source_diagnostic.dart": "c9508682456221847d136e2abffc177f82a39c59b83c7c3504ae91fda2f31c99",
     "lib/data/source/source_emitter.dart": "4b120b6c4909f518b534e59c590c351a112aea27e2e34ff3ca1aaf93fd53376a",
     "lib/data/source/source_field.dart": "0af655c90d63a8e3ccae453d4f7d22f894cb8d3890aed5292890af1252661031",
     "lib/data/source/source_fields.dart": "eb00047824237c1c3a82d5e5b69efab96cd9e2e26848dc167ff1f8576df5a911",
+    "lib/data/source/source_modelling.dart": "7abb4fe16bb84747e7963ca2d958aa5c807384ab14b327c456c04e48c5f80dac",
     "lib/data/source/source_parser.dart": "e977a57075b2fd5538444c867effdfeb78e7d75567431ce99961bf717ee302e2",
     "lib/data/source/source_scaffold.dart": "d1b3251decbef07398a33fe3538418b8bbd790cf9cc4f634bd4a580752b5a1bd",
     "lib/data/source/source_schema.dart": "9281ec4d66957481fdc0edf46515a5da5f708060b593bd51c611929897056a5f",
@@ -63,7 +64,7 @@
     "lib/utils/projection.dart": "8ffbc39c87394fd40078284a545d7c86385d38618b16397761138284d43d639d",
     "lib/utils/station_scenario_tokens.dart": "b71a800a7b537f730bfaf4a9e9ca2c28b9c768aa757f4657662603277f2a9e9e",
     "lib/utils/variable_values.dart": "d5da31321a650fcf16220ed8476aad7ee5180f0a9900b5bbcc242edec9752e7d",
-    "tools/mcp_js_entry.dart": "e0de1cebe24e5338123122e7e85a8295a2901048084dcb2f0ebff4e3fd3c5c0f",
+    "tools/mcp_js_entry.dart": "dc7c456bba4076d15d90dcaacc6a3a09c74a494c5085d79aec1151105847f96f",
     "pubspec.lock": "190bf04f2737b644cb036be9ffbcf4b307dd3822bccfa4aa70bb6dae0c942c50"
   }
 }

@@ -280,7 +280,12 @@ export function toolsFor(backend) {
                 'such location, a misspelled or wrong-scope reference. Always run ' +
                 'this before presenting a document as finished — tokens are stored ' +
                 'raw, so these mistakes are invisible until a reader is holding ' +
-                'the brief.',
+                'the brief. It also reports `suggestions`: places the document ' +
+                'works *around* the format rather than with it — a coordinate typed ' +
+                'into prose instead of a location, a talegruppe repeated in six ' +
+                'fields instead of a variable, a role play portraying nobody the ' +
+                'station declares. Those never block a build, and acting on them is ' +
+                'what separates a plan an author can edit from a transcription.',
             inputSchema: {
                 type: 'object',
                 properties: {

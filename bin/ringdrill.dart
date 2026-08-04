@@ -550,7 +550,11 @@ void _runBuild(List<String> args, ArgResults res, bool jsonOut) {
   // it is written. Refusing is not a widening of `build`'s question ("can I make
   // an archive") — it is answering it honestly. `--strict` adds warnings on top.
   final blocking = reviewed.where((d) => d.isError).toList();
-  if (blocking.isNotEmpty || (strict && reviewed.isNotEmpty)) {
+  // A suggestion never blocks: `--strict` refuses over errors and warnings only,
+  // because every ADR-0071 rule is a heuristic and a heuristic that can fail a
+  // build is one that gets switched off.
+  final strictly = reviewed.where((d) => d.isBlockingUnderStrict).toList();
+  if (blocking.isNotEmpty || (strict && strictly.isNotEmpty)) {
     _printDiagnostics(path, reviewed, jsonOut);
     stderr.writeln(
       blocking.isEmpty
@@ -584,7 +588,8 @@ void _runBuild(List<String> args, ArgResults res, bool jsonOut) {
         // `errors`/`warnings`, the diagnostics themselves under `diagnostics`.
         // One tool must not change a key's *type* with its outcome.
         'errors': reviewed.where((d) => d.isError).length,
-        'warnings': reviewed.where((d) => !d.isError).length,
+        'warnings': reviewed.where((d) => d.isWarning).length,
+        'suggestions': reviewed.where((d) => d.isSuggestion).length,
         'diagnostics': reviewed.map((d) => d.toJson()).toList(),
       }),
     );
@@ -739,7 +744,8 @@ void _runAnalyze(List<String> args, ArgResults res, bool jsonOut) {
   SourceAnalyzer.analyze(plan, diagnostics);
   final items = diagnostics.items;
   final errors = items.where((d) => d.isError).length;
-  final warnings = items.length - errors;
+  final warnings = items.where((d) => d.isWarning).length;
+  final suggestions = items.where((d) => d.isSuggestion).length;
 
   if (jsonOut) {
     stdout.writeln(
@@ -748,6 +754,7 @@ void _runAnalyze(List<String> args, ArgResults res, bool jsonOut) {
         'ok': errors == 0 && !(strict && warnings > 0),
         'errors': errors,
         'warnings': warnings,
+        'suggestions': suggestions,
         'name': plan.name,
         'exercises': plan.exercises.length,
         'diagnostics': items.map((d) => d.toJson()).toList(),
@@ -982,14 +989,17 @@ void _printDiagnostics(
     return;
   }
   final errors = diagnostics.where((d) => d.isError).toList();
-  final warnings = diagnostics.where((d) => !d.isError).toList();
-  for (final d in [...errors, ...warnings]) {
+  final warnings = diagnostics.where((d) => d.isWarning).toList();
+  final suggestions = diagnostics.where((d) => d.isSuggestion).toList();
+  for (final d in [...errors, ...warnings, ...suggestions]) {
     final where = d.path.isEmpty ? file : '$file:${d.path}';
-    final label = d.isError ? 'error' : 'warning';
-    stderr.writeln('$where: $label: ${d.message}');
+    stderr.writeln('$where: ${d.severity.name}: ${d.message}');
     if (d.hint != null) stderr.writeln('    $where: hint: ${d.hint}');
   }
-  stderr.writeln('${errors.length} error(s), ${warnings.length} warning(s).');
+  stderr.writeln(
+    '${errors.length} error(s), ${warnings.length} warning(s), '
+    '${suggestions.length} suggestion(s).',
+  );
 }
 
 /// File name without directory or extension.

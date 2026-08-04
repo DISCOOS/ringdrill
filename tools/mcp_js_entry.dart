@@ -108,10 +108,14 @@ Map<String, dynamic> _analyze(Map<String, dynamic> json) {
     return _diagnosticsOnly(e.diagnostics);
   }
   final errors = items.where((d) => d.isError).length;
+  final warnings = items.where((d) => d.isWarning).length;
   return {
-    'ok': errors == 0 && !(strict && items.length > errors),
+    // A suggestion (ADR-0071) never makes a document not-ok, under strict or
+    // otherwise: the rules that produce one are heuristics.
+    'ok': errors == 0 && !(strict && warnings > 0),
     'errors': errors,
-    'warnings': items.length - errors,
+    'warnings': warnings,
+    'suggestions': items.where((d) => d.isSuggestion).length,
     'name': plan.name,
     'exercises': plan.exercises.length,
     'diagnostics': items.map((d) => d.toJson()).toList(),
@@ -136,7 +140,8 @@ Map<String, dynamic> _build(Map<String, dynamic> json) {
   // An error will visibly fail in the brief, so the archive is known-broken
   // before it is written; `strict` adds warnings on top.
   final blocking = reviewed.where((d) => d.isError).length;
-  if (blocking > 0 || (strict && reviewed.isNotEmpty)) {
+  final strictly = reviewed.where((d) => d.isBlockingUnderStrict).length;
+  if (blocking > 0 || (strict && strictly > 0)) {
     return {
       ..._diagnosticsOnly(reviewed),
       'error': blocking > 0
@@ -159,7 +164,8 @@ Map<String, dynamic> _build(Map<String, dynamic> json) {
     // shape `_analyze` and `_diagnosticsOnly` already use. A caller must not
     // have to check the outcome to know a key's type.
     'errors': reviewed.where((d) => d.isError).length,
-    'warnings': reviewed.where((d) => !d.isError).length,
+    'warnings': reviewed.where((d) => d.isWarning).length,
+    'suggestions': reviewed.where((d) => d.isSuggestion).length,
     'diagnostics': reviewed.map((d) => d.toJson()).toList(),
     'drillBase64': base64Encode(result.drillFile.content),
   };
@@ -293,7 +299,8 @@ Map<String, dynamic> _diagnosticsOnly(List<SourceDiagnostic> diagnostics) {
   return {
     'ok': false,
     'errors': errors,
-    'warnings': diagnostics.length - errors,
+    'warnings': diagnostics.where((d) => d.isWarning).length,
+    'suggestions': diagnostics.where((d) => d.isSuggestion).length,
     'diagnostics': diagnostics.map((d) => d.toJson()).toList(),
   };
 }
