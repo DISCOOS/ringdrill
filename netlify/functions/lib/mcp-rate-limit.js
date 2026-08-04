@@ -56,10 +56,12 @@ export const WINDOW_MS = 60_000;
 /// never collide with a document, an artefact or a published plan.
 const RATE_LIMIT_NS = "mcp-rate-limit";
 
-/// How many times to retry a lost compare-and-swap before giving up and allowing the
-/// request. Contention is per-caller, so the realistic depth is the number of
-/// requests one client has in flight at once.
-const MAX_CAS_ATTEMPTS = 5;
+/// How many times to retry a lost compare-and-swap before refusing.
+///
+/// Contention is per-caller, so the depth needed is however many requests one client
+/// has in flight. Ten covers a parallel agent comfortably; a caller who loses ten
+/// races in a row is issuing more concurrent calls than any authoring session does.
+const MAX_CAS_ATTEMPTS = 10;
 
 /// Tool calls that do not count against the limit.
 ///
@@ -130,6 +132,11 @@ export function createRateLimiter({
     limit = WINDOW_LIMIT,
     windowMs = WINDOW_MS,
     maxAttempts = MAX_CAS_ATTEMPTS,
+    // Backoff between lost races, injectable so the tests neither sleep nor depend on
+    // timing. Deliberately tiny and growing: the collision it waits out is one store
+    // round-trip, and this sits in front of a compile that costs far more.
+    pause = (attempt) =>
+        new Promise((resolve) => setTimeout(resolve, Math.min(25 * (attempt + 1), 150))),
 } = {}) {
     return {
         /// Spends `cost` against `key`'s budget.
@@ -205,13 +212,24 @@ export function createRateLimiter({
                 if (modified) {
                     return { allowed: true, remaining: limit - next.count };
                 }
-                // Lost the race. Loop and recount against whatever landed.
+                // Lost the race. Pause briefly so the retry reads settled state
+                // instead of re-entering the same collision, then recount.
+                await pause(attempt);
             }
 
-            // Sustained contention on one caller's key. Allowing it is the lesser
-            // evil: the alternative is refusing a request we never proved was over
-            // budget, and the next call re-reads a counter that by now has settled.
-            return { allowed: true, remaining: 0, degraded: true };
+            // Ten lost races on one caller's key. **Refused, not allowed** — this is
+            // the one place where failing open is wrong, and it took a production
+            // burst to see why: 100 concurrent calls against a budget of 60 all
+            // succeeded, because every one of them exhausted its retries and took
+            // the lenient branch. Contention on a single caller's counter is not a
+            // store fault, it is that caller sending faster than the counter settles,
+            // which is the shape of the abuse this exists to bound. Store *errors*
+            // still fail open above; only this branch is strict.
+            //
+            // A legitimate client is not hurt much: it gets a 429 with a one-second
+            // Retry-After, which is true — the collision clears in far less than a
+            // window.
+            return { allowed: false, remaining: 0, retryAfterSeconds: 1, contended: true };
         },
     };
 }
