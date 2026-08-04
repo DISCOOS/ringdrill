@@ -51,10 +51,15 @@ table the compiler validates against, so it cannot be out of date.
    participant reads.
 8. **`build_plan`** when it is right. It answers with a handle in `archive` rather
    than the archive itself: a `path` on a local server, a `url` on the hosted one.
-   Pass that on — a URL is the author's only way to get the file, so say where it is
-   and that it expires. Do not ask for `inline: true` unless something actually needs
-   the bytes; a real plan is ~100 KB of base64 you cannot read, cannot write to disk,
-   and that many clients silently truncate (ADR-0070).
+   Pass that on — say where the file is and, for a url, that it expires.
+
+   The url is a plain GET returning the `.drill` as an attachment. Fetch it yourself
+   when you need the archive on disk: it is this tool's own answer, not a separate
+   API, so following it is using the tool rather than going around it. Reach for
+   `inline: true` only when you have no way to fetch a url at all — it returns ~100 KB
+   of base64 you cannot read and that many clients silently truncate, which is why the
+   handle exists; but an unreachable handle is worse than large bytes, so a client with
+   no network has a supported path rather than none (ADR-0070).
 
 ## Not resending the document on every call
 

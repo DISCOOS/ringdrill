@@ -167,6 +167,19 @@ inline instead.*
 * Bad: a new public GET route on the API origin that serves author content, where
   before every hosted MCP interaction was a POST that answered and forgot. It is
   content-addressed and expiring, but it is new surface to abuse-test.
+* Bad: **the hosted handle depends on a client capability MCP does not guarantee.** A
+  `url` is only a deliverable to a caller that can issue a GET, and nothing in the
+  protocol promises one — a sandboxed agent, an offline session, or a client under a
+  network policy gets a build it cannot obtain, which is the original failure relocated
+  rather than removed. `inline: true` is the answer for that caller, so the mitigation
+  exists; what it costs is that the tool's guidance has to name *both* paths and say
+  when each applies. The first draft of that guidance said only "do not ask for
+  `inline: true`", which left such a client with no sanctioned route at all — found by
+  a cold run whose agent was (correctly) forbidden to reach RingDrill by any means
+  except the supplied tools, and which therefore had no way to follow the url it was
+  handed. Serving the archive as an MCP resource instead would need no HTTP client, but
+  the bytes still cross the transport at full size: that is `inline` with extra steps,
+  not a third option.
 * Bad: an agent that reads `archive.base64` unconditionally breaks. The field is now
   absent unless asked for, which is a breaking change to the one tool most likely to
   have a script pointed at it.

@@ -92,13 +92,19 @@ const OUTPUT_PATH_ARG = {
 };
 
 /// Ask for the archive bytes in the response, retaining nothing (ADR-0070).
+///
+/// The fallback, not a forbidden option — and worded as one, because the first draft
+/// said only "do not ask for this", which left a client that *cannot* follow a URL
+/// with no sanctioned way to obtain a build at all. A hosted handle depends on an
+/// HTTP client that MCP does not guarantee the caller has.
 const INLINE_ARG = {
     type: 'boolean',
     description:
         'Return the archive as base64 in the response instead of a handle. Off ' +
         'by default, because a real plan is ~100 KB of base64 that no agent ' +
-        'reads and many clients truncate. Set it only for a programmatic caller ' +
-        'that wants the bytes, or to keep the hosted server from holding the ' +
+        'reads and many clients truncate. Use it when you cannot follow a URL ' +
+        '(no HTTP client, no network) or when a programmatic caller wants the ' +
+        'bytes — it is also the way to keep the hosted server from holding the ' +
         'archive at all.',
 };
 
@@ -288,11 +294,12 @@ export function toolsFor(backend) {
                 'summary and content hash. The archive comes back as a handle in ' +
                 '`archive`, not as bytes in the response: `kind: "file"` with a ' +
                 '`path` on a local server, `kind: "url"` with a `url` and ' +
-                '`expires_at` on the hosted one — give that link to the author, it ' +
-                'downloads the file. Pass `inline: true` for `kind: "inline"` and ' +
-                'base64 instead, which no agent needs to read and many clients ' +
-                'truncate. Does not publish: the catalog is a shared corpus, so ' +
-                'putting a plan in it stays a human step.',
+                '`expires_at` on the hosted one. That url is a plain GET returning ' +
+                'the .drill as an attachment — fetch it yourself if you need the ' +
+                'file locally, and give it to the author either way. If you have no ' +
+                'way to fetch a url, pass `inline: true` for `kind: "inline"` and ' +
+                'base64 instead. Does not publish: the catalog is a shared corpus, ' +
+                'so putting a plan in it stays a human step.',
             inputSchema: {
                 type: 'object',
                 properties: {
@@ -473,8 +480,11 @@ Rules the schema cannot express, and that are easy to get wrong:
 - \`build_plan\` answers with a handle in \`archive\`, not with the archive: a \`path\`
   on a local server, a \`url\` on the hosted one. **Tell the author where it is**, and
   that a url expires — the build is worthless to them if the link stays in your head.
-  Do not ask for \`inline: true\` to "get the file": that returns ~100 KB of base64 you
-  cannot read, cannot write to disk, and that many clients silently truncate.
+  The url is a plain GET returning the file as an attachment, so **fetch it yourself**
+  when you need the archive on disk; it is the tool's own answer, not a separate API.
+  Reach for \`inline: true\` only when you cannot fetch a url at all — it returns ~100
+  KB of base64 you cannot read and that many clients silently truncate, which is the
+  reason the handle exists, but an unreachable handle is worse than large bytes.
 
 Order of work: schema, read a published plan with get_plan, create_plan, write,
 analyze_plan and fix everything it reports, render_plan and actually read it, then
