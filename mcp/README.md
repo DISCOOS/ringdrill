@@ -22,8 +22,19 @@ changed.
 | `get_plan` | `ringdrill download` + `decompile` |
 | `create_plan` | `ringdrill create` |
 | `analyze_plan` | `ringdrill analyze` |
-| `build_plan` | `ringdrill build`, returning the archive base64-encoded |
+| `build_plan` | `ringdrill build`, returning the archive as a handle |
 | `render_plan` | `ringdrill render` |
+
+`build_plan` hands the archive over rather than embedding it, because a real plan is
+about 100 KB of base64 that no agent reads and many clients truncate
+([ADR-0070](../docs/adrs/0070-build-artifact-delivery.md)). One field, `archive`,
+whose `kind` says how:
+
+| `kind` | Carries | When |
+|---|---|---|
+| `file` | `path` | local server — `output_path` if you named one, otherwise a content-addressed path under the temp directory |
+| `url` | `url`, `expires_at` | hosted server — give the link to the author, it downloads the file |
+| `inline` | `base64` | either, with `inline: true` |
 
 The hosted deployment runs the same operations against a cross-compiled copy of the
 same compiler rather than the binary — see *How the hosted endpoint is built*.
@@ -46,12 +57,28 @@ either way. What differs is where your document goes.
 
 **Use the local server for anything you would not email.** Real plans are marked
 staff-only — the anchor plan in the catalog opens with "KUN FOR STAB" — and the
-hosted endpoint necessarily receives the text you send it. It **does not persist
-documents**: it compiles the request and answers, there is no write path, and the
-only storage it touches is a read of the already-public catalog
-([ADR-0060](../docs/adrs/0060-remote-mcp-server.md)). That is a design requirement,
-not a courtesy — but "not stored" is still not the same as "never sent", and only
-the local server gives you the latter.
+hosted endpoint necessarily receives the text you send it. "Not stored" is not the
+same as "never sent", and only the local server gives you the latter.
+
+What the hosted endpoint keeps, exactly
+([ADR-0060](../docs/adrs/0060-remote-mcp-server.md) as amended by
+[ADR-0064](../docs/adrs/0064-mcp-payload-economy.md) and
+[ADR-0070](../docs/adrs/0070-build-artifact-delivery.md)):
+
+* **The document you send: nothing, unless you ask.** It compiles the request and
+  answers. Pass `cache: true` and it holds that document under its content hash for
+  30 minutes, so later calls can send `document_hash` instead of resending it. Off by
+  default, so a caller who does not ask gets a server that keeps nothing.
+* **The archive it builds: held for 30 minutes, so you can download it.**
+  `build_plan` answers with `archive.url` rather than ~100 KB of base64, because a
+  chat client truncates a blob that size and no agent reads one. The archive sits
+  under that plan's content hash until the link expires. Pass `inline: true` to get
+  the bytes in the response instead and have nothing held at all.
+* **The catalog: read only.** No tool writes to it; `publish` is absent.
+
+Both holds are content-addressed, which makes the key unguessable — and means
+**whoever has the link has the file** until it expires. Treat a `document_hash` or an
+`archive.url` for a staff-only plan the way you would treat the plan.
 
 The hosted endpoint accepts documents up to 512 KB and bounds a compile at 10
 seconds. Beyond that, use the local server.
@@ -326,6 +353,7 @@ Three layers, because the interesting failures are not in the handler:
 | | what it covers | when |
 | --- | --- | --- |
 | `netlify/tests/mcp-endpoint.test.mjs` | the handler and the protocol, imported from the checkout | `npm test` |
+| `netlify/tests/mcp-artifact.test.mjs` | the download route for a built archive — headers, expiry, what a malformed path may not reach | `npm test` |
 | `netlify/tests/mcp-packaging.test.mjs` | the function **as Netlify packages it** — real `netlify.toml`, real `included_files`, called with the package root as cwd | `npm test`, and again in the deploy job before publishing |
 | `tools/mcp-smoke.mjs` | the **live origin** — redirects, blob bindings, whatever actually shipped | after a deploy: `npm run smoke:mcp [url]` |
 
@@ -334,6 +362,12 @@ the endpoint working*. A client can connect, list ten tools and report the serve
 healthy while every tool that does real work is failing, so each check calls
 something that has to reach the compiler, read an included file, or read the
 catalog.
+
+Two things are invisible to the first three layers and only the smoke test sees: the
+`/mcp/artifact/*` rewrite and the blob binding behind it. A rewrite that stopped
+resolving serves the app shell with HTTP 200 — a success status for the wrong body —
+so the smoke test follows the URL `build_plan` returns and asserts the content type,
+not just the status.
 
 ## The raw protocol
 

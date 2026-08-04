@@ -146,6 +146,15 @@ two forms: a local stdio server, and a hosted endpoint at `/mcp` on the API orig
 cross-compiled to JavaScript by `make mcp-bundle`. Both read one tool table
 (`mcp/tools.mjs`); only the transport and the backend differ.
 
+A built archive is handed over as a *handle*, not as bytes in the response
+([ADR-0070](./adrs/0070-build-artifact-delivery.md)): a written file locally, and on
+the hosted side a short-lived download URL served by `netlify/functions/mcp-artifact.js`
+at `/mcp/artifact/<contentHash>.drill`. That is a second function on purpose — `/mcp`
+itself stays POST-only and does not load the compiler bundle to move bytes. Both
+retention windows the hosted endpoint has (the opt-in document cache of
+[ADR-0064](./adrs/0064-mcp-payload-economy.md) and this one) are content-addressed and
+expiring, and `mcp/README.md` → *Hosted or local?* states exactly what is kept.
+
 Three generated files exist because a caller cannot reach Flutter assets or a Dart
 SDK: `lib/l10n/headless_labels.g.dart` (`make labels`),
 `lib/services/brief/brief_templates.g.dart` (`make templates`) and
