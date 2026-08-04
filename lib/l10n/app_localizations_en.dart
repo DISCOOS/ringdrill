@@ -765,6 +765,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recenter => 'Recenter map';
 
   @override
+  String mapLegendFocus(String label) {
+    return 'Center the map on $label';
+  }
+
+  @override
   String get mapSettingsSectionTitle => 'Map';
 
   @override

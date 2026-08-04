@@ -579,8 +579,13 @@ class _RolePlayScreenState extends State<RolePlayScreen>
           overrides: roleOverrides,
         );
         final extra = contextPins.markers;
+        final central = roleCentralPosition(rolePlay, station);
         final legendEntries = <MapLegendEntry>[
-          MapLegendEntry(color: scheme.tertiary, label: resolvedRoleName),
+          MapLegendEntry(
+            color: scheme.tertiary,
+            label: resolvedRoleName,
+            points: [?central],
+          ),
           ...contextPins.legend,
         ];
 

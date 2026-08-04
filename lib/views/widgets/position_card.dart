@@ -4,6 +4,7 @@ import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/widgets/collapse_chevron.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_mixin.dart';
+import 'package:ringdrill/views/widgets/map_camera_link.dart';
 
 /// Layout for [PositionCard]'s surface (docs/prompts/position-card-reflow.md):
 /// [row] is a horizontal strip (station form), [card] stacks the thumbnail
@@ -283,6 +284,12 @@ class PositionCardShell extends StatefulWidget {
 
 class _PositionCardShellState extends State<PositionCardShell>
     with SingleTickerProviderStateMixin, CollapsibleSectionStateMixin {
+  /// Published to this shell's subtree so the [PositionCardShell.legend] strip
+  /// can drive the camera of the map in [PositionCardShell.thumbnail]. Held in
+  /// the state, not rebuilt in `build`, so the map stays attached across
+  /// rebuilds.
+  final MapCameraLink _cameraLink = MapCameraLink();
+
   @override
   void initState() {
     super.initState();
@@ -454,26 +461,36 @@ class _PositionCardShellState extends State<PositionCardShell>
       ],
     );
 
+    // Couples the legend strip to the map above it (both are caller-supplied
+    // widgets, mounted here as siblings, so neither can reach the other): a
+    // MapView under this shell attaches its camera to the link, and a MapLegend
+    // entry that names a marker uses it to move the map onto that marker. One
+    // link per shell instance, so a screen showing several of these — a list of
+    // post cards — has each legend driving its own map.
+    //
     // asCard: a plain Card picks up the ambient cardTheme's
     // shape/elevation/shadow, so this reads as the same kind of card as
     // everything else in the app instead of a bespoke boxed frame. When
     // the caller already provides that card (asCard: false), skip it —
     // otherwise the map preview nests a card inside a card — and just
     // round the thumbnail's own corners.
-    return widget.asCard
-        ? Card(
-            // Match CollapsibleSectionCard exactly (elevation 1 + clip), so
-            // the collapsed bar reads as the same surface as the other
-            // section cards rather than the cardTheme default (elevation 2),
-            // whose dark-mode elevation overlay makes it visibly lighter.
-            margin: EdgeInsets.zero,
-            elevation: widget.elevation,
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(onTap: widget.onTap, child: content),
-          )
-        : ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: InkWell(onTap: widget.onTap, child: content),
-          );
+    return MapCameraScope(
+      link: _cameraLink,
+      child: widget.asCard
+          ? Card(
+              // Match CollapsibleSectionCard exactly (elevation 1 + clip), so
+              // the collapsed bar reads as the same surface as the other
+              // section cards rather than the cardTheme default (elevation 2),
+              // whose dark-mode elevation overlay makes it visibly lighter.
+              margin: EdgeInsets.zero,
+              elevation: widget.elevation,
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(onTap: widget.onTap, child: content),
+            )
+          : ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(onTap: widget.onTap, child: content),
+            ),
+    );
   }
 }

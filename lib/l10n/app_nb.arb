@@ -218,6 +218,7 @@
   "zoomOut": "Zoom ut",
   "locateMe": "Vis min posisjon",
   "recenter": "Sentrer kartet",
+  "mapLegendFocus": "Sentrer kartet på {label}",
   "mapSettingsSectionTitle": "Kart",
   "mapSettingsSectionDescription": "Velg hvordan kart oppfører seg i appen.",
   "showMapZoomControls": "Vis zoom-knapper",

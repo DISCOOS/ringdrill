@@ -16,6 +16,7 @@ import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/variable_values.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
+import 'package:ringdrill/views/widgets/map_camera_link.dart';
 import 'package:ringdrill/views/widgets/map_command.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -846,6 +847,21 @@ class _MapViewState<K> extends State<MapView<K>> {
     MapSettings.instance.showZoomControls.addListener(_onMapSettingsChanged);
   }
 
+  /// The [MapCameraScope] this map currently answers to, if any — see
+  /// [_focusOn]. Null on every surface with no scope above it, which is most of
+  /// them.
+  MapCameraLink? _cameraLink;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final link = MapCameraScope.maybeOf(context);
+    if (link == _cameraLink) return;
+    _cameraLink?.detach(_focusOn);
+    _cameraLink = link;
+    link?.attach(_focusOn);
+  }
+
   void _onMapSettingsChanged() {
     if (mounted) setState(() {});
   }
@@ -1463,6 +1479,49 @@ class _MapViewState<K> extends State<MapView<K>> {
     _mapController.fitCamera(_defaultFitFor(context, widget.markers));
   }
 
+  /// [_toggleCenter] narrowed to a subset: bring just [points] into view,
+  /// centred at the current zoom for one point and fitted for several.
+  ///
+  /// Registered with the ambient [MapCameraScope] (see [didChangeDependencies])
+  /// so a sibling widget — the legend strip under a `PositionCardShell`'s map —
+  /// can drive this map's camera. The operation lives here, rather than the
+  /// sibling holding a `MapController` and fitting the points itself, because
+  /// every input to a good fit is this widget's own state: its real laid-out
+  /// viewport, which overlay commands it draws, and the label footprint of the
+  /// markers involved.
+  void _focusOn(List<LatLng> points) {
+    if (points.isEmpty) return;
+    if (points.length < 2) {
+      _mapController.move(points.first, _mapController.camera.zoom);
+      return;
+    }
+    // Fit the markers that sit at these points, not bare coordinates, so the
+    // padding reserves their real rendered labels. Matched by position because
+    // that is the only currency a legend entry and a marker share — `K` is the
+    // caller's own id type, which a domain-agnostic legend cannot speak. An
+    // unmatched point (a legend naming something this map does not plot) still
+    // contributes its coordinate to the fit, just no label footprint.
+    final specs = widget.markers
+        .where((m) => points.contains(m.point))
+        .toList(growable: false);
+    _mapController.fitCamera(
+      MapConfig.fitFor(
+        points,
+        withSearch: widget.withSearch,
+        withZoom:
+            widget.withZoom && MapSettings.instance.showZoomControls.value,
+        withCenter: widget.withCenter,
+        withLocate: widget.withLocate,
+        viewport: _effectiveViewport(context),
+        maxZoom: _effectiveMaxZoom,
+        fallbackCenter: widget.initialCenter,
+        labels: widget.showLabels
+            ? specs.map((e) => e.shortLabel ?? e.label)
+            : const Iterable<String>.empty(),
+      ),
+    );
+  }
+
   Widget _buildSearchTool(
     BuildContext context,
     BoxConstraints constraints,
@@ -2007,6 +2066,7 @@ class _MapViewState<K> extends State<MapView<K>> {
 
   @override
   void dispose() {
+    _cameraLink?.detach(_focusOn);
     MapSettings.instance.showZoomControls.removeListener(_onMapSettingsChanged);
     _throttleTimer?.cancel();
     _resultsScrollController.dispose();

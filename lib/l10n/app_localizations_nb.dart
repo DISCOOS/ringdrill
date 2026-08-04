@@ -764,6 +764,11 @@ class AppLocalizationsNb extends AppLocalizations {
   String get recenter => 'Sentrer kartet';
 
   @override
+  String mapLegendFocus(String label) {
+    return 'Sentrer kartet på $label';
+  }
+
+  @override
   String get mapSettingsSectionTitle => 'Kart';
 
   @override

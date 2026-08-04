@@ -94,7 +94,13 @@ roleContextMarkers(
         child: const Icon(Icons.place, color: Colors.green, size: 32),
       ),
     );
-    legend.add(MapLegendEntry(color: Colors.green, label: postLabel));
+    legend.add(
+      MapLegendEntry(
+        color: Colors.green,
+        label: postLabel,
+        points: [postPosition],
+      ),
+    );
   }
 
   final personLocation = rolePersonLocation(rolePlay, station);
@@ -103,7 +109,11 @@ roleContextMarkers(
     final locMarker = locationMarker(personLocation, id: 2, size: 30);
     markers.add(locMarker);
     legend.add(
-      MapLegendEntry(color: personLocation.kind.color, label: locMarker.label),
+      MapLegendEntry(
+        color: personLocation.kind.color,
+        label: locMarker.label,
+        points: [locPosition],
+      ),
     );
   }
   return (markers: markers, legend: legend);

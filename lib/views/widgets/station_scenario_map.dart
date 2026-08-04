@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
@@ -76,18 +77,30 @@ class StationScenarioLegend extends StatelessWidget {
     final numbering = stationNumbering(exercise, station);
     final stationLabel =
         resolveScopedField(context, numbering.rawLabel) ?? numbering.rawLabel;
+    final stationPosition = station.position;
     final entries = <MapLegendEntry>[
-      if (station.position != null)
-        MapLegendEntry(color: theme.colorScheme.primary, label: stationLabel),
+      if (stationPosition != null)
+        MapLegendEntry(
+          color: theme.colorScheme.primary,
+          label: stationLabel,
+          points: [stationPosition],
+        ),
     ];
-    final seenKinds = <LocationKind>{};
+    // One entry per kind, so its points are every positioned location of that
+    // kind — tapping "Last known position" on a station with two of them frames
+    // both rather than silently picking the first.
+    final pointsByKind = <LocationKind, List<LatLng>>{};
     for (final location in station.locations) {
-      if (location.position == null) continue;
-      if (!seenKinds.add(location.kind)) continue;
+      final position = location.position;
+      if (position == null) continue;
+      pointsByKind.putIfAbsent(location.kind, () => []).add(position);
+    }
+    for (final entry in pointsByKind.entries) {
       entries.add(
         MapLegendEntry(
-          color: location.kind.color,
-          label: location.kind.label(l10n),
+          color: entry.key.color,
+          label: entry.key.label(l10n),
+          points: entry.value,
         ),
       );
     }

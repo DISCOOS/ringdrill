@@ -1328,6 +1328,12 @@ abstract class AppLocalizations {
   /// **'Recenter map'**
   String get recenter;
 
+  /// Tooltip on a map legend entry that names a marker; tapping it moves the map onto that marker. {label} is the legend entry's own label.
+  ///
+  /// In en, this message translates to:
+  /// **'Center the map on {label}'**
+  String mapLegendFocus(String label);
+
   /// Title of the Map section in settings
   ///
   /// In en, this message translates to:
