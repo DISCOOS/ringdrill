@@ -7,6 +7,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' as resolver;
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/variable_values.dart'
     show applyVariableOverride;
@@ -227,7 +228,16 @@ Map<String, dynamic> _exerciseFacets(Exercise exercise, AppLocalizations l10n) {
     'timeLabel': exerciseTimeLabel(exercise),
     'durationLabel': exerciseDurationLabel(exercise, l10n.brief),
     'phaseBreakdown': rotationPhaseBreakdown(exercise),
-    'roundTable': rotationRoundTable(exercise, l10n.brief),
+    // The active plan's numbering, so a previewed `split` round table labels
+    // its posts with the same codes the brief will — read from the service
+    // rather than threaded through every `ExerciseScope` provider, since the
+    // format is one plan-wide setting and this is the only reader. The
+    // exercise's number comes from its own position (see [rotationRoundTable]).
+    'roundTable': rotationRoundTable(
+      exercise,
+      l10n.brief,
+      stationNumberFormat: PlanService().activePlan?.stationNumberFormat,
+    ),
   };
 }
 

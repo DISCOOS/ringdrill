@@ -1,5 +1,6 @@
 import 'package:ringdrill/services/brief/brief_labels.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/schedule.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 
@@ -60,7 +61,19 @@ List<RotationRound> rotationRounds(Exercise exercise, BriefLabels l10n) {
 ///
 /// Built on [rotationRounds], the same source the brief's Organisering block reads,
 /// so the token and the block can never disagree.
-String rotationRoundTable(Exercise exercise, BriefLabels l10n) {
+///
+/// [stationNumberFormat] is what the Station column needs to print codes — a
+/// plan-level fact an `Exercise` does not carry, so a caller that has the `Plan`
+/// passes it and a caller that does not gets station names instead (see
+/// [_stationsInRound]). [exerciseNumber] (1-based) defaults to the exercise's own
+/// position; pass it where that is not the plan's answer — e.g. an editor previewing
+/// a freshly derived exercise, whose `index` is not its place in the plan.
+String rotationRoundTable(
+  Exercise exercise,
+  BriefLabels l10n, {
+  StationNumberFormat? stationNumberFormat,
+  int? exerciseNumber,
+}) {
   final rounds = rotationRounds(exercise, l10n);
   if (rounds.isEmpty) return '';
 
@@ -84,7 +97,13 @@ String rotationRoundTable(Exercise exercise, BriefLabels l10n) {
   // station and in `split` it is a group of them, so without this the reader gets a
   // clock with no way to tell which post each row belongs to.
   final stationsPerRound = [
-    for (var r = 0; r < rounds.length; r++) _stationsInRound(exercise, r),
+    for (var r = 0; r < rounds.length; r++)
+      _stationsInRound(
+        exercise,
+        r,
+        stationNumberFormat: stationNumberFormat,
+        exerciseNumber: exerciseNumber ?? exercise.index + 1,
+      ),
   ];
   final withStations = exercise.mode != ExerciseMode.ring;
 
@@ -118,27 +137,47 @@ String rotationRoundTable(Exercise exercise, BriefLabels l10n) {
   return buf.toString().trimRight();
 }
 
-/// The names of the stations live in [roundIndex], for the round table's Station
-/// column.
+/// The stations running in [roundIndex], labelled for the round table's Station
+/// column. Empty where the round names nothing that exists — a stale index survives
+/// a station being deleted.
 ///
-/// Names rather than codes: a code needs the plan's `stationNumberFormat`, which an
-/// `Exercise` does not carry, and inventing a default here would print a code that
-/// disagrees with every other surface. Empty where the round names nothing that
-/// exists — a stale index survives a station being deleted.
-List<String> _stationsInRound(Exercise exercise, int roundIndex) {
-  List<String> named(Iterable<int> indices) => [
+/// Codes in `split`, names in `together`. A `split` round runs several posts at once,
+/// and spelling each one out made a cell that pushed the clock columns off the page —
+/// "2a, 2c" is what the reader needs to find the post, and every other surface already
+/// labels it that way. A `together` round is a single post, where the name fits and is
+/// the more useful thing to read.
+///
+/// A code needs the plan's `stationNumberFormat`, which an `Exercise` does not carry;
+/// inventing a default would print a code that disagrees with every other surface, so
+/// a caller that cannot supply one falls back to names.
+List<String> _stationsInRound(
+  Exercise exercise,
+  int roundIndex, {
+  StationNumberFormat? stationNumberFormat,
+  required int exerciseNumber,
+}) {
+  final codes = stationNumberFormat != null;
+  List<String> labelled(Iterable<int> indices, {required bool asCodes}) => [
     for (final i in indices)
-      if (i >= 0 && i < exercise.stations.length) exercise.stations[i].name,
+      if (i >= 0 && i < exercise.stations.length)
+        asCodes
+            ? Numbering.station(
+                stationNumberFormat!,
+                exerciseNumber: exerciseNumber,
+                stationIndex: i,
+              )
+            : exercise.stations[i].name,
   ];
   return switch (exercise.mode) {
     ExerciseMode.ring => const [],
-    ExerciseMode.together => named([roundIndex]),
+    ExerciseMode.together => labelled([roundIndex], asCodes: false),
     ExerciseMode.split =>
       roundIndex < exercise.groups.length
-          ? named(
+          ? labelled(
               exercise.groups[roundIndex].stations.map((s) => s.stationIndex),
+              asCodes: codes,
             )
-          : named([roundIndex]),
+          : labelled([roundIndex], asCodes: codes),
   };
 }
 

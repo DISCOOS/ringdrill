@@ -695,7 +695,17 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       groups: _groups,
       stations: widget.exercise?.stations ?? const [],
     );
-    final table = rotationRoundTable(preview, l10n.brief);
+    // The same two plan-level facts `ExerciseGroupsSection` above reads, so the
+    // Station column's codes in a `split` round table match the codes the author
+    // just placed the teams against.
+    final table = rotationRoundTable(
+      preview,
+      l10n.brief,
+      stationNumberFormat:
+          PlanService().activePlan?.stationNumberFormat ??
+          StationNumberFormat.dotted,
+      exerciseNumber: (widget.exercise?.index ?? 0) + 1,
+    );
     if (table.isEmpty) return null;
     return RollupSection(id: 'roundTable', label: l10n.roundTable, text: table);
   }

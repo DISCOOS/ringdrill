@@ -207,7 +207,7 @@ class BriefRenderer {
     // — mirrors the ADR-0046 variable cascade applied to cross-references.
     final exerciseRefContext = {
       ...planRefContext,
-      ..._exerciseRefContext(exercise, l10n),
+      ..._exerciseRefContext(plan, exercise, l10n),
     };
     // The *authored* cascaded text, not a resolved string: each station
     // resolves it again in its own scope (ADR-0068), so what travels down is
@@ -565,7 +565,7 @@ class BriefRenderer {
     vars: _effectiveVariables(plan, exercise: exercise),
     refContext: {
       ..._planRefContext(plan),
-      ..._exerciseRefContext(exercise, l10n),
+      ..._exerciseRefContext(plan, exercise, l10n),
     },
   );
 
@@ -847,24 +847,36 @@ Map<String, dynamic> _planRefContext(Plan plan) => {
 /// roleplay refContexts too (see `_buildStationContext`), so
 /// `{{exercise.name}}` also resolves from inside a station or roleplay
 /// field, not just the exercise's own.
-Map<String, dynamic> _exerciseRefContext(Exercise exercise, BriefLabels l10n) =>
-    {
-      'exercise': {
-        'name': exercise.name,
-        'numberOfTeams': exercise.numberOfTeams,
-        'numberOfRounds': exercise.numberOfRounds,
-        'startTime': exercise.startTime.toString(),
-        'endTime': exercise.endTime.toString(),
-        'timeLabel': exerciseTimeLabel(exercise),
-        'durationLabel': exerciseDurationLabel(exercise, l10n),
-        'executionTime': exercise.executionTime,
-        'evaluationTime': exercise.evaluationTime,
-        'rotationTime': exercise.rotationTime,
-        'phaseBreakdown': rotationPhaseBreakdown(exercise),
-        // Derived, so an author never hand-rolls the round times into prose.
-        'roundTable': rotationRoundTable(exercise, l10n),
-      },
-    };
+///
+/// [plan] is read for the two plan-level facts the round table's Station column
+/// needs to print post codes rather than names (`stationNumberFormat` and this
+/// exercise's 1-based number) — see [rotationRoundTable].
+Map<String, dynamic> _exerciseRefContext(
+  Plan plan,
+  Exercise exercise,
+  BriefLabels l10n,
+) => {
+  'exercise': {
+    'name': exercise.name,
+    'numberOfTeams': exercise.numberOfTeams,
+    'numberOfRounds': exercise.numberOfRounds,
+    'startTime': exercise.startTime.toString(),
+    'endTime': exercise.endTime.toString(),
+    'timeLabel': exerciseTimeLabel(exercise),
+    'durationLabel': exerciseDurationLabel(exercise, l10n),
+    'executionTime': exercise.executionTime,
+    'evaluationTime': exercise.evaluationTime,
+    'rotationTime': exercise.rotationTime,
+    'phaseBreakdown': rotationPhaseBreakdown(exercise),
+    // Derived, so an author never hand-rolls the round times into prose.
+    'roundTable': rotationRoundTable(
+      exercise,
+      l10n,
+      stationNumberFormat: plan.stationNumberFormat,
+      exerciseNumber: _exerciseNumber(plan, exercise),
+    ),
+  },
+};
 
 /// Effective *typed* plan variables, keyed by name, at the plan scope
 /// (DESIGN-008 follow-up 11). Delegates to the shared

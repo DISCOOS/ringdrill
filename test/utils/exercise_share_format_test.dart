@@ -3,6 +3,7 @@ import 'package:ringdrill/views/widgets/app_brief_labels.dart';
 import 'package:ringdrill/l10n/app_localizations_en.dart';
 import 'package:ringdrill/l10n/app_localizations_nb.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 
@@ -442,7 +443,9 @@ void _roundTableStationColumnTests() {
     expect(table, contains('| 2 | Løper |'));
   });
 
-  test('split names every station running at once', () {
+  test('split falls back to names when the plan numbering is unknown', () {
+    // Inventing a format would print a code that disagrees with every other surface,
+    // so a caller without the Plan gets names rather than a guess.
     final table = rotationRoundTable(
       base(
         mode: ExerciseMode.split,
@@ -464,6 +467,69 @@ void _roundTableStationColumnTests() {
     );
     expect(table, contains('| 1 | Fisker, Løper |'));
     expect(table, contains('| 2 | Løper |'));
+  });
+
+  test('split labels its posts by code when the plan numbering is known', () {
+    // A split round runs several posts at once, and spelling each name out made a
+    // cell wide enough to push the clock columns off the page. The code is what the
+    // reader looks the post up by, and every other surface already labels it that way.
+    final table = rotationRoundTable(
+      base(
+        mode: ExerciseMode.split,
+        groups: const [
+          ExerciseGroup(
+            stations: [
+              GroupSlot(stationIndex: 0, teams: [0]),
+              GroupSlot(stationIndex: 1, teams: [1]),
+            ],
+          ),
+          ExerciseGroup(
+            stations: [
+              GroupSlot(stationIndex: 1, teams: [0, 1]),
+            ],
+          ),
+        ],
+      ),
+      l10n,
+      stationNumberFormat: StationNumberFormat.alpha,
+      exerciseNumber: 2,
+    );
+    expect(table, contains('| 1 | 2a, 2b |'));
+    expect(table, contains('| 2 | 2b |'));
+    // The names they replace are gone, not merely prefixed.
+    expect(table, isNot(contains('Fisker')));
+    expect(table, isNot(contains('Løper')));
+  });
+
+  test('together keeps the station name — one post, and the name fits', () {
+    final table = rotationRoundTable(
+      base(mode: ExerciseMode.together),
+      l10n,
+      stationNumberFormat: StationNumberFormat.alpha,
+      exerciseNumber: 2,
+    );
+    expect(table, contains('| 1 | Fisker |'));
+    expect(table, contains('| 2 | Løper |'));
+  });
+
+  test('exerciseNumber defaults to the exercise\'s own position', () {
+    // Every view-layer caller relies on this: only an editor previewing a freshly
+    // derived exercise has to pass the number explicitly.
+    final table = rotationRoundTable(
+      base(
+        mode: ExerciseMode.split,
+        groups: const [
+          ExerciseGroup(
+            stations: [
+              GroupSlot(stationIndex: 0, teams: [0, 1]),
+            ],
+          ),
+        ],
+      ).copyWith(index: 2),
+      l10n,
+      stationNumberFormat: StationNumberFormat.alpha,
+    );
+    expect(table, contains('| 1 | 3a |'));
   });
 
   test('the separator row keeps the column count', () {
