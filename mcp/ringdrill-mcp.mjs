@@ -25,7 +25,7 @@ import { createInterface } from 'node:readline';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createCliBackend, resolveCli, warnIfStale } from './backend-cli.mjs';
+import { createCliBackend, resolveCli } from './backend-cli.mjs';
 import { handleMessage, toolsFor } from './tools.mjs';
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -38,7 +38,6 @@ const log = (message) => process.stderr.write(`ringdrill-mcp: ${message}\n`);
 
 const resolved = resolveCli(repoRoot, { log });
 log(`using CLI from ${resolved.source}`);
-warnIfStale(repoRoot, resolved, log);
 
 /// Reads a guide resource out of the checkout this server runs from (ADR-0065).
 ///

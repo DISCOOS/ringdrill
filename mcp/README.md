@@ -106,10 +106,16 @@ the shell reads it as a script, and the caller gets
 way, which a platform-name check alone would not catch. A rejected candidate is
 named on stderr with the reason, so falling back to the slow path is visible.
 
-The server also writes which CLI it chose to stderr, and warns when a built binary
-is older than the newest `.dart` file — the twenty-minutes-testing-stale-code
-footgun. stderr, never stdout: stdout is the JSON-RPC stream, and a stray write to
-it corrupts the transport.
+The server also writes which CLI it chose to stderr. stderr, never stdout: stdout is
+the JSON-RPC stream, and a stray write to it corrupts the transport.
+
+It used to warn when the built binary was older than the newest `.dart` file too —
+the twenty-minutes-testing-stale-code footgun. That warning is gone. It compared
+mtimes across all of `lib/`, so any widget edit and every `make i18n` set it off,
+and the file it named was usually `app_localizations.dart`, which the CLI cannot
+import at all. It was on almost always, which is the same as being off, except that
+it also trained you to skim past the line where the real diagnostics appear. If you
+suspect you are running a stale binary, `make mcp`.
 
 ## Requirements
 

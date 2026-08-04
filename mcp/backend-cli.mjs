@@ -14,7 +14,7 @@
 // This one keeps the local server's defining property: the document never leaves
 // the machine, and the CLI it runs is the one built from this checkout.
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -97,41 +97,20 @@ export function resolveCli(repoRoot, { log = () => {} } = {}) {
     };
 }
 
-/// Warns when a built binary predates the Dart sources.
-///
-/// The footgun this exists for: edit Dart, forget to rebuild, spend twenty
-/// minutes testing the previous version's behaviour. Cheap to check and it costs
-/// nothing when the binary is current.
-export function warnIfStale(repoRoot, resolved, log) {
-    if (!resolved.path) return;
-    const built = statSync(resolved.path).mtimeMs;
-    let newest = 0;
-    let newestPath = '';
-    const walk = (dir) => {
-        for (const entry of readdirSync(dir, { withFileTypes: true })) {
-            const full = join(dir, entry.name);
-            if (entry.isDirectory()) {
-                walk(full);
-            } else if (entry.name.endsWith('.dart')) {
-                const at = statSync(full).mtimeMs;
-                if (at > newest) {
-                    newest = at;
-                    newestPath = full;
-                }
-            }
-        }
-    };
-    for (const dir of ['lib', 'bin']) {
-        const full = join(repoRoot, dir);
-        if (existsSync(full)) walk(full);
-    }
-    if (newest > built) {
-        log(
-            `the built CLI is older than ${newestPath.slice(repoRoot.length + 1)}. ` +
-                'Run `make mcp` to rebuild, or you are testing stale code.',
-        );
-    }
-}
+// A `warnIfStale` used to live here, warning when the built binary predated the
+// newest .dart under lib/ and bin/. Removed rather than repaired: it walked all of
+// lib/, so any widget edit tripped it, and it compared mtimes, so `make i18n`
+// tripped it again by rewriting app_localizations*.dart with identical content. It
+// printed on essentially every server start, and the file it named was usually
+// app_localizations.dart — which `bin/ringdrill.dart` cannot import at all (rule 7),
+// as its 65-file dependency closure confirms. A warning that is always on is a
+// banner, and one that names an impossible file teaches people to stop reading
+// stderr, which is where the *real* diagnostics go.
+//
+// The same defect in the bundle's staleness check was worth fixing, because there a
+// stale artefact ships to production silently (dea9c3a7). Here the artefact is a
+// local build, the remedy is `make mcp`, and `resolveCli` already reports which CLI
+// it chose — so the cost of noticing late is a rebuild, not an outage.
 
 /// A backend that runs the CLI as a subprocess.
 export function createCliBackend({ cli, cwd }) {
