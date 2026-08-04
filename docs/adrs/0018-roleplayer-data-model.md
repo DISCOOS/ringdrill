@@ -18,9 +18,13 @@ informed: []
 >
 > **Amended by [ADR-0072](./0072-staff-pii-and-account-sync.md) (2026-08-04).**
 > The boundary below is written as though the catalog were the only destination
-> a plan can be uploaded to. Accounts add a second one, so the strip binds
-> *every* upload path, not just publish — and no path syncs a roster at all
-> until ADR-0072's preconditions are met.
+> a plan can be uploaded to. Accounts add a second one, so the boundary is
+> renamed for what it actually is: the **public corpus**, not "our servers".
+> The catalog rule is unchanged and unconditional — `staff/` is stripped on
+> every catalog-bound path, not just publish. A roster *does* travel into the
+> scope of the account that owns the plan, which is the point of co-ownership,
+> and that path has its own store, its own authenticated read and its own
+> entry criteria.
 
 ## Context and problem statement
 

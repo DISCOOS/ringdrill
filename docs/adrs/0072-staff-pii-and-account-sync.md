@@ -6,7 +6,7 @@ consulted: []
 informed: []
 ---
 
-# ADR-0072: Strip staff PII on every upload path, and do not sync a roster until a later ADR earns it
+# ADR-0072: Let a roster reach the account that owns the plan, and keep the catalog stripped
 
 ## Context and problem statement
 
@@ -15,233 +15,278 @@ boundary: role data lives in `roleplays/` and is publishable, the humans live in
 `staff/` and are not, and `drills-upload.js` drops the folder before anything is
 stored. That is the whole of the current privacy story, and it holds for one
 structural reason — **publishing to the catalog is the only path that sends a
-plan to our servers.** One destination, one strip, one place to get it wrong.
+plan to our servers.**
 
-Accounts change that. [ADR-0024](./0024-account-and-identity-model.md) and
-[ADR-0025](./0025-authorization-and-publish-policy.md) introduce an owning
-Account, and the obvious next feature after "this plan is mine" is "…and I can
-get it back on my other device". That is a *second* reason to send a plan to our
-infrastructure, and it is one where dropping `staff/` looks like a bug rather
-than a safeguard: a planner syncing their own plan expects the roster to come
-with it.
+Accounts break that assumption in a way that is easy to get backwards. The
+tempting reading is "the strip protects personal data, so keep stripping
+everywhere". That mistakes the mechanism for the goal. A roster is not
+incidental content that leaked into the archive; it is *operational data for
+the people running the exercise* — who is on which post, which number to ring
+when someone does not answer their radio. Two coordinators co-owning a plan
+([ADR-0024](./0024-account-and-identity-model.md)'s central use case: "two
+coordinators in the same SAR team must be able to publish updates to the same
+plan without sharing credentials") need the same phone list. An account that
+carries the plan but not the roster would leave the co-owner re-typing thirty
+people by hand, which is not co-ownership of anything that matters.
 
-Two things make this sharper than it was when ADR-0018 was written:
+So the boundary is not "PII never leaves the device". It is **the catalog** — a
+public, wiki-model corpus that anyone can read. An account is the opposite kind
+of place: a named, bounded set of people who are already working this exercise
+together. Sharing a roster inside it is the expected behaviour, not a leak.
 
-* **The roster grew.** DESIGN-011 widened `Actor` — the human cast to a markør —
-  into `Staff`, *anyone* working the exercise, with a mandatory role and the
-  contact details you need to reach them on the day. More people, more phone
-  numbers, and most of them never touch the app.
-* **The strip is one call site.** `stripPiiFolders`
-  ([`drill-pii.js`](../../netlify/functions/lib/drill-pii.js)) is pure and
-  well-tested, but only `drills-upload.js` calls it. Nothing structural stops a
-  new endpoint that accepts archive bytes from skipping it, and a sync endpoint
-  is exactly the kind of endpoint that would.
+One fact makes this more than a policy question. Today, *stored server-side*
+and *readable by anyone* are the same state:
 
-The decision this forces is not "how do we sync rosters safely". It is the
-prior question: **does account sync carry staff PII at all, and what keeps the
-catalog strip honest once a second upload path exists.**
-[`../plans/account-rollout.md`](../plans/account-rollout.md) records this as
-work to be done "when phase 3 or 5 gets close", with the opt-in question left
-open. It is cheaper to answer now, because the answer decides whether phase 3
-needs a consent surface.
+* `/d/:slug` is served by [`deep-link.js`](../../netlify/functions/deep-link.js),
+  which checks no `published` flag and no credential. Any uploaded slug is
+  downloadable by anyone who knows or guesses it, and the response is CDN-cached.
+* `published` only controls whether a plan is *listed* in
+  [`market-feed.js`](../../netlify/functions/market-feed.js). It is a listing
+  flag, not an access control.
+
+There is therefore no such thing today as "upload it but keep it private". The
+strip is not one safeguard among several — it is the only thing between a
+roster and a public URL. Enabling roster sync is consequently not "stop
+stripping on one path"; it requires a storage location and a read path that do
+not exist yet. That, rather than the paperwork, is the real precondition, and
+it is what this ADR has to decide before
+[`../plans/account-rollout.md`](../plans/account-rollout.md) can sequence
+anything.
 
 ## Decision drivers
 
-* **The strip must not be able to rot.** The failure mode is silent: PII reaches
-  a blob, nothing errors, no test fails, and we find out from someone else. A
-  rule that depends on remembering to call a function has already failed once
-  in this repo's history — the `actors` → `staff` denylist rename in
-  `computeContentHash` (ADR-0018, "One trap worth recording") would have
-  published real names with nothing failing.
-* **The data subjects are not the user.** Someone enters a colleague's name and
-  phone number. That colleague has rights over that data — access, correction,
-  deletion — and no account, no relationship with us, and no way to exercise
-  them today.
-* **Nothing legal is in place.** There is no privacy statement covering
-  server-side personal data, because until now there was none to cover. No
-  stated legal basis, no retention window, no deletion path that reaches
-  backups, no sub-processor list.
-* **One maintainer.** Whatever is committed to has to be *operable*. A retention
+* **A roster has to reach the people co-running the exercise.** This is the
+  point of account co-ownership. A design that strips it everywhere protects
+  nobody and breaks the feature.
+* **The catalog is public and must stay stripped.** Publishing means anyone can
+  read it. No policy value, no account, and no future feature changes that.
+* **The two paths must not be able to collapse.** The failure mode is silent:
+  PII reaches a publicly-readable blob, nothing errors, no test fails, and we
+  find out from someone else. This repo has already had one near-miss of that
+  exact shape — the `actors` → `staff` denylist rename in `computeContentHash`
+  (ADR-0018, "One trap worth recording") would have published real names with
+  nothing failing.
+* **The data subjects are mostly not the user.** Someone enters a colleague's
+  name and number. Inside an account that colleague is usually one of the
+  people the account exists for, which is what makes the sharing reasonable —
+  but it is not consent, and it does not remove their rights over the data.
+* **One maintainer.** Whatever is committed to must be operable. A retention
   promise we cannot honour is worse than not storing the data.
-* **Offline-first (ADR-0024).** A plan is fully usable with its roster on-device
-  and nothing synced. Peer-to-peer `.drill` transfer already moves rosters
-  between devices and is unaffected by anything here.
-* **Accounts should not wait on a privacy programme.** Phases 1–5 protect
-  *plans* from unauthorised writes. That is worth shipping on its own, and it
-  does not need server-side rosters to be worth shipping.
+* **Offline-first ([ADR-0024](./0024-account-and-identity-model.md)).** A plan
+  stays fully usable with its roster on-device and nothing synced. Peer-to-peer
+  `.drill` transfer already moves rosters between devices and is untouched by
+  anything here.
 
 ## Considered options
 
-### For whether account sync carries `staff/`
+### For where a roster may live
 
-* **Option A — The strip is unconditional; no path syncs a roster (chosen).**
-  Every endpoint that accepts `.drill` bytes drops `staff/`, catalog and future
-  account sync alike. Rosters stay device-local and travel peer-to-peer. Server
-  never holds staff PII, so none of the legal apparatus is on the critical path
-  for accounts.
-* **Option B — Sync carries the roster whenever the plan is account-owned.**
-  The policy choice (`account`) implies the data choice. One less decision for
-  the user.
-* **Option C — Per-plan opt-in, with its own consent surface.** The owner turns
-  roster sync on per plan, after being told what is stored and for how long.
-* **Option D — Sync an encrypted roster the server cannot read.** Client-side
-  key, opaque blob server-side.
+* **Option A — Strip on every path; rosters never leave the device.** One rule,
+  nothing to state or retain, no legal work on the critical path.
+* **Option B — A roster travels into the scope of the account that owns the
+  plan; the catalog path strips unconditionally (chosen).** Two destinations,
+  two rules, drawn where the trust boundary actually is.
+* **Option C — The roster travels wherever the plan travels, with per-field
+  redaction at the catalog edge.** One path, one archive, fields marked
+  publishable or not.
+* **Option D — Client-encrypted roster, opaque to the server.** The account's
+  members hold the key; we store ciphertext.
 
-### For how the strip is kept honest
+### For how the catalog path is kept stripped once a second path exists
 
-* **Option E — Strip at the ingest boundary, enumerated by a test (chosen).**
-  Reading archive bytes out of a request is one shared helper, the strip is
-  inside it, and a test enumerates the functions that accept archive bytes and
-  fails when one of them does not go through it.
-* **Option F — Keep the per-endpoint call, add a code-review rule.** Status quo
-  plus vigilance.
-* **Option G — Validate after write.** A scheduled job scans stored blobs for
-  `staff/` entries and alarms.
+* **Option E — Separate stores, separate read paths, enforced by a test
+  (chosen).** Catalog blobs and account-scoped blobs live in different stores
+  reached by different functions. The catalog write path applies the strip
+  inside its shared ingest helper; the account read path requires
+  authentication and is never CDN-cached. A test asserts both.
+* **Option F — One store, an access flag on the blob.** The existing `drills`
+  store gains a field; handlers consult it.
+* **Option G — Post-write scanning.** A scheduled job looks for `staff/` in
+  publicly-readable blobs and alarms.
 
 ## Decision outcome
 
-Chosen: **A (unconditional strip, no roster sync)** enforced by **E (strip at
-the ingest boundary, with an enumerating test)**.
+Chosen: **B (roster reaches the owning account, catalog stays stripped)**,
+enforced by **E (separate stores and read paths, with a test)**.
 
-A wins because it is the only option that keeps the privacy story *structural*
-rather than procedural, and because it decouples two things that were about to
-become coupled for no good reason. Protecting a published plan from strangers
-and storing a colleague's phone number on a server are unrelated features that
-happen to arrive in the same release train. B couples them silently — a user
-picking `account` to stop strangers editing their plan has not thereby agreed
-to us storing their team's contact details, and would have no reason to expect
-it. C is the right *eventual* shape but pays the full legal cost up front for a
-feature nobody has asked for yet. D is genuinely attractive and defers the legal
-question by making the data unreadable to us, but key management across devices
-(and key loss = roster loss) is a larger project than the roster is worth today.
+B wins because it puts the boundary where the trust boundary is. A is the
+version of this ADR I drafted first, and it is wrong: it protects the roster
+from the people who need it and calls that a privacy win, while leaving
+co-ownership useful only for plans nobody staffs. C fails on the catalog side —
+per-field redaction is exactly the "inspect every field of every record"
+approach that ADR-0018 rejected as Option A, and it re-establishes the failure
+mode the folder boundary was created to eliminate. D is genuinely attractive
+and stays on the table as a later hardening, but key distribution across
+account members, and key loss meaning permanent roster loss, is a larger
+project than the first version of this feature can carry.
 
-E wins because F is what we have now and its failure mode is invisible. G finds
-the leak after it has happened, which for personal data is too late — worth
-adding later as a belt-and-braces check, not as the mechanism.
+E wins because F is one boolean away from a public roster, and because CDN
+caching is decided per route: a flag on a blob cannot retract a response the
+CDN has already cached, whereas a route that never caches cannot leak one.
+G is worth having as a second line but detects a disclosure that already
+happened, which for personal data is too late to be the mechanism.
 
-**This answers the rollout plan's open question directly: staff PII sync is
-neither opt-in nor implied. It does not exist.** Phase 3 and phase 5 need no
-consent surface, no privacy statement, and no data-subject tooling, because
-nothing they ship sends a roster anywhere.
+### The rule
 
-### What "unconditional" means concretely
+| Destination | `staff/` | Read path |
+|---|---|---|
+| Catalog (`published` or not — `/d/:slug`, feed, `/i/:slug`, MCP) | **Stripped, always** | Public, CDN-cached, as today |
+| The owning account's own scope | **Travels with the plan** | Authenticated, members of that account only, `Cache-Control: private, no-store` |
+| Another account via `AccessPolicy.shared` | **Stripped** by default | Plan content only — see below |
 
-The rule is a property of *accepting a `.drill` archive over HTTP*, not a
-property of the publish endpoint:
+Three things follow, and each is a decision rather than an implementation
+detail:
 
-* Any Netlify function that reads archive bytes from a request body obtains them
-  through the shared ingest helper, and that helper applies `stripPiiFolders`
-  before returning them. There is no way to get raw request bytes and skip it
-  short of writing a new reader.
-* `PII_FOLDERS` stays the single list, and keeps stripping **both** `actors/`
-  and `staff/` permanently, for the deploy-cadence reason DESIGN-011 already
-  recorded.
-* A test enumerates `netlify/functions/*.js`, identifies those that read a
-  request body as archive bytes, and asserts each one routes through the helper.
-  It is a coarse test on purpose: it fails on a *new* endpoint written by
-  someone who has not read this ADR, which is the case that matters.
+**1. Account scope is not the catalog with a flag on it.** Account-synced
+archives live in their own store, written and read by their own functions.
+Nothing under `/d/:slug`, `/i/:slug`, the feed, or `/mcp` can reach them, and
+the account read path is never CDN-cached. This is what makes "uploaded but not
+public" a state that can exist at all — today it cannot, because `deep-link.js`
+serves any uploaded slug to anyone.
 
-Nothing about the client changes. The app keeps `staff/` in locally stored and
-exported archives; peer-to-peer transfer (USB, AirDrop, email) is out of scope
-here as it always has been.
+**2. Roster travel is implied by account ownership, not a per-plan toggle.**
+A plan owned by an account syncs whole, roster included, to the members of that
+account. A separate "also sync the roster" switch would be a confusing question
+to ask — the answer is yes every time for a plan a team is actually running,
+and the switch would mostly serve to make the default look deliberate. What
+carries the transparency load instead is telling the account's members plainly,
+once, what an account holds. This answers the open question that
+[`../plans/account-rollout.md`](../plans/account-rollout.md) has carried since
+May.
 
-### When a roster does need to reach a server
+**3. `shared` does not carry the roster.** `AccessPolicy.shared`
+([ADR-0025](./0025-authorization-and-publish-policy.md), phase 5) grants write
+access on a plan to a *different* account — a different set of people, and in
+data-protection terms a different controller. Plan content crosses that
+boundary; the roster does not. Extending it is a deliberate later decision with
+its own consent story, not something to fall out of a permission grant. Until
+then the cross-account write path strips, same as the catalog path.
 
-This ADR does not forbid roster sync forever; it removes it from the account
-rollout's critical path. A later ADR may introduce it, and inherits these
-preconditions — all of them, before any code:
+### What the catalog path keeps
 
-1. A published privacy statement naming what personal data is stored, the legal
-   basis, where it is hosted, and the retention window.
-2. A deletion path that actually deletes: plan deletion removes the roster
-   server-side, and the stated window covers backups.
-3. An answer for data subjects who are not users — how a person on someone
-   else's roster asks what is held about them, corrects it, or has it removed.
-4. Data residency settled (EU), and a sub-processor list covering hosting,
-   backups and any support tooling that can read the data.
-5. Per-plan opt-in (Option C's shape), never implied by a policy choice.
+`PII_FOLDERS` stays the single list, and keeps stripping **both** `actors/` and
+`staff/` permanently, for the deploy-cadence reason DESIGN-011 already
+recorded. Every function that accepts `.drill` bytes destined for the catalog
+obtains them through the shared ingest helper, and that helper applies the
+strip before returning them — there is no way to get raw request bytes on the
+catalog path and skip it short of writing a new reader. A test enumerates the
+functions that read archive bytes and asserts each catalog-bound one routes
+through the helper, and that no account-scoped archive is reachable from a
+public route. It is a coarse test on purpose: it should fail for someone adding
+an endpoint who has not read this ADR.
 
-Until all five hold, the strip stays unconditional. If sync ships before them,
-this ADR is superseded, not quietly outgrown.
+### What shipping roster sync requires
+
+These are not deferrals. They are the gate on the phase that ships sync, and
+they are real work rather than paperwork:
+
+1. **An authenticated, uncached read path** and a store that no public route
+   can reach. Without this the rest is moot, because today every stored byte is
+   public.
+2. **A published privacy statement** naming what personal data an account
+   holds, the legal basis, where it is hosted, and the retention window.
+3. **Deletion that actually deletes.** Removing a plan, or an account, removes
+   the roster server-side within the stated window, backups included.
+4. **A route for data subjects who are not users** — someone on a colleague's
+   roster asking what is held, correcting it, or having it removed.
+5. **EU residency settled, and a sub-processor list** covering hosting, backups
+   and any support tooling that can read the data.
+
+Roster sync is not one of the six phases in the rollout plan; those phases are
+about authorising *catalog writes*. It is the first feature the account model
+unlocks, it lands as its own piece of work after phase 5 makes multi-member
+accounts real, and the five items above are its entry criteria.
 
 ### Relationship to ADR-0018
 
 This amends [ADR-0018](./0018-roleplayer-data-model.md)'s PII boundary, which is
-written as though the catalog were the only destination. The boundary itself is
-unchanged — `staff/` is PII and does not leave the device through our servers.
-What changes is its scope: it binds every upload path, not the publish endpoint.
-ADR-0018 keeps its status; this ADR is the amendment of record.
+written as though the catalog were the only destination a plan can be uploaded
+to. The catalog rule is unchanged and unconditional. What changes is that the
+boundary is now named for what it is — *public corpus* rather than *our
+servers* — and a second, private destination is admitted alongside it.
 
 ### Consequences
 
-* Good: The account rollout stops being blocked on a privacy programme. Phases
-  1–5 ship without a privacy statement covering server-side rosters, because
-  there are none.
-* Good: The strip becomes structural. A new endpoint cannot forget it without
-  failing a test, which is the same class of protection the folder boundary
-  gives the model.
-* Good: One less decision in the phase 3 publish dialog. The rollout plan's
-  open question closes without a UI.
-* Good: The legal preconditions are written down while the reasons for them are
-  fresh, rather than reconstructed under delivery pressure later.
-* Bad: "Get my plan back on a new device" restores the plan without its roster.
-  For a planner who has entered thirty people, that is a real gap, and the
-  honest answer for now is "export the `.drill` and move it yourself".
-* Bad: The enumerating test is heuristic. It recognises today's shape of
-  "reads archive bytes"; a sufficiently different endpoint could evade it.
-  It narrows the failure mode rather than closing it.
-* Bad: Deferring encrypted sync (Option D) means that when roster sync is
-  finally wanted, the cheap version is server-readable and carries the whole
-  legal cost. The technically better answer stays unbuilt.
+* Good: Co-ownership works on the thing teams actually coordinate on. The
+  second coordinator gets the roster, which is most of why they wanted the
+  shared plan.
+* Good: The catalog rule gets stronger, not weaker. It moves from "the publish
+  endpoint remembers to strip" to "no catalog-bound byte reaches a store
+  without passing the strip", enforced by a test.
+* Good: "Uploaded but not public" becomes a state the backend can actually
+  represent. That is worth having on its own — today `published` is a listing
+  flag that reads like an access control, which is its own latent trap.
+* Good: The `shared` boundary is decided before phase 5 designs a UI around it,
+  rather than discovered when someone notices a roster crossed to another
+  organisation.
+* Bad: The privacy programme is back on the critical path, correctly. An
+  earlier draft of this ADR removed it by removing the feature; that was a
+  cheaper plan for a worse product. Roster sync costs a privacy statement, a
+  deletion path that reaches backups, and a data-subject route before it can
+  ship at all.
+* Bad: Two stores and two read paths is more backend surface than one, and the
+  cheap mistake — reusing the catalog store "just for now" — is exactly the one
+  that leaks. The test is a guard, not a guarantee.
+* Bad: Deferring encrypted sync (D) means the first version is server-readable,
+  and every item on the gate list exists because of that. Revisiting D later
+  means migrating stored rosters, not just adding a feature.
+* Bad: Until sync ships, a co-owner still re-types the roster or passes a
+  `.drill` by hand. The gap this ADR names is not closed by naming it.
 
 ## Pros and cons of the options
 
-### A. Unconditional strip, no roster sync (chosen)
+### A. Strip everywhere, rosters never leave the device
 
-* Good: Server never holds staff PII. Nothing to state, retain, or delete.
-* Good: One rule, no per-plan state, no consent surface, no way for a user to
-  be surprised by what got uploaded.
-* Bad: Sync is visibly incomplete — the roster is the one thing that does not
-  come back.
+* Good: Nothing to state, retain, or delete. No legal work anywhere.
+* Good: One rule, impossible to get wrong.
+* Bad: Mistakes the mechanism for the goal. The roster is operational data for
+  the people co-running the exercise, and an account is precisely the bounded
+  context where sharing it is reasonable.
+* Bad: Makes account co-ownership hollow for any plan with real staffing.
 
-### B. Roster syncs whenever the plan is account-owned
+### B. Roster reaches the owning account; catalog stripped (chosen)
 
-* Good: Zero UI. Sync does what a user naively expects.
-* Bad: Couples a *security* choice to a *privacy* consequence the user was
-  never shown. Choosing `account` to keep strangers out is not consent to
-  store a colleague's phone number.
-* Bad: Puts the full legal apparatus on phase 3's critical path.
+* Good: The boundary sits where the trust boundary sits.
+* Good: The catalog rule stays absolute and gets structurally stronger.
+* Bad: Two destinations means two sets of rules to keep straight, forever.
+* Bad: Puts the privacy programme on the critical path for the sync feature.
 
-### C. Per-plan opt-in with its own consent surface
+### C. One path, per-field redaction at the catalog edge
 
-* Good: Explicit, revocable, and the right long-term shape.
-* Bad: Needs the privacy statement, retention and deletion story *before* the
-  toggle can honestly be shown. Same critical-path cost as B, plus UI.
+* Good: One archive, one upload path, no second store.
+* Bad: Re-establishes ADR-0018's rejected Option A — the upload handler
+  inspects every field of every record instead of dropping a folder, and PII
+  leakage becomes procedural rather than structural.
+* Bad: A new PII-bearing field added anywhere leaks by default.
 
-### D. Client-encrypted roster, opaque to the server
+### D. Client-encrypted roster
 
-* Good: Sidesteps most of the legal question — we hold ciphertext.
-* Bad: Cross-device key distribution and key loss (roster gone, unrecoverably)
-  are a larger project than the feature.
-* Bad: "We cannot read it" still needs stating publicly to be worth anything.
+* Good: We hold ciphertext, which shortens most of the gate list.
+* Good: Survives a store compromise.
+* Bad: Key distribution across account members, and key loss meaning
+  unrecoverable roster loss, is a bigger project than the first version.
+* Bad: "We cannot read it" still has to be stated publicly to be worth
+  anything, so it does not remove the privacy statement.
 
-### E. Strip at the ingest boundary, enumerated by a test (chosen)
+### E. Separate stores and read paths, enforced by a test (chosen)
 
 * Good: The unsafe path stops being reachable by accident.
-* Good: Fails for the person most likely to get it wrong — someone adding an
-  endpoint who has not read ADR-0018.
-* Bad: Heuristic. Recognises a shape, not an intent.
+* Good: Caching is decided per route, so a private route cannot leak a cached
+  response.
+* Bad: More backend surface, and the test recognises a shape rather than an
+  intent.
 
-### F. Per-endpoint call plus a review rule
+### F. One store, an access flag on the blob
 
-* Good: No work.
-* Bad: This is the status quo, and its failure mode is silent.
+* Good: Least new infrastructure.
+* Bad: One boolean between a roster and a public URL.
+* Bad: Cannot retract a response the CDN already cached.
 
 ### G. Post-write scanning
 
-* Good: Catches whatever the ingest rule misses.
-* Bad: Detects a disclosure that already happened. Right as a second line, wrong
-  as the first.
+* Good: Catches what the ingest rule misses.
+* Bad: Detects a disclosure that already happened. A second line, not the
+  mechanism.
 
 ## Links
 
@@ -251,15 +296,20 @@ ADR-0018 keeps its status; this ADR is the amendment of record.
   [ADR-0014](./0014-server-assigned-drill-version.md),
   [ADR-0018](./0018-roleplayer-data-model.md) — amended by this ADR,
   [ADR-0024](./0024-account-and-identity-model.md),
-  [ADR-0025](./0025-authorization-and-publish-policy.md)
+  [ADR-0025](./0025-authorization-and-publish-policy.md),
+  [ADR-0063](./0063-per-field-brief-visibility.md) — who sees contact details
+  *within* a plan on a device, a different axis from who can fetch the plan.
 * Related designs:
   [DESIGN-011](../design/011-person-with-role-and-roster-model.md) — widened
   `Actor` to `Staff` and grew what the roster holds.
 * Related plans:
   [`account-rollout.md`](../plans/account-rollout.md) — closes its open
-  question on staff PII sync.
+  question on staff PII sync, and names roster sync as post-phase-5 work.
 * Related code:
   `netlify/functions/lib/drill-pii.js` (`PII_FOLDERS`, `stripPiiFolders`),
   `netlify/functions/drills-upload.js` (today's only call site),
+  `netlify/functions/deep-link.js` (serves `/d/:slug` with no publish check
+  and no credential — why "stored" currently means "public"),
+  `netlify/functions/market-feed.js` (`published` is a listing flag),
   `lib/models/plan.dart` (`computeContentHash` denylist),
   `lib/data/drill_file.dart` (writes `staff/` locally, unaffected)

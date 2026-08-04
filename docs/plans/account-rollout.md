@@ -26,8 +26,10 @@ This document tracks the rollout against those decisions.
 >   downstream consumer of this rollout — see "Downstream consumers".
 > * **[ADR-0072](../adrs/0072-staff-pii-and-account-sync.md)** (2026-08-04)
 >   answered the staff-PII question that used to sit open at the bottom of
->   this file: rosters are not synced at all, so no phase here needs a privacy
->   statement or a consent surface.
+>   this file. A roster does belong inside the account that owns the plan;
+>   the catalog stays stripped unconditionally. Roster sync needs a private
+>   store and an authenticated read path that do not exist yet, so it lands
+>   after phase 5 as its own work rather than inside a phase here.
 >
 > Code references throughout were also refreshed for the Program→Plan rename
 > ([ADR-0055](../adrs/0055-programid-planid-wire-back-compat.md)).
@@ -50,10 +52,14 @@ This document tracks the rollout against those decisions.
   protection is the slug.
 * Login walls on public reads. `/api/market/feed` and `/d/:slug` remain
   public.
-* Server-side storage of staff PII. Rosters stay on the device and the
-  strip stays unconditional
-  ([ADR-0072](../adrs/0072-staff-pii-and-account-sync.md)). "Account sync"
-  in this plan means plans, never people.
+* Roster sync. A plan's `staff/` folder *does* belong in the scope of the
+  account that owns it
+  ([ADR-0072](../adrs/0072-staff-pii-and-account-sync.md)) — that is most of
+  why a co-owner wants the shared plan — but it needs a private store, an
+  authenticated read path and a privacy statement, none of which exist. It
+  lands after phase 5, on its own, against ADR-0072's entry criteria. The
+  six phases below are about authorising *catalog writes*, where the strip
+  stays unconditional.
 
 An earlier draft listed "secure refresh-token storage beyond
 `SharedPreferences`" as a non-goal. That is wrong against
@@ -88,10 +94,11 @@ seed the data model.
   `wiki` as an alias on read for one release, since the serialized name is
   being renamed.
 * Move the PII strip from `drills-upload.js`'s call site into the shared
-  ingest path, so every function that reads archive bytes goes through it,
-  and add the test that enumerates those functions
+  ingest path, so every catalog-bound function that reads archive bytes goes
+  through it, and add the test that enumerates those functions
   ([ADR-0072](../adrs/0072-staff-pii-and-account-sync.md)). Phase 1 is where
-  a second server-side write path first becomes plausible.
+  a second server-side write path first becomes plausible, and the catalog
+  rule has to be structural before that path exists.
 * Telemetry: log per-endpoint counts of `anonymous` vs `authenticated`
   uploads, behind the existing Sentry consent gate
   ([ADR-0006](../adrs/0006-sentry-behind-consent-gate.md)).
@@ -345,34 +352,44 @@ covers the happy path on each phase.
 * Update `AGENTS.md` to point at `AuthService` as the canonical
   identity source for client code once phase 2 ships.
 
-## Staff PII — settled, and off this plan's critical path
+## Staff PII — decided, and scoped out of these six phases
 
 This section used to argue that account-backed sync would carry the staff
 folder server-side, and that a privacy statement, a legal basis, retention,
 deletion and a sub-processor list therefore had to land somewhere around
-phase 3 or 5. That argument was right, and
-[ADR-0072](../adrs/0072-staff-pii-and-account-sync.md) resolves it by
-removing the premise: **no path syncs a roster.** The strip becomes
-unconditional across every endpoint that accepts `.drill` bytes, not just
-`drills-upload`, and the five legal preconditions are written down as a debt
-that a *future* sync ADR inherits in full.
+phase 3 or 5. That argument was right.
+[ADR-0072](../adrs/0072-staff-pii-and-account-sync.md) settles *where* the
+boundary sits: the catalog is public and stays stripped unconditionally, and
+a roster does travel into the scope of the account that owns the plan,
+because that is the co-ownership use case ADR-0024 was written for.
 
-What that changes for this plan:
+The reason it is not a phase here is concrete rather than legal. Today
+**stored server-side and publicly readable are the same state**:
+[`deep-link.js`](../../netlify/functions/deep-link.js) serves `/d/:slug` with
+no `published` check and no credential, CDN-cached, and `published` only
+controls listing in the feed. So roster sync is not "stop stripping on one
+path" — it needs a store no public route can reach and an authenticated,
+uncached read path, neither of which exists. That is backend work of its
+own, gated on ADR-0072's five entry criteria, and it lands after phase 5
+makes multi-member accounts real.
+
+What that means for the six phases below:
 
 * **Phase 3 needs no consent surface.** The publish dialog gets policy
-  controls and nothing else. No "also sync my roster" toggle, no disclosure
-  copy, no data-subject tooling.
-* **Phase 5 needs no per-organisation data-processing story.** Members share
-  plans, not people.
+  controls and nothing else. Nothing in phases 1–6 sends a roster anywhere,
+  so there is no disclosure to write yet.
+* **Phase 5 designs the `shared` UI knowing the answer.** Cross-account
+  delegation grants write access to plan *content*; the roster does not
+  cross to another account. Decided in ADR-0072 before the picker exists,
+  rather than discovered afterwards.
 * **One item is added to phase 1**: move the strip from `drills-upload.js`'s
-  call site into the shared ingest path, and add the test that enumerates the
-  functions accepting archive bytes. Phase 1 is where a second server-side
-  write path first becomes plausible, so it is the right phase to make the
-  boundary structural rather than remembered.
+  call site into the shared ingest path, and add the test that enumerates
+  the functions accepting archive bytes. Phase 1 is where a second
+  server-side write path first becomes plausible, so it is the right moment
+  to make the catalog rule structural rather than remembered.
 
-If roster sync is ever wanted, it is a new ADR that supersedes ADR-0072 and
-carries the whole legal apparatus with it. It is not an increment on any
-phase below.
+Roster sync itself is tracked against ADR-0072, not against a phase number
+here.
 
 ## Downstream consumers
 
