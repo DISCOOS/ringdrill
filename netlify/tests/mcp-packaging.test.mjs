@@ -34,8 +34,12 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const ENDPOINT = "https://api.ringdrill.app/mcp";
 
 /// Packages `netlify/functions/mcp.js` the way a deploy does and returns the
-/// bundler's own result — `.path` is the unpacked directory, the equivalent of
-/// `/var/task`, and `.trafficRules` is the rate limit it read out of the source.
+/// bundler's own result, whose `.path` is the unpacked directory — the equivalent of
+/// `/var/task`.
+///
+/// Note that the tool calls below run through the real default export, so they meet
+/// the real rate limiter with no Blobs environment behind it. It degrades open by
+/// design (lib/mcp-rate-limit.js), which is what keeps this suite about packaging.
 ///
 /// `archiveFormat: "none"` skips the zip step, so the result can be inspected and
 /// imported directly. The function config comes from the real `netlify.toml` via
@@ -129,45 +133,6 @@ test("the package contains every file the function reads at runtime", async () =
             `${relative} is missing from the deployed package`,
         );
     }
-});
-
-test("the bundler still translates the function's rateLimit declaration", async () => {
-    // WHAT THIS DOES NOT PROVE: that the endpoint is rate limited. It was written
-    // believing it did, and it passed while production accepted 100 requests in 3
-    // seconds without a single 429.
-    //
-    // There are three layers, and this only reaches the second. The `config` export
-    // is a request; zip-it-and-ship-it has to recognise it and translate it into
-    // `trafficRules` (asserted here); and then a deploy has to *register* those
-    // rules, which happens in post-processing — a stage the CLI deploy this site
-    // uses never runs. So the artefact is correct and the rule is inert. The
-    // enforced copy lives in netlify.toml's `[redirects.rate_limit]` blocks, and
-    // only a live burst against the deployed origin proves those work.
-    //
-    // Still worth keeping: it catches a typo'd field name, which would leave the
-    // export looking right in the source while the bundler silently ignored it —
-    // and it is what would break first if the declaration were mangled ahead of a
-    // future deploy path that does honour it.
-    const { trafficRules } = await packaged;
-
-    assert.equal(
-        trafficRules?.action?.type,
-        "rate_limit",
-        () =>
-            "the packaged function declares no rate limit — check the `config` " +
-            `export in netlify/functions/mcp.js (got ${JSON.stringify(trafficRules)})`,
-    );
-
-    const { rateLimitConfig, aggregate } = trafficRules.action.config;
-    assert.equal(rateLimitConfig.windowLimit, 60);
-    assert.equal(rateLimitConfig.windowSize, 60);
-
-    // Per-caller, not one shared ceiling. Dropping "ip" here would still produce a
-    // valid rule, and it would rate-limit every author collectively.
-    assert.deepEqual(
-        aggregate.keys.map((k) => k.type).sort(),
-        ["domain", "ip"],
-    );
 });
 
 test("the compiler tools work in the deployed layout", async () => {

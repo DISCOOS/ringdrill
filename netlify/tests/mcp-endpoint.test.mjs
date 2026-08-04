@@ -17,6 +17,7 @@ import {
     MAX_DOCUMENT_CHARS,
 } from "../functions/lib/mcp-backend.js";
 import { artifactKey } from "../functions/lib/mcp-artifact-store.js";
+import { createRateLimiter, WINDOW_LIMIT } from "../functions/lib/mcp-rate-limit.js";
 
 const ENDPOINT = "https://api.ringdrill.app/mcp";
 
@@ -70,8 +71,37 @@ function memoryStore() {
     };
 }
 
+/// A limiter with a budget no test will reach, over an in-memory store.
+///
+/// Defaulted for the same reason `artifactCache` is: every metered tool call now goes
+/// through the limiter (lib/mcp-rate-limit.js), so without this each one would reach
+/// for a real Netlify Blobs store. It would fail open and the assertions would still
+/// hold, which is precisely the problem — the suite would pass while silently
+/// exercising the degraded path. Rate-limiting behaviour itself is covered in
+/// mcp-rate-limit.test.mjs and in the 429 test below, which pass their own limiter.
+function unlimited() {
+    const entries = new Map();
+    let sequence = 0;
+    return createRateLimiter({
+        limit: Number.MAX_SAFE_INTEGER,
+        blobs: () => ({
+            async getWithMetadata(key) {
+                const hit = entries.get(key);
+                return hit ? { data: JSON.parse(hit.value), etag: hit.etag } : null;
+            },
+            async set(key, value) {
+                sequence += 1;
+                entries.set(key, { value, etag: `etag-${sequence}` });
+                return { modified: true, etag: `etag-${sequence}` };
+            },
+        }),
+    });
+}
+
 function handlerWith(overrides = {}) {
+    const { limiter = unlimited(), ...backendOverrides } = overrides;
     return createHandler({
+        limiter,
         backend: createCompilerBackend({
             ...fakeCatalog(),
             // Defaulted, not opt-in: hosted `build_plan` writes the archive it hands
@@ -79,7 +109,7 @@ function handlerWith(overrides = {}) {
             // a real Netlify Blobs store. Same reasoning as `fakeCatalog` — a test that
             // is not about retention should not have to know retention happens.
             artifactCache: () => memoryStore(),
-            ...overrides,
+            ...backendOverrides,
         }),
     });
 }
@@ -778,4 +808,101 @@ test("responses are not cacheable", async () => {
         method: "tools/list",
     });
     assert.equal(headers.get("cache-control"), "no-store");
+});
+
+test("a caller over the limit gets 429 with Retry-After, and no compile runs", async () => {
+    // The endpoint half of lib/mcp-rate-limit.js. The unit tests cover the counter;
+    // this covers what a client actually receives, which is the part that has to be
+    // right for an agent to recover on its own.
+    let compiles = 0;
+    const handler = handlerWith({
+        limiter: (() => {
+            const entries = new Map();
+            let sequence = 0;
+            return createRateLimiter({
+                limit: 2,
+                blobs: () => ({
+                    async getWithMetadata(key) {
+                        const hit = entries.get(key);
+                        return hit
+                            ? { data: JSON.parse(hit.value), etag: hit.etag }
+                            : null;
+                    },
+                    async set(key, value, condition = {}) {
+                        const hit = entries.get(key);
+                        if (condition.onlyIfNew === true && hit) {
+                            return { modified: false, etag: hit.etag };
+                        }
+                        if (
+                            condition.onlyIfMatch != null &&
+                            hit?.etag !== condition.onlyIfMatch
+                        ) {
+                            return { modified: false, etag: hit?.etag };
+                        }
+                        sequence += 1;
+                        entries.set(key, { value, etag: `etag-${sequence}` });
+                        return { modified: true, etag: `etag-${sequence}` };
+                    },
+                }),
+            });
+        })(),
+        invoke: async (request) => {
+            compiles += 1;
+            return { schema: { type: "object" }, ok: true, request };
+        },
+    });
+
+    const call = () =>
+        rpc(handler, {
+            jsonrpc: "2.0",
+            id: 1,
+            method: "tools/call",
+            params: { name: "schema", arguments: {} },
+        });
+
+    assert.equal((await call()).status, 200);
+    assert.equal((await call()).status, 200);
+    assert.equal(compiles, 2);
+
+    const refused = await call();
+    assert.equal(refused.status, 429);
+    const retryAfter = Number(refused.headers.get("retry-after"));
+    assert.ok(retryAfter >= 1 && retryAfter <= 60, `retry-after was ${retryAfter}`);
+    // The agent needs something to act on, not just a status code.
+    assert.equal(refused.body.error.code, -32000);
+    assert.match(refused.body.error.message, /rate limit/i);
+    assert.match(refused.body.error.message, new RegExp(String(WINDOW_LIMIT)));
+    // Refused before dispatch: the compiler must not run for a request we reject.
+    assert.equal(compiles, 2, "a refused call must not reach the compiler");
+});
+
+test("introspection stays free when the caller is out of budget", async () => {
+    // A client reconnecting must always be able to discover the server. Metering
+    // initialize/tools/list would turn a rate limit into an outage.
+    const spent = createRateLimiter({
+        limit: 0,
+        blobs: () => ({
+            async getWithMetadata() {
+                return null;
+            },
+            async set() {
+                return { modified: true, etag: "e1" };
+            },
+        }),
+    });
+    const handler = handlerWith({ limiter: spent });
+
+    for (const method of ["initialize", "tools/list"]) {
+        const { status } = await rpc(handler, { jsonrpc: "2.0", id: 1, method });
+        assert.equal(status, 200, `${method} must not be rate limited`);
+    }
+
+    // search_catalog is exempt too: it lists blobs and never enters the compiler.
+    const { status } = await rpc(handler, {
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: { name: "search_catalog", arguments: {} },
+    });
+    assert.equal(status, 200);
 });

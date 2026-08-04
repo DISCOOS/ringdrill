@@ -60,11 +60,11 @@ Noe verktøy for å publisere finnes ikke, og det er med vilje.
 
 Endepunktet er åpent, uten innlogging og gratis. Da trengs det noen kanter for at det skal fortsette å være det:
 
-- **60 forespørsler i minuttet** per bruker. Godt over det en reell arbeidsøkt trenger, og stramt nok at et skript som løper løpsk ikke blir en regning.
+- **60 verktøykall i minuttet** per bruker. Over det får du en HTTP 429 som sier hvor lenge du skal vente, og assistenten bør prøve igjen selv. Å koble til og liste verktøyene er gratis, så en klient kommer alltid fram til serveren, også midt i et utkast.
 - **512 KB** per planfil, og **1 MB** per forespørsel.
 - **10 sekunder** per bygging.
 
-Treffer du grensen mens du jobber med en vanlig plan, si fra. Da er innstillingen feil.
+Grensen per minutt ligger godt over det en reell arbeidsøkt trenger: å sjekke, lage brief og bygge en plan er en håndfull kall per runde. Treffer du den mens du jobber med en vanlig plan, si fra. Da er innstillingen feil.
 
 ## Koble til
 

@@ -18,9 +18,11 @@
 // deliberately absent, so there is nothing to authorize. The catalog it reads is
 // already public. That makes the problem abuse rather than authorization — handled
 // by a document-size cap (`lib/mcp-backend.js`), a compile timeout
-// (`lib/mcp-compiler.js`), the body cap below and the rate limit in `config` at the
-// foot of this file. Adopting the MCP spec's OAuth story would be a large commitment
-// buying nothing until a tool touches private state (ADR-0024/0025).
+// (`lib/mcp-compiler.js`), the body cap below, and a per-caller rate limit on tool
+// calls (`lib/mcp-rate-limit.js` — enforced here because Netlify's declarative forms
+// silently do not register on this deploy path; that module explains it). Adopting
+// the MCP spec's OAuth story would be a large commitment buying nothing until a tool
+// touches private state (ADR-0024/0025).
 //
 // ## Documents are not persisted
 //
@@ -31,6 +33,12 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { corsPreflight, withCors } from "./lib/shared.js";
 import { createCompilerBackend } from "./lib/mcp-backend.js";
+import {
+    clientKey,
+    createRateLimiter,
+    meteredCalls,
+    WINDOW_LIMIT,
+} from "./lib/mcp-rate-limit.js";
 import { handleMessage, PROTOCOL_VERSION, toolsFor } from "../../mcp/tools.mjs";
 
 /// Largest request body accepted, in bytes.
@@ -51,7 +59,10 @@ async function readResource(resource) {
     return readFile(join(process.cwd(), resource.file), "utf8");
 }
 
-export function createHandler({ backend = createCompilerBackend() } = {}) {
+export function createHandler({
+    backend = createCompilerBackend(),
+    limiter = createRateLimiter(),
+} = {}) {
     const tools = toolsFor(backend);
 
     return async function (request) {
@@ -115,6 +126,40 @@ export function createHandler({ backend = createCompilerBackend() } = {}) {
             return withCors(request, rpcError(null, -32600, "Invalid Request"));
         }
 
+        // Metered before anything is dispatched, so a refused request costs the
+        // compiler nothing. Charged per metered call rather than per request: a batch
+        // of five builds is five builds' worth of work regardless of how it arrived.
+        const cost = meteredCalls(messages);
+        if (cost > 0) {
+            const verdict = await limiter.consume(clientKey(request.headers), cost);
+            if (!verdict.allowed) {
+                // 429 with Retry-After is what the declarative rule would have
+                // returned, so a client that already handles Netlify's own limiting
+                // needs no special case. The JSON-RPC error in the body is for the
+                // agent: an assistant that sees only an HTTP status has nothing to
+                // act on, and "wait N seconds" is actionable where "429" is not.
+                const id = messages.find((m) => m?.method === "tools/call")?.id ?? null;
+                return withCors(
+                    request,
+                    json(
+                        {
+                            jsonrpc: "2.0",
+                            id,
+                            error: {
+                                code: -32000,
+                                message:
+                                    `rate limit reached (${WINDOW_LIMIT} tool calls ` +
+                                    `per minute); retry in ` +
+                                    `${verdict.retryAfterSeconds}s`,
+                            },
+                        },
+                        429,
+                        { "retry-after": String(verdict.retryAfterSeconds) },
+                    ),
+                );
+            }
+        }
+
         const responses = [];
         for (const message of messages) {
             const response = await handleMessage(message, tools, {
@@ -159,37 +204,3 @@ function rpcError(id, code, message) {
 }
 
 export default createHandler();
-
-/// The third abuse control ADR-0060 asked for, alongside the document cap and the
-/// compile timeout that shipped with it.
-///
-/// **This declaration is currently inert. The enforced copy is in `netlify.toml`.**
-/// Netlify reads code-based rate limit rules during a deploy's post-processing stage,
-/// and this site deploys with `netlify deploy --prod --dir=. --functions=...`, which
-/// never runs it: the deploy log ends at "Deploy is live!" with no post-processing
-/// section and no rule registered. Verified against production — 100 requests in 3
-/// seconds drew 100 answers and no 429, on this path and on the native one.
-///
-/// Kept rather than deleted, because it is the mechanism that *should* win. It is one
-/// rule instead of two, and it is the only form that can gate the native
-/// `/.netlify/functions/mcp` path, which Netlify serves whether or not a redirect
-/// names it and which redirect-level rules cannot reach. If this site ever deploys
-/// through a path that runs post-processing, this starts working and the
-/// `[redirects.rate_limit]` blocks become removable. Keep the numbers here identical
-/// to those blocks so the two cannot drift into disagreeing.
-///
-/// `windowSize` maxes out at 180 seconds, so this cannot express a per-hour ceiling —
-/// it bounds the burst, and the per-request caps bound the cost of each call inside
-/// it. 60 per minute is wide of any real authoring session: an analyze-fix-render-build
-/// loop is a handful of calls per agent turn. It is a first setting, chosen to make
-/// the endpoint bounded rather than tuned against traffic that does not exist yet;
-/// revise it when there is some. `aggregateBy` gives each caller its own quota —
-/// `["domain"]` alone would be one shared ceiling for everybody, and is Enterprise-only
-/// besides.
-export const config = {
-    rateLimit: {
-        windowSize: 60,
-        windowLimit: 60,
-        aggregateBy: ["ip", "domain"],
-    },
-};

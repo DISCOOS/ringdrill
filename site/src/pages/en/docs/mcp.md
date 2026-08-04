@@ -60,11 +60,11 @@ There is deliberately no publish tool.
 
 The endpoint is open, unauthenticated and free, which means it needs a few edges to stay that way:
 
-- **60 requests per minute** per caller. Wide of any real drafting session, and narrow enough that a runaway script does not become a bill.
+- **60 tool calls per minute** per caller. Over that you get an HTTP 429 telling you how long to wait, and your assistant should retry on its own. Connecting and listing the tools are free, so a client can always reach the server even when a plan is mid-draft.
 - **512 KB** per plan document, and **1 MB** per request.
 - **10 seconds** per compile.
 
-If you hit the request limit while drafting an ordinary plan, tell us. It means the setting is wrong.
+The per-minute limit is wide of any real drafting session: checking, rendering and building a plan is a handful of calls per turn. If you hit it while working on an ordinary plan, tell us. It means the setting is wrong.
 
 ## Connect a client
 
