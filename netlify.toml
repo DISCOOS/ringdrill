@@ -107,6 +107,12 @@
 # The hosted MCP endpoint (ADR-0060). `/mcp` is the conventional path a client
 # expects, so it is exposed at the API origin's root rather than under /api/ —
 # a URL a person pastes into a client config should be as short as it can be.
+#
+# Its rate limit is deliberately NOT a `[redirects.rate_limit]` block here: that
+# would limit this one route, and the function answers on three (both aliases plus
+# the native /.netlify/functions/mcp). It lives in the function's own `config`
+# export instead, which covers all three from one rule out of a small per-project
+# budget. See netlify/functions/mcp.js.
 [[redirects]]
     from = "/mcp"
     to = "/.netlify/functions/mcp"

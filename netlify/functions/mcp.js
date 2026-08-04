@@ -18,9 +18,9 @@
 // deliberately absent, so there is nothing to authorize. The catalog it reads is
 // already public. That makes the problem abuse rather than authorization — handled
 // by a document-size cap (`lib/mcp-backend.js`), a compile timeout
-// (`lib/mcp-compiler.js`) and the body cap below. Adopting the MCP spec's OAuth story
-// would be a large commitment buying nothing until a tool touches private state
-// (ADR-0024/0025).
+// (`lib/mcp-compiler.js`), the body cap below and the rate limit in `config` at the
+// foot of this file. Adopting the MCP spec's OAuth story would be a large commitment
+// buying nothing until a tool touches private state (ADR-0024/0025).
 //
 // ## Documents are not persisted
 //
@@ -159,3 +159,32 @@ function rpcError(id, code, message) {
 }
 
 export default createHandler();
+
+/// The third abuse control ADR-0060 asked for, alongside the document cap and the
+/// compile timeout that shipped with it.
+///
+/// **In the function rather than in `netlify.toml`.** A `[redirects.rate_limit]` block
+/// limits one route, and this function answers on three: `/mcp`, `/api/mcp` and the
+/// native `/.netlify/functions/mcp` that Netlify serves whether or not a redirect
+/// names it. Declared here it covers all three from one rule, and the third — the one
+/// no redirect could reach — is the one an abuser would find by reflex.
+///
+/// **One rule on purpose.** Code-based traffic rules are capped per project (two on
+/// the free tier, five on Pro), so they are a budget. `/mcp/artifact/*` deliberately
+/// gets none: it reads a blob and writes bytes, where every tool here can compile.
+///
+/// `windowSize` maxes out at 180 seconds, so this cannot express a per-hour ceiling —
+/// it bounds the burst, and the per-request caps bound the cost of each call inside
+/// it. 60 per minute is wide of any real authoring session: an analyze-fix-render-build
+/// loop is a handful of calls per agent turn. It is a first setting, chosen to make
+/// the endpoint bounded rather than tuned against traffic that does not exist yet;
+/// revise it when there is some. `aggregateBy` gives each caller its own quota —
+/// `["domain"]` alone would be one shared ceiling for everybody, and is Enterprise-only
+/// besides.
+export const config = {
+    rateLimit: {
+        windowSize: 60,
+        windowLimit: 60,
+        aggregateBy: ["ip", "domain"],
+    },
+};

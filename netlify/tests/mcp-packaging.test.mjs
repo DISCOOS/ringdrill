@@ -34,7 +34,8 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const ENDPOINT = "https://api.ringdrill.app/mcp";
 
 /// Packages `netlify/functions/mcp.js` the way a deploy does and returns the
-/// unpacked directory — the equivalent of `/var/task`.
+/// bundler's own result — `.path` is the unpacked directory, the equivalent of
+/// `/var/task`, and `.trafficRules` is the rate limit it read out of the source.
 ///
 /// `archiveFormat: "none"` skips the zip step, so the result can be inspected and
 /// imported directly. The function config comes from the real `netlify.toml` via
@@ -65,7 +66,7 @@ async function packageFunction() {
         config: functions,
     });
     assert.ok(result, "zip-it-and-ship-it produced no package for mcp");
-    return result.path;
+    return result;
 }
 
 /// Packaged once and shared: bundling is the expensive part, and every test here
@@ -75,7 +76,7 @@ const packaged = packageFunction();
 /// Imports the packaged function and calls it with `cwd` set to the package root,
 /// which is the one detail that makes this different from importing the source.
 async function callPackaged(body) {
-    const root = await packaged;
+    const { path: root } = await packaged;
     const previousCwd = process.cwd();
     process.chdir(root);
     try {
@@ -109,7 +110,7 @@ function toolText(reply) {
 }
 
 test("the package contains every file the function reads at runtime", async () => {
-    const root = await packaged;
+    const { path: root } = await packaged;
 
     // The compiler bundle and the two guide resources (ADR-0060, ADR-0065). Their
     // paths are asserted, not just their presence: the outage was a path
@@ -128,6 +129,35 @@ test("the package contains every file the function reads at runtime", async () =
             `${relative} is missing from the deployed package`,
         );
     }
+});
+
+test("the deploy carries a rate limit for the endpoint", async () => {
+    // Asserted on the bundler's output rather than on the `config` export, because
+    // the export is only a request: zip-it-and-ship-it has to recognise it and
+    // translate it into the `trafficRules` a deploy uploads. A typo'd field name
+    // leaves the export looking right in the source and drops the rule silently —
+    // the same shape of failure as a stale bundle, and ADR-0060 counts this as one
+    // of the three things standing in for authentication.
+    const { trafficRules } = await packaged;
+
+    assert.equal(
+        trafficRules?.action?.type,
+        "rate_limit",
+        () =>
+            "the packaged function declares no rate limit — check the `config` " +
+            `export in netlify/functions/mcp.js (got ${JSON.stringify(trafficRules)})`,
+    );
+
+    const { rateLimitConfig, aggregate } = trafficRules.action.config;
+    assert.equal(rateLimitConfig.windowLimit, 60);
+    assert.equal(rateLimitConfig.windowSize, 60);
+
+    // Per-caller, not one shared ceiling. Dropping "ip" here would still produce a
+    // valid rule, and it would rate-limit every author collectively.
+    assert.deepEqual(
+        aggregate.keys.map((k) => k.type).sort(),
+        ["domain", "ip"],
+    );
 });
 
 test("the compiler tools work in the deployed layout", async () => {
