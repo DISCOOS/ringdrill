@@ -15,6 +15,12 @@ informed: []
 > casting). A clean rename with no wire alias — nothing was published — though
 > import still accepts `actors/`, and the server strips **both** folder names. The
 > PII boundary itself is unchanged; only its name. See "Amendment" at the end.
+>
+> **Amended by [ADR-0072](./0072-staff-pii-and-account-sync.md) (2026-08-04).**
+> The boundary below is written as though the catalog were the only destination
+> a plan can be uploaded to. Accounts add a second one, so the strip binds
+> *every* upload path, not just publish — and no path syncs a roster at all
+> until ADR-0072's preconditions are met.
 
 ## Context and problem statement
 

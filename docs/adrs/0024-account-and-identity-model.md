@@ -171,7 +171,7 @@ adapter and a login-UI entry, no model change.
 ### Storage layout (Netlify Blobs)
 
 Three new stores alongside the existing `drills` and `slug-index` stores
-([`_shared.js`](../../netlify/functions/lib/shared.js)):
+([`lib/shared.js`](../../netlify/functions/lib/shared.js)):
 
 | Store          | Key                     | Value                                |
 |----------------|-------------------------|--------------------------------------|
@@ -315,12 +315,18 @@ schema changes.
   [ADR-0018](./0018-roleplayer-data-model.md),
   [ADR-0025](./0025-authorization-and-publish-policy.md)
 * Related code:
-  `netlify/functions/_shared.js` (stores to extend),
+  `netlify/functions/lib/shared.js` (stores to extend),
   `netlify/functions/drills-upload.js` (today's `ownerId="anon"` default),
   `netlify/functions/drills-admin.js` (today's ADMIN_TOKEN),
   `lib/data/drill_client.dart` (today's `ownerId` parameter),
-  `lib/services/program_service.dart` (publish flow),
-  `lib/data/program_repository.dart` (`ownsCatalogSlug` flag),
+  `lib/services/plan_service.dart` (publish flow),
+  `lib/data/plan_repository.dart` (`ownsCatalogSlug` flag),
   `bin/ringdrill.dart` (CLI auth, `RINGDRILL_ADMIN_TOKEN`)
+
+> **Note (2026-08-04).** Written before the Program→Plan rename
+> ([ADR-0055](./0055-programid-planid-wire-back-compat.md)) and before the
+> Netlify helpers moved under `netlify/functions/lib/`. Paths and type names
+> above are current; prose elsewhere in this ADR that says `Program*` means
+> `Plan*`, and `programUuid` means the plan's `uuid` (`planId` on the wire).
 * External references: App Store Review Guideline 4.8 (Sign in with Apple
   parity), OIDC `email_verified` semantics.

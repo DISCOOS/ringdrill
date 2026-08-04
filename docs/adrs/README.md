@@ -79,6 +79,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0069 | [Render the brief through a lazy viewport, and navigate it without relying on mounted headings](./0069-lazy-brief-viewport.md) | Accepted |
 | ADR-0070 | [Deliver a built archive by handle, not through the transcript](./0070-build-artifact-delivery.md) | Accepted |
 | ADR-0071 | [Report a modelling shortcut, instead of only advising against it](./0071-modelling-shortcut-diagnostics.md) | Accepted |
+| ADR-0072 | [Strip staff PII on every upload path, and do not sync a roster until a later ADR earns it](./0072-staff-pii-and-account-sync.md) | Proposed |
 
 ## When to write an ADR
 

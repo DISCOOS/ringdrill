@@ -92,7 +92,7 @@ mobile and the PWA without reshuffling the existing OCC contract
 * **Option G — Public is permanent, fork to leave (chosen).** A
   `public` plan stays public for as long as its owner keeps it that
   way. A signed-in User who wants protection picks "Fork to my
-  account", which produces a fresh local plan with a new `programUuid`
+  account", which produces a fresh local plan with a new plan `uuid`
   and no link back to the original slug. Publishing the fork creates
   a new slug under the User's account at `account` policy.
 * **Option H — Explicit one-shot adoption.** A signed-in User claims
@@ -144,7 +144,7 @@ Each catalog endpoint runs this check before any business logic:
 | `GET /api/market/feed`, `GET /d/:slug`, `GET /api/drills/head/:slug` | Public. Same as today. No authentication. |
 | `POST /api/drills/policy` (new)        | `owner` of the owning Account. Changes the plan's `accessPolicy` and the `shared.accountIds` list. |
 | `POST /api/accounts/:id/members` (new) | Member of Account with role `owner`. Invites another User as `editor` or `viewer`. |
-| `* /api/admin/*`                       | Bearer `ADMIN_TOKEN` (preserved) OR Bearer access token of a User with the `staff` Identity flag (future). |
+| `* /api/admin/*`                       | Bearer `ADMIN_TOKEN` (preserved) OR Bearer access token of a User with the `admin` flag (future). |
 
 `accessPolicy` is stored on the existing meta blob
 (`drills/<accountId>/<programId>/meta.json`), defaulting to `account` for
@@ -197,7 +197,7 @@ token every time the user switches active account.
 
 ### Server-side changes
 
-`netlify/functions/_shared.js` grows an `authenticate(request)` helper that:
+`netlify/functions/lib/shared.js` grows an `authenticate(request)` helper that:
 
 1. Reads `Authorization: Bearer <token>`. Returns `{ anonymous: true }`
    when absent.
@@ -213,9 +213,17 @@ token every time the user switches active account.
 for unauthenticated wiki uploads.
 
 `drills-admin.js` keeps the `ADMIN_TOKEN` Bearer path and adds a second
-path: a User access token where the User has a `staff: true` flag (set
+path: a User access token where the User has an `admin: true` flag (set
 manually via blob edit until a self-service path exists). This lets us
-issue and revoke per-staff personal tokens without touching the CLI.
+issue and revoke per-person admin tokens without touching the CLI.
+
+The flag is `admin`, not `staff`: `Staff` is the PII entity for a person
+working an exercise, `staff/` is the archive folder that must never be
+published ([ADR-0018](./0018-roleplayer-data-model.md),
+[ADR-0072](./0072-staff-pii-and-account-sync.md)), and `StaffRole` is that
+person's role on the roster. A third meaning on a `User` record — one that
+grants operator access to every plan in the catalog — is the kind of
+collision that gets misread exactly once.
 
 Two new endpoints land in this ADR:
 
@@ -234,12 +242,12 @@ Two new endpoints land in this ADR:
 `accessToken` (optional) and `activeAccountId` (optional). When both are
 absent, the request is anonymous and the server applies the wiki branch.
 
-`ProgramService.publishProgram` reads the access token from
-`AuthService` (new) and passes it through. `setOwnsCatalogSlug` is
-removed in favour of trusting the server response: a successful publish
-to an `account`-policy slug means the active Account owns it. The
-client mirrors `meta.accessPolicy` into `ProgramSource.catalog` so the
-UI can render the right indicator.
+`PlanService.publishPlan` reads the access token from `AuthService` (new)
+and passes it through. `setOwnsCatalogSlug` is removed in favour of
+trusting the server response: a successful publish to an `account`-policy
+slug means the active Account owns it. The client mirrors
+`meta.accessPolicy` into `PlanSource.catalog` so the UI can render the
+right indicator.
 
 `AccessPolicy` is itself a freezed sealed class:
 
@@ -257,13 +265,14 @@ sealed class AccessPolicy with _$AccessPolicy {
 }
 ```
 
-`ProgramSource.catalog` is extended:
+`PlanSource.catalog` is extended:
 
 ```dart
-const factory ProgramSource.catalog({
+const factory PlanSource.catalog({
   required String slug,
   required String latestEtag,
   DateTime? installedAt,
+  String? latestVersion,
   @Default(AccessPolicy.public()) AccessPolicy policy,   // new
   String? ownerAccountId,                                // new
 }) = _Catalog;
@@ -272,6 +281,15 @@ const factory ProgramSource.catalog({
 `make build` is required after this change. The migration path is "treat
 absent `policy` as `public`" (matching today's wiki-style reality), and
 "treat serialized `wiki` as `public`" for one release.
+
+Both fields are **additive and carry no schema bump**
+([ADR-0059](./0059-drill-schema-migration-ladder.md)): the version string
+does not identify content shape, additive fields have deliberately landed
+without a bump before, and `source` is excluded from
+`Plan.computeContentHash` anyway, so an older reader that drops them is
+not "ahead of remote". An earlier draft of
+[`../plans/account-rollout.md`](../plans/account-rollout.md) called for
+schema 1.3 here; that is withdrawn.
 
 The UI surfaces policy in two places: an icon next to the slug in
 Library (account, shared and globe), and a "Tilgang" / "Access" section
@@ -283,7 +301,7 @@ in the publish dialog where the owner can switch between `account` and
 The concurrent-edit handling from
 [ADR-0008](./0008-persistent-program-library-and-catalog.md) and
 [ADR-0014](./0014-server-assigned-drill-version.md) is unchanged. OCC
-via content etag (`If-Match`), the `ProgramDiff` shown before any
+via content etag (`If-Match`), the `PlanDiff` shown before any
 overwrite, and the three user choices (Cancel, Overwrite local, Publish
 my changes / Fork) apply regardless of `accessPolicy`. The new model
 reduces the set of people who can trigger a collision but does not
@@ -293,11 +311,11 @@ change what happens when one occurs.
 
 Signed-in Users who want their own protected copy of a `public` plan
 use "Fork to my account" from the plan's Library row. This reuses the
-existing `forkAsLocal` branch from `ProgramService.refreshCatalogItem`
+existing `forkAsLocal` branch from `PlanService.refreshCatalogItem`
 ([ADR-0008](./0008-persistent-program-library-and-catalog.md)):
 
-1. The local plan is duplicated with a new `programUuid` and a
-   `(kopi)`-suffixed name. Source becomes `ProgramSource.local()`. The
+1. The local plan is duplicated with a new plan `uuid` and a
+   `(kopi)`-suffixed name. Source becomes `PlanSource.local()`. The
    fork carries no reference to the original slug.
 2. The original `public` plan in Library is untouched. Co-editors still
    share that slug.
@@ -338,7 +356,7 @@ server does not authenticate session joins.
   action beyond signing in.
 * Good: One enforcement layer covers `account`, `shared` and `public`.
   Avoids a growing set of one-off flags.
-* Good: Conflict resolution from ADR-0008 / ADR-0014 (OCC, ProgramDiff,
+* Good: Conflict resolution from ADR-0008 / ADR-0014 (OCC, PlanDiff,
   user choice on overwrite) carries over unchanged. The account model
   reduces the number of writers but reuses the same collision pipeline.
 * Good: OCC contract from [ADR-0014](./0014-server-assigned-drill-version.md)
@@ -350,8 +368,8 @@ server does not authenticate session joins.
   procedure must be documented before first production use.
 * Bad: `setOwnsCatalogSlug` and the `app:catalogOwnership:<slug>` flag
   are removed. Existing reads must derive ownership from
-  `ProgramSource.catalog.ownerAccountId`.
-* Bad: Adding `accessPolicy` to `ProgramSource.catalog` is a freezed
+  `PlanSource.catalog.ownerAccountId`.
+* Bad: Adding `accessPolicy` to `PlanSource.catalog` is a freezed
   schema change. Schema 1.0–1.2 archives default to `public` on read.
 * Bad: Users who want to "own" a `public` plan they collaborated on
   must fork to a new slug. The original public slug stays addressable
@@ -431,12 +449,12 @@ server does not authenticate session joins.
   [ADR-0018](./0018-roleplayer-data-model.md),
   [ADR-0024](./0024-account-and-identity-model.md)
 * Related code:
-  `netlify/functions/_shared.js` (new `authenticate` helper),
+  `netlify/functions/lib/shared.js` (new `authenticate` helper),
   `netlify/functions/drills-upload.js` (auth + policy enforcement),
-  `netlify/functions/drills-admin.js` (token + staff flag),
+  `netlify/functions/drills-admin.js` (token + `admin` flag),
   `lib/data/drill_client.dart` (drop `ownerId`, add `accessToken`),
-  `lib/services/program_service.dart` (publish flow reads `AuthService`),
-  `lib/models/program.dart` (`ProgramSource.catalog` extension),
-  `lib/data/program_repository.dart` (drop `ownsCatalogSlug` after migration)
+  `lib/services/plan_service.dart` (publish flow reads `AuthService`),
+  `lib/models/plan.dart` (`PlanSource.catalog` extension),
+  `lib/data/plan_repository.dart` (drop `ownsCatalogSlug` after migration)
 * External references: JWT best current practices (RFC 8725), OAuth 2.1
   refresh-token rotation.

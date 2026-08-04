@@ -8,6 +8,30 @@ the work, names the feature flags, and lists the migration steps.
 Status: approved. ADR-0024 and ADR-0025 are accepted as of 2026-05-28.
 This document tracks the rollout against those decisions.
 
+> **Revised 2026-08-04, before phase 1 starts.** Nothing had been
+> implemented, and four decisions accepted after this plan was first written
+> changed what it should say:
+>
+> * **[ADR-0042](../adrs/0042-feature-flags-and-sunset-telemetry.md)**
+>   (2026-06-29) chose *compile-time* `dart-define` flags in
+>   [`app_flags.dart`](../../lib/utils/app_flags.dart) and explicitly rejected
+>   a runtime flag service. The six-runtime-flag table this plan carried was
+>   exactly what that ADR declined to build. See "Feature flags" below, now
+>   one client flag and two server env vars.
+> * **[ADR-0059](../adrs/0059-drill-schema-migration-ladder.md)** established
+>   that additive fields land without a schema bump. The schema 1.3 bump in
+>   phase 2 is withdrawn.
+> * **[ADR-0060](../adrs/0060-remote-mcp-server.md)** shipped a hosted MCP
+>   endpoint that is unauthenticated *because* it cannot publish. It is now a
+>   downstream consumer of this rollout — see "Downstream consumers".
+> * **[ADR-0072](../adrs/0072-staff-pii-and-account-sync.md)** (2026-08-04)
+>   answered the staff-PII question that used to sit open at the bottom of
+>   this file: rosters are not synced at all, so no phase here needs a privacy
+>   statement or a consent surface.
+>
+> Code references throughout were also refreshed for the Program→Plan rename
+> ([ADR-0055](../adrs/0055-programid-planid-wire-back-compat.md)).
+
 ## Goals
 
 1. Protect published plans from changes by people who are not on the
@@ -22,12 +46,20 @@ This document tracks the rollout against those decisions.
 ## Non-goals
 
 * Passkeys / WebAuthn. Reserved for a later iteration.
-* Secure refresh-token storage beyond `SharedPreferences`. A separate
-  hardening ADR can revisit this.
 * Per-station or per-exercise access controls inside a plan. The unit of
   protection is the slug.
 * Login walls on public reads. `/api/market/feed` and `/d/:slug` remain
   public.
+* Server-side storage of staff PII. Rosters stay on the device and the
+  strip stays unconditional
+  ([ADR-0072](../adrs/0072-staff-pii-and-account-sync.md)). "Account sync"
+  in this plan means plans, never people.
+
+An earlier draft listed "secure refresh-token storage beyond
+`SharedPreferences`" as a non-goal. That is wrong against
+[ADR-0024](../adrs/0024-account-and-identity-model.md), which puts both
+tokens in `flutter_secure_storage` from phase 2 and keeps only the
+non-sensitive mirror in `SharedPreferences`.
 
 ## Phases
 
@@ -40,7 +72,7 @@ Server-only. No client UI change. Goal: stand up the auth surface and
 seed the data model.
 
 * Add `accounts`, `users`, `identities`, `members`, `email-index` and
-  `sessions` stores in `netlify/functions/_shared.js`.
+  `sessions` stores in `netlify/functions/lib/shared.js`.
 * Implement `POST /api/auth/start-email`, `POST /api/auth/callback`,
   `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`.
 * Magic link via Resend or SES. Sender domain: `noreply@ringdrill.app`.
@@ -49,16 +81,31 @@ seed the data model.
   `AUTH_SIGNING_KEY_PUBLIC` Netlify env vars.
 * Implement `authenticate(request)` helper that classifies a request as
   anonymous, authenticated, or invalid (401). No endpoint enforces yet.
-* Add `accessPolicy` field to `meta.json` writes, defaulting to
-  `public` for everything (preserves current behaviour). Accept
-  serialized `wiki` as an alias on read for one release, since the
-  serialized name is being renamed.
+* `accessPolicy` already reaches `meta.json` via
+  `resolvePublishPolicy` ([ADR-0040](../adrs/0040-catalog-feed-schema-extension.md)),
+  derived from `ownerId`. It stays **descriptive** through phases 1–2:
+  nothing reads it to decide anything until phase 3. Accept serialized
+  `wiki` as an alias on read for one release, since the serialized name is
+  being renamed.
+* Move the PII strip from `drills-upload.js`'s call site into the shared
+  ingest path, so every function that reads archive bytes goes through it,
+  and add the test that enumerates those functions
+  ([ADR-0072](../adrs/0072-staff-pii-and-account-sync.md)). Phase 1 is where
+  a second server-side write path first becomes plausible.
 * Telemetry: log per-endpoint counts of `anonymous` vs `authenticated`
   uploads, behind the existing Sentry consent gate
   ([ADR-0006](../adrs/0006-sentry-behind-consent-gate.md)).
 
 Exit criteria: a curl-driven sign-up + publish round-trip works in
 `make netlify-dev`. No client release.
+
+**Known gap this phase does not close.** `ownerId` is a caller-supplied
+query parameter, and the feed publishes it as `author`, so anyone can read
+an owner off the public feed and pass it back to write to that slug. That is
+the pre-accounts wiki model working as designed
+([ADR-0008](../adrs/0008-persistent-program-library-and-catalog.md)) and it
+stays open until phase 3 enforces policy. What must not happen meanwhile is
+the *feed* implying otherwise — see phase 3's first bullet.
 
 ### Phase 2 — Client sign-in (no enforcement)
 
@@ -81,9 +128,13 @@ changing publish behaviour.
   from day one.
 * Publish flow sends the access token when present and `accessToken=null`
   otherwise. Server accepts both. No new restrictions yet.
-* Bump schema to 1.3 on `ProgramSource.catalog` to add `policy` and
-  `ownerAccountId` fields, defaulting to `AccessPolicy.public()` /
-  `null` for read compatibility.
+* Add `policy` and `ownerAccountId` to `PlanSource.catalog`, defaulting to
+  `AccessPolicy.public()` / `null` for read compatibility. **No schema
+  bump** — both are additive, and `source` is excluded from
+  `Plan.computeContentHash`, so an older reader that drops them is not
+  "ahead of remote"
+  ([ADR-0059](../adrs/0059-drill-schema-migration-ladder.md)). `make build`
+  is still required.
 
 Exit criteria: a signed-in user can publish and refresh without seeing
 a different result than today.
@@ -93,6 +144,11 @@ a different result than today.
 Goal: give users a path from wiki to a protected own-copy, without
 mutating any existing slug.
 
+* **`accessPolicy` becomes enforced.** `drills-upload.js` reads
+  `meta.accessPolicy` and applies ADR-0025's authorisation matrix before
+  OCC. This is the phase where the field stops being a label and starts
+  being a gate, so it is also where the "descriptive only" notes added in
+  phase 1 (`shared.js`, `drill_client.dart`, `api.md`) come out.
 * Implement `POST /api/drills/policy?slug=<slug>` for owners to flip
   between `account` and `public`. UI lives in publish dialog under
   "Tilgang" / "Access". The `shared` variant is server-rejected with
@@ -101,12 +157,12 @@ mutating any existing slug.
   for `public`. A people-with-link icon is reserved for `shared` and
   unused until phase 5.
 * "Fork to my account" button on `public` plans in Library. Reuses
-  the existing `forkAsLocal` branch in `ProgramService` to produce a
+  the existing `forkAsLocal` branch in `PlanService` to produce a
   new local plan with a `(kopi)`-suffixed name. The original slug
   stays untouched. Publishing the fork goes through the standard
   new-slug path.
 * Client mirrors `ownerAccountId` and `policy` into
-  `ProgramSource.catalog` from upload responses.
+  `PlanSource.catalog` from upload responses.
 
 Exit criteria: an owner can change a plan's policy between `account`
 and `public` and have the change enforced. A user who collaborated on
@@ -155,11 +211,13 @@ and a member of that other Account can publish updates to the plan.
 
 ### Phase 6 — CLI personal tokens, ADMIN_TOKEN deprecation
 
-Goal: replace the shared admin secret with per-staff personal tokens.
+Goal: replace the shared admin secret with per-person admin tokens.
 
 * `ringdrill login` runs the magic-link flow over the terminal.
 * `ringdrill list-all` and friends use the personal access token.
-* `staff: true` flag on User records gates the admin endpoints.
+* `admin: true` flag on User records gates the admin endpoints. Named
+  `admin`, not `staff`, so it cannot be confused with the `Staff` roster
+  entity or the `staff/` PII folder (ADR-0025).
 * `ADMIN_TOKEN` accepted for one full release cycle after the CLI gains
   personal tokens, then removed from `drills-admin.js`.
 
@@ -168,22 +226,47 @@ Exit criteria: production admin operations no longer require
 
 ## Feature flags
 
-Each phase ships behind a runtime flag readable from
-`AppConfig`. Flag keys use the `app:feature:auth:*` namespace and the
-`:v1` suffix per `lib/utils/app_config.dart` convention.
+[ADR-0042](../adrs/0042-feature-flags-and-sunset-telemetry.md) chose
+**compile-time** `dart-define` flags, collected in
+[`app_flags.dart`](../../lib/utils/app_flags.dart) and documented in
+[`feature-flags.md`](../feature-flags.md), and explicitly rejected a runtime
+flag service (its Option C) as more machinery than this project's scale
+justifies. An earlier draft of this plan assumed six runtime flags under
+`app:feature:auth:*`, flipped in lockstep with server env vars. That is the
+system ADR-0042 declined to build, so the flags are re-scoped here.
 
-| Flag                                | Phase | Purpose                                                |
-|-------------------------------------|-------|--------------------------------------------------------|
-| `app:feature:auth:signin:v1`        | 2     | Show login UI and read access tokens                   |
-| `app:feature:auth:fork:v1`          | 3     | Show "Fork to my account" button on `public` plans     |
-| `app:feature:auth:policy:v1`        | 3     | Show policy controls in publish dialog                 |
-| `app:feature:auth:accountDefault:v1`| 4     | Initialise new slugs with `accessPolicy=account`       |
-| `app:feature:auth:orgs:v1`          | 5     | Show organisation + member-management UI, enable `shared` policy |
-| `app:feature:auth:cliPersonal:v1`   | 6     | Accept personal tokens on `/api/admin`                 |
+The starting point is that **a phase that is not merged does not ship**.
+Each phase is its own release, so most of them need no flag at all. A flag
+earns itself in exactly two situations: client code that must merge to
+`main` before its UI should be visible, and a server behaviour change that
+has to be reversible without a redeploy of the app.
 
-Server reads the same flag values from Netlify env vars
-(`FEATURE_AUTH_*`) so client and backend can be flipped together. Flag
-removal is part of the phase-N+1 release.
+**One client flag**, compile-time, `AppFlagKind.temporary`:
+
+| `dart-define`   | Phases | Purpose                                                                 |
+|-----------------|--------|-------------------------------------------------------------------------|
+| `AUTH_DISABLED` | 2–5    | Hides every sign-in surface (drawer tile, Library hint, `/auth/*` routes, policy and fork affordances) so auth work can merge and ship dark. |
+
+It follows `MIGRATION_DISABLED`'s shape deliberately — same kind, same
+registry, same Sentry tag — and is retired in the release after phase 5,
+which is the point at which every surface it hides is meant to be visible.
+One flag rather than one per phase because the phases are strictly ordered:
+there is no build in which phase 3's fork button should be live while phase
+2's login is not.
+
+**Two server env vars**, read by the Netlify functions at request time.
+These are deploy-time configuration in the same family as `ADMIN_TOKEN`,
+not a client flag service, so ADR-0042 does not speak to them:
+
+| Env var                       | Phase | Purpose                                                       |
+|-------------------------------|-------|---------------------------------------------------------------|
+| `FEATURE_AUTH_ACCOUNT_DEFAULT`| 4     | Initialise new slugs with `accessPolicy=account`. Reversible without an app release, which is the whole reason it exists — phase 4 is the one change that can lock a user out of their own slug. |
+| `FEATURE_AUTH_ADMIN_TOKENS`   | 6     | Accept per-person admin tokens on `/api/admin` alongside `ADMIN_TOKEN`. |
+
+The client does not read either one. It reacts to what the server returns
+(`meta.accessPolicy` on the upload response), so client and server do not
+have to be flipped together — which was the coupling the six-flag table was
+trying to manage.
 
 ## Migration steps
 
@@ -196,16 +279,19 @@ removal is part of the phase-N+1 release.
   separate plan under `drills/<accountId>/...` at a new slug, the
   original `anon` blobs are untouched.
 * **`app:catalogOwnership:<slug>` flag.** Read once on phase 2 startup,
-  used to seed `ProgramSource.catalog.ownerAccountId` for plans that the
+  used to seed `PlanSource.catalog.ownerAccountId` for plans that the
   current device has been treating as owned. Cleared afterwards.
 * **`RINGDRILL_ADMIN_TOKEN` in CI.** Continues to work through phase 6.
   Replaced with `RINGDRILL_ACCESS_TOKEN` (a long-lived personal token
-  scoped to staff) in phase 6.
-* **Drill schema.** Bumps to 1.3 in phase 2. Readers of 1.0/1.1/1.2
-  archives inject `accessPolicy=AccessPolicy.public()` and
-  `ownerAccountId=null` on parse. Server's `KNOWN_SCHEMA_MAX`
-  ([`drills-upload.js`](../../netlify/functions/drills-upload.js)) is
-  bumped in lockstep with the client release.
+  scoped to an admin user) in phase 6.
+* **Drill schema.** Unchanged — stays at 1.2. Absent `policy` reads as
+  `AccessPolicy.public()` and absent `ownerAccountId` as `null`, which is
+  ordinary additive-field behaviour and needs no version to key off
+  ([ADR-0059](../adrs/0059-drill-schema-migration-ladder.md): the version
+  string does not identify content shape, and all live catalog plans are
+  1.2 while differing in shape). `KNOWN_SCHEMA_MAX`
+  ([`shared.js`](../../netlify/functions/lib/shared.js)) is not touched, so
+  there is no client/server lockstep release to coordinate.
 
 ## Telemetry and verification
 
@@ -259,48 +345,55 @@ covers the happy path on each phase.
 * Update `AGENTS.md` to point at `AuthService` as the canonical
   identity source for client code once phase 2 ships.
 
-## Staff PII leaves the device once accounts land
+## Staff PII — settled, and off this plan's critical path
 
-Today the personal data of the people staffing an exercise — real names, phone
-numbers, notes — never reaches a server. `drills-upload` strips the PII folder
-(`actors/`, and `staff/` after DESIGN-011) before anything is published, and that
-strip is the whole of the current privacy story: the boundary is the **catalog**,
-and it holds because publishing is the only upload path.
+This section used to argue that account-backed sync would carry the staff
+folder server-side, and that a privacy statement, a legal basis, retention,
+deletion and a sub-processor list therefore had to land somewhere around
+phase 3 or 5. That argument was right, and
+[ADR-0072](../adrs/0072-staff-pii-and-account-sync.md) resolves it by
+removing the premise: **no path syncs a roster.** The strip becomes
+unconditional across every endpoint that accepts `.drill` bytes, not just
+`drills-upload`, and the five legal preconditions are written down as a debt
+that a *future* sync ADR inherits in full.
 
-Account-backed sync changes the destination, not just the plumbing. When a plan
-syncs to a team or private account, the staff folder goes **with** it — that is
-the point of the feature — so personal data starts being stored server-side on
-our infrastructure. That is a different legal posture from a public catalog that
-never sees it, and it is work in its own right, not a side effect of the sync
-code:
+What that changes for this plan:
 
-* **Privacy statement / personvernerklæring** must say what personal data is
-  stored, where it is hosted, on what legal basis, and for how long. There is no
-  such statement covering server-side personal data today, because there was
-  none to cover.
-* **Consent and transparency** — the people on a roster are usually *not* the
-  app's user. Someone else enters their name and phone number. Whatever the
-  chosen basis, they have rights over that data (access, correction, deletion)
-  and the app has to make those actionable.
-* **Retention and deletion** — deleting a plan must actually delete the staff
-  records server-side, including from backups within a stated window.
-* **Data residency** — the same EU-residency consideration already noted for the
-  mail provider applies, more strongly, to stored personal data.
-* **Sub-processors** — hosting, backups and any support tooling that can read the
-  data need listing.
+* **Phase 3 needs no consent surface.** The publish dialog gets policy
+  controls and nothing else. No "also sync my roster" toggle, no disclosure
+  copy, no data-subject tooling.
+* **Phase 5 needs no per-organisation data-processing story.** Members share
+  plans, not people.
+* **One item is added to phase 1**: move the strip from `drills-upload.js`'s
+  call site into the shared ingest path, and add the test that enumerates the
+  functions accepting archive bytes. Phase 1 is where a second server-side
+  write path first becomes plausible, so it is the right phase to make the
+  boundary structural rather than remembered.
 
-Practical consequence for sequencing: the `drills-upload` strip must stay in
-place for the *catalog* path even after account sync exists. The two paths need
-separate rules — "published to the catalog" and "synced to your account" must not
-collapse into one upload path that treats them alike, or the strip silently stops
-protecting anything. Worth an ADR when phase 3 or 5 gets close, amending
-[ADR-0018](../adrs/0018-roleplayer-data-model.md), whose PII boundary is written
-as though the catalog were the only destination.
+If roster sync is ever wanted, it is a new ADR that supersedes ADR-0072 and
+carries the whole legal apparatus with it. It is not an increment on any
+phase below.
+
+## Downstream consumers
+
+Two things outside this plan are waiting on it, and neither is tracked
+anywhere else:
+
+* **MCP publish ([ADR-0060](../adrs/0060-remote-mcp-server.md)).** The hosted
+  `/mcp` endpoint is deliberately unauthenticated, and the reason given in
+  [`api.md`](../api.md) is that every tool maps to a public operation and
+  `publish` is absent — "so there is nothing to authorize". A `publish` tool
+  therefore cannot ship before phase 2 at the earliest, and needs its own
+  decision about how an agent holds a token (an MCP client is neither the app
+  nor the CLI). Until then, the rate limit is the only control, and that is
+  the correct posture rather than a gap.
+* **The CLI's admin commands.** `bin/ringdrill.dart` reads
+  `RINGDRILL_ADMIN_TOKEN` today and gets personal tokens in phase 6. Nothing
+  before phase 6 changes for it, which is the point of keeping `ADMIN_TOKEN`
+  accepted throughout.
 
 ## Open questions
 
-* Whether staff PII sync is opt-in per plan or implied by choosing an account
-  policy. Bears directly on what the privacy statement has to claim.
 * Mail provider choice: Resend (simpler, EU residency available) vs
   SES (cheaper at scale, more configuration). Decision lands before
   phase 1 starts.
