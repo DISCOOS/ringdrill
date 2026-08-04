@@ -131,13 +131,23 @@ test("the package contains every file the function reads at runtime", async () =
     }
 });
 
-test("the deploy carries a rate limit for the endpoint", async () => {
-    // Asserted on the bundler's output rather than on the `config` export, because
-    // the export is only a request: zip-it-and-ship-it has to recognise it and
-    // translate it into the `trafficRules` a deploy uploads. A typo'd field name
-    // leaves the export looking right in the source and drops the rule silently —
-    // the same shape of failure as a stale bundle, and ADR-0060 counts this as one
-    // of the three things standing in for authentication.
+test("the bundler still translates the function's rateLimit declaration", async () => {
+    // WHAT THIS DOES NOT PROVE: that the endpoint is rate limited. It was written
+    // believing it did, and it passed while production accepted 100 requests in 3
+    // seconds without a single 429.
+    //
+    // There are three layers, and this only reaches the second. The `config` export
+    // is a request; zip-it-and-ship-it has to recognise it and translate it into
+    // `trafficRules` (asserted here); and then a deploy has to *register* those
+    // rules, which happens in post-processing — a stage the CLI deploy this site
+    // uses never runs. So the artefact is correct and the rule is inert. The
+    // enforced copy lives in netlify.toml's `[redirects.rate_limit]` blocks, and
+    // only a live burst against the deployed origin proves those work.
+    //
+    // Still worth keeping: it catches a typo'd field name, which would leave the
+    // export looking right in the source while the bundler silently ignored it —
+    // and it is what would break first if the declaration were mangled ahead of a
+    // future deploy path that does honour it.
     const { trafficRules } = await packaged;
 
     assert.equal(

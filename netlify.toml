@@ -108,20 +108,52 @@
 # expects, so it is exposed at the API origin's root rather than under /api/ —
 # a URL a person pastes into a client config should be as short as it can be.
 #
-# Its rate limit is deliberately NOT a `[redirects.rate_limit]` block here: that
-# would limit this one route, and the function answers on three (both aliases plus
-# the native /.netlify/functions/mcp). It lives in the function's own `config`
-# export instead, which covers all three from one rule out of a small per-project
-# budget. See netlify/functions/mcp.js.
+# ## Why the rate limit is here and not only in the function
+#
+# The function also declares a `rateLimit` in its own `config` export, which would
+# be the better mechanism: one rule, and it covers the native
+# `/.netlify/functions/mcp` path that no redirect can gate. It does not take
+# effect. Netlify reads and validates code-based rate limit rules during a deploy's
+# **post-processing** stage, and this site deploys with `netlify deploy --prod
+# --dir=. --functions=...`, which never runs that stage — the deploy log ends at
+# "Deploy is live!" with no post-processing section and no rule registered. The
+# rule was bundled into the artefact and then dropped on the floor.
+#
+# Redirect rules, by contrast, demonstrably do apply on this deploy path: `/mcp`
+# resolves in production, which is this same table doing its job. So the limit
+# lives on the redirects, where it is actually enforced.
+#
+# Two consequences worth knowing before editing this:
+#
+#   * It costs two rules, one per alias, and code-based rules are capped per
+#     project (two on the free tier). This is the whole budget.
+#   * `/.netlify/functions/mcp` stays ungated. Netlify serves it natively whether
+#     or not a redirect names it, so an abuser who knows that path is not limited.
+#     Redirect-level rules cannot reach it. That is a real gap, accepted because
+#     the alternative is no enforcement at all.
+#
+# Numbers match the function's export so the two cannot disagree: 60 per minute
+# per caller. `window_size` caps at 180 seconds, so this bounds the burst while
+# the document cap and compile timeout bound each call inside it.
 [[redirects]]
     from = "/mcp"
     to = "/.netlify/functions/mcp"
     status = 200
 
+    [redirects.rate_limit]
+        window_limit = 60
+        window_size = 60
+        aggregate_by = ["ip", "domain"]
+
 [[redirects]]
     from = "/api/mcp"
     to = "/.netlify/functions/mcp"
     status = 200
+
+    [redirects.rate_limit]
+        window_limit = 60
+        window_size = 60
+        aggregate_by = ["ip", "domain"]
 
 # Downloads an archive `build_plan` just compiled (ADR-0070). A separate function from
 # `/mcp` on purpose: this only moves bytes, so it must not load the 737 KB compiler

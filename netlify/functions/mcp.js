@@ -163,15 +163,20 @@ export default createHandler();
 /// The third abuse control ADR-0060 asked for, alongside the document cap and the
 /// compile timeout that shipped with it.
 ///
-/// **In the function rather than in `netlify.toml`.** A `[redirects.rate_limit]` block
-/// limits one route, and this function answers on three: `/mcp`, `/api/mcp` and the
-/// native `/.netlify/functions/mcp` that Netlify serves whether or not a redirect
-/// names it. Declared here it covers all three from one rule, and the third — the one
-/// no redirect could reach — is the one an abuser would find by reflex.
+/// **This declaration is currently inert. The enforced copy is in `netlify.toml`.**
+/// Netlify reads code-based rate limit rules during a deploy's post-processing stage,
+/// and this site deploys with `netlify deploy --prod --dir=. --functions=...`, which
+/// never runs it: the deploy log ends at "Deploy is live!" with no post-processing
+/// section and no rule registered. Verified against production — 100 requests in 3
+/// seconds drew 100 answers and no 429, on this path and on the native one.
 ///
-/// **One rule on purpose.** Code-based traffic rules are capped per project (two on
-/// the free tier, five on Pro), so they are a budget. `/mcp/artifact/*` deliberately
-/// gets none: it reads a blob and writes bytes, where every tool here can compile.
+/// Kept rather than deleted, because it is the mechanism that *should* win. It is one
+/// rule instead of two, and it is the only form that can gate the native
+/// `/.netlify/functions/mcp` path, which Netlify serves whether or not a redirect
+/// names it and which redirect-level rules cannot reach. If this site ever deploys
+/// through a path that runs post-processing, this starts working and the
+/// `[redirects.rate_limit]` blocks become removable. Keep the numbers here identical
+/// to those blocks so the two cannot drift into disagreeing.
 ///
 /// `windowSize` maxes out at 180 seconds, so this cannot express a per-hour ceiling —
 /// it bounds the burst, and the per-request caps bound the cost of each call inside
