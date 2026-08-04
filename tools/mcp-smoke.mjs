@@ -72,9 +72,30 @@ async function callTool(name, args = {}) {
     }
     const text = reply.result?.content?.[0]?.text ?? "";
     if (reply.result?.isError) {
-        throw new Error(`tool ${name} failed: ${text}`);
+        throw new Error(`tool ${name} failed: ${text}${blameDocument(text)}`);
     }
     return text;
+}
+
+/// Distinguishes "the endpoint is broken" from "this script's document is".
+///
+/// A document with an error compiles to a clean `ok: false` and a diagnostic — a
+/// *correct* answer that this script nonetheless reports as a failure, because it
+/// expects DOCUMENT to be valid. That is a real trap: the first version of DOCUMENT
+/// had two teams and one station, and the resulting red looked like an outage.
+function blameDocument(text) {
+    try {
+        const payload = JSON.parse(text);
+        if (payload.ok === false && payload.diagnostics?.length) {
+            return (
+                "\n        ^ the compiler answered correctly — DOCUMENT in this " +
+                "script is invalid, the endpoint is not necessarily broken"
+            );
+        }
+    } catch {
+        // Not JSON, so not a diagnostics payload. Nothing to add.
+    }
+    return "";
 }
 
 /// A tools/call whose payload is JSON, parsed.
@@ -95,6 +116,13 @@ function brief(value) {
 /// A document small enough to post and complete enough to exercise the parts of
 /// the compiler that differ between the Dart VM and dart2js — a rotation schedule
 /// and a projected coordinate.
+///
+/// Two stations, because `mode` defaults to `ring` and a ring needs at least one
+/// station per team. The first version of this had two teams and one station, which
+/// compiles to a clean `ok: false` with a diagnostic — a *correct* answer that this
+/// script then reported as a failure. Change it and re-validate through the real
+/// compiler (`node mcp/dev-call.mjs build_plan document=@file`) before committing:
+/// a smoke test that cries wolf is worse than none.
 const DOCUMENT = `
 plan:
   name: "Smoke"
@@ -113,6 +141,10 @@ exercises:
         description: "Systematisk søk i skogsteig etter savnet person."
         situation: "Meldt savnet for to timer siden, sist sett ved parkeringen."
         position: { lat: 59.096857, lng: 10.401633 }
+      - name: "Førstehjelp"
+        description: "Behandling og bæring av skadd person ut av teigen."
+        situation: "Den savnede er funnet nedkjølt og kan ikke gå selv."
+        position: { lat: 59.098120, lng: 10.404410 }
 `.trim();
 
 const checks = [
@@ -194,16 +226,26 @@ const checks = [
         async () => {
             const result = await callJsonTool("analyze_plan", { document: DOCUMENT });
             assert(result.ok, `analyze_plan not ok: ${brief(result)}`);
+            assert(
+                result.errors === 0,
+                `analyze_plan found ${result.errors} error(s): ${brief(result.diagnostics)}`,
+            );
         },
     ],
     [
         "render_plan produces a brief",
         async () => {
-            const brief = await callTool("render_plan", {
+            const result = await callJsonTool("render_plan", {
                 document: DOCUMENT,
                 audience: "director",
             });
-            assert(brief.length > 0, "rendered brief is empty");
+            assert(result.ok, `render_plan not ok: ${brief(result)}`);
+            // The rotation has to appear, or the brief rendered an empty plan and
+            // still called it a success — `bytes > 0` alone would not catch that.
+            assert(
+                result.markdown?.includes("Teigsøk"),
+                `rendered brief is missing the station: ${brief(result.markdown)}`,
+            );
         },
     ],
     [
