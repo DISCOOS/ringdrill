@@ -28,6 +28,18 @@ concurrency:
   group: deploy-proxy
   cancel-in-progress: true
 
+# Wrangler is pinned rather than tracking the newest release. These jobs hold a
+# Cloudflare API token with edit rights, and an unpinned `npx` invocation
+# resolves and executes whatever was published to npm minutes earlier — so an
+# upstream compromise would run with that token, on a push, unattended. A
+# version bump should be a reviewed commit like any other.
+#
+# Nothing bumps it automatically: dependabot's github-actions ecosystem tracks
+# `uses:` versions, not `npx` inside a `run:` step. Bump it here by hand when
+# Cloudflare needs a newer client.
+env:
+  WRANGLER: wrangler@4.118.0
+
 jobs:
   deploy:
     name: Deploy
@@ -66,4 +78,4 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx wrangler@latest deploy
+        run: npx "$WRANGLER" deploy
