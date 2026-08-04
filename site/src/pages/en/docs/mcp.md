@@ -60,7 +60,7 @@ There is deliberately no publish tool.
 
 The endpoint is open, unauthenticated and free, which means it needs a few edges to stay that way:
 
-- **60 tool calls per minute** per caller. Over that you get an HTTP 429 telling you how long to wait, and your assistant should retry on its own. Connecting and listing the tools are free, so a client can always reach the server even when a plan is mid-draft.
+- **About 60 tool calls per minute** per caller. Over that you get an HTTP 429 telling you how long to wait, and your assistant should retry on its own. Connecting and listing the tools are free, so a client can always reach the server even when a plan is mid-draft. It is a rough ceiling rather than an exact count, which is deliberate: it errs towards letting your work through.
 - **512 KB** per plan document, and **1 MB** per request.
 - **10 seconds** per compile.
 

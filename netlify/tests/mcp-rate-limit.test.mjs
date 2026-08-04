@@ -16,34 +16,29 @@ import {
     WINDOW_MS,
 } from "../functions/lib/mcp-rate-limit.js";
 
-/// An in-memory stand-in for a Netlify Blobs store, with the ETag semantics the
-/// limiter depends on: `set` honours `onlyIfMatch`/`onlyIfNew` and reports
-/// `modified: false` when the condition fails, rather than throwing.
-function fakeStore() {
+/// An in-memory stand-in for a Netlify Blobs store, with the two calls the limiter
+/// actually makes.
+///
+/// `getWithMetadata` and the conditional-write options are deliberately absent. The
+/// limiter no longer uses either, and a fake that offered them is how two ETag bugs
+/// stayed invisible here while breaking production.
+function fakeStore({ failRead = false, failWrite = false } = {}) {
     const entries = new Map();
-    let sequence = 0;
     return {
         entries,
-        calls: { get: 0, set: 0 },
-        async getWithMetadata(key, _opts) {
-            this.calls.get += 1;
+        // Mutable so a test can break a healthy store mid-flight, which is how the
+        // "stops reading" case below distinguishes cause from coincidence.
+        failRead,
+        failWrite,
+        async get(key) {
+            if (this.failRead) throw new Error("blobs unavailable");
             const hit = entries.get(key);
-            if (!hit) return null;
-            return { data: JSON.parse(hit.value), etag: hit.etag };
+            return hit ? JSON.parse(hit) : null;
         },
-        async set(key, value, condition = {}) {
-            this.calls.set += 1;
-            const hit = entries.get(key);
-            if (condition.onlyIfNew === true && hit) {
-                return { modified: false, etag: hit.etag };
-            }
-            if (condition.onlyIfMatch != null && hit?.etag !== condition.onlyIfMatch) {
-                return { modified: false, etag: hit?.etag };
-            }
-            sequence += 1;
-            const etag = `etag-${sequence}`;
-            entries.set(key, { value, etag });
-            return { modified: true, etag };
+        async set(key, value) {
+            if (this.failWrite) throw new Error("read-only");
+            entries.set(key, value);
+            return { modified: true };
         },
     };
 }
@@ -59,6 +54,7 @@ function harness({ limit = WINDOW_LIMIT, store = fakeStore() } = {}) {
     return {
         limiter,
         store,
+        count: () => JSON.parse(store.entries.get("caller") ?? "null")?.count,
         advance: (ms) => {
             clock += ms;
         },
@@ -127,16 +123,14 @@ test("spends up to the limit, then refuses with a retry hint", async () => {
 test("a refused request spends nothing", async () => {
     // Otherwise a client retrying in a loop pushes its own window out and can never
     // recover inside it.
-    const { limiter, store } = harness({ limit: 3 });
-    await limiter.consume("caller", 3);
+    const h = harness({ limit: 3 });
+    await h.limiter.consume("caller", 3);
+    assert.equal(h.count(), 3);
 
-    const before = JSON.parse(store.entries.get("caller").value).count;
-    await limiter.consume("caller", 1);
-    await limiter.consume("caller", 1);
-    const after = JSON.parse(store.entries.get("caller").value).count;
+    await h.limiter.consume("caller", 1);
+    await h.limiter.consume("caller", 1);
 
-    assert.equal(before, 3);
-    assert.equal(after, 3, "refusals must not increment the counter");
+    assert.equal(h.count(), 3, "refusals must not increment the counter");
 });
 
 test("a batch larger than the whole budget is refused outright", async () => {
@@ -164,53 +158,93 @@ test("callers have separate budgets", async () => {
     assert.equal((await limiter.consume("alice", 1)).allowed, false);
 });
 
-test("concurrent calls cannot overshoot the limit", async () => {
-    // The reason the counter is a compare-and-swap rather than a read-modify-write.
-    // Twenty simultaneous calls against a budget of five must yield five, not twenty:
-    // a plain increment would have them all read 0 and all write 1.
+test("a looping client is bounded, which is the case that matters", async () => {
+    // Sequential calls are what a runaway script and a stuck agent both produce, and
+    // this is the bound the limiter genuinely provides.
+    const { limiter } = harness({ limit: 20 });
+
+    let allowed = 0;
+    for (let i = 0; i < 200; i += 1) {
+        if ((await limiter.consume("caller", 1)).allowed) allowed += 1;
+    }
+
+    assert.equal(allowed, 20, `budget was 20 but ${allowed} of 200 calls were allowed`);
+});
+
+test("concurrent calls undercount, and that is the known trade", async () => {
+    // Documented rather than asserted away. A read-modify-write lets simultaneous
+    // callers read the same value and the last write win, so a burst can spend more
+    // than it is charged for. Two attempts at an exact counter via ETag
+    // compare-and-swap each took the endpoint down (see the note in
+    // lib/mcp-rate-limit.js); an approximate bound that cannot 429 a healthy caller is
+    // the deliberate replacement.
+    //
+    // The test exists so the weakness is visible in the suite instead of only in
+    // production, and so anyone tempted to reintroduce a CAS reads why first.
     const { limiter } = harness({ limit: 5 });
 
     const verdicts = await Promise.all(
         Array.from({ length: 20 }, () => limiter.consume("caller", 1)),
     );
-    const allowed = verdicts.filter((v) => v.allowed && !v.degraded).length;
+    const allowed = verdicts.filter((v) => v.allowed).length;
 
-    assert.equal(allowed, 5, `expected exactly 5 allowed, got ${allowed}`);
+    assert.ok(
+        allowed > 5,
+        "if this now equals the budget, the counter became atomic and the comment above is stale",
+    );
+    // The next sequential call still sees a counter and still gets refused, so the
+    // leak is bounded to one burst rather than being unbounded over time.
+    const after = await limiter.consume("caller", 5);
+    assert.equal(after.allowed, false);
 });
 
 test("an unreadable store fails open", async () => {
     // A limiter that can take the endpoint down with it is worse than the abuse it
     // prevents. This one guards CPU, not private data.
-    const limiter = createRateLimiter({
-        blobs: () => ({
-            async getWithMetadata() {
-                throw new Error("blobs unavailable");
-            },
-            async set() {
-                throw new Error("blobs unavailable");
-            },
-        }),
-    });
-
+    const { limiter } = harness({ store: fakeStore({ failRead: true }) });
     const verdict = await limiter.consume("caller", 1);
     assert.equal(verdict.allowed, true);
     assert.equal(verdict.degraded, true);
 });
 
 test("an unwritable store fails open", async () => {
-    const limiter = createRateLimiter({
-        blobs: () => ({
-            async getWithMetadata() {
-                return null;
-            },
-            async set() {
-                throw new Error("read-only");
-            },
-        }),
-    });
-
+    const { limiter } = harness({ store: fakeStore({ failWrite: true }) });
     const verdict = await limiter.consume("caller", 1);
     assert.equal(verdict.allowed, true);
+    assert.equal(verdict.degraded, true);
+});
+
+test("a store that cannot be constructed fails open", async () => {
+    // getStore throws where the Blobs environment is absent, which is every context
+    // that is not a deployed function. The packaging suite drives the real default
+    // export, so a throw here would 500 rather than degrade.
+    const limiter = createRateLimiter({
+        blobs: () => {
+            throw new Error("MissingBlobsEnvironmentError");
+        },
+    });
+    const verdict = await limiter.consume("caller", 1);
+    assert.equal(verdict.allowed, true);
+    assert.equal(verdict.degraded, true);
+});
+
+test("a store that stops reading releases the limit rather than holding it", async () => {
+    // The regression test for both outages, in the form that distinguishes cause from
+    // coincidence: refusal must require a value actually read.
+    //
+    // Spend the whole budget against a healthy store, so a refusal is otherwise
+    // guaranteed, then break reads. The answer has to flip back to allowed — the
+    // limiter cannot know the caller is over budget, so it must not claim they are.
+    // Both outages were the opposite: a store that stopped cooperating produced 429s.
+    const store = fakeStore();
+    const { limiter } = harness({ limit: 2, store });
+
+    await limiter.consume("caller", 2);
+    assert.equal((await limiter.consume("caller", 1)).allowed, false);
+
+    store.failRead = true;
+    const verdict = await limiter.consume("caller", 1);
+    assert.equal(verdict.allowed, true, "an unreadable counter must not refuse");
     assert.equal(verdict.degraded, true);
 });
 

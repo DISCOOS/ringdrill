@@ -26,20 +26,38 @@
 // That is the safe direction to be wrong in: every remaining tool reaches the
 // cross-compiled Dart, which is synchronous CPU the function cannot yield during.
 //
-// ## Exact, not approximate
+// ## Approximate on purpose, after two attempts at exact
 //
-// The counter is a compare-and-swap loop on an ETag, the pattern `shared.js` already
-// uses for the slug index. Netlify Blobs has no atomic increment, and a plain
-// read-modify-write would let two concurrent requests both read 59 and both write 60,
-// so a burst could overshoot by however many callers arrive at once — which is
-// exactly the case a rate limit exists for. `onlyIfMatch` makes the loser of that
-// race retry against the winner's value instead of clobbering it.
+// The counter is a plain read-modify-write. Netlify Blobs has no atomic increment, so
+// the obvious way to make this exact is a compare-and-swap on an ETag, the way
+// `shared.js` does for the slug index. That was tried twice and cost an outage each
+// time, and the record is worth keeping because both failures were invisible offline:
 //
-// ## Fail open
+//   1. ETag from `getWithMetadata`. `set` does not compare against that one, so
+//      `onlyIfMatch` never matched, every write after the first failed, and the
+//      counter sat at 1 while the endpoint served everything. Silent.
+//   2. ETag from `getMetadata`, the way `drills-admin.js` does it, plus logic to tell
+//      real contention from a broken condition. Also never matched — the ETag differs
+//      between reads here — so the retries exhausted and the branch that refuses on
+//      contention started refusing the second metered call of every session. The
+//      smoke test caught it; a client would have caught it first.
 //
-// If the store errors, the request proceeds. A rate limiter that can take the
-// endpoint down with it is a worse bug than the abuse it prevents, and this one is
-// guarding CPU on a free tier, not protecting private data.
+// So `onlyIfMatch` is not a usable primitive on this store, and the honest response is
+// to stop depending on it. Read, decide, write.
+//
+// The cost is undercounting under concurrency: several calls arriving together read
+// the same value, and the last write wins. What survives is the bound on a client
+// looping, which is what a runaway script and a stuck agent both are, and between them
+// the realistic way this gets hammered. A loose bound that works beats an exact one
+// that turns store behaviour into 429s.
+//
+// ## Fail open, and now only ever open
+//
+// Every store failure allows the request. There is exactly one refusal path and it
+// fires only on a value successfully read. A rate limiter that can take the endpoint
+// down with it is a worse bug than the abuse it prevents — this guards CPU on a free
+// tier, not private data — and having proven that twice, the property is now
+// structural rather than intended.
 import { createHash } from "node:crypto";
 import { getStore } from "@netlify/blobs";
 
@@ -55,11 +73,6 @@ export const WINDOW_MS = 60_000;
 /// Namespace for the counters, separate from every other store so a counter can
 /// never collide with a document, an artefact or a published plan.
 const RATE_LIMIT_NS = "mcp-rate-limit";
-
-/// How many times to retry a lost compare-and-swap before giving up and allowing the
-/// request. Contention is per-caller, so the realistic depth is the number of
-/// requests one client has in flight at once.
-const MAX_CAS_ATTEMPTS = 5;
 
 /// Tool calls that do not count against the limit.
 ///
@@ -122,21 +135,37 @@ export function clientKey(headers) {
     return createHash("sha256").update(`ringdrill-mcp:${ip}`).digest("hex").slice(0, 32);
 }
 
-/// Builds the limiter. Dependencies are injectable so the tests can drive the
-/// compare-and-swap loop, including its contention path, without Netlify Blobs.
+/// Builds the limiter. Dependencies are injectable so every path here — including
+/// both fail-open branches — is exercised offline, without Netlify Blobs.
 export function createRateLimiter({
     blobs = store,
     now = () => Date.now(),
     limit = WINDOW_LIMIT,
     windowMs = WINDOW_MS,
-    maxAttempts = MAX_CAS_ATTEMPTS,
 } = {}) {
     return {
         /// Spends `cost` against `key`'s budget.
         ///
         /// Returns `{ allowed, remaining, retryAfterSeconds }`. When it refuses,
         /// nothing is spent: a request that is turned away should not also push the
-        /// caller further past the limit and extend their wait.
+        /// caller further past the limit and extend their own wait.
+        ///
+        /// Read, decide, write. No compare-and-swap, and that is a deliberate retreat
+        /// rather than an oversight — see the note at the top of this file for the two
+        /// outages that bought the lesson.
+        ///
+        /// The consequence, stated plainly: concurrent calls can undercount. Several
+        /// arriving together all read the same value and the last write wins, so a
+        /// caller with N requests genuinely in flight can slip through with fewer
+        /// counted than they spent. What this does still catch is a client looping —
+        /// which is what a runaway script and an agent stuck in a retry both are, and
+        /// between them they are the realistic way this endpoint gets hammered.
+        ///
+        /// The refusal path is the important property now. There is exactly one, and
+        /// it fires only on a value successfully read from the store. Every failure —
+        /// unreachable store, unreadable entry, rejected write — allows the request.
+        /// It is not possible for a store problem to turn into a 429, which is the
+        /// mode that took the endpoint down twice.
         async consume(key, cost) {
             if (cost <= 0) return { allowed: true, remaining: limit };
 
@@ -152,66 +181,43 @@ export function createRateLimiter({
                 return { allowed: true, remaining: limit, degraded: true };
             }
 
-            for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-                const current = now();
-                let entry = null;
-                let etag;
-
-                try {
-                    const read = await s.getWithMetadata(key, { type: "json" });
-                    entry = read?.data ?? null;
-                    etag = read?.etag;
-                } catch {
-                    // Fail open: an unreadable counter must not refuse the request.
-                    return { allowed: true, remaining: limit, degraded: true };
-                }
-
-                // A window that has run out starts over. Treated the same as a
-                // missing entry, so an idle caller is never charged for history.
-                const fresh =
-                    !entry ||
-                    typeof entry.windowStart !== "number" ||
-                    current - entry.windowStart >= windowMs;
-                const windowStart = fresh ? current : entry.windowStart;
-                const used = fresh ? 0 : entry.count ?? 0;
-
-                if (used + cost > limit) {
-                    const elapsed = current - windowStart;
-                    const retryAfterSeconds = Math.max(
-                        1,
-                        Math.ceil((windowMs - elapsed) / 1000),
-                    );
-                    return {
-                        allowed: false,
-                        remaining: Math.max(0, limit - used),
-                        retryAfterSeconds,
-                    };
-                }
-
-                const next = { windowStart, count: used + cost };
-                // A fresh window may be replacing an expired entry that still
-                // exists, so `onlyIfNew` is only right when there was nothing to
-                // read. Otherwise match the ETag we based the count on.
-                const condition =
-                    etag === undefined ? { onlyIfNew: true } : { onlyIfMatch: etag };
-
-                let modified;
-                try {
-                    ({ modified } = await s.set(key, JSON.stringify(next), condition));
-                } catch {
-                    return { allowed: true, remaining: limit, degraded: true };
-                }
-
-                if (modified) {
-                    return { allowed: true, remaining: limit - next.count };
-                }
-                // Lost the race. Loop and recount against whatever landed.
+            const current = now();
+            let entry;
+            try {
+                entry = await s.get(key, { type: "json" });
+            } catch {
+                return { allowed: true, remaining: limit, degraded: true };
             }
 
-            // Sustained contention on one caller's key. Allowing it is the lesser
-            // evil: the alternative is refusing a request we never proved was over
-            // budget, and the next call re-reads a counter that by now has settled.
-            return { allowed: true, remaining: 0, degraded: true };
+            // A window that has run out starts over, treated the same as a missing
+            // entry, so an idle caller is never charged for history.
+            const fresh =
+                !entry ||
+                typeof entry.windowStart !== "number" ||
+                current - entry.windowStart >= windowMs;
+            const windowStart = fresh ? current : entry.windowStart;
+            const used = fresh ? 0 : entry.count ?? 0;
+
+            if (used + cost > limit) {
+                const retryAfterSeconds = Math.max(
+                    1,
+                    Math.ceil((windowMs - (current - windowStart)) / 1000),
+                );
+                return {
+                    allowed: false,
+                    remaining: Math.max(0, limit - used),
+                    retryAfterSeconds,
+                };
+            }
+
+            try {
+                await s.set(key, JSON.stringify({ windowStart, count: used + cost }));
+            } catch {
+                // The call is allowed; it simply went uncounted.
+                return { allowed: true, remaining: limit - used - cost, degraded: true };
+            }
+
+            return { allowed: true, remaining: limit - used - cost };
         },
     };
 }

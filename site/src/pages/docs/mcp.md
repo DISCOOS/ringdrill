@@ -60,7 +60,7 @@ Noe verktøy for å publisere finnes ikke, og det er med vilje.
 
 Endepunktet er åpent, uten innlogging og gratis. Da trengs det noen kanter for at det skal fortsette å være det:
 
-- **60 verktøykall i minuttet** per bruker. Over det får du en HTTP 429 som sier hvor lenge du skal vente, og assistenten bør prøve igjen selv. Å koble til og liste verktøyene er gratis, så en klient kommer alltid fram til serveren, også midt i et utkast.
+- **Rundt 60 verktøykall i minuttet** per bruker. Over det får du en HTTP 429 som sier hvor lenge du skal vente, og assistenten bør prøve igjen selv. Å koble til og liste verktøyene er gratis, så en klient kommer alltid fram til serveren, også midt i et utkast. Det er et omtrentlig tak, ikke en presis telling, og det er med vilje: den heller mot å slippe arbeidet ditt gjennom.
 - **512 KB** per planfil, og **1 MB** per forespørsel.
 - **10 sekunder** per bygging.
 

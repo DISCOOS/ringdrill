@@ -71,31 +71,38 @@ function memoryStore() {
     };
 }
 
-/// A limiter with a budget no test will reach, over an in-memory store.
+/// An in-memory store with the two calls the limiter makes.
 ///
-/// Defaulted for the same reason `artifactCache` is: every metered tool call now goes
-/// through the limiter (lib/mcp-rate-limit.js), so without this each one would reach
-/// for a real Netlify Blobs store. It would fail open and the assertions would still
-/// hold, which is precisely the problem — the suite would pass while silently
-/// exercising the degraded path. Rate-limiting behaviour itself is covered in
-/// mcp-rate-limit.test.mjs and in the 429 test below, which pass their own limiter.
-function unlimited() {
+/// Only `get` and `set`. An earlier version offered `getWithMetadata` and conditional
+/// writes, which the limiter no longer uses — so every metered call in this suite ran
+/// the fail-open path and the 429 assertion below could not have failed.
+function counterStore() {
     const entries = new Map();
-    let sequence = 0;
-    return createRateLimiter({
-        limit: Number.MAX_SAFE_INTEGER,
-        blobs: () => ({
-            async getWithMetadata(key) {
-                const hit = entries.get(key);
-                return hit ? { data: JSON.parse(hit.value), etag: hit.etag } : null;
-            },
-            async set(key, value) {
-                sequence += 1;
-                entries.set(key, { value, etag: `etag-${sequence}` });
-                return { modified: true, etag: `etag-${sequence}` };
-            },
-        }),
-    });
+    return {
+        async get(key) {
+            const hit = entries.get(key);
+            return hit ? JSON.parse(hit) : null;
+        },
+        async set(key, value) {
+            entries.set(key, value);
+            return { modified: true };
+        },
+    };
+}
+
+/// A limiter with a budget no test will reach.
+///
+/// Defaulted for the same reason `artifactCache` is: every metered tool call goes
+/// through the limiter, so without this each one would reach for a real Netlify Blobs
+/// store. It would fail open and the assertions would still hold, which is exactly the
+/// problem — the suite would pass while silently exercising the degraded path.
+///
+/// Note `() => store`, not `counterStore`. `blobs` is called on every consume, so
+/// passing the factory would build a fresh empty store per call and no counter would
+/// ever persist.
+function unlimited() {
+    const store = counterStore();
+    return createRateLimiter({ limit: Number.MAX_SAFE_INTEGER, blobs: () => store });
 }
 
 function handlerWith(overrides = {}) {
@@ -817,34 +824,8 @@ test("a caller over the limit gets 429 with Retry-After, and no compile runs", a
     let compiles = 0;
     const handler = handlerWith({
         limiter: (() => {
-            const entries = new Map();
-            let sequence = 0;
-            return createRateLimiter({
-                limit: 2,
-                blobs: () => ({
-                    async getWithMetadata(key) {
-                        const hit = entries.get(key);
-                        return hit
-                            ? { data: JSON.parse(hit.value), etag: hit.etag }
-                            : null;
-                    },
-                    async set(key, value, condition = {}) {
-                        const hit = entries.get(key);
-                        if (condition.onlyIfNew === true && hit) {
-                            return { modified: false, etag: hit.etag };
-                        }
-                        if (
-                            condition.onlyIfMatch != null &&
-                            hit?.etag !== condition.onlyIfMatch
-                        ) {
-                            return { modified: false, etag: hit?.etag };
-                        }
-                        sequence += 1;
-                        entries.set(key, { value, etag: `etag-${sequence}` });
-                        return { modified: true, etag: `etag-${sequence}` };
-                    },
-                }),
-            });
+            const store = counterStore();
+            return createRateLimiter({ limit: 2, blobs: () => store });
         })(),
         invoke: async (request) => {
             compiles += 1;
@@ -879,17 +860,8 @@ test("a caller over the limit gets 429 with Retry-After, and no compile runs", a
 test("introspection stays free when the caller is out of budget", async () => {
     // A client reconnecting must always be able to discover the server. Metering
     // initialize/tools/list would turn a rate limit into an outage.
-    const spent = createRateLimiter({
-        limit: 0,
-        blobs: () => ({
-            async getWithMetadata() {
-                return null;
-            },
-            async set() {
-                return { modified: true, etag: "e1" };
-            },
-        }),
-    });
+    const store = counterStore();
+    const spent = createRateLimiter({ limit: 0, blobs: () => store });
     const handler = handlerWith({ limiter: spent });
 
     for (const method of ["initialize", "tools/list"]) {
