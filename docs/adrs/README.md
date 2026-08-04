@@ -77,6 +77,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0067 | [Give tokens a searchable browser sheet, and leave the caret menu as the fast path](./0067-token-browser-sheet.md) | Accepted |
 | ADR-0068 | [Decide whether a cascaded field resolves in the borrowing scope](./0068-cascaded-fields-and-scoped-overrides.md) | Accepted |
 | ADR-0069 | [Render the brief through a lazy viewport, and navigate it without relying on mounted headings](./0069-lazy-brief-viewport.md) | Accepted |
+| ADR-0070 | [Deliver a built archive by handle, not through the transcript](./0070-build-artifact-delivery.md) | Accepted |
 
 ## When to write an ADR
 
