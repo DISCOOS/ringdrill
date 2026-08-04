@@ -125,6 +125,12 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
 
   late List<String> _tags;
   late Set<_Section> _activeSections;
+
+  /// Section ids currently showing their resolved-markdown preview
+  /// (DESIGN-010) rather than the editable chip field — remembered for the
+  /// session, per section, not editor-wide (DESIGN-010's settled decisions).
+  final Set<String> _previewSections = {};
+
   late StationNumberFormat _stationNumberFormat;
   String? _languageCode;
   String? _tagError;
@@ -206,9 +212,18 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
   void _removeSection(_Section section) {
     setState(() {
       _activeSections.remove(section);
+      _previewSections.remove(section.name);
       _controllerFor(section).clear();
     });
   }
+
+  void _togglePreview(String sectionId, bool preview) => setState(() {
+    if (preview) {
+      _previewSections.add(sectionId);
+    } else {
+      _previewSections.remove(sectionId);
+    }
+  });
 
   /// The in-memory [Plan] as the editor currently stands — every
   /// controller's live text plus [_variables] — not [widget.plan], which
@@ -368,6 +383,8 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
             label: _labelFor(section, l),
             icon: Icons.description_outlined,
             removable: true,
+            preview: _previewSections.contains(section.name),
+            onPreviewChanged: (value) => _togglePreview(section.name, value),
             // Keyed by section so switching sections always mounts a fresh
             // field: without a distinguishing key, two sections with the
             // same widget shape at the same tree slot can make Flutter
@@ -389,6 +406,7 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
                       expands: true,
                       tokenAware: true,
                       planFields: planFields,
+                      preview: _previewSections.contains(section.name),
                       onCreateVariable: _createVariableInline,
                     ),
                   ),
