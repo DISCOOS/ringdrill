@@ -397,6 +397,40 @@ jobs:
         working-directory: site
         run: npm run build
 
+      # @astrojs/cloudflare writes `"legacy_env": true` into the config it
+      # generates, and wrangler removed the field: it now hard-errors with "The
+      # legacy_env field is no longer supported". Both are pinned, so this is a
+      # standing incompatibility rather than a version that drifted — and
+      # upgrading the adapter does not fix it (14.1.7, the latest at time of
+      # writing, still emits it). Stripping the key here is what Cloudflare's own
+      # error message asks for, and it is behaviour-neutral by their statement:
+      # service environments are gone, every environment now deploys as its own
+      # Worker, and that already matches `legacy_env = true` — which was the
+      # default. So removing it changes nothing about how this Worker deploys.
+      #
+      # Edits the generated file, never site/wrangler.json: the field is not ours
+      # and does not appear in the committed config. Drop this step once the
+      # adapter stops emitting it, which is the real fix.
+      #
+      # It cost a red main to find, because the `site` job is path-gated on
+      # `site/**` and the wrangler pin landed a month after the last site change.
+      # Nothing exercised the two together until the next site commit.
+      - name: Drop legacy_env from the generated Worker config
+        working-directory: site
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const path = "dist/server/wrangler.json";
+            const config = JSON.parse(fs.readFileSync(path, "utf8"));
+            if (!("legacy_env" in config)) {
+              console.log("legacy_env absent — the adapter stopped emitting it, so this step can go");
+              process.exit(0);
+            }
+            delete config.legacy_env;
+            fs.writeFileSync(path, JSON.stringify(config));
+            console.log("stripped legacy_env from " + path);
+          '
+
       - name: Deploy to Cloudflare Workers
         # @astrojs/cloudflare (v13+) emits a Workers-with-assets bundle
         # (dist/client + dist/server/{entry.mjs,wrangler.json}), not a
