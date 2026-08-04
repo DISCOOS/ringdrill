@@ -18,7 +18,9 @@
   "scripts": {
     "test": "node --test --test-concurrency=1 netlify/tests/**/*.test.mjs mcp/tests/*.test.mjs",
     "//test": "--test-concurrency=1 is required, not tuning: both suites shell out to `dart run`, which shares .dart_tool state, and concurrent files intermittently fail one of the Dart invocations.",
-    "og:image": "node tools/generate-og-image.mjs"
+    "og:image": "node tools/generate-og-image.mjs",
+    "smoke:mcp": "node tools/mcp-smoke.mjs",
+    "//smoke:mcp": "Drives the DEPLOYED /mcp endpoint over the network, so it is not part of `npm test`. Run after a functions deploy, or pass another origin: `npm run smoke:mcp -- https://host/mcp`."
   },
   "keywords": [],
   "author": "",

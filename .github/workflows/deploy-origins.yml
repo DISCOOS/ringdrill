@@ -188,10 +188,20 @@ jobs:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         run: npx netlify deploy --prod --dir=. --functions=netlify/functions
 
+      - name: Smoke test the live MCP endpoint
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        # The packaging test above proves the artefact; this proves the origin —
+        # redirects, blob bindings, and whatever Netlify actually published. Every
+        # check calls a tool that has to do real work, because the failure mode
+        # being guarded against is a server that introspects as healthy and errors
+        # only when asked to compile.
+        run: npm run smoke:mcp
+
       - name: Dry run - skip Netlify publish
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
         run: |
           echo "DRY RUN: would run 'npx netlify deploy --prod --dir=. --functions=netlify/functions'"
+          echo "DRY RUN: would run 'npm run smoke:mcp' against https://api.ringdrill.app/mcp"
 
   pwa:
     name: Deploy PWA
