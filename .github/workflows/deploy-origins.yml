@@ -105,7 +105,15 @@ jobs:
           #   functions: `npm ci` at the repo root, then `netlify deploy
           #              --functions=netlify/functions`. So the root
           #              package.json/lock are inputs — a dependabot bump to a
-          #              function dependency otherwise deploys nothing.
+          #              function dependency otherwise deploys nothing. The
+          #              bundler follows imports and netlify.toml's
+          #              included_files, and both leave netlify/functions/:
+          #              mcp.js imports ../../mcp/tools.mjs (the shared tool
+          #              table, the same one the stdio server uses) and ships
+          #              skills/ringdrill-plan-authoring/ as MCP resources
+          #              (ADR-0065). Without those two, an edit to the tool
+          #              descriptions or the authoring guide is live in the repo
+          #              and stale on /mcp with nothing to show for it.
           #              netlify/tests/ is deliberately absent: it does not ship.
           #   pwa:       `make build-web`, so Makefile is an input, as is
           #              assets/ (templates and images are bundled into the web
@@ -115,7 +123,7 @@ jobs:
           #              all — so ^site/ is complete, and Makefile does NOT
           #              belong here.
           {
-            echo "functions=$(match '^(netlify/functions/|netlify\.toml|package\.json|package-lock\.json)')"
+            echo "functions=$(match '^(netlify/functions/|mcp/|skills/ringdrill-plan-authoring/|netlify\.toml|package\.json|package-lock\.json)')"
             echo "pwa=$(match '^(lib/|assets/|web/|pubspec\.(yaml|lock)|Makefile)')"
             echo "site=$(match '^site/')"
           } >> "$GITHUB_OUTPUT"
