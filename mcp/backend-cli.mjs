@@ -5,6 +5,12 @@
 // so `tools.mjs` does not know which one it has — which is what lets one tool table
 // serve both.
 //
+// That second claim was untested and, for a while, untrue: this backend echoed the
+// CLI's `source`/`out` paths that the hosted one has no way to produce, and left
+// `ok` off a successful result that the hosted one carried. `mcp/tests/
+// backend-parity.test.mjs` now runs both over the same input and compares the keys,
+// so the sentence above is a check rather than an intention.
+//
 // This one keeps the local server's defining property: the document never leaves
 // the machine, and the CLI it runs is the one built from this checkout.
 import { spawn, spawnSync } from 'node:child_process';
@@ -187,7 +193,26 @@ export function createCliBackend({ cli, cwd }) {
                 `ringdrill ${argv.join(' ')} produced no JSON: ${stdout.trim()}`,
             );
         }
-        return payload;
+        return withoutLocalPaths(payload);
+    }
+
+    /// Drops the CLI's `source` and `out` from a payload before it becomes an MCP
+    /// result.
+    ///
+    /// They are the CLI reporting to a person at a terminal which file it read and
+    /// where it wrote — meaningful there, meaningless here, and worse than
+    /// meaningless: every path this layer hands the CLI is inside a scratch
+    /// directory that `withDocument`/`withTempFile`/`getPlan` delete in their
+    /// `finally`, so by the time the client reads the payload the path names
+    /// nothing. The hosted backend has no filesystem to echo and never emitted
+    /// either, which made these the second half of a shape divergence the two
+    /// backends were not supposed to have (`mcp/tests/backend-parity.test.mjs`).
+    ///
+    /// `document_path` is the one case where `source` would be a real file — but it
+    /// is the caller's own argument coming back, so nothing is lost by dropping it
+    /// uniformly.
+    function withoutLocalPaths({ source, out, ...rest }) {
+        return rest;
     }
 
     /// Runs `fn(documentPath, scratchDir)` for either input shape (ADR-0064).

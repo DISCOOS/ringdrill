@@ -10,13 +10,22 @@
 // A backend implements six operations, all `async (args) => object`:
 //
 //   schema()                        the JSON Schema
-//   create(args)                    -> {document}
-//   analyze({document|document_path, strict})  -> {ok, errors, warnings, …}
-//   build({document|document_path, strict})    -> {ok, contentHash, drillBase64, …}
+//   create(args)                    -> {document, …}
+//   analyze({document|document_path, strict})  -> {errors, warnings, …}
+//   build({document|document_path, strict})    -> {contentHash, drillBase64, …}
 //   render({document|document_path, audience, lang, exercise, station, format})
 //                                              -> {markdown, …}
 //   searchCatalog({limit, cursor})  -> {items, nextCursor?}
 //   getPlan({slug, version})        -> {document, …}
+//
+// The four document operations answer with a verdict, and their tools always
+// surface it as `ok` — `verdict()` below supplies it, so a backend need only say
+// `ok: false` when something did not compile. That uniformity is the contract a
+// client sees, and it is the one thing here the two backends had actually drifted
+// on: `mcp/tests/backend-parity.test.mjs` now runs both over the same input and
+// compares the keys. A backend may return only what it can honestly produce — it
+// must not invent a field the other cannot, or echo a path that will not exist by
+// the time the client reads it.
 //
 // Deliberately no Node built-ins here: this module is imported by a Netlify
 // function, so it stays plain data plus calls into the injected backend.
@@ -80,6 +89,24 @@ const DOCUMENT_OR_PATH = [
     { required: ['document_path'] },
     { required: ['document_hash'] },
 ];
+
+/// Guarantees the `ok` a document operation's answer is documented to carry.
+///
+/// The four document tools answer with a verdict — "did this compile" — and the
+/// header of this file states the contract as `-> {ok, …}`. Only the hosted backend
+/// kept it. The CLI backend injects `ok: false` when the CLI exits non-zero and adds
+/// nothing on success, so `ok` was *absent on success and false on failure*: a
+/// client writing the obvious `if (result.ok)` got the answer backwards on stdio and
+/// right on the hosted endpoint.
+///
+/// Applied here rather than in either backend because here is the only place both
+/// pass through — a fix in one is a fix that can drift again. `mcp/tests/
+/// backend-parity.test.mjs` is what keeps them honest.
+///
+/// Not applied to every tool: `schema` answers with the JSON Schema *itself*, and
+/// wrapping that would make it describe a document nobody writes. The catalog tools
+/// answer with a collection, not a verdict.
+const verdict = (run) => async (args) => ({ ok: true, ...(await run(args)) });
 
 /// The tool surface.
 ///
@@ -195,7 +222,7 @@ export function toolsFor(backend) {
                 },
                 required: ['name'],
             },
-            run: (args) => backend.create(args),
+            run: verdict((args) => backend.create(args)),
         },
         {
             name: 'analyze_plan',
@@ -221,7 +248,7 @@ export function toolsFor(backend) {
                 },
                 anyOf: DOCUMENT_OR_PATH,
             },
-            run: (args) => backend.analyze(args),
+            run: verdict((args) => backend.analyze(args)),
         },
         {
             name: 'build_plan',
@@ -244,7 +271,7 @@ export function toolsFor(backend) {
                 },
                 anyOf: DOCUMENT_OR_PATH,
             },
-            run: (args) => backend.build(args),
+            run: verdict((args) => backend.build(args)),
         },
         {
             name: 'render_plan',
@@ -305,7 +332,7 @@ export function toolsFor(backend) {
                 },
                 anyOf: DOCUMENT_OR_PATH,
             },
-            run: (args) => backend.render(args),
+            run: verdict((args) => backend.render(args)),
         },
     ];
 }
