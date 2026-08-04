@@ -173,6 +173,14 @@ mcp-bundle:
 	echo "Cross-compile the source compiler to JavaScript..."
 	dart compile js tools/mcp_js_entry.dart -O2 \
 		-o netlify/functions/lib/mcp-compiler-bundle.js
+	# .deps is dart2js's own list of every file it compiled, which is the only
+	# drift-free answer to "what is this bundle built from" — so it becomes the
+	# committed stamp the staleness check compares content against, before it is
+	# thrown away. The alternative, a hand-listed set of source roots, was both
+	# too wide and too narrow: it watched lib/l10n/app_localizations.dart, which
+	# is Flutter code the bundle never reaches.
+	node tools/mcp-bundle-stamp.mjs write \
+		netlify/functions/lib/mcp-compiler-bundle.js.deps
 	# .deps and .map are by-products. The map is deliberately not committed:
 	# it is 3x the bundle, only helps a server-side stack trace, and this repo
 	# already strips maps before publishing (strip-source-maps-web) rather than

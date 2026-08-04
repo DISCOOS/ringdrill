@@ -277,8 +277,13 @@ Two constraints worth knowing before touching it:
 * **The bundle is committed.** A Netlify build has no Dart SDK, so it cannot be
   produced at deploy time — the same reason `headless_labels.g.dart` and
   `brief_templates.g.dart` are committed. `make mcp-bundle` after changing anything
-  the compiler reaches; `npm test` fails when the bundle is older than those
-  sources, and a parity test compares its output against the VM's through the CLI.
+  the compiler reaches; `npm test` fails when any file the bundle was compiled from
+  has changed content since, and a parity test compares its output against the VM's
+  through the CLI. The staleness check reads
+  `mcp-compiler-bundle.sources.json`, a stamp `make mcp-bundle` writes from
+  dart2js's own `.deps` list — so the closure is exact rather than a set of source
+  roots someone has to keep current, and the check survives the mtime churn that
+  `make i18n` and `git checkout` produce. It names the file that moved.
 * **esbuild must not touch it.** Netlify's bundler inlines imported modules, and
   doing that to dart2js output breaks Dart's runtime type information — every
   `analyze_plan` failed with `type 'minified:z2' is not a subtype of type

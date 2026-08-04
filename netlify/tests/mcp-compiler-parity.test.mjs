@@ -22,6 +22,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 import { invoke } from "../functions/lib/mcp-compiler.js";
+import { check } from "../../tools/mcp-bundle-stamp.mjs";
 
 const run = promisify(execFile);
 const here = dirname(fileURLToPath(import.meta.url));
@@ -211,52 +212,26 @@ test("an unknown op is reported rather than thrown", async () => {
 
 test("the bundle is not stale relative to the Dart sources", async () => {
     // The other consequence ADR-0060 names: a stale bundle serves old compiler
-    // behaviour with no symptom. Compared against the newest source in the
-    // bundle's own dependency graph rather than all of lib/, so an unrelated
-    // widget change does not fail this.
-    const bundle = join(repoRoot, "netlify", "functions", "lib", "mcp-compiler-bundle.js");
-    const { stat } = await import("node:fs/promises");
-    const builtAt = (await stat(bundle)).mtimeMs;
-
-    const closure = JSON.parse(
-        await readFile(join(repoRoot, ".dart_tool", "package_config.json"), "utf8"),
-    );
-    assert.ok(closure, "expected a resolved package config");
-
-    // The compiler's own sources: lib/data/source, lib/models, the brief layer and
-    // the l10n subset. Deliberately not all of lib/.
-    const { readdir } = await import("node:fs/promises");
-    const roots = [
-        join(repoRoot, "lib", "data"),
-        join(repoRoot, "lib", "models"),
-        join(repoRoot, "lib", "services", "brief"),
-        join(repoRoot, "lib", "utils"),
-        join(repoRoot, "lib", "l10n"),
-        join(repoRoot, "tools", "mcp_js_entry.dart"),
-    ];
-    let newest = 0;
-    let newestPath = "";
-    const walk = async (path) => {
-        const info = await stat(path).catch(() => null);
-        if (!info) return;
-        if (info.isDirectory()) {
-            for (const entry of await readdir(path)) {
-                await walk(join(path, entry));
-            }
-            return;
-        }
-        if (!path.endsWith(".dart")) return;
-        if (info.mtimeMs > newest) {
-            newest = info.mtimeMs;
-            newestPath = path;
-        }
-    };
-    for (const root of roots) await walk(root);
+    // behaviour with no symptom.
+    //
+    // Content, not mtime — and dart2js's own dependency list, not a set of source
+    // roots guessed here. Both halves of that were learned the hard way, and the
+    // header of tools/mcp-bundle-stamp.mjs has the detail; the short version is
+    // that this assertion used to fail after a plain `make i18n`, on a file
+    // (lib/l10n/app_localizations.dart) that the bundle does not import at all.
+    const { missingStamp, changed } = await check();
 
     assert.ok(
-        builtAt >= newest,
-        `mcp-compiler-bundle.js is older than ${newestPath.slice(repoRoot.length + 1)}. ` +
-            "Run `make mcp-bundle` — the hosted endpoint would serve stale compiler " +
-            "behaviour with no other symptom.",
+        !missingStamp,
+        "netlify/functions/lib/mcp-compiler-bundle.sources.json is missing — " +
+            "run `make mcp-bundle`",
+    );
+    assert.deepEqual(
+        changed,
+        [],
+        `mcp-compiler-bundle.js was built before these changed:\n  ` +
+            `${changed.join("\n  ")}\n` +
+            "Run `make mcp-bundle` — the hosted endpoint would serve stale " +
+            "compiler behaviour with no other symptom.",
     );
 });
