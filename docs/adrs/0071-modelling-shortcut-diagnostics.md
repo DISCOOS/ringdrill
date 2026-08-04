@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-08-04
 deciders: ["kengu"]
 consulted: []
@@ -129,6 +129,14 @@ separate answer — drop the name, keep the role — and nothing here changes it
 
 Chosen option: **D**, four rules emitted by `SourceAnalyzer` under a new severity that
 `--strict` does not promote.
+
+> **Implemented** in `lib/data/source/source_modelling.dart`. Three rules specified
+> here were deleted during implementation because the reference plan disproved them —
+> a location's `label` is a common noun, `RolePlay.name` is a denormalized copy, and
+> "contains a digit" promotes search radii and years. What each rule finally keys on,
+> and the false positive that forced it, is recorded at the rule in that file and as a
+> named negative test in `test/data/source/source_modelling_test.dart`. Measured 38
+> suggestions on the cold plan against 3 on the hand-authored one, all 3 true positives.
 
 They are ordered deliberately: the first three say *this entity was never declared*, and
 the fourth says *it was declared and then not used*. Acting on the first three is what
