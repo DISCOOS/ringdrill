@@ -105,9 +105,10 @@ separate answer — drop the name, keep the role — and nothing here changes it
   and the guidance still states every rule in prose, so a miss costs a sentence nobody
   read while a false positive costs the channel. Every tuning choice below resolves that
   way, including the localised contact shape.
-* Nothing may assume a Norwegian plan. The format declares its own content language and
-  the app ships in two, so a rule that reads as general must behave sensibly in any
-  language even where it cannot be equally sharp.
+* Nothing may assume a Norwegian plan, and nothing may key off the plan's language
+  either. A plan's language says who reads it, not whose phone numbers are in it, so a
+  rule about contact formats has to recognise several at once regardless of the prose
+  around them.
 * Actionable in the existing shape: a `path` at the offending field and a `hint` naming
   the remedy, so an agent can act without re-reading the guide.
 * One implementation for every surface. `SourceAnalyzer` is shared by the CLI, both MCP
@@ -182,52 +183,53 @@ This is the only rule with tuning in it, so the false-positive defence is a **sh
 restriction rather than a stop-word list**: a literal qualifies only if it contains a
 digit, or is upper-case with internal punctuation (`RK-VFOLD-ØV4`, `DMO-ANDRE-1`), or
 matches a known contact shape. Ordinary prose words never qualify, which is the concrete
-meaning of "do not promote a word that merely recurs in prose."
+meaning of "do not promote a word that merely recurs in prose." What counts as a contact
+shape, and what must never be mistaken for one, is the next section.
 
-The corpus supplies the exclusions, all of which are real content:
+### Many contact formats at once, and the plan's language is not the key
 
-| Looks similar | Actually | Discriminator |
-|---|---|---|
-| `987654-1`, `987660-1` | AMIS incident numbers | six digits + `-` + digit |
-| `32V 0580307E 6552025N` | a coordinate — **rule 1's** business | embedded letters |
-| `EK35989`, `SV41219` | vehicle registrations | leading letters |
-| `(46)`, `(17)` | a person's age | parenthesised, two digits |
+A phone number is written differently per country, so one pattern would be a Norwegian
+rule wearing a general name. The tempting fix is to key the pattern off the plan's
+`language:`. **That is wrong, and not only because it is weak for `en`.**
 
-### The contact shape is localised, in three layers
+Language says who the plan is *read by*. It says nothing about whose phones are *in* it.
+A Norwegian organisation running an international exercise writes `language: en` and fills
+it with `+47` duty numbers; a Norwegian-language plan naming a foreign liaison carries a
+`+44`. A single plan legitimately mixes formats — a duty mobile, a satellite number, an
+international liaison, an internal extension. Keying on language would make the rule
+*miss* the most likely mixed case, which is worse than being merely imprecise.
 
-A phone number is written differently per country, so a single pattern would be a
-Norwegian rule wearing a general name. But the obvious fix — key the pattern off the
-plan's `language:` — does not work either, and the reason is worth stating rather than
-discovering during implementation: **language is not region.** `nb` and `nn` imply Norway
-unambiguously, but `en` implies no numbering plan at all — `+44 7700 900123`,
-`(555) 019-2837` and `021 1234 5678` are all English-language plans with nothing in
-common. The format carries `language` (ISO 639-1 content language) and **no region
-field**, so a language-keyed table would be right for `nb` and a guess everywhere else.
+So the plan's language is not an input. **Every known contact format is matched
+concurrently, in every plan**, and precision comes from the other two mechanisms:
 
-So the rule is layered, most portable first, and each layer stands alone:
+1. **A union of number shapes, all always active.** E.164 international (`+47 …`,
+   `+44 …`, `+1 …`), Norwegian 8-digit (`NN NN NN NN`, `NNN NN NNN`), NANP
+   (`(NNN) NNN-NNNN`, `NNN-NNN-NNNN`), UK (`0NNNN NNNNNN`), and whatever a later plan
+   needs. A number is a number regardless of the surrounding prose; adding a format is
+   adding a row.
+2. **Exclusions do the precision work.** This is where the real effort is, and it is
+   language-independent too, because every one of them is a *shape*:
 
-1. **International form — language-independent, always on.** An E.164-shaped literal
-   (`+47 …`, `+44 …`, `+1 …`) is a phone number in every locale and in every plan. No
-   table, no region, no ambiguity.
-2. **Label adjacency — the localised part is the *word*, not the number.** A digit run
-   next to a contact label is a phone number whatever the numbering plan:
-   `ØVLE: 93258930`, `KO 97525282 (Narve)`, `ring Narve på …` — every real example in the
-   corpus is labelled. The lexicon is per language (`tlf`, `telefon`, `mob`,
-   `vakttelefon`, `ring` / `phone`, `tel`, `mobile`, `call`, `contact`) and lives beside
-   the other localised authoring strings, so adding a language is adding words rather
-   than writing a regex. This is the layer that generalises, because a label survives
-   reformatting and a numbering plan does not.
-3. **Numbering-plan patterns — only where the language fixes the region.** `nb`/`nn` →
-   Norway: eight digits, optionally grouped `NN NN NN NN` or `NNN NN NNN`. Where the
-   language does not fix a region — `en` today — there is **no** bare-local pattern, and
-   the plan gets layers 1 and 2 only.
+   | Excluded | Why it is not a contact | Discriminator |
+   |---|---|---|
+   | `987654-1` | AMIS incident number | six digits + `-` + digit |
+   | `32V 0580307E 6552025N` | coordinate — rule 1's business | embedded letters |
+   | `EK35989` | vehicle registration | leading letters |
+   | `(46)` | a person's age | parenthesised, two digits |
+   | `110`, `112`, `113` | emergency numbers | never change, so never a variable |
 
-The residual is a **miss, not a false positive**: an unlabelled bare local number in an
-English plan will not fire. That is the right side to err on for a suggestion, where the
-guidance still says the rule and the cost of a banner is higher than the cost of a
-silence. It also gives a clean extension point — a stated region, whether inferred from a
-richer locale tag or authored — that adds recall without changing any of the three layers.
-Not proposed here; noted so the shape is deliberate.
+3. **Label adjacency, as a confidence signal rather than a fallback.** A digit run beside
+   a contact word — `ØVLE: 93258930`, `KO 97525282 (Narve)`, `ring Narve på …` — is a
+   contact whatever its shape, which lets an unrecognised format still fire. The lexicon
+   is a **union across languages, not selected by the plan's language** (`tlf`, `telefon`,
+   `mob`, `vakttelefon`, `ring`, `phone`, `tel`, `mobile`, `call`, `contact`), for the same
+   reason as above: a plan in one language routinely labels things in another, and matching
+   a word the plan "should not" contain costs nothing.
+
+The emergency-number exclusion is the one worth keeping in view during implementation. It
+is the only entry in that table justified by *semantics* rather than shape — `112` is a
+perfectly good phone number that must never be promoted, because a variable exists for
+values that change and this one never will.
 
 ### Severity: a third level, and why
 
@@ -258,16 +260,21 @@ naming suggestions among them.
   instead of eleven; a modelled location is a pin on the map instead of a sentence.
 * Good: it flags the *location* of legitimate content, so it teaches the rule rather than
   teaching people to delete operational detail.
-* Bad: the contact shape needs three layers to be locale-honest, where one regex would
-  have looked adequate — and the layer that generalises best (label adjacency) is a word
-  list, so every new content language needs its lexicon extended or its plans quietly get
-  weaker coverage. A missing lexicon entry fails silently, which is the worst failure mode
-  a localised table has.
-* Bad: **a language code cannot fix a region**, so an English plan gets no bare-local
-  number pattern and will miss `(555) 019-2837` unless it is labelled. Chosen as a miss
-  over a false positive, but it does mean the rule is strongest for exactly the locale
-  that produced the evidence and weaker everywhere else — the honest cost of having one
-  corpus.
+* Bad: matching every contact format concurrently means the union grows, and each added
+  format widens what the exclusion list has to hold back. The exclusions, not the
+  patterns, are where the maintenance actually lives — and a new format can silently
+  start matching something an old exclusion was never written against.
+* Bad: the label lexicon is a word list, so a contact labelled in a language nobody has
+  added yet is a silent miss. Union-not-selected keeps that from being a *systematic*
+  gap for whole plans, but a missing word still fails quietly, which is the worst failure
+  mode a table has.
+* Bad: `110`/`112`/`113` are excluded on semantics rather than shape — they are real
+  numbers that must never be promoted because they never change. That is the one entry in
+  the table that cannot be derived from the format of the text, so it is also the one a
+  future contributor is most likely to delete as arbitrary.
+* Bad: the evidence is single-locale. Every measured number came from Norwegian plans, so
+  the non-Norwegian patterns are written from convention rather than from a corpus, and
+  their false-positive behaviour is untested until someone authors in another locale.
 * Bad: a third severity is a wire-format change. Every consumer of the `--json` envelope
   and of `analyze_plan` sees a new counter, and the app's diagnostic rendering needs a
   third case.
@@ -368,13 +375,14 @@ with a content fix, tracked separately from this decision.
   `lib/data/source/source_fields.dart` (the `location` and `person` scopes, and
   `personRef` — the definitions rules 1–3 enforce), `mcp/tools.mjs`,
   `skills/ringdrill-plan-authoring/SKILL.md`
-* Open question for implementation: **where the contact-label lexicon lives.** The
-  analyzer must stay Flutter-free (AGENTS.md rule 7), so it cannot read
-  `AppLocalizations`. The `lib/l10n/app_*.arb` → `make labels` →
-  `lib/l10n/headless_labels.g.dart` path already produces a Flutter-free localised subset
-  for the CLI and would get these words translated alongside everything else — but that
-  file exists for brief rendering, so putting analyzer vocabulary in it is a decision to
-  make rather than assume.
+* Note for implementation: **the lexicon is not localised state, so it does not belong in
+  the l10n pipeline.** Because it is a union matched against every plan rather than a set
+  selected by the plan's language, it is one static list of words in several languages —
+  not a message needing a translation per locale. So it is a plain constant beside the
+  other analyzer rules, which also keeps the analyzer Flutter-free (AGENTS.md rule 7)
+  without going through `lib/l10n/app_*.arb` → `make labels`. Routing it through the ARB
+  would produce one list per locale and then ask the analyzer to union them back, which is
+  the same list with a translation workflow attached.
 * Precedent cited: commit `51377382`, removing a staleness warning rather than repairing
   it — the in-repo argument that an over-firing warning is worse than none.
 * Origin: a cold MCP-only conversion of the 2026 LSOR booklet that compiled clean with 0
