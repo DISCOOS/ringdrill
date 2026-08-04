@@ -93,6 +93,76 @@ void main() {
     expect(find.text(l10n.planStatusUnpublished), findsNothing);
   });
 
+  // On a compact window the AppBar has no width to spare — the label pushed the
+  // plan title into an ellipsis — so the badge shrinks to its icon and the label
+  // moves into the tooltip instead of being lost.
+  group('on a compact window', () {
+    // 390 x 844 logical px (an iPhone 14-class window) → WindowSizeClass.compact.
+    // The default 800 px test surface is `medium`, which is what the other tests
+    // in this file assert against.
+    void useCompactWindow(WidgetTester tester) {
+      tester.view.devicePixelRatio = 1.0;
+      tester.view.physicalSize = const Size(390, 844);
+      addTearDown(tester.view.reset);
+    }
+
+    testWidgets('drops the label and keeps it in the tooltip', (tester) async {
+      useCompactWindow(tester);
+
+      final service = PlanService();
+      final base = buildCatalogPlan('prog-compact');
+      await service.replacePlan(base);
+      await service.replacePlan(base.copyWith(name: 'Edited name'));
+      await service.setActive('prog-compact');
+
+      await tester.pumpWidget(harness());
+      await tester.pump();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.planStatusUnpublished), findsNothing);
+      expect(find.byIcon(Icons.cloud_upload_outlined), findsOneWidget);
+
+      final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+      expect(tooltip.message, contains(l10n.planStatusUnpublished));
+      expect(tooltip.message, contains(l10n.planStatusUnpublishedTooltip));
+    });
+
+    // The label was also the tap target; without it the bare 18 px icon is well
+    // under a finger.
+    testWidgets('keeps a finger-sized tap target', (tester) async {
+      useCompactWindow(tester);
+      final service = PlanService();
+      final base = buildCatalogPlan('prog-compact-tap');
+      await service.replacePlan(base);
+      await service.replacePlan(base.copyWith(name: 'Edited name'));
+      await service.setActive('prog-compact-tap');
+
+      final gate = Completer<void>();
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: PlanStatusBadge(publishOverride: (_) => gate.future),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        tester.getSize(find.byType(InkWell)).shortestSide,
+        greaterThanOrEqualTo(40.0),
+      );
+
+      await tester.tap(find.byIcon(Icons.cloud_upload_outlined));
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      gate.complete();
+      await tester.pumpAndSettle();
+    });
+  });
+
   // Publishing uploads the whole plan, so on a slow connection the tap looked like
   // it did nothing until the result snackbar arrived. The outcome was never silent
   // — _runUpload reports success, 409/412 and a catch-all failure — but with no

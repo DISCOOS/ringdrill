@@ -6,6 +6,7 @@ import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
+import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/catalog_browser.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -225,20 +226,31 @@ class _BadgeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final content = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+
+    // On a compact window the label is the first thing to go: the AppBar already
+    // spends its width on the menu, the plan title and the filter/library
+    // actions, and a "Unpublished"/"Sjekker katalogen" label pushes the title
+    // into an ellipsis. The state itself still has to be readable, so the label
+    // moves into the tooltip rather than disappearing.
+    final showLabel = WindowSizeClass.of(context) != WindowSizeClass.compact;
+
+    Widget content = Padding(
+      padding: EdgeInsets.symmetric(horizontal: showLabel ? 4 : 8),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 140),
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium?.copyWith(color: color),
+          if (showLabel) ...[
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 140),
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(color: color),
+              ),
             ),
-          ),
-          const SizedBox(width: 6),
+            const SizedBox(width: 6),
+          ],
           if (busy)
             SizedBox(
               width: 18,
@@ -250,6 +262,12 @@ class _BadgeChip extends StatelessWidget {
         ],
       ),
     );
+    if (!showLabel) {
+      // Without the label the badge is an 18 px icon, well under a finger. Pad
+      // it out to the same tap target the neighbouring AppBar icon buttons get.
+      content = SizedBox(width: 40, height: 40, child: Center(child: content));
+    }
+
     final wrapped = onTap == null
         ? content
         // Wrap in a transparent Material with a matching borderRadius so the
@@ -265,6 +283,12 @@ class _BadgeChip extends StatelessWidget {
               child: content,
             ),
           );
-    return Tooltip(message: tooltip, child: wrapped);
+    // Carry the dropped label as the tooltip's first line. Composed rather than
+    // localized as one string: both halves are already translated, and the
+    // publishing state uses the same text for both, which would read twice.
+    final message = showLabel || tooltip == label
+        ? tooltip
+        : '$label\n$tooltip';
+    return Tooltip(message: message, child: wrapped);
   }
 }
