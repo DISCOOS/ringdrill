@@ -29,8 +29,47 @@ export const DRILL_EXT = ".drill";
 // getStore() itself is a cheap, synchronous client construction with no
 // network I/O — there is no performance reason to cache it. Full writeup:
 // docs/notes/netlify-blobs-store-caching-token-expiry.md
-export function getDrillsStore() { return getStore(NS.DRILLS); }
-export function getSlugIndexStore() { return getStore(NS.SLUG_INDEX); }
+//
+// `_getStore` on all four accessors is a test seam, not a feature. Asserting which
+// consistency each one asks for is the only guard against the strong flag being
+// dropped in a refactor, or added to the cached read paths by mistake.
+export function getDrillsStore(_getStore = getStore) { return _getStore(NS.DRILLS); }
+export function getSlugIndexStore(_getStore = getStore) { return _getStore(NS.SLUG_INDEX); }
+
+// ---------------------------------------------------------------------------
+// Strong reads, for the paths where a read decides a write
+// ---------------------------------------------------------------------------
+//
+// **Netlify Blobs reads are eventually consistent by default.** A write lands and a
+// read moments later can still return the previous value, or nothing at all. That is
+// fine for serving the catalog and fatal for anything that reads a value in order to
+// decide what to write.
+//
+// It cost two outages to learn, in the MCP rate limiter, where a counter would not
+// accumulate and two separate ETag compare-and-swaps "failed" — the ETags were simply
+// stale reads. Three diagnoses, none of which named the default. Full writeup in
+// netlify/functions/lib/mcp-rate-limit.js and ADR-0060.
+//
+// Not the default here, because it is not free: a strong read gives up the edge cache,
+// and the read-heavy public paths (market feed, /d/<slug>, drills-head, the MCP
+// catalog tools) are exactly what that cache is for. Those paths only display what
+// they read, so a value a moment out of date is harmless.
+//
+// The rule, then: **if what you read determines what you write, read it strong.**
+// `getBlobEtag` is unconditionally strong because feeding a conditional write is its
+// only purpose. For values, use `readJsonStrong` / `getSlugRecordStrong`.
+const STRONG_READ = { consistency: "strong" };
+
+// `_getStore` is injectable for the tests only. Asserting these accessors ask for
+// strong consistency is the one guard against the flag being quietly dropped in a
+// refactor — and a dropped flag is invisible until production undercounts or a
+// conditional write starts failing for no reason.
+export function getDrillsStoreStrong(_getStore = getStore) {
+    return _getStore(NS.DRILLS, STRONG_READ);
+}
+export function getSlugIndexStoreStrong(_getStore = getStore) {
+    return _getStore(NS.SLUG_INDEX, STRONG_READ);
+}
 
 /* ---------- Read/Write helpers ---------- */
 
@@ -45,14 +84,37 @@ export async function readJson(key, fallback = null) {
     return obj ?? fallback;
 }
 
+/// `readJson` for a value that is about to decide a write.
+///
+/// Same result, read strongly — so the value reflects every completed write rather
+/// than whatever the edge cache last saw. Use this and not `readJson` whenever the
+/// object read is mutated and written back, or a lost update is silent: two callers
+/// each read a version of `meta` without the other's change, and the later write
+/// erases it.
+export async function readJsonStrong(key, fallback = null) {
+    const s = getDrillsStoreStrong();
+    const obj = await s.get(key, { type: "json" });
+    return obj ?? fallback;
+}
+
 /* ---------- Concurrency helpers ---------- */
 // Netlify Docs notes: store.set(key, value, { onlyIfMatch, onlyIfNew }) supports atomic
 // conditional writes and returns { modified, etag }. Use store.getMetadata(key) to read
 // a blob’s ETag without fetching the value.
 
-// Return the current ETag for a blob key, or null if missing.
+/// Return the current ETag for a blob key, or null if missing.
+///
+/// Strong, always. An ETag exists here for exactly one reason — to be handed to
+/// `onlyIfMatch` — so an eventually consistent one is never the right answer. A stale
+/// ETag makes a conditional write fail with nothing having changed, and the caller
+/// then reports a precondition failure that did not happen.
+///
+/// Read the ETag *before* the value it guards, never after. If a write lands between
+/// the two reads, that order leaves the value newer than the ETag, so the conditional
+/// write fails and the caller retries — safe. The reverse lets a stale value pass a
+/// fresh ETag, and the write silently erases whatever landed in between.
 export async function getBlobEtag(key) {
-    const s = getDrillsStore();
+    const s = getDrillsStoreStrong();
     const meta = await s.getMetadata(key); // returns { etag, metadata? } when present
     return meta?.etag ?? null;
 }
@@ -80,6 +142,20 @@ export async function writeBinaryConditional(key, bytes, opts = {}) {
 
 export async function getSlugRecord(slug) {
     const s = getSlugIndexStore();
+    const rec = await s.get(slug, { type: "json" });
+    return rec ?? null;
+}
+
+/// `getSlugRecord` for a decision rather than a display.
+///
+/// The case that needs it is the re-read after a lost `claimSlug`: the claim itself is
+/// atomic and safe under any read consistency, because `onlyIfNew` does not depend on
+/// having read anything. What follows it does — the loser re-reads the record to check
+/// whether the winner was itself, and an eventually consistent read can return `null`
+/// or a record from before the claim, turning a legitimate re-upload into a spurious
+/// "slug already in use".
+export async function getSlugRecordStrong(slug) {
+    const s = getSlugIndexStoreStrong();
     const rec = await s.get(slug, { type: "json" });
     return rec ?? null;
 }

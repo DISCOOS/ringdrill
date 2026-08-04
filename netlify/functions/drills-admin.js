@@ -1,7 +1,7 @@
 // netlify/functions/drills-admin.js
 import {
-    getSlugRecord, deleteSlugRecord, getSlugIndexStore,
-    keysFor, readJson, readBinary,
+    getSlugRecord, getSlugRecordStrong, deleteSlugRecord, getSlugIndexStore,
+    keysFor, readJson, readJsonStrong, readBinary,
     writeJsonConditional, writeBinaryConditional, getBlobEtag,
     nowIso,
     corsPreflight, withCors
@@ -118,15 +118,22 @@ export default async function (request) {
             case "publish": {
                 if (!slug) return json({ error: `Missing slug for action: ${action}` }, 400);
 
-                const rec = await getSlugRecord(slug);
+                // Strong: this mapping decides which blobs the mutation below
+                // touches. An eventually consistent read can miss a just-claimed slug
+                // (a spurious 404) or hand back a stale owner/program pair.
+                const rec = await getSlugRecordStrong(slug);
                 if (!rec) return json({ error: "Unknown slug: " + slug }, 404);
 
                 const { ownerId, programId } = rec;
                 const { meta } = keysFor({ ownerId, programId, version: "latest" });
-                const m = await readJson(meta, null);
-                if (!m) return json({ error: "No meta for slug" }, 404);
-
+                // ETag first, then the value it guards, and both strong: this reads
+                // `meta` in order to write it back, so an eventually consistent read
+                // either fails the conditional write for no reason (a 412 the admin
+                // cannot act on) or bases the write on a stale object and erases
+                // whatever landed in between. See the note in lib/shared.js.
                 const metaEtag = await getBlobEtag(meta);
+                const m = await readJsonStrong(meta, null);
+                if (!m) return json({ error: "No meta for slug" }, 404);
                 m.published = action === "publish";
                 if (action === "publish") m.publishedAt = nowIso();
                 else m.unpublishedAt = nowIso();
@@ -140,12 +147,16 @@ export default async function (request) {
                 if (!slug) return json({ error: "Missing slug for action: deleteversion" }, 400);
                 if (!version) return json({ error: "Missing version" }, 400);
 
-                const rec = await getSlugRecord(slug);
+                // Strong: this mapping decides which blobs the mutation below
+                // touches. An eventually consistent read can miss a just-claimed slug
+                // (a spurious 404) or hand back a stale owner/program pair.
+                const rec = await getSlugRecordStrong(slug);
                 if (!rec) return json({ error: "Unknown slug: " + slug }, 404);
 
                 const { ownerId, programId } = rec;
                 const { latest, meta } = keysFor({ ownerId, programId, version: "latest" });
-                const m = await readJson(meta, null);
+                // Strong: the version list read here is filtered and written back.
+                const m = await readJsonStrong(meta, null);
                 if (!m?.versions?.length) return json({ error: "No versions to delete" }, 404);
 
                 // Delete the versioned blob
@@ -176,7 +187,15 @@ export default async function (request) {
                     buf,
                     latestEtag ? { onlyIfMatch: latestEtag } : { onlyIfNew: true }
                 );
-                if (!lRes.modified && latestEtag) return json({ error: "Precondition failed (latest changed)" }, 412);
+                // `&& latestEtag` used to be here, and it meant a rejected write was
+                // ignored whenever the guard had been `onlyIfNew` — the etag being null
+                // is exactly the branch that picks `onlyIfNew`, so the one case the
+                // check skipped was the one it was needed for. A rejection there means
+                // `latest` exists after all, so these bytes were never written, and the
+                // meta update below would then name a latest version whose pointer
+                // still holds the previous archive. Any rejection is a precondition
+                // failure.
+                if (!lRes.modified) return json({ error: "Precondition failed (latest changed)" }, 412);
 
                 // Guard meta write
                 const metaEtag2 = await getBlobEtag(meta);
@@ -195,7 +214,10 @@ export default async function (request) {
             case "deleteall": {
                 if (!slug) return json({ error: "Missing slug for action: deleteall" }, 400);
 
-                const rec = await getSlugRecord(slug);
+                // Strong: this mapping decides which blobs the mutation below
+                // touches. An eventually consistent read can miss a just-claimed slug
+                // (a spurious 404) or hand back a stale owner/program pair.
+                const rec = await getSlugRecordStrong(slug);
                 if (!rec) return json({ error: "Unknown slug: " + slug }, 404);
                 const { ownerId, programId } = rec;
 

@@ -1,7 +1,7 @@
 import { unzipSync, strFromU8, zipSync } from "fflate";
 import {
-    keysFor, readJson, sanitizeSlug,
-    getSlugRecord, claimSlug, sha256Hex,
+    keysFor, readJson, readJsonStrong, sanitizeSlug,
+    getSlugRecord, getSlugRecordStrong, claimSlug, sha256Hex,
     toStrongEtag, nowIso, originFromRequest, readDrillBytes,
     writeBinaryConditional, writeJsonConditional,
     corsPreflight, withCors, reportLegacyProgramIdUsage
@@ -284,7 +284,11 @@ export default async function (request) {
         const slug = sanitizeSlug(nameOrSlug || "program");
 
         // Look up existing mapping (if any) BEFORE deciding ownerId/programId
-        const existing = await getSlugRecord(slug);
+        // Strong: this decides whether to claim the slug or to enforce an existing
+        // mapping, so a stale answer picks the wrong branch. The claim path recovers on
+        // its own (see below), but an incorrect record here is a 409 for a legitimate
+        // re-upload.
+        const existing = await getSlugRecordStrong(slug);
 
         // Use provided IDs if present; otherwise reuse existing; otherwise defaults.
         // planId is the Plan-rename name (ADR-0055); programId is accepted as a
@@ -327,7 +331,11 @@ export default async function (request) {
             const claimed = await claimSlug(slug, { ownerId, programId, createdAt: nowIso() });
             if (!claimed) {
                 // someone else created between our read and write → verify ownership
-                const now = await getSlugRecord(slug);
+                // Strong: `claimSlug` is atomic whatever the read consistency
+                // (`onlyIfNew` reads nothing), but this re-read decides whether the
+                // winner was us. Eventually consistent, it can answer `null` or a
+                // pre-claim record and turn a legitimate re-upload into a 409.
+                const now = await getSlugRecordStrong(slug);
                 if (!now || now.ownerId !== ownerId || now.programId !== programId) {
                     return slugTakenResponse();
                 }
@@ -340,7 +348,13 @@ export default async function (request) {
         }
 
         const { latest, meta } = keysFor({ ownerId, programId, version: "_" });
-        const currentMeta = await readJson(meta, {
+        // Strong, because this object is mutated and written back at the end of the
+        // handler: the version entry for this upload is appended to
+        // `currentMeta.versions`. An eventually consistent read here means a second
+        // upload can start from a copy that predates the first one's entry and then
+        // overwrite it, dropping a version from the catalog while its blob still
+        // exists. See the note in lib/shared.js.
+        const currentMeta = await readJsonStrong(meta, {
             programId, slug, name, ownerId, description, published: false, tags: [], versions: []
         });
 
