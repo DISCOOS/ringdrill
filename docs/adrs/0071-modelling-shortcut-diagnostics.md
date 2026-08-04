@@ -101,6 +101,13 @@ separate answer — drop the name, keep the role — and nothing here changes it
   working.
 * A heuristic must not be able to fail a build. `--strict` promotes warnings to errors,
   so severity is a real decision here.
+* **Precision over recall.** These are suggestions on a document that already compiles,
+  and the guidance still states every rule in prose, so a miss costs a sentence nobody
+  read while a false positive costs the channel. Every tuning choice below resolves that
+  way, including the localised contact shape.
+* Nothing may assume a Norwegian plan. The format declares its own content language and
+  the app ships in two, so a rule that reads as general must behave sensibly in any
+  language even where it cannot be equally sharp.
 * Actionable in the existing shape: a `path` at the offending field and a `hint` naming
   the remedy, so an agent can act without re-reading the guide.
 * One implementation for every surface. `SourceAnalyzer` is shared by the CLI, both MCP
@@ -186,6 +193,42 @@ The corpus supplies the exclusions, all of which are real content:
 | `EK35989`, `SV41219` | vehicle registrations | leading letters |
 | `(46)`, `(17)` | a person's age | parenthesised, two digits |
 
+### The contact shape is localised, in three layers
+
+A phone number is written differently per country, so a single pattern would be a
+Norwegian rule wearing a general name. But the obvious fix — key the pattern off the
+plan's `language:` — does not work either, and the reason is worth stating rather than
+discovering during implementation: **language is not region.** `nb` and `nn` imply Norway
+unambiguously, but `en` implies no numbering plan at all — `+44 7700 900123`,
+`(555) 019-2837` and `021 1234 5678` are all English-language plans with nothing in
+common. The format carries `language` (ISO 639-1 content language) and **no region
+field**, so a language-keyed table would be right for `nb` and a guess everywhere else.
+
+So the rule is layered, most portable first, and each layer stands alone:
+
+1. **International form — language-independent, always on.** An E.164-shaped literal
+   (`+47 …`, `+44 …`, `+1 …`) is a phone number in every locale and in every plan. No
+   table, no region, no ambiguity.
+2. **Label adjacency — the localised part is the *word*, not the number.** A digit run
+   next to a contact label is a phone number whatever the numbering plan:
+   `ØVLE: 93258930`, `KO 97525282 (Narve)`, `ring Narve på …` — every real example in the
+   corpus is labelled. The lexicon is per language (`tlf`, `telefon`, `mob`,
+   `vakttelefon`, `ring` / `phone`, `tel`, `mobile`, `call`, `contact`) and lives beside
+   the other localised authoring strings, so adding a language is adding words rather
+   than writing a regex. This is the layer that generalises, because a label survives
+   reformatting and a numbering plan does not.
+3. **Numbering-plan patterns — only where the language fixes the region.** `nb`/`nn` →
+   Norway: eight digits, optionally grouped `NN NN NN NN` or `NNN NN NNN`. Where the
+   language does not fix a region — `en` today — there is **no** bare-local pattern, and
+   the plan gets layers 1 and 2 only.
+
+The residual is a **miss, not a false positive**: an unlabelled bare local number in an
+English plan will not fire. That is the right side to err on for a suggestion, where the
+guidance still says the rule and the cost of a banner is higher than the cost of a
+silence. It also gives a clean extension point — a stated region, whether inferred from a
+richer locale tag or authored — that adds recall without changing any of the three layers.
+Not proposed here; noted so the shape is deliberate.
+
 ### Severity: a third level, and why
 
 `SourceDiagnostic` is binary today — `error` or `warning`, with `isError` the only
@@ -215,12 +258,16 @@ naming suggestions among them.
   instead of eleven; a modelled location is a pin on the map instead of a sentence.
 * Good: it flags the *location* of legitimate content, so it teaches the rule rather than
   teaching people to delete operational detail.
-* Bad: **a Norwegian phone shape hardcoded in a format that declares its own
-  `language:`.** An eight-digit run is a national convention, so a plan in another
-  language will both miss real numbers and risk matching something else. Accepted rather
-  than solved: the corpus is Norwegian today and the pattern is one constant, with a
-  language-scoped table as the extension point. Named here so the next contributor finds
-  a decision rather than an oversight.
+* Bad: the contact shape needs three layers to be locale-honest, where one regex would
+  have looked adequate — and the layer that generalises best (label adjacency) is a word
+  list, so every new content language needs its lexicon extended or its plans quietly get
+  weaker coverage. A missing lexicon entry fails silently, which is the worst failure mode
+  a localised table has.
+* Bad: **a language code cannot fix a region**, so an English plan gets no bare-local
+  number pattern and will miss `(555) 019-2837` unless it is labelled. Chosen as a miss
+  over a false positive, but it does mean the rule is strongest for exactly the locale
+  that produced the evidence and weaker everywhere else — the honest cost of having one
+  corpus.
 * Bad: a third severity is a wire-format change. Every consumer of the `--json` envelope
   and of `analyze_plan` sees a new counter, and the app's diagnostic rendering needs a
   third case.
@@ -321,6 +368,13 @@ with a content fix, tracked separately from this decision.
   `lib/data/source/source_fields.dart` (the `location` and `person` scopes, and
   `personRef` — the definitions rules 1–3 enforce), `mcp/tools.mjs`,
   `skills/ringdrill-plan-authoring/SKILL.md`
+* Open question for implementation: **where the contact-label lexicon lives.** The
+  analyzer must stay Flutter-free (AGENTS.md rule 7), so it cannot read
+  `AppLocalizations`. The `lib/l10n/app_*.arb` → `make labels` →
+  `lib/l10n/headless_labels.g.dart` path already produces a Flutter-free localised subset
+  for the CLI and would get these words translated alongside everything else — but that
+  file exists for brief rendering, so putting analyzer vocabulary in it is a decision to
+  make rather than assume.
 * Precedent cited: commit `51377382`, removing a staleness warning rather than repairing
   it — the in-repo argument that an over-firing warning is worse than none.
 * Origin: a cold MCP-only conversion of the 2026 LSOR booklet that compiled clean with 0
