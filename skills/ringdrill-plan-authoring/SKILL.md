@@ -49,7 +49,12 @@ table the compiler validates against, so it cannot be out of date.
    Every markdown field declares which audiences may see it (ADR-0063), so this is
    how you confirm a spoiler sits in the field that owns it rather than one a
    participant reads.
-8. **`build_plan`** when it is right.
+8. **`build_plan`** when it is right. It answers with a handle in `archive` rather
+   than the archive itself: a `path` on a local server, a `url` on the hosted one.
+   Pass that on — a URL is the author's only way to get the file, so say where it is
+   and that it expires. Do not ask for `inline: true` unless something actually needs
+   the bytes; a real plan is ~100 KB of base64 you cannot read, cannot write to disk,
+   and that many clients silently truncate (ADR-0070).
 
 ## Not resending the document on every call
 

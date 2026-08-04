@@ -16,6 +16,7 @@ import {
     documentHash,
     MAX_DOCUMENT_CHARS,
 } from "../functions/lib/mcp-backend.js";
+import { artifactKey } from "../functions/lib/mcp-artifact-store.js";
 
 const ENDPOINT = "https://api.ringdrill.app/mcp";
 
@@ -71,7 +72,15 @@ function memoryStore() {
 
 function handlerWith(overrides = {}) {
     return createHandler({
-        backend: createCompilerBackend({ ...fakeCatalog(), ...overrides }),
+        backend: createCompilerBackend({
+            ...fakeCatalog(),
+            // Defaulted, not opt-in: hosted `build_plan` writes the archive it hands
+            // back a URL for (ADR-0070), so every build here would otherwise reach for
+            // a real Netlify Blobs store. Same reasoning as `fakeCatalog` — a test that
+            // is not about retention should not have to know retention happens.
+            artifactCache: () => memoryStore(),
+            ...overrides,
+        }),
     });
 }
 
@@ -161,6 +170,11 @@ test("instructions do not drift from the skill they summarise", async () => {
         // workaround two conversion runs found (writing the token into
         // `logistics`) must stay named in both channels.
         /applies to every field/i,
+        // ADR-0070: an agent that keeps the download link to itself has produced a
+        // build the author cannot obtain, which is the failure the handle exists to
+        // fix — so "hand it over, and do not ask for the bytes" belongs in both.
+        /handle in `archive`/i,
+        /inline: true/,
     ]) {
         assert.match(guide, rule, `the skill no longer covers ${rule}`);
         assert.match(INSTRUCTIONS, rule, `instructions no longer cover ${rule}`);
@@ -190,7 +204,33 @@ test("tools/list matches the stdio server's table, and omits publish", async () 
 });
 
 test("the compiler runs in-process: build returns an archive and a hash", async () => {
-    const { body } = await rpc(handlerWith(), {
+    const artifacts = memoryStore();
+    const { body } = await rpc(handlerWith({ artifactCache: () => artifacts }), {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+            name: "build_plan",
+            arguments: { document: DOCUMENT, inline: true },
+        },
+    });
+    const result = payload(body);
+    assert.equal(result.ok, true, JSON.stringify(result));
+    assert.match(result.contentHash, /^[0-9a-f]{64}$/);
+    const bytes = Buffer.from(result.archive.base64, "base64");
+    assert.equal(bytes.subarray(0, 2).toString(), "PK");
+    assert.equal(
+        artifacts.size,
+        0,
+        "inline: true must retain nothing — that is what it is for (ADR-0070)",
+    );
+});
+
+test("build answers with a download URL, and holds the archive behind it", async () => {
+    // The failure ADR-0070 exists for: a real plan is ~100 KB of base64, which a chat
+    // client truncates and no agent reads, so a successful build produced no file.
+    const artifacts = memoryStore();
+    const { body } = await rpc(handlerWith({ artifactCache: () => artifacts }), {
         jsonrpc: "2.0",
         id: 1,
         method: "tools/call",
@@ -198,9 +238,75 @@ test("the compiler runs in-process: build returns an archive and a hash", async 
     });
     const result = payload(body);
     assert.equal(result.ok, true, JSON.stringify(result));
-    assert.match(result.contentHash, /^[0-9a-f]{64}$/);
-    const bytes = Buffer.from(result.drillBase64, "base64");
-    assert.equal(bytes.subarray(0, 2).toString(), "PK");
+    assert.equal(result.archive.kind, "url");
+    assert.equal(
+        result.archive.url,
+        `https://api.ringdrill.app/mcp/artifact/${result.contentHash}.drill`,
+        "the URL is content-addressed, so it cannot name another plan's archive",
+    );
+    assert.ok(
+        Date.parse(result.archive.expires_at) > Date.now(),
+        "a handle with no stated expiry is a handle that looks permanent",
+    );
+    assert.ok(
+        !("drillBase64" in result) && !JSON.stringify(result).includes("UEsDB"),
+        "the bytes must not be in the response as well — that is the whole cost",
+    );
+
+    const held = await artifacts.get(artifactKey(result.contentHash));
+    assert.equal(
+        Buffer.from(held.base64, "base64").subarray(0, 2).toString(),
+        "PK",
+    );
+    assert.equal(held.fileName, "hosted.drill", "named from the plan, not the hash");
+});
+
+test("a store that cannot hold the archive still yields the build", async () => {
+    // The compile is the expensive part. A storage fault must not turn a successful
+    // ten-second build into nothing — but the client has to be able to tell this
+    // apart from a deliberate `inline: true`, hence the note.
+    const { body } = await rpc(
+        handlerWith({
+            artifactCache: () => ({
+                setJSON: async () => {
+                    throw new Error("blob store unavailable");
+                },
+            }),
+        }),
+        {
+            jsonrpc: "2.0",
+            id: 1,
+            method: "tools/call",
+            params: { name: "build_plan", arguments: { document: DOCUMENT } },
+        },
+    );
+    const result = payload(body);
+    assert.equal(result.ok, true, JSON.stringify(result.error ?? result));
+    assert.equal(result.archive.kind, "inline");
+    assert.match(result.archive.note, /could not be held for download/);
+    assert.match(result.archive.note, /blob store unavailable/);
+    assert.equal(
+        Buffer.from(result.archive.base64, "base64").subarray(0, 2).toString(),
+        "PK",
+    );
+});
+
+test("output_path is refused with a reason that names the alternative", async () => {
+    // Same asymmetry as document_path (ADR-0064): the parameter keeps one meaning in
+    // the shared table, and the transport that cannot honour it says so. The message
+    // has to point at `archive.url`, or an agent that wanted a file hears only "no".
+    const { body } = await rpc(handlerWith(), {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+            name: "build_plan",
+            arguments: { document: DOCUMENT, output_path: "/tmp/plan.drill" },
+        },
+    });
+    assert.equal(body.result.isError, true);
+    assert.match(body.result.content[0].text, /output_path/);
+    assert.match(body.result.content[0].text, /archive\.url/);
 });
 
 test("render produces the brief, with tokens resolved", async () => {
@@ -270,7 +376,7 @@ test("build_plan keeps a key's type across outcomes", async () => {
     assert.equal(typeof refused.errors, "number");
     assert.equal(typeof refused.warnings, "number");
     assert.ok(Array.isArray(refused.diagnostics));
-    assert.ok(!refused.drillBase64, "strict refuses rather than returning an archive");
+    assert.ok(!refused.archive, "strict refuses rather than returning an archive");
 });
 
 test("document_path is refused with a reason, not ignored", async () => {
@@ -494,15 +600,17 @@ test("get_plan resolves latest to a concrete version and decompiles", async () =
                 id: 1,
                 method: "tools/call",
                 params: {
+                    // The bytes are the fixture here, so ask for them directly
+                    // rather than following the handle (ADR-0070).
                     name: "build_plan",
-                    arguments: { document: DOCUMENT },
+                    arguments: { document: DOCUMENT, inline: true },
                 },
             })
         ).body,
     );
 
     const handler = handlerWith(
-        fakeCatalog({ archive: Buffer.from(built.drillBase64, "base64") }),
+        fakeCatalog({ archive: Buffer.from(built.archive.base64, "base64") }),
     );
     const { body } = await rpc(handler, {
         jsonrpc: "2.0",

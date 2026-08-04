@@ -117,6 +117,18 @@
     to = "/.netlify/functions/mcp"
     status = 200
 
+# Downloads an archive `build_plan` just compiled (ADR-0070). A separate function from
+# `/mcp` on purpose: this only moves bytes, so it must not load the 737 KB compiler
+# bundle, and `/mcp` answers 405 to GET to say it is stateless and pushes nothing.
+#
+# Position does not matter against the two exact `/mcp` entries above — they cannot
+# match a longer path — but it must stay above the SPA catch-all, which would otherwise
+# serve the app shell for a download link.
+[[redirects]]
+    from = "/mcp/artifact/*"
+    to = "/.netlify/functions/mcp-artifact/:splat"
+    status = 200
+
 [[redirects]]
     from = "/api/drills-head/*"
     to = "/.netlify/functions/drills-head/:splat"

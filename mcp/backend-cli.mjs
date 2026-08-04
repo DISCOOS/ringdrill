@@ -15,7 +15,15 @@
 // the machine, and the CLI it runs is the one built from this checkout.
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
-import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
+import {
+    copyFile,
+    mkdir,
+    mkdtemp,
+    readFile,
+    rename,
+    rm,
+    writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -189,7 +197,10 @@ export function createCliBackend({ cli, cwd }) {
     ///
     /// `document_path` is the one case where `source` would be a real file — but it
     /// is the caller's own argument coming back, so nothing is lost by dropping it
-    /// uniformly.
+    /// uniformly. `out` likewise now has a case where it names a surviving file, and
+    /// dropping it there is still right: `build` reports that path deliberately, as
+    /// `archive.path`, so an agent reads one field on both transports rather than
+    /// whichever one the CLI happened to print (ADR-0070).
     function withoutLocalPaths({ source, out, ...rest }) {
         return rest;
     }
@@ -225,6 +236,31 @@ export function createCliBackend({ cli, cwd }) {
         } finally {
             await rm(dir, { recursive: true, force: true });
         }
+    }
+
+    /// Moves a just-built archive out of the scratch directory and returns where it
+    /// landed (ADR-0070).
+    ///
+    /// Content-addressed, so a rebuild of the same document overwrites one file
+    /// instead of accumulating, and the path is meaningful — an agent handing it to
+    /// the author is handing over a name, not a temp artefact. Under the OS temp
+    /// directory because nothing here knows what the author's workspace is; a caller
+    /// who cares passes `output_path`.
+    ///
+    /// `rename` first because both paths are under the temp directory and it is
+    /// atomic; `copyFile` covers the case where they are not on the same filesystem,
+    /// which `rename` reports as EXDEV.
+    async function keepArchive(from, contentHash) {
+        const dir = join(tmpdir(), 'ringdrill-mcp-artifacts');
+        await mkdir(dir, { recursive: true });
+        const to = join(dir, `${contentHash ?? 'plan'}.drill`);
+        try {
+            await rename(from, to);
+        } catch (e) {
+            if (e?.code !== 'EXDEV') throw e;
+            await copyFile(from, to);
+        }
+        return to;
     }
 
     /** Runs `fn` with a temp file holding `content`, then removes it. */
@@ -268,9 +304,25 @@ export function createCliBackend({ cli, cwd }) {
                 run(['analyze', path, ...(args.strict ? ['--strict'] : [])]),
             ),
 
+        /// Writes the archive somewhere the caller can reach, and answers with the
+        /// path rather than the bytes (ADR-0070).
+        ///
+        /// This used to write to the scratch directory purely in order to base64 the
+        /// result and then delete it — about 100 KB of text, for a real plan, that no
+        /// agent reads and a chat client may truncate. So the file now goes somewhere
+        /// that survives the call: `output_path` when the caller named one, and
+        /// otherwise a content-addressed path under the temp directory, which is
+        /// idempotent (a rebuild of the same document overwrites one file rather than
+        /// accumulating) and left for the OS to reap.
+        ///
+        /// `inline: true` keeps the old behaviour for a caller that wants the bytes,
+        /// and then nothing is left behind at all.
         build: (args) =>
             withDocument(args, async (path, dir) => {
-                const out = join(dir, 'plan.drill');
+                // Build into the scratch directory unless the caller named a
+                // destination, so a failed or refused build leaves nothing anywhere.
+                const scratch = join(dir, 'plan.drill');
+                const out = args.output_path ?? scratch;
                 const result = await run([
                     'build',
                     path,
@@ -278,8 +330,31 @@ export function createCliBackend({ cli, cwd }) {
                     ...(args.strict ? ['--strict'] : []),
                 ]);
                 if (result.ok === false) return result;
-                const bytes = await readFile(out);
-                return { ...result, drillBase64: bytes.toString('base64') };
+
+                if (args.inline === true) {
+                    const bytes = await readFile(out);
+                    return {
+                        ...result,
+                        archive: {
+                            kind: 'inline',
+                            base64: bytes.toString('base64'),
+                        },
+                    };
+                }
+                if (out !== scratch) {
+                    return { ...result, archive: { kind: 'file', path: out } };
+                }
+                // No destination named and the bytes are not wanted inline, so the
+                // archive has to outlive the scratch directory. Named from the plan's
+                // own content hash, which is only known now that it is built — hence a
+                // move rather than building there directly.
+                return {
+                    ...result,
+                    archive: {
+                        kind: 'file',
+                        path: await keepArchive(out, result.contentHash),
+                    },
+                };
             }),
 
         render: (args) =>

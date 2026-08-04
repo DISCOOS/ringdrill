@@ -12,11 +12,17 @@
 //   schema()                        the JSON Schema
 //   create(args)                    -> {document, …}
 //   analyze({document|document_path, strict})  -> {errors, warnings, …}
-//   build({document|document_path, strict})    -> {contentHash, drillBase64, …}
+//   build({document|document_path, strict})    -> {contentHash, archive, …}
 //   render({document|document_path, audience, lang, exercise, station, format})
 //                                              -> {markdown, …}
 //   searchCatalog({limit, cursor})  -> {items, nextCursor?}
 //   getPlan({slug, version})        -> {document, …}
+//
+// `build`'s `archive` is one field with a discriminated shape rather than a set of
+// transport-specific keys (ADR-0070) — `{kind: 'file', path}`, `{kind: 'url', url,
+// expires_at}` or `{kind: 'inline', base64}`. That is deliberate: a key whose
+// *presence* depended on which backend answered would be the drift the parity test
+// below exists to catch, so the discriminator is a value an agent reads instead.
 //
 // The four document operations answer with a verdict, and their tools always
 // surface it as `ok` — `verdict()` below supplies it, so a backend need only say
@@ -69,6 +75,31 @@ const CACHE_ARG = {
         'calls can pass `document_hash` instead of resending it. Off by default ' +
         '— the server keeps nothing unless asked. Set it when you are about to ' +
         'iterate on a large document; the response then carries the hash.',
+};
+
+/// Where the stdio backend should write the archive (ADR-0070).
+///
+/// The local mirror of `document_path`, and the same argument for it: the CLI has
+/// always written wherever it was told, as this user, so naming the destination adds
+/// no capability and saves the bytes a trip through the transcript.
+const OUTPUT_PATH_ARG = {
+    type: 'string',
+    description:
+        'Where to write the .drill archive. Local (stdio) server only — the ' +
+        'hosted server rejects it and answers with a download URL instead. ' +
+        'Without it the archive still lands on disk, under a content-addressed ' +
+        'path in the temp directory.',
+};
+
+/// Ask for the archive bytes in the response, retaining nothing (ADR-0070).
+const INLINE_ARG = {
+    type: 'boolean',
+    description:
+        'Return the archive as base64 in the response instead of a handle. Off ' +
+        'by default, because a real plan is ~100 KB of base64 that no agent ' +
+        'reads and many clients truncate. Set it only for a programmatic caller ' +
+        'that wants the bytes, or to keep the hosted server from holding the ' +
+        'archive at all.',
 };
 
 /// Name a document the server is already holding, instead of resending it.
@@ -253,10 +284,15 @@ export function toolsFor(backend) {
         {
             name: 'build_plan',
             description:
-                'Compile a source document to a .drill archive and return it ' +
-                'base64-encoded, plus the plan summary and content hash. Does not ' +
-                'publish: the catalog is a shared corpus, so putting a plan in it ' +
-                'stays a human step.',
+                'Compile a source document to a .drill archive, plus the plan ' +
+                'summary and content hash. The archive comes back as a handle in ' +
+                '`archive`, not as bytes in the response: `kind: "file"` with a ' +
+                '`path` on a local server, `kind: "url"` with a `url` and ' +
+                '`expires_at` on the hosted one — give that link to the author, it ' +
+                'downloads the file. Pass `inline: true` for `kind: "inline"` and ' +
+                'base64 instead, which no agent needs to read and many clients ' +
+                'truncate. Does not publish: the catalog is a shared corpus, so ' +
+                'putting a plan in it stays a human step.',
             inputSchema: {
                 type: 'object',
                 properties: {
@@ -264,6 +300,8 @@ export function toolsFor(backend) {
                     document_path: SOURCE_DOCUMENT_PATH_ARG,
                     document_hash: DOCUMENT_HASH_ARG,
                     cache: CACHE_ARG,
+                    output_path: OUTPUT_PATH_ARG,
+                    inline: INLINE_ARG,
                     strict: {
                         type: 'boolean',
                         description: 'Refuse to build if there are warnings.',
@@ -431,6 +469,12 @@ Rules the schema cannot express, and that are easy to get wrong:
   station — so a post on its own talegruppe needs the override and nothing else. Never
   write \`{{var.talegruppe}}\` into \`logistics\` to force a per-post value: it resolves,
   and prints the talk group in the administration section instead of Samband.
+
+- \`build_plan\` answers with a handle in \`archive\`, not with the archive: a \`path\`
+  on a local server, a \`url\` on the hosted one. **Tell the author where it is**, and
+  that a url expires — the build is worthless to them if the link stays in your head.
+  Do not ask for \`inline: true\` to "get the file": that returns ~100 KB of base64 you
+  cannot read, cannot write to disk, and that many clients silently truncate.
 
 Order of work: schema, read a published plan with get_plan, create_plan, write,
 analyze_plan and fix everything it reports, render_plan and actually read it, then

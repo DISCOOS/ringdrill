@@ -219,6 +219,46 @@ const checks = [
             const result = await callJsonTool("build_plan", { document: DOCUMENT });
             assert(result.ok, `build_plan not ok: ${brief(result)}`);
             assert(result.contentHash, "compiled plan carries no contentHash");
+            assert(
+                result.archive?.kind === "url" && result.archive.url,
+                `build_plan answered no download handle: ${brief(result.archive)}`,
+            );
+        },
+    ],
+    [
+        "the download handle build_plan returns actually serves the archive",
+        async () => {
+            // The check that would have caught what a cold run from ChatGPT found: the
+            // build succeeded and there was no way to obtain the file (ADR-0070). Two
+            // things here only exist in a deploy — the `/mcp/artifact/*` redirect and
+            // the blob store binding — so a checkout suite cannot see either. A stale
+            // redirect would serve the SPA shell with HTTP 200, which is why the
+            // content type is asserted and not just the status.
+            const result = await callJsonTool("build_plan", { document: DOCUMENT });
+            assert(result.archive?.url, "no archive URL to follow");
+
+            const response = await fetch(result.archive.url, {
+                signal: AbortSignal.timeout(TIMEOUT_MS),
+            });
+            assert(
+                response.ok,
+                `GET ${result.archive.url} -> HTTP ${response.status}`,
+            );
+            const type = response.headers.get("content-type") ?? "";
+            assert(
+                type.startsWith("application/vnd.ringdrill"),
+                `download served ${type} — a redirect serving the app shell answers ` +
+                    "200 with text/html, so the status alone proves nothing",
+            );
+            assert(
+                /^attachment/.test(response.headers.get("content-disposition") ?? ""),
+                "download is not marked as an attachment, so a browser will render it",
+            );
+            const bytes = Buffer.from(await response.arrayBuffer());
+            assert(
+                bytes.subarray(0, 2).toString() === "PK",
+                "downloaded file is not a zip, so it is not a .drill",
+            );
         },
     ],
     [

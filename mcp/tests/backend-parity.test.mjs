@@ -74,9 +74,25 @@ const CASES = [
     ['render_plan', { document: DOCUMENT, audience: 'director' }],
 ];
 
-function backends() {
+/// Enough of the Netlify Blobs surface for the artifact cache (ADR-0070).
+///
+/// Needed because hosted `build_plan` now *writes* — it holds the archive so it can
+/// answer with a URL — and Netlify Blobs are not available here. Injected rather than
+/// skipped, because "does build return the same shape from both backends" is exactly
+/// what this file is for, and the shape is now decided by that write.
+function memoryStore() {
+    const map = new Map();
     return {
-        hosted: createCompilerBackend(),
+        get: async (key) => map.get(key) ?? null,
+        setJSON: async (key, value) => void map.set(key, value),
+        delete: async (key) => void map.delete(key),
+    };
+}
+
+function backends() {
+    const store = memoryStore();
+    return {
+        hosted: createCompilerBackend({ artifactCache: () => store }),
         cli: createCliBackend({
             cli: resolveCli(repoRoot).command,
             cwd: repoRoot,
@@ -153,6 +169,60 @@ test('a document that does not compile is ok: false on both', async () => {
         assert.ok(
             result.diagnostics?.length > 0,
             `${label} reported no diagnostics for a document with an error`,
+        );
+    }
+});
+
+test('build hands the archive over by handle on both backends', async () => {
+    // ADR-0070: the archive is delivered through `archive`, whose `kind` is a value an
+    // agent reads — not through a key whose presence depends on which backend answered,
+    // which is the drift the key-set comparison above exists to catch. Asserted as a
+    // value for the same reason `ok` is.
+    const { hosted, cli } = backends();
+    const expected = { hosted: 'url', cli: 'file' };
+
+    for (const [label, backend] of [
+        ['hosted', hosted],
+        ['cli', cli],
+    ]) {
+        const result = await callTool(backend, 'build_plan', {
+            document: DOCUMENT,
+        });
+        assert.equal(
+            result.archive?.kind,
+            expected[label],
+            `${label} delivered the archive as ` +
+                `${JSON.stringify(result.archive?.kind)}`,
+        );
+        assert.ok(
+            !('drillBase64' in result),
+            `${label} still returns drillBase64 — ~100 KB of base64 no agent reads`,
+        );
+        assert.ok(
+            !JSON.stringify(result).includes('UEsDB'),
+            `${label} put the archive bytes in the response anyway`,
+        );
+    }
+});
+
+test('inline: true returns the bytes on both backends', async () => {
+    // The escape hatch has to work, or the zero-retention path ADR-0070 promises is a
+    // sentence in an ADR. `UEsDB` is base64 for a zip's `PK\x03\x04`.
+    const { hosted, cli } = backends();
+    for (const [label, backend] of [
+        ['hosted', hosted],
+        ['cli', cli],
+    ]) {
+        const result = await callTool(backend, 'build_plan', {
+            document: DOCUMENT,
+            inline: true,
+        });
+        assert.equal(result.archive?.kind, 'inline', label);
+        assert.ok(
+            Buffer.from(result.archive.base64, 'base64')
+                .subarray(0, 2)
+                .toString() === 'PK',
+            `${label} returned something that is not a zip`,
         );
     }
 });

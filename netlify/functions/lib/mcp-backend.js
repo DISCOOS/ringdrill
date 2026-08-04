@@ -24,6 +24,16 @@
 // having already held the document, making it a capability key; and an entry expires.
 // The dead-drop consequence — whoever holds a hash holds the document until it
 // expires — is real and stated in the ADR.
+//
+// **What it *builds* for you is held, briefly, by default.** ADR-0070 narrows the
+// sentence above for exactly one tool: `build_plan` puts the archive in
+// `ARTIFACT_CACHE_NS` under the plan's own `contentHash` and answers with a URL, so
+// ~100 KB of base64 no agent reads never enters the response — and so a chat client
+// that truncates a long text block can still obtain the file. The asymmetry with the
+// document cache is deliberate and argued in the ADR: a document is retained to save
+// resending something the caller already has, an archive exists only because this
+// server made it, and holding it for minutes *is* how it gets delivered. `inline:
+// true` retains nothing and is the supported way to say so.
 import {
     getDrillsStore as _getDrillsStore,
     getSlugRecord as _getSlugRecord,
@@ -33,6 +43,12 @@ import {
     readBinary as _readBinary,
     readJson as _readJson,
 } from "./shared.js";
+import {
+    ARTIFACT_CACHE_NS,
+    ARTIFACT_TTL_MS,
+    archiveFileName,
+    artifactKey,
+} from "./mcp-artifact-store.js";
 import { invoke as _invoke } from "./mcp-compiler.js";
 import { createHash } from "node:crypto";
 import { getStore } from "@netlify/blobs";
@@ -62,6 +78,10 @@ function docCacheStore() {
     return getStore(DOC_CACHE_NS);
 }
 
+function artifactCacheStore() {
+    return getStore(ARTIFACT_CACHE_NS);
+}
+
 /// The key a document is held under: the server's own hash of the exact bytes.
 ///
 /// Server-computed on purpose. A client that could choose keys would turn this into
@@ -82,6 +102,7 @@ export function createCompilerBackend({
     readJson = _readJson,
     origin = "https://api.ringdrill.app",
     docCache = docCacheStore,
+    artifactCache = artifactCacheStore,
 } = {}) {
     /// Rejects an oversized document before it reaches the compiler.
     ///
@@ -100,6 +121,97 @@ export function createCompilerBackend({
                 "has no access to your filesystem. Send `document` instead, or " +
                 "use the stdio server (see mcp/README.md).",
         );
+    }
+
+    /// The same refusal for `output_path` (ADR-0070).
+    ///
+    /// Kept separate from `rejectPath` so the message can name what this server does
+    /// *instead* — an agent that asked for a file wants to hear about the URL, not
+    /// just that its argument was wrong.
+    function rejectOutputPath(outputPath) {
+        if (outputPath === undefined) return;
+        throw new Error(
+            "output_path is meaningful only to a local server: this endpoint " +
+                "cannot write to your filesystem. Omit it and use the " +
+                "`archive.url` this server answers with, or use the stdio server " +
+                "(see mcp/README.md).",
+        );
+    }
+
+    /// Turns the compiler's `drillBase64` into the `archive` handle a client reads
+    /// (ADR-0070).
+    ///
+    /// `inline` short-circuits and retains nothing, which is both the old behaviour
+    /// and the escape hatch for an author who will not have a derived artifact held.
+    /// Otherwise the bytes are held under the plan's own content hash and replaced by
+    /// a URL — the whole point being that ~100 KB of base64 no agent reads never
+    /// enters the response.
+    ///
+    /// A build that did not produce an archive (a refusal under `strict`, a document
+    /// with errors) passes through untouched: there is nothing to hand over, and
+    /// inventing an `archive` for it would have an agent following a link to a file
+    /// that was never built.
+    /// Falls back to the bytes, saying why.
+    ///
+    /// Only reachable when a handle cannot be produced, and typed `inline` in every
+    /// case so an agent reads what it got rather than inferring it. `note` exists
+    /// because "you asked for a URL and received base64" needs a reason attached —
+    /// without one, a client cannot tell a deliberate `inline: true` from a
+    /// degradation, and would report a working build as a broken one.
+    function inlineArchive(rest, base64, note) {
+        return {
+            ...rest,
+            archive: { kind: "inline", base64, ...(note ? { note } : {}) },
+        };
+    }
+
+    async function deliverArchive(result, { inline }) {
+        const { drillBase64, ...rest } = result;
+        if (!drillBase64) return rest;
+        if (inline) return inlineArchive(rest, drillBase64);
+
+        const hash = result.contentHash;
+        if (!hash) {
+            // Content addressing is the only key this cache has, so without a hash
+            // there is nowhere safe to put the bytes — inventing a key would make one
+            // a client could then guess at.
+            return inlineArchive(
+                rest,
+                drillBase64,
+                "returned inline because this build carries no contentHash to " +
+                    "address the archive by",
+            );
+        }
+
+        const storedAt = Date.now();
+        try {
+            await artifactCache().setJSON(artifactKey(hash), {
+                base64: drillBase64,
+                storedAt,
+                fileName: archiveFileName(result.name),
+            });
+        } catch (e) {
+            // The compile is the expensive part and it succeeded. Discarding it
+            // because the *delivery* mechanism failed would turn a storage hiccup
+            // into a lost ten-second build, so hand over what we have and name the
+            // reason. The bytes are large and that is the cost this normally avoids —
+            // which is exactly why the note says what happened.
+            return inlineArchive(
+                rest,
+                drillBase64,
+                `returned inline because the archive could not be held for ` +
+                    `download: ${e?.message ?? e}`,
+            );
+        }
+
+        return {
+            ...rest,
+            archive: {
+                kind: "url",
+                url: `${origin}/mcp/artifact/${hash}.drill`,
+                expires_at: new Date(storedAt + ARTIFACT_TTL_MS).toISOString(),
+            },
+        };
     }
 
     /// Resolves the document for a call: the text, or the one held under a hash.
@@ -190,6 +302,7 @@ export function createCompilerBackend({
 
         build: async (args) => {
             rejectPath(args.document_path);
+            rejectOutputPath(args.output_path);
             const { document, hash } = await resolveDocument(args);
             const result = await invoke({
                 op: "build",
@@ -197,7 +310,10 @@ export function createCompilerBackend({
                 strict: args.strict,
                 fileName: "plan",
             });
-            return hash ? { ...result, document_hash: hash } : result;
+            const delivered = await deliverArchive(result, {
+                inline: args.inline,
+            });
+            return hash ? { ...delivered, document_hash: hash } : delivered;
         },
 
         render: async (args) => {

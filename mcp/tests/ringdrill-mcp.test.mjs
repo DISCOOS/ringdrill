@@ -9,7 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, mkdir, writeFile, rm, cp } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm, cp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -229,7 +229,7 @@ test('analyze_plan reports a bad reference as a result, not a crash', async () =
     assert.match(result.diagnostics[0].message, /no variable named "nope"/);
 });
 
-test('build_plan returns the archive base64-encoded', async () => {
+test('build_plan writes the archive and hands back its path', async () => {
     const created = await rpc([
         {
             jsonrpc: '2.0',
@@ -256,10 +256,52 @@ test('build_plan returns the archive base64-encoded', async () => {
     assert.equal(result.exercises, 1);
     assert.match(result.contentHash, /^[0-9a-f]{64}$/);
 
-    const bytes = Buffer.from(result.drillBase64, 'base64');
+    // The archive is a file on disk, not bytes in the answer (ADR-0070) — reading it
+    // back is what proves the handle points at something.
+    assert.equal(result.archive.kind, 'file');
+    const bytes = await readFile(result.archive.path);
     // A .drill is a ZIP; "PK" is the signature DrillFile itself sniffs for.
     assert.equal(bytes.subarray(0, 2).toString(), 'PK');
     assert.equal(bytes.length, result.size);
+});
+
+test('build_plan writes to output_path when the caller names one', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'ringdrill-mcp-out-'));
+    const out = join(dir, 'named.drill');
+    try {
+        const created = await rpc([
+            {
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'tools/call',
+                params: {
+                    name: 'create_plan',
+                    arguments: { name: 'MCP Out', teams: 2 },
+                },
+            },
+        ]);
+        const { document } = payload(created.get(1));
+
+        const built = await rpc([
+            {
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'tools/call',
+                params: {
+                    name: 'build_plan',
+                    arguments: { document, output_path: out },
+                },
+            },
+        ]);
+        const result = payload(built.get(1));
+        assert.equal(result.archive.kind, 'file');
+        assert.equal(result.archive.path, out);
+        const bytes = await readFile(out);
+        assert.equal(bytes.subarray(0, 2).toString(), 'PK');
+        assert.equal(bytes.length, result.size);
+    } finally {
+        await rm(dir, { recursive: true, force: true });
+    }
 });
 
 test('render_plan produces the brief a director reads', async () => {
