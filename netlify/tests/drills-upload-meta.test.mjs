@@ -327,6 +327,32 @@ test("resolvePublishPolicy: account owner → author mirrors ownerId, accessPoli
     assert.deepEqual(resolvePublishPolicy({ ownerId: "acc-42" }), { author: "acc-42", accessPolicy: "account" });
 });
 
+// The value is DESCRIPTIVE until phase 3 of docs/plans/account-rollout.md, and
+// this is the test that says so. `ownerId` arrives as a query parameter the
+// caller chooses, and the feed republishes it as `author` — so anyone can read
+// an owner off the public catalog and hand it straight back to get
+// accessPolicy: "account" written into meta.json for their own upload. Nothing
+// here is a credential and nothing here checks one.
+//
+// That is the pre-accounts wiki model working as designed (ADR-0008); the risk
+// is only that "policy" reads like a guarantee to whoever renders it. When
+// drills-upload starts enforcing the ADR-0025 matrix, this test is the thing
+// that should fail — rewrite it against the real authorisation gate rather than
+// deleting it, and drop the matching notes in lib/shared.js, drill_client.dart
+// and docs/api.md.
+test("resolvePublishPolicy: derives policy from caller-supplied ownerId alone, so 'account' is a label and not a gate", () => {
+    // An ownerId lifted from someone else's feed item projects identically to
+    // that owner's own publish. The function cannot tell them apart, because it
+    // is given nothing that would let it.
+    const theirs = resolvePublishPolicy({ ownerId: "acc-42" });
+    const impostor = resolvePublishPolicy({ ownerId: "acc-42", token: "not-checked" });
+    assert.deepEqual(impostor, theirs);
+    assert.equal(impostor.accessPolicy, "account");
+
+    // And any non-anon string at all is enough to claim it.
+    assert.equal(resolvePublishPolicy({ ownerId: "whatever-i-typed" }).accessPolicy, "account");
+});
+
 // ---------- resolveCatalogFields ----------
 
 const program = { name: "Program Name", description: "Program description", tags: ["a", "b"] };

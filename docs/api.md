@@ -67,7 +67,27 @@ Require `Authorization: Bearer <ADMIN_TOKEN>`. The operation is chosen by the
 | `POST` | `/api/drills-admin?action=unpublish&slug={slug}` | Unpublish a slug |
 | `POST` | `/api/drills-admin?action=deleteversion&slug={slug}&version={v}` | Delete one version |
 | `POST` | `/api/drills-admin?action=deleteall&slug={slug}` | Delete a slug and all versions |
+
+### Upload
+
+| Method | Path | Returns |
+|--------|------|---------|
 | `POST` | `/api/drills-upload?slug={slug}&published=true` | Upload a `.drill` (request body is the zip). `name`, `description` and `tags` are read from `program.json` in the archive (ADR-0043) |
+
+**Unauthenticated, deliberately.** Upload is listed separately from Admin
+because it takes no bearer token: the catalog is a wiki-model corpus where
+any holder of a `.drill` file may publish to the slug it claims
+([ADR-0008](./adrs/0008-persistent-program-library-and-catalog.md),
+[ADR-0014](./adrs/0014-server-assigned-drill-version.md)). `ownerId` is a
+query parameter the caller picks, and the feed republishes it as `author`,
+so the `accessPolicy` value a feed item carries describes whether the plan
+names an owner — it does not restrict who may write. Concurrency is guarded
+by `If-Match` (OCC), not by identity.
+
+[ADR-0025](./adrs/0025-authorization-and-publish-policy.md) makes
+`accessPolicy` enforceable; that lands in phase 3 of
+[`plans/account-rollout.md`](./plans/account-rollout.md), and this note comes
+out with it.
 
 ## Status codes
 
@@ -95,9 +115,8 @@ curl "https://ringdrill.app/api/drills-admin?action=listall&limit=50" \
 curl -X POST "https://ringdrill.app/api/drills-admin?action=publish&slug=lsor-eidene-2026" \
   -H "Authorization: Bearer $RINGDRILL_ADMIN_TOKEN"
 
-# Upload / replace a drill (admin)
+# Upload / replace a drill (no token — see "Upload" above)
 curl -X POST "https://ringdrill.app/api/drills-upload?slug=lsor-eidene-2026&published=true" \
-  -H "Authorization: Bearer $RINGDRILL_ADMIN_TOKEN" \
   -H "Content-Type: application/vnd.ringdrill+zip" \
   --data-binary @lsor-eidene-2026.drill
 ```
