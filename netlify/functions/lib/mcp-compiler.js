@@ -58,9 +58,7 @@ let ready;
 function load() {
     ready ??= (async () => {
         installBrowserGlobals();
-        const here = dirname(fileURLToPath(import.meta.url));
-        const path = join(here, BUNDLE_FILE);
-        const code = await readFile(path, "utf8");
+        const { path, code } = await resolveBundle();
         runInThisContext(code, { filename: path });
         if (typeof globalThis.ringdrillInvoke !== "function") {
             throw new Error(
@@ -77,6 +75,53 @@ function load() {
 /// import specifier, and so `netlify.toml`'s `included_files` and this agree in one
 /// place.
 const BUNDLE_FILE = "mcp-compiler-bundle.js";
+
+/// Where the bundle sits relative to the package root — the path `included_files`
+/// ships it under, and the path it has in a checkout.
+const BUNDLE_FROM_ROOT = ["netlify", "functions", "lib", BUNDLE_FILE];
+
+/// The places the bundle can be, most-deployed-like first.
+///
+/// Two layouts exist and they disagree, which is the bug this list exists to close:
+/// esbuild **inlines this module into `netlify/functions/mcp.mjs`**, so in a deployed
+/// package `import.meta.url` names the function at the functions *root* — one
+/// directory above the bundle — and resolving beside it looked for
+/// `netlify/functions/mcp-compiler-bundle.js` and got ENOENT on every compiler tool
+/// while the catalog tools, which read no files, kept working. `included_files`
+/// preserves the repo-relative path inside the package and Netlify runs the function
+/// with the package root as cwd, so cwd-relative is what holds there — the same
+/// resolution `mcp.js` already uses for the guide resources.
+///
+/// Module-relative stays as the fallback because it is the one that holds when this
+/// file is imported unbundled from an arbitrary working directory, which is how the
+/// tests and `mcp/dev-call.mjs` load it.
+///
+/// Parameterised rather than reading the two globals directly so the layouts can be
+/// tested without a deploy; see `netlify/tests/mcp-compiler-path.test.mjs`.
+export function bundleCandidates({
+    cwd = process.cwd(),
+    moduleDir = dirname(fileURLToPath(import.meta.url)),
+} = {}) {
+    return [join(cwd, ...BUNDLE_FROM_ROOT), join(moduleDir, BUNDLE_FILE)];
+}
+
+/// First candidate that exists, read. Rejects naming every path tried, because the
+/// failure this replaced reported one path and gave no hint which layout was wrong.
+export async function resolveBundle(options) {
+    const candidates = bundleCandidates(options);
+    for (const path of candidates) {
+        try {
+            return { path, code: await readFile(path, "utf8") };
+        } catch (error) {
+            if (error.code !== "ENOENT") throw error;
+        }
+    }
+    throw new Error(
+        `${BUNDLE_FILE} not found — tried ${candidates.join(", ")}. ` +
+            "Run `make mcp-bundle`; if this is a deployed function, check " +
+            "`[functions.\"mcp\"] included_files` in netlify.toml.",
+    );
+}
 
 /// Milliseconds a single compile may take before it is abandoned.
 ///

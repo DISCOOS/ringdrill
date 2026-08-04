@@ -171,6 +171,16 @@ jobs:
         # must be installed before the deploy step picks them up.
         run: npm ci
 
+      - name: Verify the MCP function packages and runs
+        # Packages netlify/functions/mcp.js exactly as a deploy does and calls it
+        # with the package layout, before anything is published. The deployed shape
+        # is not the checkout — local imports are inlined into one mcp.mjs and
+        # included_files land at their repo-relative paths — and the endpoint once
+        # shipped a compiler that could not find its own bundle in that layout while
+        # every checkout-based test passed. Runs on dry runs too: it publishes
+        # nothing, and a dry run is exactly when you want to know.
+        run: node --test netlify/tests/mcp-packaging.test.mjs
+
       - name: Deploy functions to Netlify
         if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
         env:

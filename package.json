@@ -24,6 +24,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@netlify/config": "25.1.1",
+    "@netlify/zip-it-and-ship-it": "15.3.0",
     "@resvg/resvg-js": "2.6.2",
     "netlify-cli": "27.0.1"
   }
