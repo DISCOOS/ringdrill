@@ -78,6 +78,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0068 | [Decide whether a cascaded field resolves in the borrowing scope](./0068-cascaded-fields-and-scoped-overrides.md) | Accepted |
 | ADR-0069 | [Render the brief through a lazy viewport, and navigate it without relying on mounted headings](./0069-lazy-brief-viewport.md) | Accepted |
 | ADR-0070 | [Deliver a built archive by handle, not through the transcript](./0070-build-artifact-delivery.md) | Accepted |
+| ADR-0071 | [Report a literal that wants to be a variable, instead of only advising it](./0071-variable-promotion-diagnostics.md) | Proposed |
 
 ## When to write an ADR
 
