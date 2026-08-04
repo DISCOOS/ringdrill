@@ -36,12 +36,22 @@
 // Deliberately no Node built-ins here: this module is imported by a Netlify
 // function, so it stays plain data plus calls into the injected backend.
 
-/** Shared argument description, so the two document-taking tools agree. */
+/// Shared argument description, so the two document-taking tools agree.
+///
+/// It states the size limit and the real scale on purpose. Neither used to appear in
+/// any channel an agent can read — only in `mcp/README.md`, which a connector-only
+/// client cannot fetch, and in the error you get by exceeding the cap. So an agent
+/// had nothing to anchor "is this too big" to, and one duly invented a ceiling:
+/// a cold run judged a 67 KB plan "just large enough that passing it around as chat
+/// text is awkward", split it, and then abandoned the hosted tools for the local CLI.
+/// Nothing had enforced a limit. A number is cheaper than a guess.
 const SOURCE_DOCUMENT_ARG = {
     type: 'string',
     description:
         'The source document, as YAML text. Call `schema` for its shape, or ' +
-        '`create_plan` for a starting point.',
+        '`create_plan` for a starting point. Documents up to 512 KB are accepted ' +
+        'and a real plan is 60-90 KB, so send the whole thing in one call — do not ' +
+        'split it, summarise it, or send an excerpt.',
 };
 
 /// The local alternative to sending the text (ADR-0064).
@@ -477,6 +487,11 @@ Rules the schema cannot express, and that are easy to get wrong:
   write \`{{var.talegruppe}}\` into \`logistics\` to force a per-post value: it resolves,
   and prints the talk group in the administration section instead of Samband.
 
+- Send the whole document in one call. A real plan is 60-90 KB of YAML and the limit
+  is 512 KB, so it fits — splitting it, summarising it or sending an excerpt is never
+  right, and a truncation warning from your own tooling is not a statement about this
+  server. Pass \`cache: true\` on the first call and \`document_hash\` after it, so a
+  long document is sent once per session rather than once per call.
 - \`build_plan\` answers with a handle in \`archive\`, not with the archive: a \`path\`
   on a local server, a \`url\` on the hosted one. **Tell the author where it is**, and
   that a url expires — the build is worthless to them if the link stays in your head.
