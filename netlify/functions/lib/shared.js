@@ -84,6 +84,19 @@ export async function readJson(key, fallback = null) {
     return obj ?? fallback;
 }
 
+/// `readBinary` for bytes that are about to be written somewhere else.
+///
+/// The case is `deleteversion` promoting an archive to the `latest` pointer: it reads a
+/// versioned blob and writes those bytes back under another key. Versioned blobs are
+/// immutable once written (`onlyIfNew`), so the risk is not a stale value but a missing
+/// one — an eventually consistent read of a recently uploaded version answers null, and
+/// the caller reports "New latest bytes not found" for an archive that is right there.
+export async function readBinaryStrong(key) {
+    const s = getDrillsStoreStrong();
+    const ab = await s.get(key, { type: "arrayBuffer" });
+    return ab ? Buffer.from(ab) : null;
+}
+
 /// `readJson` for a value that is about to decide a write.
 ///
 /// Same result, read strongly — so the value reflects every completed write rather

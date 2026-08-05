@@ -1,7 +1,7 @@
 // netlify/functions/drills-admin.js
 import {
     getSlugRecord, getSlugRecordStrong, deleteSlugRecord, getSlugIndexStore,
-    keysFor, readJson, readJsonStrong, readBinary,
+    keysFor, readJson, readJsonStrong, readBinary, readBinaryStrong,
     writeJsonConditional, writeBinaryConditional, getBlobEtag,
     nowIso,
     corsPreflight, withCors
@@ -159,25 +159,50 @@ export default async function (request) {
                 const m = await readJsonStrong(meta, null);
                 if (!m?.versions?.length) return json({ error: "No versions to delete" }, 404);
 
-                // Delete the versioned blob
-                const { versioned } = keysFor({ ownerId, programId, version });
-                await getDrillsStore().delete(versioned);
-
-                // Update meta
+                // Order: references first, bytes last.
+                //
+                // The versioned blob used to be deleted here, before either guarded
+                // write. A precondition failure below then left the bytes gone and meta
+                // still listing the version — a catalog entry pointing at nothing, which
+                // no later request repairs. Deleting last inverts the failure: an
+                // interruption leaves bytes nobody references. An orphan costs storage
+                // and is greppable; a dangling reference is a broken download.
                 const remaining = m.versions.filter(v => v.v !== version);
+                const { versioned } = keysFor({ ownerId, programId, version });
+                const dropBytes = async () => {
+                    // Reported rather than thrown. By this point every reference is
+                    // gone, so the catalog is already correct and the caller's request
+                    // has succeeded; a failure here is an orphan to clean up, not a
+                    // reason to fail an operation that did what was asked.
+                    try {
+                        await getDrillsStore().delete(versioned);
+                        return true;
+                    } catch {
+                        return false;
+                    }
+                };
+
                 if (remaining.length === 0) {
-                    // Clean everything
+                    // Last version: drop the whole plan. Same order — the slug record
+                    // and meta are what make the plan findable, so they go before the
+                    // bytes they point at.
                     const latestEtag = await getBlobEtag(latest);
                     try { if (latestEtag) await getDrillsStore().delete(latest); } catch {}
                     try { await getDrillsStore().delete(meta); } catch {}
                     try { await deleteSlugRecord(slug); } catch {}
-                    return json({ ok: true, slug, deletedVersion: version, remainingVersions: [], cleaned: true });
+                    const bytesDeleted = await dropBytes();
+                    return json({
+                        ok: true, slug, deletedVersion: version,
+                        remainingVersions: [], cleaned: true, bytesDeleted,
+                    });
                 }
 
                 // Recompute latest
                 const newLatest = remaining.slice().sort((a,b)=>a.v.localeCompare(b.v, undefined, {numeric:true})).pop();
                 const { versioned: newLatestKey } = keysFor({ ownerId, programId, version: newLatest.v });
-                const buf = await readBinary(newLatestKey);
+                // Strong: these bytes are read in order to be written to `latest`, and
+                // an eventually consistent miss reports them as absent.
+                const buf = await readBinaryStrong(newLatestKey);
                 if (!buf) return json({ error: "New latest bytes not found" }, 500);
 
                 // Guard latest pointer
@@ -203,11 +228,19 @@ export default async function (request) {
                 const mRes = await writeJsonConditional(meta, m, { onlyIfMatch: metaEtag2 });
                 if (!mRes.modified) return json({ error: "Precondition failed (meta changed)" }, 412);
 
+                // Nothing references the version now. Safe to drop the bytes.
+                const bytesDeleted = await dropBytes();
+
                 return json({
                     ok: true, slug,
                     deletedVersion: version,
                     newLatest: newLatest.v,
-                    remainingVersions: remaining.map(v => v.v)
+                    remainingVersions: remaining.map(v => v.v),
+                    // false means the version is gone from the catalog but its archive
+                    // is still in the store. Surfaced so an orphan is something an
+                    // operator can see rather than something they have to go looking
+                    // for.
+                    bytesDeleted,
                 });
             }
 
