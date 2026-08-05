@@ -98,11 +98,21 @@ anything.
   (chosen).** Catalog blobs and account-scoped blobs live in different stores
   reached by different functions. The catalog write path applies the strip
   inside its shared ingest helper; the account read path requires
-  authentication and is never CDN-cached. A test asserts both.
+  authentication, is never CDN-cached, and decides per reader whether the
+  roster is attached. A test asserts both.
 * **Option F — One store, an access flag on the blob.** The existing `drills`
   store gains a field; handlers consult it.
 * **Option G — Post-write scanning.** A scheduled job looks for `staff/` in
   publicly-readable blobs and alarms.
+
+### For withholding a roster from a reader who is not entitled to it
+
+* **Option H — Strip at write time, wherever the plan is not fully private.**
+  One mechanism for every case: if the roster should not reach someone, it is
+  not stored.
+* **Option I — Store whole, withhold per reader at read time (chosen for the
+  account path).** The stored copy is complete; the response is narrowed to
+  what the requester may see.
 
 ## Decision outcome
 
@@ -126,15 +136,41 @@ CDN has already cached, whereas a route that never caches cannot leak one.
 G is worth having as a second line but detects a disclosure that already
 happened, which for personal data is too late to be the mechanism.
 
+**I is the correction that gives this ADR its shape.** A write-time strip (H)
+is right for the catalog, where the whole point is that the bytes must not
+exist in a public store — but applying the same mechanism to the account path
+destroys the owner's own data. A plan set to `shared`, or published, would come
+back from the server without the roster its owner entered, on every device but
+whichever one happened to author it. Granting a colleague write access must not
+delete your phone list. So the two paths use *different* mechanisms on purpose:
+write-time strip where the artifact must never contain it, read-time projection
+where the artifact must contain it but this particular reader may not see it.
+
 ### The rule
 
-| Destination | `staff/` | Read path |
-|---|---|---|
-| Catalog (`published` or not — `/d/:slug`, feed, `/i/:slug`, MCP) | **Stripped, always** | Public, CDN-cached, as today |
-| The owning account's own scope | **Travels with the plan** | Authenticated, members of that account only, `Cache-Control: private, no-store` |
-| Another account via `AccessPolicy.shared` | **Stripped** by default | Plan content only — see below |
+Stripping happens in two different places for two different reasons, and
+conflating them is the mistake this section exists to prevent. **On the
+catalog path the strip is at write time**, because those bytes must never
+exist in a publicly readable store. **On the account path there is no strip at
+all** — the roster is stored, once, and *withheld per reader* when the reader
+is not entitled to it.
 
-Three things follow, and each is a decision rather than an implementation
+Storage is therefore a single fact:
+
+> A plan owned by an account is stored **whole, roster included**, in that
+> account's scope. Nothing about the plan's `accessPolicy`, its published
+> state, or who else has been granted access removes the roster from that
+> stored copy. It is the owner's data, held for the owner.
+
+Service is a projection over that fact, decided per request:
+
+| Reader | Gets the roster? | How |
+|---|---|---|
+| A member of the **owning account** | **Yes** | Authenticated account read, `Cache-Control: private, no-store` |
+| A member of an account granted `AccessPolicy.shared` | No | Same endpoint, roster withheld at read time |
+| Anyone via the catalog (`/d/:slug`, feed, `/i/:slug`, MCP) | No | A *separate*, stripped artifact — see below |
+
+Four things follow, and each is a decision rather than an implementation
 detail:
 
 **1. Account scope is not the catalog with a flag on it.** Account-synced
@@ -144,23 +180,44 @@ the account read path is never CDN-cached. This is what makes "uploaded but not
 public" a state that can exist at all — today it cannot, because `deep-link.js`
 serves any uploaded slug to anyone.
 
-**2. Roster travel is implied by account ownership, not a per-plan toggle.**
-A plan owned by an account syncs whole, roster included, to the members of that
-account. A separate "also sync the roster" switch would be a confusing question
-to ask — the answer is yes every time for a plan a team is actually running,
-and the switch would mostly serve to make the default look deliberate. What
-carries the transparency load instead is telling the account's members plainly,
-once, what an account holds. This answers the open question that
+**2. A published plan exists as two artifacts, not one blob with a policy on
+it.** The catalog copy is built by stripping and is public. The account copy
+keeps the roster and is private. Publishing does not mutate the account copy,
+and un-publishing does not restore anything to it, because it never lost
+anything. This is the direct consequence of the catalog strip being at write
+time: the stripped bytes are a derived artifact, and the original stays where
+its owner put it.
+
+**3. Roster travel is implied by account ownership, not a per-plan toggle.**
+A plan owned by an account syncs whole to the members of that account. A
+separate "also sync the roster" switch would be a confusing question to ask —
+the answer is yes every time for a plan a team is actually running, and the
+switch would mostly serve to make the default look deliberate. What carries the
+transparency load instead is telling the account's members plainly, once, what
+an account holds. This answers the open question that
 [`../plans/account-rollout.md`](../plans/account-rollout.md) has carried since
 May.
 
-**3. `shared` does not carry the roster.** `AccessPolicy.shared`
+**4. `shared` withholds the roster from the other account. It does not remove
+it from the plan.** `AccessPolicy.shared`
 ([ADR-0025](./0025-authorization-and-publish-policy.md), phase 5) grants write
 access on a plan to a *different* account — a different set of people, and in
-data-protection terms a different controller. Plan content crosses that
-boundary; the roster does not. Extending it is a deliberate later decision with
-its own consent story, not something to fall out of a permission grant. Until
-then the cross-account write path strips, same as the catalog path.
+data-protection terms a different controller. So plan content crosses that
+boundary and the roster does not.
+
+The mechanism has to be read-time, and this is the part that is easy to get
+wrong: a write-time strip on the `shared` path would delete the roster from the
+stored copy, and the owner — whose data it is, and who is still working the
+exercise — would lose it on every device but the one that happened to author
+it. Granting a colleague write access to a plan must not destroy your own
+roster. The stored copy is untouched by any grant; only the response to the
+grantee is narrowed.
+
+Practically that argues for the roster being addressable separately from the
+rest of the archive server-side, so the account read path attaches it or omits
+it per reader rather than rebuilding an archive per request. Extending `shared`
+to carry the roster is a deliberate later decision with its own consent story,
+not something that should fall out of a permission grant.
 
 ### What the catalog path keeps
 
@@ -183,19 +240,25 @@ they are real work rather than paperwork:
 1. **An authenticated, uncached read path** and a store that no public route
    can reach. Without this the rest is moot, because today every stored byte is
    public.
-2. **A published privacy statement** naming what personal data an account
+2. **A per-reader projection on that path**, with the roster addressable
+   separately from the rest of the archive so it can be attached or omitted
+   without rebuilding anything. This is what makes withholding a *response*
+   decision rather than a *storage* decision, and it is the difference between
+   `shared` narrowing what a grantee sees and `shared` destroying the owner's
+   roster.
+3. **A published privacy statement** naming what personal data an account
    holds, the legal basis, where it is hosted, and the retention window.
-3. **Deletion that actually deletes.** Removing a plan, or an account, removes
+4. **Deletion that actually deletes.** Removing a plan, or an account, removes
    the roster server-side within the stated window, backups included.
-4. **A route for data subjects who are not users** — someone on a colleague's
+5. **A route for data subjects who are not users** — someone on a colleague's
    roster asking what is held, correcting it, or having it removed.
-5. **EU residency settled, and a sub-processor list** covering hosting, backups
+6. **EU residency settled, and a sub-processor list** covering hosting, backups
    and any support tooling that can read the data.
 
 Roster sync is not one of the six phases in the rollout plan; those phases are
 about authorising *catalog writes*. It is the first feature the account model
 unlocks, it lands as its own piece of work after phase 5 makes multi-member
-accounts real, and the five items above are its entry criteria.
+accounts real, and the six items above are its entry criteria.
 
 ### Relationship to ADR-0018
 
@@ -219,6 +282,9 @@ servers* — and a second, private destination is admitted alongside it.
 * Good: The `shared` boundary is decided before phase 5 designs a UI around it,
   rather than discovered when someone notices a roster crossed to another
   organisation.
+* Good: Sharing a plan is non-destructive to the owner. No grant, policy flip
+  or publish can remove the roster from the copy the owner holds, because
+  withholding is a property of the response and not of the stored bytes.
 * Bad: The privacy programme is back on the critical path, correctly. An
   earlier draft of this ADR removed it by removing the feature; that was a
   cheaper plan for a worse product. Roster sync costs a privacy statement, a
@@ -227,6 +293,15 @@ servers* — and a second, private destination is admitted alongside it.
 * Bad: Two stores and two read paths is more backend surface than one, and the
   cheap mistake — reusing the catalog store "just for now" — is exactly the one
   that leaks. The test is a guard, not a guarantee.
+* Bad: Two different withholding mechanisms in one system is a thing to keep
+  straight. Write-time on the catalog path, read-time on the account path, and
+  the plausible-sounding simplification ("just strip everywhere, it is safer")
+  is the bug — it silently deletes the owner's roster. Anyone touching either
+  path has to know which one they are on.
+* Bad: A read-time projection means the account read path cannot be a blob
+  passthrough. It has to assemble a response per requester, which is more work
+  than serving bytes and one more place for an authorisation check to be
+  forgotten.
 * Bad: Deferring encrypted sync (D) means the first version is server-readable,
   and every item on the gate list exists because of that. Revisiting D later
   means migrating stored rosters, not just adding a feature.
@@ -287,6 +362,34 @@ servers* — and a second, private destination is admitted alongside it.
 * Good: Catches what the ingest rule misses.
 * Bad: Detects a disclosure that already happened. A second line, not the
   mechanism.
+
+### H. Strip at write time, wherever the plan is not fully private
+
+* Good: One mechanism for every case, and the simplest thing to reason about:
+  if the bytes are not there, they cannot leak.
+* Good: Correct, and the only safe answer, for the catalog — where the artifact
+  is public and must never have contained a roster.
+* Bad: Destroys the owner's own data on the account path. Setting a plan to
+  `shared`, or publishing it, would remove the roster from the stored copy, and
+  the owner would lose it everywhere except whichever device authored it.
+* Bad: Makes an access grant irreversible in a way nobody would expect.
+  Revoking `shared` cannot bring the roster back, because it was deleted, not
+  hidden.
+
+### I. Store whole, withhold per reader (chosen for the account path)
+
+* Good: Sharing is non-destructive. The owner's copy is complete regardless of
+  who else has been granted what.
+* Good: Reversible by construction — revoking a grant restores nothing because
+  nothing was removed.
+* Good: Puts the decision next to the identity that motivates it, at the moment
+  of the request, rather than at write time when the future set of readers is
+  not yet known.
+* Bad: The response has to be assembled per reader, so the account read path
+  cannot be a blob passthrough.
+* Bad: The PII is present on the server for every request that touches the
+  plan, and only an authorisation check keeps it out of the response. A missing
+  check leaks; under H there would be nothing to leak.
 
 ## Links
 

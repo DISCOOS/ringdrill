@@ -56,10 +56,10 @@ This document tracks the rollout against those decisions.
   account that owns it
   ([ADR-0072](../adrs/0072-staff-pii-and-account-sync.md)) — that is most of
   why a co-owner wants the shared plan — but it needs a private store, an
-  authenticated read path and a privacy statement, none of which exist. It
-  lands after phase 5, on its own, against ADR-0072's entry criteria. The
-  six phases below are about authorising *catalog writes*, where the strip
-  stays unconditional.
+  authenticated read path that projects per reader, and a privacy statement,
+  none of which exist. It lands after phase 5, on its own, against
+  ADR-0072's entry criteria. The six phases below are about authorising
+  *catalog writes*, where the strip stays unconditional and at write time.
 
 An earlier draft listed "secure refresh-token storage beyond
 `SharedPreferences`" as a non-goal. That is wrong against
@@ -379,9 +379,12 @@ What that means for the six phases below:
   controls and nothing else. Nothing in phases 1–6 sends a roster anywhere,
   so there is no disclosure to write yet.
 * **Phase 5 designs the `shared` UI knowing the answer.** Cross-account
-  delegation grants write access to plan *content*; the roster does not
-  cross to another account. Decided in ADR-0072 before the picker exists,
-  rather than discovered afterwards.
+  delegation grants write access to plan *content*; the grantee's responses
+  omit the roster. Withheld, not removed — the owner's stored copy is
+  untouched by any grant, so sharing a plan never costs you your own phone
+  list and revoking a grant restores nothing because nothing was deleted.
+  Decided in ADR-0072 before the picker exists, rather than discovered
+  afterwards.
 * **One item is added to phase 1**: move the strip from `drills-upload.js`'s
   call site into the shared ingest path, and add the test that enumerates
   the functions accepting archive bytes. Phase 1 is where a second
