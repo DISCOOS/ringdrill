@@ -36,9 +36,11 @@ mobile and the PWA without reshuffling the existing OCC contract
 * New plans default to "protected from strangers". An anonymous third
   party must not be able to overwrite a freshly published plan.
 * Account-locked plans can be co-owned without sharing credentials.
-  Anyone in the owning Account who is not a `guest` can publish
-  (`owner` or `member` — see [ADR-0024](./0024-account-and-identity-model.md)'s
-  2026-08-05 amendment).
+  **Any member of the owning Account may publish, at any role.** The policy
+  protects a plan from strangers, and somebody the account deliberately
+  admitted is not a stranger — see
+  [ADR-0024](./0024-account-and-identity-model.md)'s 2026-08-05 amendment,
+  where `MemberRole` stops gating capability on plans entirely.
 * Public-write plans remain a first-class option. Publishing a training
   plan that anyone can fork and extend (or directly edit, in the
   fully-public case) is a legitimate use case in its own right, not a
@@ -139,8 +141,8 @@ Each catalog endpoint runs this check before any business logic:
 | Endpoint                  | Required policy + role                                         |
 |---------------------------|----------------------------------------------------------------|
 | `POST /api/drills/upload` for new slug | Authenticated User. Slug claimed for `activeAccount`. Policy initialised to `account`. |
-| `POST /api/drills/upload` to existing slug, policy `account`  | Member of owning Account with role `owner` or `member`. A `guest` is refused. |
-| `POST /api/drills/upload` to existing slug, policy `shared`   | Member of the owning Account OR of any account in `shared.accountIds`, with role `owner` or `member` on that account. A `guest` is refused on either side. |
+| `POST /api/drills/upload` to existing slug, policy `account`  | Any member of the owning Account, at any role (`owner`, `member` or `guest`). Non-members are refused. |
+| `POST /api/drills/upload` to existing slug, policy `shared`   | Any member of the owning Account OR of any account in `shared.accountIds`, at any role. |
 | `POST /api/drills/upload` to existing slug, policy `public`   | Authenticated User OR no token. Backward-compatible with today's flow. |
 | `GET /api/market/feed`, `GET /d/:slug`, `GET /api/drills/head/:slug` | Public. Same as today. No authentication. |
 | `POST /api/drills/policy` (new)        | `owner` of the owning Account. Changes the plan's `accessPolicy` and the `shared.accountIds` list. |

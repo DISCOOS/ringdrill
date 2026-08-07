@@ -10,10 +10,11 @@ informed: []
 
 > **Amended by [DESIGN-015](../design/015-accounts-and-iam.md) (2026-08-05).**
 > `MemberRole` is now **`{owner, member, guest}`**, not
-> `{owner, editor, viewer}`. Everyone in the account is a potential editor, so
-> `editor` was a tier that did not describe anyone; and the role's job is
-> **standing in the account**, not capability on an exercise. See "Amendment"
-> at the end.
+> `{owner, editor, viewer}`. Anyone admitted to the account can publish its
+> plans, so `editor` described nobody. The role gates only **who administers
+> the account** and **who is inside the group for personal-data purposes** — a
+> `guest` publishes like anyone else but does not see the staff roster. See
+> "Amendment" at the end.
 
 ## Context and problem statement
 
@@ -319,27 +320,40 @@ guest}`**, and the change is about what the role is *for*.
 | Before | After | Means |
 |---|---|---|
 | `owner` | `owner` | Administers the account: invites, removes, changes roles, renames, changes a plan's access policy |
-| `editor` | `member` | Is in the account. Reads and publishes its plans |
-| `viewer` | `guest` | Admitted from outside to read. Not part of the group |
+| `editor` | `member` | Is in the group. Reads and publishes the account's plans, **and sees the staff roster** |
+| `viewer` | `guest` | Admitted to work on the plans but not in the group. Reads and publishes, **and does not see the roster** |
 
-**Why `editor` had to go.** It described a capability that every non-outsider
-already has. Everyone in a hjelpekorps who is trusted with the account is a
-potential editor of its plans — that is what being in it means. A separate
-`editor` tier therefore never answered a question anyone was asking, and its
-existence implied the default was *not* to be able to edit, which is backwards
-for a group that plans exercises together.
+**Anyone admitted to the account can publish its plans** — "everyone here is a
+potential editor" taken to its conclusion. The account protects plans from
+*strangers* ([ADR-0025](./0025-authorization-and-publish-policy.md)); somebody
+the account deliberately added is not a stranger, and making them ask another
+person to press publish buys nothing.
+
+`MemberRole` therefore gates exactly two things, and **neither is "may you work
+on the plans"**:
+
+1. **Who administers the account.** `owner` invites, removes, changes roles,
+   renames, and changes a plan's access policy.
+2. **Who is inside the group for personal-data purposes.** `owner` and `member`
+   see the staff roster that travels with an account-owned plan
+   ([ADR-0072](./0072-staff-pii-and-account-sync.md)). A `guest` does not.
+
+**Why `editor` had to go.** It described a capability every non-outsider
+already has, and its existence implied the default was *not* to be able to
+publish — backwards for a group that plans exercises together.
 
 **Why `viewer` became `guest`.** `viewer` names a capability ("can view");
-`guest` names a *relationship* ("admitted, but not one of us"). The second is
-the thing being decided when someone is added at that level, and it makes the
-tier's purpose legible: a guest is an outsider given a look, not a
-member with a smaller allowance. It also gives
-[ADR-0072](./0072-staff-pii-and-account-sync.md) a clean line to draw — the
-roster reaches members, not guests — without inventing a separate visibility
-axis.
+`guest` names a *relationship* ("admitted, but not one of us"). Once publishing
+follows from admission, the capability reading has nothing left to describe,
+while the relationship reading has exactly one job: a guest is someone from a
+neighbouring korps helping you build a plan. They can edit it and publish it.
+They do not get your people's names and phone numbers.
+
+That single line is `guest`'s entire reason to exist, which is the best kind of
+tier — one question, one answer, nothing to misremember.
 
 **The role says nothing about what you do on an exercise.** `MemberRole` is
-the account/administration axis only. It does not imply, constrain, or derive
+the account axis only. It does not imply, constrain, or derive
 a `StaffRole` ([ADR-0057](./0057-role-gated-editing.md)), and no rule anywhere
 maps between them. A `guest` may be the *øvelsesleder* running the drill; an
 `owner` may be `other` on the roster and edit nothing. Both are ordinary. This

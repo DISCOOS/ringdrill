@@ -305,36 +305,43 @@ the native button; nothing else about the flow changes per platform.
 
 ### 6.1 Roles, and exactly what each is for
 
-**`MemberRole` is `{owner, member, guest}`, and it is the account/administration
-axis only.** This amends ADR-0024's original `{owner, editor, viewer}`; the
-reasoning is recorded there.
+**`MemberRole` is `{owner, member, guest}`, and it gates two things — neither of
+which is "may you work on the plans".** This amends ADR-0024's original
+`{owner, editor, viewer}`; the reasoning is recorded there.
 
-| Role | `nb` | Is |
-|---|---|---|
-| `owner` | Eier | The person who administers the account: invites, removes, changes roles, renames it, changes a plan's access policy |
-| `member` | Medlem | In the account. Reads and publishes its plans |
-| `guest` | Gjest | Admitted from outside to read. Not part of the group |
+| Role | `nb` | Publishes | Sees the roster | Administers |
+|---|---|:--:|:--:|:--:|
+| `owner` | Eier | ✔ | ✔ | ✔ |
+| `member` | Medlem | ✔ | ✔ | — |
+| `guest` | Gjest | ✔ | — | — |
 
-Two things this replaces, and why:
+**Everyone admitted to the account can publish its plans.** The account
+protects a plan from *strangers*; someone the account deliberately added is not
+a stranger, and routing their work through a colleague with the publish button
+buys nothing but friction.
 
-**`editor` described nobody.** Everyone trusted with the account is a potential
-editor of its plans — that is what being in it means. A tier that grants "may
-publish" implied the default was *not* to be able to publish, which is backwards
-for a group that plans exercises together. `member` says the true thing: you are
-in, and being in is what lets you work.
+That leaves the role two jobs:
 
-**`viewer` named a capability; `guest` names a relationship.** "Can view" is not
-the decision being made when someone is added at that level. "This person is
-admitted, but is not one of us" is. The rename makes the tier legible in the one
-place it matters — the invite — and it gives §8 a line it can draw without
-inventing a new axis.
+1. **`owner` administers.** Invites, removes, changes roles, renames the
+   organisation, changes a plan's access policy.
+2. **`guest` is outside the group for personal-data purposes.** A guest works
+   on the plans and does not see the staff roster (§8.1).
 
-The role picker still shows a consequence line under each name, because a role
-name alone never carries its own meaning:
+`guest` is therefore a *personal-data* tier, not a capability tier, and that is
+its whole reason to exist: someone from a neighbouring korps helping you build
+a plan can edit it and publish it, and does not get your people's names and
+phone numbers. One question, one answer, nothing to misremember.
+
+The role picker shows the consequence under each name, because a role name
+alone never carries its own meaning:
 
 * **Eier** — *"Kan styre medlemmer og tilgang, i tillegg til alt et medlem kan."*
-* **Medlem** — *"Er med i organisasjonen. Kan lese og publisere planene."*
-* **Gjest** — *"Kan lese planene. Er ikke med i organisasjonen."*
+* **Medlem** — *"Kan lese og publisere planene, og ser stablista."*
+* **Gjest** — *"Kan lese og publisere planene, men ser ikke stablista."*
+
+…under a single line that stops the picker reading as a permission ladder:
+*"Alle du legger til kan jobbe med planene. Forskjellen er om de ser stablista —
+navnene og telefonnumrene til folkene deres."*
 
 A fourth tier between owner and member — an *admin* who manages people but
 cannot delete the account — fits the model without a change and is not added
@@ -366,7 +373,11 @@ in with a verified identity for it.
 ### 6.3 Changing a role, removing, leaving
 
 * **Change role** — bottom sheet on phone, detail pane on wide. Takes effect on
-  the member's next request; no re-login.
+  the member's next request; no re-login. **Demotion is not a way to withdraw
+  trust.** Moving someone from `member` to `guest` takes away their view of the
+  roster and nothing else; they still publish. For someone who should no longer
+  be working on the plans at all, the action is *Fjern*, and the UI must not
+  offer demotion as a softer alternative.
 * **Remove** — confirm names what the person loses (*"Kari mister tilgang til
   planene i organisasjonen. Planer hun har lastet ned blir liggende på hennes
   egen enhet."*). That second sentence is not optional: it is true, and users
@@ -458,6 +469,11 @@ This is not a fourth axis. It is the same membership axis with the outsider tier
 named honestly, which is most of why `viewer` became `guest` — under the old
 vocabulary, "does a viewer see the roster?" had no principled answer, because
 `viewer` described a capability and the question is about belonging.
+
+Since every role publishes (§6.1), **this is the only thing `guest` withholds**,
+which makes the tier easy to explain and easy to choose correctly: the question
+at invite time is not "how much should this person be allowed to do" but "should
+this person have our people's phone numbers".
 
 The `AccessPolicy.shared` case follows from the same rule and needs no separate
 one: a member of the *grantee* account is not in the *owning* account, so they
