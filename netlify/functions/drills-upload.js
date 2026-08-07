@@ -11,6 +11,10 @@ import {
 import {
     KNOWN_SCHEMA_MAX, isSchemaTooNew, stripPiiFolders, readCatalogArchive
 } from "./lib/drill-pii.js";
+// Authorisation is a pure decision in its own module so it can be tested
+// exhaustively without blob storage — see lib/authorize.js and ADR-0025.
+import { authenticate } from "./lib/auth/index.js";
+import { authorizeCatalogWrite, readAccessPolicy } from "./lib/authorize.js";
 
 
 // Parse every top-level exercises/<uuid>.json entry once, returning both the
@@ -290,17 +294,36 @@ export default async function (request) {
         // re-upload.
         const existing = await getSlugRecordStrong(slug);
 
-        // Use provided IDs if present; otherwise reuse existing; otherwise defaults.
         // planId is the Plan-rename name (ADR-0055); programId is accepted as a
         // fallback for callers that haven't upgraded yet, and its use is
         // reported to Sentry so we know when it's safe to remove.
-        const ownerIdParam = qs.get("ownerId");
         const { programId: programIdParam, usedLegacyName } = resolvePlanIdParam(qs);
         if (usedLegacyName) {
             await reportLegacyProgramIdUsage({ function: "drills-upload", slug });
         }
 
-        const ownerId = ownerIdParam ?? existing?.ownerId ?? "anon";
+        // ---- Authorisation (ADR-0025), before OCC and before any write ----
+        // The existing plan's meta decides which matrix row applies, so it is
+        // read before the decision rather than after.
+        const existingMeta = existing
+            ? await readJson(keysFor({ ownerId: existing.ownerId, programId: existing.programId, version: "_" }).meta, null)
+            : null;
+        const principal = await authenticate(request);
+        const decision = authorizeCatalogWrite({ principal, existing, meta: existingMeta });
+        if (!decision.ok) {
+            return withCors(request, new Response(
+                JSON.stringify({ error: decision.reason }),
+                { status: decision.status, headers: { "content-type": "application/json" } },
+            ));
+        }
+
+        // **Ownership comes from the decision, never from the caller.** The
+        // legacy ?ownerId= parameter is ignored: it used to *be* ownership,
+        // which meant anyone could read an owner off the public feed — it is
+        // published there as `author` — and hand it straight back to write to
+        // that slug. Accepted as a no-op for one release (ADR-0025) so old
+        // clients that still send it are not broken by its removal.
+        const ownerId = decision.ownerId;
         const programId = programIdParam ?? existing?.programId
             ?? (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2) + Date.now().toString(36));
 
@@ -477,9 +500,13 @@ export default async function (request) {
         currentMeta.mapBounds = program.mapBounds;
         currentMeta.place = place;
         currentMeta.languageCode = program.languageCode;
-        const { author, accessPolicy } = resolvePublishPolicy({ ownerId });
+        // A publish must not change who may publish. An existing plan keeps the
+        // policy it already had — flipping it is what POST /api/drills/policy is
+        // for, and doing it here would let any authorised writer silently widen
+        // or narrow access as a side effect of an ordinary update.
+        const { author } = resolvePublishPolicy({ ownerId });
         currentMeta.author = author;
-        currentMeta.accessPolicy = accessPolicy;
+        currentMeta.accessPolicy = existing ? readAccessPolicy(existingMeta) : decision.accessPolicy;
         const without = (currentMeta.versions || []).filter(v => v.v !== version);
         currentMeta.versions = [
             ...without,

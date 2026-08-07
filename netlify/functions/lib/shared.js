@@ -253,15 +253,10 @@ export function latestVersionEntry(versions) {
 // missing/malformed languageCode → null, per ADR-0007's languageCode
 // addendum).
 //
-// `accessPolicy` is DESCRIPTIVE, not a security property, and stays that way
-// until phase 3 of docs/plans/account-rollout.md. Nothing authenticates a
-// write yet: `ownerId` is a caller-supplied query parameter on
-// drills-upload, and this projection publishes it as `author` — so a value of
-// "account" here says "this plan names an owner", not "only that owner can
-// write to it". Anyone can read the owner off this feed and pass it back.
-// That is the pre-accounts wiki model working as designed (ADR-0008); the
-// hazard is only that the word "policy" reads like a guarantee. Delete this
-// paragraph when drills-upload starts enforcing the ADR-0025 matrix.
+// `accessPolicy` is enforced as of the account release: drills-upload applies
+// ADR-0025's matrix before OCC, and `ownerId` is taken from the verified
+// principal rather than a query parameter. The value here is therefore a real
+// property of the plan, not a label.
 export function metaToFeedItem(meta, { origin }) {
     const latest = latestVersionEntry(meta.versions);
     return {

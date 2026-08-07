@@ -158,16 +158,12 @@ class MarketFeedItem {
   /// ADR-0024 resolves this to an account display name.
   final String? author;
 
-  /// One of `account | shared | public` (ADR-0025). Parsed but not yet
-  /// surfaced in the UI — lights up with ADR-0024/0025.
+  /// One of `account | shared | public` (ADR-0025).
   ///
-  /// **Descriptive, not enforced.** Nothing authenticates a catalog write
-  /// yet: `ownerId` is a query parameter the caller chooses, and the feed
-  /// republishes it as [author], so `"account"` means "this plan names an
-  /// owner", not "only that owner can publish to it". Do not render this as a
-  /// lock, a shield, or anything else a reader would take as a guarantee
-  /// until phase 3 of `docs/plans/account-rollout.md` makes the server
-  /// enforce it. A globe on a `public` plan is fine — that one is true.
+  /// **Enforced server-side.** `drills-upload` applies the
+  /// authorisation matrix before OCC, and ownership comes from the verified
+  /// principal rather than from a request parameter, so `"account"` really does
+  /// mean only that account's members can publish. Safe to render as a lock.
   final String? accessPolicy;
   final List<String> tags;
   final Uri latestUrl;

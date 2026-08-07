@@ -74,20 +74,24 @@ Require `Authorization: Bearer <ADMIN_TOKEN>`. The operation is chosen by the
 |--------|------|---------|
 | `POST` | `/api/drills-upload?slug={slug}&published=true` | Upload a `.drill` (request body is the zip). `name`, `description` and `tags` are read from `program.json` in the archive (ADR-0043) |
 
-**Unauthenticated, deliberately.** Upload is listed separately from Admin
-because it takes no bearer token: the catalog is a wiki-model corpus where
-any holder of a `.drill` file may publish to the slug it claims
-([ADR-0008](./adrs/0008-persistent-program-library-and-catalog.md),
-[ADR-0014](./adrs/0014-server-assigned-drill-version.md)). `ownerId` is a
-query parameter the caller picks, and the feed republishes it as `author`,
-so the `accessPolicy` value a feed item carries describes whether the plan
-names an owner — it does not restrict who may write. Concurrency is guarded
-by `If-Match` (OCC), not by identity.
+**Authorisation** follows [ADR-0025](./adrs/0025-authorization-and-publish-policy.md)'s
+matrix, applied before OCC:
 
-[ADR-0025](./adrs/0025-authorization-and-publish-policy.md) makes
-`accessPolicy` enforceable; that lands in phase 3 of
-[`plans/account-rollout.md`](./plans/account-rollout.md), and this note comes
-out with it.
+| Plan | Who may publish |
+|---|---|
+| New slug, anonymous | Anyone. Lands as `anon`-owned with `accessPolicy: public` |
+| New slug, authenticated | Claimed for the active account at `accessPolicy: account` |
+| `public` | Anyone, signed in or not — the wiki model, kept as a first-class option |
+| `account` | Any member of the owning account, at any role |
+| `shared` | Any member of the owning account or of a granted account |
+
+**Anonymous publishing keeps working**, deliberately: signing in buys
+protection, it is not the price of publishing. `ownerId` is taken from the
+verified principal, and the legacy `?ownerId=` parameter is ignored — it is
+accepted as a no-op for one release so older clients are not broken.
+
+Concurrency is still guarded by `If-Match` (OCC), which runs after
+authorisation.
 
 ## Status codes
 
@@ -115,7 +119,7 @@ curl "https://ringdrill.app/api/drills-admin?action=listall&limit=50" \
 curl -X POST "https://ringdrill.app/api/drills-admin?action=publish&slug=lsor-eidene-2026" \
   -H "Authorization: Bearer $RINGDRILL_ADMIN_TOKEN"
 
-# Upload / replace a drill (no token — see "Upload" above)
+# Upload / replace a drill (anonymous — lands as a public, anon-owned plan)
 curl -X POST "https://ringdrill.app/api/drills-upload?slug=lsor-eidene-2026&published=true" \
   -H "Content-Type: application/vnd.ringdrill+zip" \
   --data-binary @lsor-eidene-2026.drill
