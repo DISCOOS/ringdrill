@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: proposed
 date: 2026-08-08
 deciders: ["kengu"]
 consulted: []
@@ -294,7 +294,8 @@ The namespace is not confined to the storage key:
 ### B. Two objects, derived on publish (chosen)
 
 * Good: lifecycles that DESIGN-015 already promised fall out for free.
-* Good: makes the PII boundary a property of a type rather than of an operation.
+* Good: the public bytes and the private bytes are separate stored instances,
+  so the boundary is a storage fact rather than a flag anyone can flip.
 * Bad: two objects to keep straight, and a derivation step to get right.
 
 ### C. Bidirectional sync
