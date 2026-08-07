@@ -660,6 +660,62 @@ cli_c = '''
       </div>'''
 
 
+# ---------------------------------------------------------------- invite accept
+inv_a = '''
+      <div class="bar"><i class="ti ti-mail"></i><span class="grow">Inbox</span></div>
+      <div class="body">
+        <div class="card">
+          <div class="item" style="display: block; padding: 14px;">
+            <div class="s" style="margin: 0 0 2px;">RingDrill &lt;noreply@ringdrill.app&gt;</div>
+            <div class="t" style="font-weight: 500;">Kari invited you to Red Cross Bergen</div>
+          </div>
+          <div class="item" style="display: block; padding: 14px;">
+            <p class="p" style="margin: 0 0 12px;">Kari Gulbrandsen has invited you to join <b>Red Cross Bergen</b> on RingDrill as a <b>member</b>. You will be able to read and publish the organisation&rsquo;s exercise plans.</p>
+            <div class="btn btn-primary" style="height: 40px;">Open the invitation</div>
+            <p class="p" style="margin: 12px 0 0; font-size: 12px;">Expires in 14 days. If you were not expecting this, ignore it &mdash; nothing happens until you sign in. <span style="text-decoration: underline;">Report this invitation</span></p>
+          </div>
+        </div>
+        <div class="note note-plain"><i class="ti ti-mail-question"></i><span>The only unsolicited mail RingDrill sends, so it says why it arrived and how to stop it.</span></div>
+        <div style="flex: 1;"></div>
+        <div class="note note-accent"><i class="ti ti-shield-check"></i><span>The link is <b>not</b> a credential. It identifies which invitation is being answered. Accepting still requires signing in, so a forwarded email gets the recipient a prompt they cannot satisfy.</span></div>
+      </div>'''
+
+inv_b = '''
+      <div class="bar"><i class="ti ti-lock"></i><span class="grow">ringdrill.app/invite/&hellip;</span></div>
+      <div class="body">
+        <h2 class="h">Join Red Cross Bergen</h2>
+        <div class="card">
+          <div class="item"><div class="av">KG</div><div class="grow"><div class="t">Kari Gulbrandsen invited you</div><div class="s">to ola@example.com &middot; as a member</div></div></div>
+          <div class="item"><i class="ti ti-pencil"></i><div class="grow"><div class="s" style="margin: 0;">You will be able to read and publish the organisation&rsquo;s plans, and you will see the staff roster.</div></div></div>
+        </div>
+        <div class="sect">Sign in to accept</div>
+        <div class="btn btn-dark"><i class="ti ti-brand-apple"></i> Continue with Apple</div>
+        <div class="btn"><i class="ti ti-brand-google"></i> Continue with Google</div>
+        <div class="btn"><i class="ti ti-mail"></i> Continue with email</div>
+        <div class="note note-plain"><i class="ti ti-user-plus"></i><span>No RingDrill account yet? Signing in creates your own personal account. Joining an organisation does not replace it &mdash; you keep both.</span></div>
+        <div style="flex: 1;"></div>
+        <div class="note note-accent"><i class="ti ti-route"></i><span><b>The one exception to &ldquo;no sign-in during onboarding&rdquo;</b> (&sect;3.1). An invitee arrived because somebody wants them in an account, so the invitation is what makes signing in make sense. Sign-in first, short onboarding, then the organisation&rsquo;s plans &mdash; never a generic first-run screen with the invitation forgotten.</span></div>
+      </div>'''
+
+inv_c = '''
+      <div class="bar"><i class="ti ti-lock"></i><span class="grow">ringdrill.app/invite/&hellip;</span></div>
+      <div class="body">
+        <div class="note note-warn"><i class="ti ti-alert-triangle"></i><span><b>This invitation was sent to a different address.</b></span></div>
+        <div class="card">
+          <div class="item"><i class="ti ti-mail"></i><div class="grow"><div class="s" style="margin: 0;">Invited</div><div class="t">ola@example.com</div></div></div>
+          <div class="item"><i class="ti ti-user"></i><div class="grow"><div class="s" style="margin: 0;">Signed in as</div><div class="t">ola.hansen@gmail.com</div></div></div>
+        </div>
+        <p class="p">Membership binds to the address the invitation was sent to. Binding it to whoever opens the link would turn a forwarded email into account access.</p>
+        <div class="sect">Two ways forward</div>
+        <div class="card">
+          <div class="item"><i class="ti ti-login"></i><div class="grow"><div class="t">Sign in with ola@example.com</div><div class="s">Same account if the addresses are already linked</div></div></div>
+          <div class="item"><i class="ti ti-send"></i><div class="grow"><div class="t">Ask Kari to invite this address</div><div class="s">Sends a new invitation to ola.hansen@gmail.com</div></div></div>
+        </div>
+        <div style="flex: 1;"></div>
+        <div class="note note-plain"><i class="ti ti-list-check"></i><span>Four more states the page has to render rather than fail generically: already accepted, withdrawn, expired, and organisation deleted.</span></div>
+      </div>'''
+
+
 
 def main():
     page("auth-signin.html", "Sign-in",
@@ -708,6 +764,13 @@ def main():
          [("1 &middot; Start the flow", cli_a),
           ("2 &middot; Browser consent", cli_b),
           ("3 &middot; Authorised", cli_c)])
+
+
+    page("invite-accept.html", "Accepting an invitation",
+         "DESIGN-015 &sect;6.4. Inviting someone with no account has to work, and &ldquo;the membership binds when they sign in&rdquo; leaves four questions whose default answers are all wrong. The link is not a credential; the invited address is what binds; a first-run invitee is the one case where sign-in precedes onboarding; and the wrong-address case needs a real answer rather than a failure.",
+         [("1 &middot; The invitation email", inv_a),
+          ("2 &middot; Landing, no account yet", inv_b),
+          ("3 &middot; Signed in as someone else", inv_c)])
 
 
 if __name__ == "__main__":

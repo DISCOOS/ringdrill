@@ -79,8 +79,8 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0069 | [Render the brief through a lazy viewport, and navigate it without relying on mounted headings](./0069-lazy-brief-viewport.md) | Accepted |
 | ADR-0070 | [Deliver a built archive by handle, not through the transcript](./0070-build-artifact-delivery.md) | Accepted |
 | ADR-0071 | [Report a modelling shortcut, instead of only advising against it](./0071-modelling-shortcut-diagnostics.md) | Accepted |
-| ADR-0072 | [Let a roster reach the account that owns the plan, and keep the catalog stripped](./0072-staff-pii-and-account-sync.md) | Proposed |
-| ADR-0073 | [Select the auth backend by mode, and ship a mock adapter for dev and test](./0073-auth-mode-and-adapters.md) | Proposed |
+| ADR-0072 | [Let a roster reach the account that owns the plan, and keep the catalog stripped](./0072-staff-pii-and-account-sync.md) | Accepted |
+| ADR-0073 | [Select the auth backend by mode, and ship a mock adapter for dev and test](./0073-auth-mode-and-adapters.md) | Accepted |
 
 ## When to write an ADR
 

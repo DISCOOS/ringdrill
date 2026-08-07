@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-08-05
 deciders: ["kengu"]
 consulted: []
