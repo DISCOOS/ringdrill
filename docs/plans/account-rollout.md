@@ -89,9 +89,10 @@ What staging genuinely bought, and how it is replaced:
 
 | Phased | Single release |
 |---|---|
-| Revert phase N without touching N−1 | One server-side kill switch, below |
+| Revert phase N without touching N−1 | `AUTH_MODE=off`, server-side, see below |
 | Telemetry gate before enforcement | Nothing to gate at three plans |
 | Ship auth code dark behind a flag | Work on the `design-015` branch; unmerged code does not ship |
+| Verify each step before the next | `AUTH_MODE=mock` — the whole matrix is exercisable in dev and CI, which the phased plan never provided |
 
 The one thing that does **not** collapse is deploy ordering, because web ships
 in minutes and mobile takes days. That is handled in "Cutover" rather than by
@@ -112,7 +113,11 @@ Ordered by dependency, not by risk. Everything below ships together.
   `noreply@ringdrill.app`, templates in `netlify/functions/_email/`.
 * JWT signing (ed25519) with `AUTH_SIGNING_KEY_PRIVATE` /
   `AUTH_SIGNING_KEY_PUBLIC`.
-* `authenticate(request)` helper: anonymous, authenticated, or 401.
+* `authenticate(request)` helper: anonymous, authenticated, or 401 — behind the
+  adapter seam from [ADR-0073](../adrs/0073-auth-mode-and-adapters.md), with
+  `live`, `mock` and `off` implementations, the `live`-rejects-`test.`-tokens
+  guard, and the test asserting `mock` refuses to load under
+  `CONTEXT=production`.
 * **Enforce ADR-0025's authorisation matrix** in `drills-upload.js`, before
   OCC. `accessPolicy` stops being descriptive and becomes a gate, so the
   "descriptive only" notes in `shared.js`, `drill_client.dart` and `api.md`
@@ -186,38 +191,60 @@ Ordered by dependency, not by risk. Everything below ships together.
 * `ADMIN_TOKEN` stays accepted. Removing it is a **follow-up**, not part of
   this release — see "Cutover".
 
-## Kill switch
+## Auth mode
 
-One server env var, read by the Netlify functions at request time:
+Not a feature flag. [ADR-0073](../adrs/0073-auth-mode-and-adapters.md) makes
+the auth backend an adapter selected by one env var, because dev and test need
+to exercise the authorisation matrix without a mail provider or a signing key —
+a need that exists regardless of this release and outlives it.
 
-| Env var | Effect when unset/false |
-|---|---|
-| `FEATURE_AUTH_ENFORCE` | `drills-upload.js` skips the ADR-0025 matrix entirely and behaves as it does today. Sign-in, accounts and members keep working; only write authorisation is bypassed. |
+| `AUTH_MODE` | Tokens | Used by |
+|---|---|---|
+| `live` *(default when unset)* | Signed ed25519 JWT | Production |
+| `mock` | `test.<claims>`, minted by the caller; `start-email` returns the code in the response body | `make netlify-dev`, integration tests, CI |
+| `off` | None; every request anonymous, matrix not applied | Pre-account regression tests, emergency rollback |
 
-**A single rollout makes this more important, not less.** With no phases to
-roll back through, the whole recovery path is server-side — and it has to be,
-because reverting a mobile release takes days while flipping a Netlify env var
-takes seconds. This is the one control worth having, and it is deliberately
-coarse: it turns enforcement off, not the feature.
+`mock` replaces the two *dependencies* — mail delivery and signature
+verification — and nothing else. The endpoints, the matrix, OCC and the PII
+strip are the same code in every mode, so a `guest` is refused locally for the
+same reason it is refused in production.
+
+Two consequences for this release:
+
+* **The mail-provider decision leaves the critical path.** Resend vs SES is
+  needed for the `live` adapter and for production. Everything else can be
+  built and verified before it is made.
+* **`AUTH_MODE=off` is the rollback.** An earlier draft of this plan called it
+  `FEATURE_AUTH_ENFORCE`, which named it wrongly on both counts: `FEATURE_*`
+  implies a temporary rollout artifact that gets deleted at sunset
+  ([ADR-0042](../adrs/0042-feature-flags-and-sunset-telemetry.md)), and a
+  boolean cannot express `mock`. The rollback capability is a *consequence* of
+  having modes, not the reason the variable exists.
+
+Rolling back still matters as much as it did: reverting a mobile release takes
+days, flipping a Netlify env var takes seconds, and with no phases to fall back
+through, the whole recovery path is server-side.
 
 No client `dart-define` flag. ADR-0042's `MIGRATION_DISABLED` existed because
 phase 1 shipped to production while phase 2 was still being written; with one
 release there is no such window. Unmerged work on `design-015` does not ship,
-which is the same protection without a flag to retire later.
+which is the same protection without a flag to retire later. The client has no
+branch for auth mode at all — it asks for a code and posts it back, and the
+backend decides where the code came from.
 
 ## Cutover
 
 The only sequencing that survives, and it is deployment rather than feature
 sequencing:
 
-1. **Deploy the backend first**, with `FEATURE_AUTH_ENFORCE` unset. Nothing
-   changes for anyone: no client sends a token yet.
+1. **Deploy the backend first**, with `AUTH_MODE=off`. Nothing changes for
+   anyone: no client sends a token yet.
 2. **Verify against production** with the curl script
    (`docs/plans/account-rollout-verify.md`, written during the work): sign up,
    publish authenticated, publish anonymous, confirm the anonymous path still
    produces an `anon`/`public` plan.
-3. **Turn on `FEATURE_AUTH_ENFORCE`.** Existing plans are all `anon`/`public`
-   and are unaffected — there is nothing yet for the matrix to refuse.
+3. **Set `AUTH_MODE=live`.** Existing plans are all `anon`/`public` and are
+   unaffected — there is nothing yet for the matrix to refuse.
 4. **Ship web.** Minutes. Web users can sign in.
 5. **Ship mobile.** Days, gated on review. Until it lands, mobile publishes
    anonymously — which is exactly today's behaviour, not a degraded mode.
@@ -330,7 +357,9 @@ Two consequences for this release:
 ## Open questions
 
 * Mail provider: Resend (simpler, EU residency available) vs SES (cheaper at
-  scale, more configuration). Decision needed before the backend work starts.
+  scale, more configuration). No longer blocks the start of the work —
+  [ADR-0073](../adrs/0073-auth-mode-and-adapters.md)'s `mock` adapter needs no
+  provider — but it does block the production cutover.
 * Whether creating a realtime session
   ([ADR-0009](../adrs/0009-realtime-transport-and-session-model.md)) should
   require a signed-in identity. Current default is no; revisit after the
