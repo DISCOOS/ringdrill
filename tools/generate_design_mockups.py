@@ -545,6 +545,58 @@ lib_b = '''
         <div class="note note-plain"><i class="ti ti-switch-horizontal"></i><span>The tab follows the active account in the top bar. Belong to several and you switch there; the tabs do not multiply.</span></div>
       </div>'''
 
+# ---------------------------------------------------------------- publish dialog
+STAFF_NOTE = ('<div class="note note-plain"><i class="ti ti-shield-lock"></i><span>'
+              '<b>Staff details are never published.</b> Names and phone numbers on the roster '
+              'stay on this device.</span></div>')
+
+pub_a = '''
+      <div class="bar"><i class="ti ti-x"></i><span class="grow">Publish plan</span></div>
+      <div class="body">
+        <div class="card"><div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">LSOR Eidene 2026</div><div class="s">6 exercises &middot; not published yet</div></div></div></div>
+        <div class="sect">Sharing</div>
+        <div class="card"><div class="item"><i class="ti ti-world"></i><div class="grow"><div class="t">Open to everyone</div><div class="s">Anyone who has the file can publish updates to it. That is how the open catalog works.</div></div></div></div>
+        <div class="note note-plain"><i class="ti ti-user-off"></i><span>You are not signed in, so this is the only option. Signing in would let you keep the plan to yourself — but you do not have to.</span></div>
+        ''' + STAFF_NOTE + '''
+        <div style="flex: 1;"></div>
+        <div class="btn btn-primary">Publish</div>
+        <div class="btn">Sign in first</div>
+      </div>'''
+
+pub_b = '''
+      <div class="bar"><i class="ti ti-x"></i><span class="grow">Publish plan</span></div>
+      <div class="body">
+        <div class="card"><div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">Winter camp Voss</div><div class="s">3 exercises &middot; not published yet</div></div></div></div>
+        <div class="sect">Publishes to</div>
+        <div class="card"><div class="item"><div class="av">KG</div><div class="grow"><div class="t">Kari Gulbrandsen</div><div class="s">Personal account</div></div></div></div>
+        <div class="sect">Sharing</div>
+        <div class="card">
+          <div class="item"><div class="radio radio-on"></div><div class="grow"><div class="t">Only my account</div><div class="s">Only you can publish updates</div></div></div>
+          <div class="item"><div class="radio"></div><div class="grow"><div class="t">Open to everyone</div><div class="s">Anyone who has the file can publish updates</div></div></div>
+        </div>
+        ''' + STAFF_NOTE + '''
+        <div style="flex: 1;"></div>
+        <div class="btn btn-primary">Publish</div>
+      </div>'''
+
+pub_c = '''
+      <div class="bar"><i class="ti ti-x"></i><span class="grow">Publish update</span></div>
+      <div class="body">
+        <div class="card"><div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">LSOR Eidene 2026</div><div class="s">Published &middot; v5 &rarr; v6</div></div></div></div>
+        <div class="sect">Publishes to</div>
+        <div class="card"><div class="item"><div class="av">RC</div><div class="grow"><div class="t">Red Cross Bergen</div><div class="s">Organisation &middot; 4 members</div></div><span class="pill">Switch</span></div></div>
+        <div class="sect">Sharing</div>
+        <div class="card">
+          <div class="item"><div class="radio radio-on"></div><div class="grow"><div class="t">Red Cross Bergen only</div><div class="s">The 4 people in the organisation can publish updates</div></div></div>
+          <div class="item"><div class="radio"></div><div class="grow"><div class="t">Shared with other accounts</div><div class="s">Fjell Red Cross</div></div><i class="ti ti-chevron-right"></i></div>
+          <div class="item"><div class="radio"></div><div class="grow"><div class="t">Open to everyone</div><div class="s">Anyone who has the file can publish updates</div></div></div>
+        </div>
+        <div class="note note-plain"><i class="ti ti-shield-lock"></i><span><b>Staff details are never published.</b> The roster stays inside Red Cross Bergen — a shared account gets the plan, not the people.</span></div>
+        <div style="flex: 1;"></div>
+        <div class="btn btn-primary">Publish update</div>
+      </div>'''
+
+
 
 def main():
     page("auth-signin.html", "Sign-in",
@@ -579,6 +631,13 @@ def main():
     page("library-tabs.html", "Plan selector with an account",
          "DESIGN-015 &sect;5.7. Accounts add a source that is neither local nor public, so the selector goes from three tabs to four — but only for someone who actually has an account. &ldquo;Online&rdquo; becomes &ldquo;Public&rdquo;, because the word stops distinguishing anything the moment the Account tab is also on the network.",
          [("No account — as today", lib_a), ("With an organisation — fourth tab", lib_b)])
+
+
+    page("publish-dialog.html", "Publish dialog",
+         "DESIGN-015 &sect;5.8. Three jobs on one screen: it is sign-in entry point 3 (&sect;3.1) and must not read as a paywall; it names the account it publishes to and lets you switch (&sect;5.5); and it holds the access policy under <b>Sharing</b> &mdash; not <i>Tilgang</i>, which &sect;7 reserves for a person&rsquo;s standing in the account. The signed-out state offers Publish as the primary action, with signing in as the alternative rather than the gate.",
+         [("1 &middot; Signed out &mdash; not a gate", pub_a),
+          ("2 &middot; Personal account", pub_b),
+          ("3 &middot; Organisation, republish", pub_c)])
 
 
 if __name__ == "__main__":
