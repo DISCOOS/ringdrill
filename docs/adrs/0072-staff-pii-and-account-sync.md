@@ -267,7 +267,7 @@ about authorising *catalog writes*. It is the first feature the account model
 unlocks, it lands as its own piece of work once the account release has made
 multi-member accounts real, and the six items above are its entry criteria.
 
-### Follow-up: the catalog entry as a distinct object (proposed ADR-0074)
+### Follow-up: the catalog entry as a distinct object — now [ADR-0074](./0074-catalog-entry-as-distinct-object.md)
 
 This ADR says a published plan is "two artifacts, not one blob with a policy on
 it", and stops at *copies*. Raised on approval (2026-08-05): they may be
@@ -329,7 +329,7 @@ Two consequences for ADR-0074 when it is written:
   cascade already hydrate values within a plan; a template is the same
   mechanism with an outer scope.
 
-### The other half of ADR-0074: namespaced slugs
+### The other half of ADR-0074: namespaced slugs — now decided there
 
 Raised 2026-08-05 while accepting that an `anon` plan stays unclaimable. That
 is only tolerable if a slug is unique **per namespace** rather than globally —
