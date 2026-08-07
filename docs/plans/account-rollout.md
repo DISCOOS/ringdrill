@@ -112,6 +112,32 @@ Ordered by dependency, not by risk. Everything below ships together.
   ([DESIGN-015](../design/015-accounts-and-iam.md) §3.3), sender
   `noreply@mail.ringdrill.app` (a subdomain, see "Open questions"),
   templates in `netlify/functions/_email/`.
+* **Mail provider: Resend** (decided 2026-08-05). Free at this volume — 3,000
+  emails/month, 100/day, one domain — against an expected load of tens per
+  month, and $20/mo if that ever stops being true. Chosen over SES for bounce
+  ergonomics: a webhook URL rather than an SNS topic, and
+  [DESIGN-015](../design/015-accounts-and-iam.md) §6.2's member-row state is
+  the only place a bounce surfaces, so that is the integration worth
+  optimising.
+
+  **Accepted cost, which the privacy statement has to name.** Resend lets you
+  pick a *sending* region (`eu-west-1`), but account data — email metadata,
+  logs, API records — is stored in the **United States** regardless. Transfers
+  run on SCCs in their DPA and EU-US Data Privacy Framework certification, so
+  it is lawful, but it is not residency. Email metadata includes recipient
+  addresses, and for an invitation that is *the address of somebody who is not
+  yet a user* — exactly the category
+  [ADR-0072](../adrs/0072-staff-pii-and-account-sync.md) singles out. It does
+  not block this release, which stores no rosters, but Resend is a US
+  sub-processor holding EU personal data and belongs on the list from day one
+  rather than being discovered later.
+
+  **Swapping later is cheap, and not by accident.**
+  [ADR-0073](../adrs/0073-auth-mode-and-adapters.md) requires `mock` to
+  short-circuit the whole mail channel, which means a send seam has to exist
+  anyway. If EU residency ever becomes a hard requirement — a korps or an HRS
+  partner asking — SES `eu-north-1` (Stockholm) keeps data in region and the
+  change is behind that seam.
 * **The mail channel, which several flows depend on** — not only sign-in:
   invitations to addresses with no account (DESIGN-015 §6.4), verifying a
   second address (the Apple-relay fix, §3.5), bounce webhooks so a failed
@@ -388,32 +414,6 @@ Two consequences for this release:
 
 ## Open questions
 
-* Mail provider: Resend (simpler, EU residency available) vs SES (cheaper at
-  scale, more configuration). Still does not block the start of the work —
-  [ADR-0073](../adrs/0073-auth-mode-and-adapters.md)'s `mock` adapter
-  short-circuits the whole channel, invitations included — but it blocks the
-  production cutover, and the scope is wider than "magic links": transactional
-  send, bounce webhooks, and domain authentication on `ringdrill.app`.
-
-  **Google Workspace is not the answer for the outbound half**, even though we
-  have it. It returns bounces as a DSN email to the sending mailbox rather than
-  as a webhook, so the "Email bounced" member state
-  ([DESIGN-015](../design/015-accounts-and-iam.md) §6.2) would mean polling and
-  parsing a mailbox; there is no delivery event stream; and transactional
-  volume would share domain reputation with actual correspondence, in both
-  directions. Google has no first-party transactional API — GCP's own guidance
-  points at third parties, and Compute Engine blocks port 25.
-
-  **Workspace does cover the inbound half**, which is otherwise unowned:
-  §4.4's sole-owner lockout is the one place in this design where a human has
-  to intervene, and it needs a monitored address. `support@ringdrill.app`
-  belongs on Workspace.
-
-  **Send from a subdomain.** With human mail on `ringdrill.app`, transactional
-  should leave from `noreply@mail.ringdrill.app` so its reputation is isolated.
-  Practically that means the existing SPF record grows an `include:` and a
-  second DKIM selector joins Workspace's — small, but it surprises anyone who
-  assumes the domain is already set up.
 * Whether creating a realtime session
   ([ADR-0009](../adrs/0009-realtime-transport-and-session-model.md)) should
   require a signed-in identity. Current default is no; revisit after the

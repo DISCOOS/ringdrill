@@ -253,7 +253,14 @@ they are real work rather than paperwork:
 5. **A route for data subjects who are not users** — someone on a colleague's
    roster asking what is held, correcting it, or having it removed.
 6. **EU residency settled, and a sub-processor list** covering hosting, backups
-   and any support tooling that can read the data.
+   and any support tooling that can read the data. One entry is already known:
+   the transactional mail provider is **Resend**, which stores account data
+   (including recipient addresses) in the US under SCCs and EU-US Data Privacy
+   Framework certification — a *sending* region in Ireland is dispatch, not
+   residency. That is settled for the account release, which stores no rosters.
+   If roster residency has to be strictly EU, the mail entry is the one already
+   on the wrong side of that line, and swapping it is behind the send seam
+   ADR-0073 forces to exist.
 
 Roster sync is not part of the account release; that release is
 about authorising *catalog writes*. It is the first feature the account model
