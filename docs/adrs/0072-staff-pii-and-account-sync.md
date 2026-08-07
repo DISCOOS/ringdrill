@@ -275,11 +275,13 @@ different **objects** — publishing derives a catalog entry with its own
 identity and lifecycle, rather than putting the account's plan into a public
 state.
 
-That strengthens the guarantee here rather than changing it. A catalog object
-with no `staff` field cannot represent a roster, so the strip stops being an
-operation code must remember and becomes something the type cannot express —
-the same move [ADR-0018](./0018-roleplayer-data-model.md) made with the folder
-boundary, one level further in. Two places already assume it:
+That strengthens the guarantee here rather than changing it — though not by
+making the roster unrepresentable. [ADR-0074](./0074-catalog-entry-as-distinct-object.md)
+§0 settles what "distinct object" means: a distinct stored instance, key,
+lifecycle and access path, **not** a distinct class. There is no second model
+type, and server-side no type at all — a catalog entry is a ZIP plus
+`meta.json`. The guarantee comes from an allowlist applied at one derivation
+site and held there by a test. Two places already assume the separation:
 
 * `Plan.computeContentHash`'s denylist warning
   ([`lib/models/plan.dart`](../../lib/models/plan.dart)) — "anything added to

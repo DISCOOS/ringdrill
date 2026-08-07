@@ -87,6 +87,63 @@ after the fact.
 
 Chosen: **B + E + H.**
 
+### 0. "Distinct object" means a distinct stored instance, not a distinct class
+
+Clarified 2026-08-08, because the first draft of this ADR implied more than it
+should have.
+
+| Distinct | |
+|---|---|
+| **Stored instance** | Its own store, its own key |
+| **Identity** | `(namespace, slug)`, not the plan's `uuid` |
+| **Lifecycle** | Deleting the plan leaves the catalog entry standing |
+| **Access path** | Public and CDN-cached, versus authenticated and `no-store` |
+| **Shape** | May differ — it carries what the allowlist names |
+| ~~Class~~ | **No.** |
+
+**There is no second model type, and on the server there is no type at all.**
+`drills-upload.js` never deserialises a `Plan`: a catalog entry is a ZIP plus
+`meta.json`, and an account-scoped copy is a ZIP plus `meta.json`. On the
+client both parse into the same `Plan` and differ only in what is populated —
+already true today, since a catalog download arrives with an empty staff list.
+A parallel `CatalogPlan` would be a second model to keep in sync for no
+enforcement gain.
+
+That changes where the guarantee comes from, and the earlier framing of this
+ADR got it wrong. A catalog entry does not exclude a roster because "the type
+cannot express it" — **the allowlist is applied at one derivation site and held
+there by a test.** Weaker than a type would be, and it is what this
+architecture actually offers: one place to get right, and a test that fails
+when a new field is unclassified.
+
+**One consequence worth knowing before implementing.** The allowlist operates
+at **archive-entry granularity** — `program.json`, `metadata.json`,
+`exercises/`, `teams/`, `sessions/`, `roleplays/` and the markdown companions
+are named; `staff/` is not. That is exactly where
+[ADR-0018](./0018-roleplayer-data-model.md)'s folder boundary already sits, so
+day one is a restatement of today's behaviour in the safe direction.
+
+It also means the allowlist **cannot** reach field-level instance data —
+`variables` values live *inside* `program.json`, so an entry-level list will
+never catch them. Tightening toward templates therefore needs a second,
+field-level pass over `program.json`, which is a different mechanism rather
+than a longer list. Knowing that now is worth more than discovering it while
+trying to extend the wrong thing.
+
+**The class question is deferred, not settled forever.** "No separate class"
+is right for a catalog entry that is *a plan minus one folder*, which is what
+it is today. If the catalog converges on **templates**, that stops being true:
+a template has no roster, no resolved variable values, and arguably no
+instantiated teams or sessions — it is not a `Plan` with fields left empty, it
+is the thing a `Plan` is instantiated *from*. At that point a distinct type
+earns itself, because the two would no longer share a shape and "same class,
+different content" would stop describing anything.
+
+So the trigger is the template move, not the storage split. Splitting storage
+now (§1) costs nothing if a type arrives later — the derivation site is where
+a `Template` would be produced instead of a stripped `Plan`, and the allowlist
+is the seed of that type's field list.
+
 ### 1. Publishing derives an object; it does not flip a state
 
 The account's plan and the catalog entry are separate objects with separate
@@ -152,9 +209,10 @@ plan.
 
 ### 3. Content is an allowlist, and the criterion is *instance data*
 
-A catalog entry carries what an explicit allowlist names. Adding a field to
-`Plan` therefore does **not** publish it; the field is unpublished until
-somebody classifies it, and a test fails until they do.
+A catalog entry carries what an explicit allowlist names — at archive-entry
+granularity, applied at the single derivation site (§0). Adding an archive
+member therefore does **not** publish it; it is excluded until somebody
+classifies it, and a test fails until they do.
 
 That inversion is the whole point. The current denylist has exactly the failure
 mode ADR-0018 recorded as "One trap worth recording": a rename that moved a
