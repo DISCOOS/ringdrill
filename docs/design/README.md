@@ -22,6 +22,7 @@ A design doc is not an ADR. ADRs record architectural decisions that constrain t
 | DESIGN-012 | [A unified cast pill on person/actor rows](./012-unified-cast-pill.md) | Accepted | 2026-07-19 |
 | DESIGN-013 | [Actionable field chips (tap-to-call, open-in-maps), per output format](./013-actionable-field-chips.md) | Accepted | 2026-07-19 |
 | DESIGN-014 | [Source format and the plan compiler](./014-source-format-and-plan-compiler.md) | Accepted | 2026-07-28 |
+| DESIGN-015 | [Accounts and IAM — sign-in, recovery, account pages and member management](./015-accounts-and-iam.md) | Accepted | 2026-08-05 |
 
 ## Folder layout
 
@@ -42,7 +43,19 @@ docs/design/
     └── wide-screen.html
 ```
 
-Each design doc lives at the top level. Visual mockups are saved as standalone HTML files under `mockups/`, so they can be opened directly in a browser without a build step. Mockups use the same Tabler icon font and CSS variables as the in-app Cowork-style preview, but adapted to work offline against the CDN.
+Each design doc lives at the top level. Visual mockups are saved as standalone HTML files under `mockups/`, so they can be opened directly in a browser without a build step.
+
+Mockups use the same Tabler icon font and CSS variables as the in-app Cowork-style preview, but adapted to work offline against the CDN.
+
+### Generated mockups
+
+The DESIGN-015 account mockups (`auth-*.html`, `account-*.html`, `library-tabs.html`) are **generated**. Edit [`tools/generate_design_mockups.py`](../../tools/generate_design_mockups.py) and re-run it — do not hand-edit the HTML:
+
+```bash
+python3 tools/generate_design_mockups.py
+```
+
+They share a CSS harness and a role vocabulary that spans four files, and editing those by hand is how they drift apart. Everything older in the folder is hand-written, and still `nb`; new documentation is English per [`AGENTS.md`](../../AGENTS.md) rule 12.
 
 ## When to write a design doc
 

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Organisation and members</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root {
+    color-scheme: light dark;
+    --color-background-page: #f5f5f4;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f1efe8;
+    --color-background-tertiary: #e9e7e0;
+    --color-text-primary: #2c2c2a;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #888780;
+    --color-border-secondary: rgba(0, 0, 0, 0.3);
+    --color-border-tertiary: rgba(0, 0, 0, 0.12);
+    --accent: #1D9E75;
+    --accent-fill: #E1F5EE;
+    --accent-text: #0F6E56;
+    --warn-fill: #FDF1DC;
+    --warn-text: #8A5A12;
+    --danger-text: #B3261E;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-page: #1a1a1a;
+      --color-background-primary: #242322;
+      --color-background-secondary: #2e2d2b;
+      --color-background-tertiary: #3a3a37;
+      --color-text-primary: #f1efe8;
+      --color-text-secondary: #b4b2a9;
+      --color-text-tertiary: #888780;
+      --color-border-secondary: rgba(255, 255, 255, 0.3);
+      --color-border-tertiary: rgba(255, 255, 255, 0.12);
+      --accent-fill: #16362E;
+      --accent-text: #6FD3B0;
+      --warn-fill: #3A2E17;
+      --warn-text: #E8C07A;
+      --danger-text: #F2B8B5;
+    }
+  }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-page);
+    color: var(--color-text-primary);
+    padding: 24px 16px;
+    box-sizing: border-box;
+  }
+  .caption {
+    max-width: 1120px;
+    margin: 0 auto 20px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+    text-align: center;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    align-items: flex-start;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .panel { width: 320px; }
+  .panel-wide { width: 100%; max-width: 1060px; }
+  .panel > h4 {
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-tertiary);
+    margin: 0 0 8px 2px;
+  }
+  .frame {
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-lg);
+    padding: 10px;
+  }
+  .screen {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 560px;
+    position: relative;
+  }
+  .bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    font-size: 15px; font-weight: 500;
+    color: var(--color-text-primary);
+  }
+  .bar i { font-size: 18px; color: var(--color-text-secondary); }
+  .body { padding: 16px 14px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .h { font-size: 18px; font-weight: 500; margin: 0; }
+  .p { font-size: 13px; line-height: 1.6; color: var(--color-text-secondary); margin: 0; }
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    height: 44px; border-radius: var(--border-radius-md);
+    font-size: 14px; font-weight: 500;
+    border: 0.5px solid var(--color-border-secondary);
+    flex: none;
+  }
+  .btn i { font-size: 18px; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: transparent; }
+  .btn-dark { background: #000; color: #fff; border-color: transparent; }
+  .btn-danger { color: var(--danger-text); }
+  .sect {
+    font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--color-text-tertiary); margin: 6px 0 -4px 2px;
+  }
+  .card {
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    flex: none;
+  }
+  .item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 12px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+  }
+  .item:last-child { border-bottom: 0; }
+  .item i { font-size: 18px; color: var(--color-text-secondary); flex: none; }
+  .t { font-size: 14px; }
+  .s { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; line-height: 1.45; }
+  .grow { flex: 1; min-width: 0; }
+  .av {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--color-background-tertiary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; color: var(--color-text-secondary);
+    flex: none;
+  }
+  .pill {
+    font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 999px;
+    background: var(--color-background-tertiary); color: var(--color-text-secondary);
+    white-space: nowrap; flex: none;
+  }
+  .pill-accent { background: var(--accent-fill); color: var(--accent-text); }
+  .pill-warn { background: var(--warn-fill); color: var(--warn-text); }
+  .note {
+    display: flex; gap: 10px; padding: 11px 12px;
+    border-radius: var(--border-radius-md);
+    font-size: 12px; line-height: 1.55;
+    flex: none;
+  }
+  .note i { font-size: 16px; flex: none; margin-top: 1px; }
+  .note-accent { background: var(--accent-fill); color: var(--accent-text); }
+  .note-warn { background: var(--warn-fill); color: var(--warn-text); }
+  .note-plain { background: var(--color-background-secondary); color: var(--color-text-secondary); }
+  .field {
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    padding: 11px 12px; font-size: 14px;
+    color: var(--color-text-tertiary);
+    flex: none;
+  }
+  .code {
+    letter-spacing: 0.38em; font-size: 19px; text-align: center;
+    color: var(--color-text-primary); font-weight: 500;
+  }
+  .link { font-size: 13px; color: var(--accent-text); text-align: center; flex: none; }
+  .sheet {
+    margin-top: auto;
+    background: var(--color-background-primary);
+    border-top: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    box-shadow: 0 -10px 28px rgba(0,0,0,0.13);
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .scrim { flex: 1; background: rgba(0,0,0,0.28); }
+  .grab { width: 34px; height: 4px; border-radius: 2px; background: var(--color-border-tertiary); margin: 0 auto 4px; flex: none; }
+  .radio { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--color-border-secondary); flex: none; }
+  .radio-on { border-color: var(--accent); border-width: 5.5px; }
+  .dim { opacity: 0.42; }
+  .split { display: flex; flex: 1; min-height: 0; }
+  .master { width: 260px; border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; }
+  .detail { flex: 1; display: flex; flex-direction: column; }
+  .detail-inner { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+</style>
+</head>
+<body>
+
+<p class="caption">DESIGN-015 &sect;6. Every role publishes, so the picker is not a permission ladder — the difference between Member and Guest is the staff roster, and the copy says so. Note &ldquo;Invited&rdquo; and &ldquo;Failed&rdquo; as <i>states</i> on the row rather than roles, and that removal is the only action that withdraws trust.</p>
+
+<p class="caption" style="max-width: 760px; font-size: 12px; opacity: .8;">Copy is shown in <b>en</b>. The app ships <b>nb</b> as well; where the exact Norwegian wording is part of the decision, DESIGN-015 quotes it inline.</p>
+
+<div class="row">
+  <div class="panel">
+    <h4>1 &middot; Members, with invitations</h4>
+    <div class="frame"><div class="screen">
+      <div class="bar"><i class="ti ti-arrow-left"></i><span class="grow">Red Cross Bergen</span><i class="ti ti-user-plus"></i></div>
+      <div class="body">
+        <div class="sect">Members &middot; 4</div>
+        <div class="card">
+          <div class="item"><div class="av">KG</div><div class="grow"><div class="t">Kari Gulbrandsen <span class="s" style="display: inline;">(you)</span></div><div class="s">Only owner</div></div><span class="pill pill-accent">Owner</span></div>
+          <div class="item"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">ola@example.com</div></div><span class="pill">Member</span><i class="ti ti-chevron-right"></i></div>
+          <div class="item"><div class="av">MS</div><div class="grow"><div class="t">Mari Sund</div><div class="s">mari@example.com &middot; another corps</div></div><span class="pill">Guest</span><i class="ti ti-chevron-right"></i></div>
+          <div class="item"><div class="av"><i class="ti ti-mail" style="font-size: 15px;"></i></div><div class="grow"><div class="t">per@example.com</div><div class="s">Invited 3 August &middot; no reply yet</div></div><span class="pill pill-warn">Invited</span></div>
+          <div class="item dim"><div class="av"><i class="ti ti-mail-x" style="font-size: 15px;"></i></div><div class="grow"><div class="t">lise@exampel.com</div><div class="s" style="color: var(--danger-text);">Email bounced &middot; check the address</div></div><span class="pill">Failed</span></div>
+        </div>
+        <div class="note note-plain"><i class="ti ti-info-circle"></i><span><b>Everyone you add can work on the plans.</b> The difference is whether they see the staff roster. Access also says nothing about your role during an exercise — a guest can be the exercise director.</span></div>
+        <div style="flex: 1;"></div>
+        <div class="btn"><i class="ti ti-user-plus"></i> Invite someone to collaborate</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h4>2 &middot; Change access</h4>
+    <div class="frame"><div class="screen">
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="item" style="border: 0; padding: 0 0 4px;"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">ola@example.com</div></div></div>
+        <div class="sect" style="margin-top: 2px;">Access in the organisation</div>
+        <div class="card">
+          <div class="item"><div class="radio"></div><div class="grow"><div class="t">Owner</div><div class="s">Manages members and access, plus everything a member can do</div></div></div>
+          <div class="item"><div class="radio radio-on"></div><div class="grow"><div class="t">Member</div><div class="s">Reads and publishes the plans, and sees the staff roster</div></div></div>
+          <div class="item"><div class="radio"></div><div class="grow"><div class="t">Guest</div><div class="s">Reads and publishes the plans, but does not see the roster</div></div></div>
+        </div>
+        <div class="note note-plain"><i class="ti ti-bolt"></i><span>Takes effect the next time Ola does something; no need to sign in again. <b>Demotion does not withdraw trust</b> — a guest publishes too. If he should not work on the plans at all, Remove is the only action.</span></div>
+        <div class="btn btn-danger"><i class="ti ti-user-minus"></i> Remove from the organisation</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h4>3 &middot; Remove a member</h4>
+    <div class="frame"><div class="screen">
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <h2 class="h">Remove Ola Hansen?</h2>
+        <div class="card">
+          <div class="item"><i class="ti ti-lock"></i><div class="grow"><div class="s" style="margin: 0;">Ola loses access to the organisation&rsquo;s plans and can no longer publish updates. This is the only action that actually withdraws trust.</div></div></div>
+          <div class="item"><i class="ti ti-device-mobile"></i><div class="grow"><div class="s" style="margin: 0;"><b>Plans he has already downloaded stay on his own device.</b> We cannot remove them from there.</div></div></div>
+        </div>
+        <div class="btn btn-danger">Remove Ola</div>
+        <div class="link">Cancel</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h4>4 &middot; Invite</h4>
+    <div class="frame"><div class="screen">
+      <div class="bar"><i class="ti ti-arrow-left"></i><span>Invite</span></div>
+      <div class="body">
+        <div class="sect">Email address</div>
+        <div class="field">per@example.com</div>
+        <p class="p">They do not need RingDrill already. The invitation binds when they sign in for the first time — and a guest is a signed-in person too, with their own personal account.</p>
+        <div class="sect">Access</div>
+        <div class="card">
+          <div class="item"><div class="radio"></div><div class="grow"><div class="t">Owner</div><div class="s">Manages members and access, plus everything a member can do</div></div></div>
+          <div class="item"><div class="radio radio-on"></div><div class="grow"><div class="t">Member</div><div class="s">Reads and publishes the plans, and sees the staff roster</div></div></div>
+          <div class="item"><div class="radio"></div><div class="grow"><div class="t">Guest</div><div class="s">Reads and publishes the plans, but does not see the roster</div></div></div>
+        </div>
+        <div class="note note-plain"><i class="ti ti-user-check"></i><span>The question is not how much this person should be allowed to do, but whether they should have your people&rsquo;s phone numbers. Access is chosen now — &ldquo;Invited&rdquo; is a state, not a role.</span></div>
+        <div style="flex: 1;"></div>
+        <div class="btn btn-primary">Send invitation</div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+</body>
+</html>

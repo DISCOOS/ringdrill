@@ -8,6 +8,14 @@ informed: []
 
 # ADR-0024: Introduce Account, User and Identity as separate entities
 
+> **Amended by [DESIGN-015](../design/015-accounts-and-iam.md) (2026-08-05).**
+> `MemberRole` is now **`{owner, member, guest}`**, not
+> `{owner, editor, viewer}`. Anyone admitted to the account can publish its
+> plans, so `editor` described nobody. The role gates only **who administers
+> the account** and **who is inside the group for personal-data purposes** — a
+> `guest` publishes like anyone else but does not see the staff roster. See
+> "Amendment" at the end.
+
 ## Context and problem statement
 
 RingDrill has no concept of "who owns a plan". The catalog uses a wiki
@@ -45,10 +53,10 @@ identity-provider sign-ins map onto them. The authorisation rules live in
 * The PII boundary from [ADR-0018](./0018-roleplayer-data-model.md) must
   hold. Account/identity records are themselves PII (email, name) and must
   never leak into published `.drill` archives.
-* Apple Sign In and Google Sign In ship together. Each is the obvious
-  default on its platform (Apple on iOS/macOS, Google on Android). App
-  Store guideline 4.8 also requires Apple parity as soon as any other
-  social provider is offered, which Google triggers.
+* Each platform gets its native provider from day one: Apple on iOS/macOS,
+  Google on Android, Microsoft on Windows. See the provider catalogue below
+  for the full list and for a more careful reading of App Store guideline 4.8
+  than this driver originally carried.
 
 ## Considered options
 
@@ -117,7 +125,7 @@ sealed class User with _$User {
 sealed class Identity with _$Identity {
   const factory Identity({
     required String userId,
-    required IdentityProvider provider, // email | apple | google | feide
+    required IdentityProvider provider, // email | apple | google | microsoft
     required String subject,            // provider-side stable ID
     required String email,              // for display; primaryEmail wins on conflict
     required DateTime addedAt,
@@ -129,7 +137,7 @@ sealed class Member with _$Member {
   const factory Member({
     required String accountId,
     required String userId,
-    required MemberRole role,           // owner | editor | viewer
+    required MemberRole role,           // owner | member | guest (DESIGN-015)
     DateTime? invitedAt,
     required DateTime acceptedAt,
   }) = _Member;
@@ -162,11 +170,56 @@ offer manual linking later.
 
 ### Provider catalogue
 
-Initial allowlist at first ship: `email`, `apple`, `google`. Apple and
-Google ship together so each platform has its native provider from day
-one. `feide` and `bankid` are reserved for later if demand from schools
-or HRS partners materialises. New providers need only a server-side
-adapter and a login-UI entry, no model change.
+> **Amended 2026-08-05.** `microsoft` added to the ship list; `bankid` moved
+> from reserved to rejected, with the reason recorded; `vipps` added as
+> reserved. The App Store 4.8 claim below is restated more carefully.
+
+| Provider | Status | Why |
+|---|---|---|
+| `email` | **Ships** | The fallback that works when a provider account does not, and what account recovery depends on ([DESIGN-015](../design/015-accounts-and-iam.md) §4) |
+| `apple` | **Ships** | Native on iOS/macOS, and the low-risk answer to App Store review |
+| `google` | **Ships** | Native on Android, and the widest coverage of the three |
+| `microsoft` | **Ships** | One adapter over the `common` endpoint covers personal (outlook.com) *and* work/school (Entra ID) accounts — `@rodekors.org`, `@folkehjelp.no` |
+| `feide` | Reserved | Norwegian education federation. Relevant if courses run through schools |
+| `vipps` | Reserved | Norwegian, near-universal, OIDC. Plausibly better volunteer reach than a work account, since people sign in as themselves more often than as their employer |
+| `bankid` | **Rejected** | See below |
+
+**The property that decides whether a provider can be added at all** is whether
+it returns a **verified email**. Identity linking (above) joins a new provider
+to an existing User on verified-email match; a provider that does not return
+one creates duplicate Users and breaks the "we linked your Google login"
+notice. Apple's relay counts, Google, Microsoft, Feide and Vipps all qualify.
+
+**Why `bankid` is rejected rather than reserved.** It is identity *proofing* —
+it establishes who someone legally is, at a per-authentication cost, for an app
+that never needs to know. It also returns a national identity rather than a
+verified email, so it fails the linking test above and would need a parallel
+mechanism. Left as "reserved" it reads as planned and invites somebody to start
+it. If a regulatory driver ever appears, this entry is the thing to revisit,
+deliberately.
+
+**On Microsoft's two flavours.** The `common` endpoint covers both with one
+adapter, but they are not the same operationally. Work/school accounts bring
+tenant admin consent, possible conditional-access surprises, and an
+organisation's IT department into the support path. They also open a door worth
+knowing about: **domain-verified organisations** — signing in with
+`@rodekors.org` could eventually suggest the right Account automatically. That
+is a separate feature and not part of the account release, but it is the reason
+the work/school flavour is worth the extra support surface.
+
+New providers need only a server-side adapter and a login-UI entry, no model
+change. **No provider beyond `email` is on the critical path**, which is the
+point of that property: the list can grow on demand rather than by prediction.
+
+**On App Store guideline 4.8.** An earlier draft of this ADR said 4.8 "requires
+Apple parity as soon as any other social provider is offered". That overstates
+it. The guideline applies when an app uses a third-party or social login
+*exclusively*, and requires an equivalent privacy-preserving option — limited
+to name and email, with the option to keep the email private, and no tracking.
+Our own email magic link plausibly *is* such an option. Sign in with Apple
+still ships on iOS and macOS because it is the native expectation and the
+predictable path through review, not because the guideline compels it. Check
+the current wording before relying on either reading.
 
 ### Storage layout (Netlify Blobs)
 
@@ -303,6 +356,62 @@ schema changes.
   Wiki adoption flows would still need our DB.
 * Bad: Forces a third-party SDK into the Flutter app. Conditional imports
   for web vs mobile become harder, and PWA bundles grow.
+
+## Amendment (DESIGN-015, 2026-08-05)
+
+`MemberRole` was `{owner, editor, viewer}`. It is now **`{owner, member,
+guest}`**, and the change is about what the role is *for*.
+
+| Before | After | Means |
+|---|---|---|
+| `owner` | `owner` | Administers the account: invites, removes, changes roles, renames, changes a plan's access policy |
+| `editor` | `member` | Is in the group. Reads and publishes the account's plans, **and sees the staff roster** |
+| `viewer` | `guest` | Admitted to work on the plans but not in the group. Reads and publishes, **and does not see the roster** |
+
+**Anyone admitted to the account can publish its plans** — "everyone here is a
+potential editor" taken to its conclusion. The account protects plans from
+*strangers* ([ADR-0025](./0025-authorization-and-publish-policy.md)); somebody
+the account deliberately added is not a stranger, and making them ask another
+person to press publish buys nothing.
+
+`MemberRole` therefore gates exactly two things, and **neither is "may you work
+on the plans"**:
+
+1. **Who administers the account.** `owner` invites, removes, changes roles,
+   renames, and changes a plan's access policy.
+2. **Who is inside the group for personal-data purposes.** `owner` and `member`
+   see the staff roster that travels with an account-owned plan
+   ([ADR-0072](./0072-staff-pii-and-account-sync.md)). A `guest` does not.
+
+**Why `editor` had to go.** It described a capability every non-outsider
+already has, and its existence implied the default was *not* to be able to
+publish — backwards for a group that plans exercises together.
+
+**Why `viewer` became `guest`.** `viewer` names a capability ("can view");
+`guest` names a *relationship* ("admitted, but not one of us"). Once publishing
+follows from admission, the capability reading has nothing left to describe,
+while the relationship reading has exactly one job: a guest is someone from a
+neighbouring korps helping you build a plan. They can edit it and publish it.
+They do not get your people's names and phone numbers.
+
+That single line is `guest`'s entire reason to exist, which is the best kind of
+tier — one question, one answer, nothing to misremember.
+
+**The role says nothing about what you do on an exercise.** `MemberRole` is
+the account axis only. It does not imply, constrain, or derive
+a `StaffRole` ([ADR-0057](./0057-role-gated-editing.md)), and no rule anywhere
+maps between them. A `guest` may be the *øvelsesleder* running the drill; an
+`owner` may be `other` on the roster and edit nothing. Both are ordinary. This
+was previously stated as a UI-presentation rule in DESIGN-015 §7; making
+`MemberRole` purely account-side turns it into a property of the model, which
+is the only version that survives contact with a future contributor.
+
+`AccountType.personal` still has exactly one Member, with role `owner`.
+
+A fourth tier between `owner` and `member` — an `admin` who manages people but
+cannot delete the account — is a plausible later addition and needs no model
+change. It is not added now because at one-organisation-per-hjelpekorps scale
+there is nobody to be it.
 
 ## Links
 

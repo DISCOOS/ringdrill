@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Account on wide screen and web</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root {
+    color-scheme: light dark;
+    --color-background-page: #f5f5f4;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f1efe8;
+    --color-background-tertiary: #e9e7e0;
+    --color-text-primary: #2c2c2a;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #888780;
+    --color-border-secondary: rgba(0, 0, 0, 0.3);
+    --color-border-tertiary: rgba(0, 0, 0, 0.12);
+    --accent: #1D9E75;
+    --accent-fill: #E1F5EE;
+    --accent-text: #0F6E56;
+    --warn-fill: #FDF1DC;
+    --warn-text: #8A5A12;
+    --danger-text: #B3261E;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-page: #1a1a1a;
+      --color-background-primary: #242322;
+      --color-background-secondary: #2e2d2b;
+      --color-background-tertiary: #3a3a37;
+      --color-text-primary: #f1efe8;
+      --color-text-secondary: #b4b2a9;
+      --color-text-tertiary: #888780;
+      --color-border-secondary: rgba(255, 255, 255, 0.3);
+      --color-border-tertiary: rgba(255, 255, 255, 0.12);
+      --accent-fill: #16362E;
+      --accent-text: #6FD3B0;
+      --warn-fill: #3A2E17;
+      --warn-text: #E8C07A;
+      --danger-text: #F2B8B5;
+    }
+  }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-page);
+    color: var(--color-text-primary);
+    padding: 24px 16px;
+    box-sizing: border-box;
+  }
+  .caption {
+    max-width: 1120px;
+    margin: 0 auto 20px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+    text-align: center;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    align-items: flex-start;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .panel { width: 320px; }
+  .panel-wide { width: 100%; max-width: 1060px; }
+  .panel > h4 {
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-tertiary);
+    margin: 0 0 8px 2px;
+  }
+  .frame {
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-lg);
+    padding: 10px;
+  }
+  .screen {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 560px;
+    position: relative;
+  }
+  .bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    font-size: 15px; font-weight: 500;
+    color: var(--color-text-primary);
+  }
+  .bar i { font-size: 18px; color: var(--color-text-secondary); }
+  .body { padding: 16px 14px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .h { font-size: 18px; font-weight: 500; margin: 0; }
+  .p { font-size: 13px; line-height: 1.6; color: var(--color-text-secondary); margin: 0; }
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    height: 44px; border-radius: var(--border-radius-md);
+    font-size: 14px; font-weight: 500;
+    border: 0.5px solid var(--color-border-secondary);
+    flex: none;
+  }
+  .btn i { font-size: 18px; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: transparent; }
+  .btn-dark { background: #000; color: #fff; border-color: transparent; }
+  .btn-danger { color: var(--danger-text); }
+  .sect {
+    font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--color-text-tertiary); margin: 6px 0 -4px 2px;
+  }
+  .card {
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    flex: none;
+  }
+  .item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 12px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+  }
+  .item:last-child { border-bottom: 0; }
+  .item i { font-size: 18px; color: var(--color-text-secondary); flex: none; }
+  .t { font-size: 14px; }
+  .s { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; line-height: 1.45; }
+  .grow { flex: 1; min-width: 0; }
+  .av {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--color-background-tertiary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; color: var(--color-text-secondary);
+    flex: none;
+  }
+  .pill {
+    font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 999px;
+    background: var(--color-background-tertiary); color: var(--color-text-secondary);
+    white-space: nowrap; flex: none;
+  }
+  .pill-accent { background: var(--accent-fill); color: var(--accent-text); }
+  .pill-warn { background: var(--warn-fill); color: var(--warn-text); }
+  .note {
+    display: flex; gap: 10px; padding: 11px 12px;
+    border-radius: var(--border-radius-md);
+    font-size: 12px; line-height: 1.55;
+    flex: none;
+  }
+  .note i { font-size: 16px; flex: none; margin-top: 1px; }
+  .note-accent { background: var(--accent-fill); color: var(--accent-text); }
+  .note-warn { background: var(--warn-fill); color: var(--warn-text); }
+  .note-plain { background: var(--color-background-secondary); color: var(--color-text-secondary); }
+  .field {
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    padding: 11px 12px; font-size: 14px;
+    color: var(--color-text-tertiary);
+    flex: none;
+  }
+  .code {
+    letter-spacing: 0.38em; font-size: 19px; text-align: center;
+    color: var(--color-text-primary); font-weight: 500;
+  }
+  .link { font-size: 13px; color: var(--accent-text); text-align: center; flex: none; }
+  .sheet {
+    margin-top: auto;
+    background: var(--color-background-primary);
+    border-top: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    box-shadow: 0 -10px 28px rgba(0,0,0,0.13);
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .scrim { flex: 1; background: rgba(0,0,0,0.28); }
+  .grab { width: 34px; height: 4px; border-radius: 2px; background: var(--color-border-tertiary); margin: 0 auto 4px; flex: none; }
+  .radio { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--color-border-secondary); flex: none; }
+  .radio-on { border-color: var(--accent); border-width: 5.5px; }
+  .dim { opacity: 0.42; }
+  .split { display: flex; flex: 1; min-height: 0; }
+  .master { width: 260px; border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; }
+  .detail { flex: 1; display: flex; flex-direction: column; }
+  .detail-inner { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+</style>
+</head>
+<body>
+
+<p class="caption">DESIGN-015 &sect;5.6. On wide screens and on the web the account page follows the master/detail model from ADR-0030: the member list is master and the selected member is detail, not a bottom sheet. The account switcher sits in the top bar, and must also appear in the publish dialog so nobody publishes to the wrong account without seeing it.</p>
+
+<p class="caption" style="max-width: 760px; font-size: 12px; opacity: .8;">Copy is shown in <b>en</b>. The app ships <b>nb</b> as well; where the exact Norwegian wording is part of the decision, DESIGN-015 quotes it inline.</p>
+
+<div class="row">
+  <div class="panel panel-wide">
+    <h4>Settings &rarr; Members &middot; 1280&times;800</h4>
+    <div class="frame"><div class="screen">
+      <div class="bar"><i class="ti ti-menu-2"></i><span class="grow">Settings</span><div class="pill pill-accent"><i class="ti ti-users-group" style="font-size: 11px;"></i> Red Cross Bergen</div><i class="ti ti-selector"></i></div>
+      <div class="split">
+        <div class="master">
+          <div class="body" style="padding: 12px 10px; gap: 8px;">
+            <div class="card">
+              <div class="item"><i class="ti ti-user"></i><div class="grow"><div class="t">Account</div></div><i class="ti ti-chevron-right"></i></div>
+              <div class="item" style="background: var(--accent-fill);"><i class="ti ti-users-group" style="color: var(--accent-text);"></i><div class="grow"><div class="t" style="color: var(--accent-text); font-weight: 500;">Members</div><div class="s" style="color: var(--accent-text); opacity: .85;">4 members &middot; 1 invited</div></div></div>
+              <div class="item"><i class="ti ti-badge"></i><div class="grow"><div class="t">My role</div><div class="s">Exercise director</div></div></div>
+              <div class="item"><i class="ti ti-map"></i><div class="grow"><div class="t">Map</div></div></div>
+              <div class="item"><i class="ti ti-bell"></i><div class="grow"><div class="t">Notifications</div></div></div>
+              <div class="item"><i class="ti ti-chart-dots"></i><div class="grow"><div class="t">Privacy</div></div></div>
+            </div>
+            <div class="note note-plain"><i class="ti ti-info-circle"></i><span>&ldquo;My role&rdquo; and &ldquo;Members&rdquo; are different axes, so they sit as siblings — never as one setting.</span></div>
+          </div>
+        </div>
+        <div class="detail">
+          <div class="detail-inner">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="av" style="width: 40px; height: 40px; font-size: 14px;">RC</div>
+              <div class="grow"><div style="font-size: 17px; font-weight: 500;">Red Cross Mountain Rescue Bergen</div><div class="s">Organisation &middot; created 12 June 2026</div></div>
+              <div class="btn" style="height: 36px; padding: 0 14px;"><i class="ti ti-user-plus"></i> Invite</div>
+            </div>
+            <div class="note note-warn"><i class="ti ti-alert-triangle"></i><span><b>This organisation has one owner.</b> Add another, so access is not lost if someone becomes unavailable.</span></div>
+            <div style="display: flex; gap: 16px; align-items: flex-start;">
+              <div class="card" style="flex: 1;">
+                <div class="item"><div class="av">KG</div><div class="grow"><div class="t">Kari Gulbrandsen (you)</div><div class="s">kari@example.com</div></div><span class="pill pill-accent">Owner</span></div>
+                <div class="item" style="background: var(--color-background-secondary);"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">ola@example.com</div></div><span class="pill">Member</span></div>
+                <div class="item"><div class="av">MS</div><div class="grow"><div class="t">Mari Sund</div><div class="s">mari@example.com</div></div><span class="pill">Guest</span></div>
+                <div class="item"><div class="av"><i class="ti ti-mail" style="font-size: 15px;"></i></div><div class="grow"><div class="t">per@example.com</div><div class="s">Invited 3 August</div></div><span class="pill pill-warn">Invited</span></div>
+              </div>
+              <div class="card" style="width: 300px;">
+                <div class="item" style="gap: 10px;"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">ola@example.com &middot; member since 14 June</div></div></div>
+                <div class="item" style="display: block; padding: 12px;">
+                  <div class="sect" style="margin: 0 0 8px 0;">Access in the organisation</div>
+                  <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px;"><div class="radio"></div><div><div class="t">Owner</div><div class="s">Manages members and access, plus everything a member can do</div></div></div>
+                  <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px;"><div class="radio radio-on"></div><div><div class="t">Member</div><div class="s">Reads and publishes the plans, and sees the staff roster</div></div></div>
+                  <div style="display: flex; gap: 10px; align-items: flex-start;"><div class="radio"></div><div><div class="t">Guest</div><div class="s">Reads and publishes the plans, but does not see the roster</div></div></div>
+                </div>
+                <div class="item"><i class="ti ti-user-minus" style="color: var(--danger-text);"></i><div class="grow"><div class="t" style="color: var(--danger-text);">Remove from the organisation</div></div></div>
+              </div>
+            </div>
+            <div class="note note-plain"><i class="ti ti-database"></i><span><b>What is stored about the account?</b> Plans, and — once plan sync ships — the staff roster entered for them. Everyone in the organisation can publish; only owners and members <b>see the roster</b>, not guests, and not other accounts the plan is shared with. A plan published to the catalog never carries it (ADR-0072).</span></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+</body>
+</html>

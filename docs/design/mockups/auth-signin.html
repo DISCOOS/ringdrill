@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Sign-in</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root {
+    color-scheme: light dark;
+    --color-background-page: #f5f5f4;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f1efe8;
+    --color-background-tertiary: #e9e7e0;
+    --color-text-primary: #2c2c2a;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #888780;
+    --color-border-secondary: rgba(0, 0, 0, 0.3);
+    --color-border-tertiary: rgba(0, 0, 0, 0.12);
+    --accent: #1D9E75;
+    --accent-fill: #E1F5EE;
+    --accent-text: #0F6E56;
+    --warn-fill: #FDF1DC;
+    --warn-text: #8A5A12;
+    --danger-text: #B3261E;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-page: #1a1a1a;
+      --color-background-primary: #242322;
+      --color-background-secondary: #2e2d2b;
+      --color-background-tertiary: #3a3a37;
+      --color-text-primary: #f1efe8;
+      --color-text-secondary: #b4b2a9;
+      --color-text-tertiary: #888780;
+      --color-border-secondary: rgba(255, 255, 255, 0.3);
+      --color-border-tertiary: rgba(255, 255, 255, 0.12);
+      --accent-fill: #16362E;
+      --accent-text: #6FD3B0;
+      --warn-fill: #3A2E17;
+      --warn-text: #E8C07A;
+      --danger-text: #F2B8B5;
+    }
+  }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-page);
+    color: var(--color-text-primary);
+    padding: 24px 16px;
+    box-sizing: border-box;
+  }
+  .caption {
+    max-width: 1120px;
+    margin: 0 auto 20px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+    text-align: center;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    align-items: flex-start;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .panel { width: 320px; }
+  .panel-wide { width: 100%; max-width: 1060px; }
+  .panel > h4 {
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-tertiary);
+    margin: 0 0 8px 2px;
+  }
+  .frame {
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-lg);
+    padding: 10px;
+  }
+  .screen {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 560px;
+    position: relative;
+  }
+  .bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    font-size: 15px; font-weight: 500;
+    color: var(--color-text-primary);
+  }
+  .bar i { font-size: 18px; color: var(--color-text-secondary); }
+  .body { padding: 16px 14px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .h { font-size: 18px; font-weight: 500; margin: 0; }
+  .p { font-size: 13px; line-height: 1.6; color: var(--color-text-secondary); margin: 0; }
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    height: 44px; border-radius: var(--border-radius-md);
+    font-size: 14px; font-weight: 500;
+    border: 0.5px solid var(--color-border-secondary);
+    flex: none;
+  }
+  .btn i { font-size: 18px; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: transparent; }
+  .btn-dark { background: #000; color: #fff; border-color: transparent; }
+  .btn-danger { color: var(--danger-text); }
+  .sect {
+    font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--color-text-tertiary); margin: 6px 0 -4px 2px;
+  }
+  .card {
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    flex: none;
+  }
+  .item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 12px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+  }
+  .item:last-child { border-bottom: 0; }
+  .item i { font-size: 18px; color: var(--color-text-secondary); flex: none; }
+  .t { font-size: 14px; }
+  .s { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; line-height: 1.45; }
+  .grow { flex: 1; min-width: 0; }
+  .av {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--color-background-tertiary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; color: var(--color-text-secondary);
+    flex: none;
+  }
+  .pill {
+    font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 999px;
+    background: var(--color-background-tertiary); color: var(--color-text-secondary);
+    white-space: nowrap; flex: none;
+  }
+  .pill-accent { background: var(--accent-fill); color: var(--accent-text); }
+  .pill-warn { background: var(--warn-fill); color: var(--warn-text); }
+  .note {
+    display: flex; gap: 10px; padding: 11px 12px;
+    border-radius: var(--border-radius-md);
+    font-size: 12px; line-height: 1.55;
+    flex: none;
+  }
+  .note i { font-size: 16px; flex: none; margin-top: 1px; }
+  .note-accent { background: var(--accent-fill); color: var(--accent-text); }
+  .note-warn { background: var(--warn-fill); color: var(--warn-text); }
+  .note-plain { background: var(--color-background-secondary); color: var(--color-text-secondary); }
+  .field {
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    padding: 11px 12px; font-size: 14px;
+    color: var(--color-text-tertiary);
+    flex: none;
+  }
+  .code {
+    letter-spacing: 0.38em; font-size: 19px; text-align: center;
+    color: var(--color-text-primary); font-weight: 500;
+  }
+  .link { font-size: 13px; color: var(--accent-text); text-align: center; flex: none; }
+  .sheet {
+    margin-top: auto;
+    background: var(--color-background-primary);
+    border-top: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    box-shadow: 0 -10px 28px rgba(0,0,0,0.13);
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .scrim { flex: 1; background: rgba(0,0,0,0.28); }
+  .grab { width: 34px; height: 4px; border-radius: 2px; background: var(--color-border-tertiary); margin: 0 auto 4px; flex: none; }
+  .radio { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--color-border-secondary); flex: none; }
+  .radio-on { border-color: var(--accent); border-width: 5.5px; }
+  .dim { opacity: 0.42; }
+  .split { display: flex; flex: 1; min-height: 0; }
+  .master { width: 260px; border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; }
+  .detail { flex: 1; display: flex; flex-direction: column; }
+  .detail-inner { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+</style>
+</head>
+<body>
+
+<p class="caption">DESIGN-015 &sect;3. Signing in is optional and never blocks planning. Provider order follows the platform (iOS here). The code field in the middle solves the hardest problem with magic links — that the link opens somewhere other than where you started. On the right, provider linking is announced once: someone who signs in with a different button and lands in the same account should be told why.</p>
+
+<p class="caption" style="max-width: 760px; font-size: 12px; opacity: .8;">Copy is shown in <b>en</b>. The app ships <b>nb</b> as well; where the exact Norwegian wording is part of the decision, DESIGN-015 quotes it inline.</p>
+
+<div class="row">
+  <div class="panel">
+    <h4>1 &middot; Choose a sign-in</h4>
+    <div class="frame"><div class="screen">
+      <div class="bar"><i class="ti ti-arrow-left"></i><span>Sign in</span></div>
+      <div class="body">
+        <h2 class="h">Protect your plans</h2>
+        <p class="p">Signing in protects the plans you publish, so nobody else can change them. <b>You can use RingDrill without signing in.</b></p>
+        <div style="height: 2px;"></div>
+        <div class="btn btn-dark"><i class="ti ti-brand-apple"></i> Continue with Apple</div>
+        <div class="btn"><i class="ti ti-brand-google"></i> Continue with Google</div>
+        <div class="btn"><i class="ti ti-brand-windows"></i> Continue with Microsoft</div>
+        <div class="btn"><i class="ti ti-mail"></i> Continue with email</div>
+        <div class="note note-plain"><i class="ti ti-user-plus"></i><span>We create a personal account for you. It owns the plans you publish. There is no password to choose or forget.</span></div>
+        <div style="flex: 1;"></div>
+        <div class="link">What is stored about me?</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h4>2 &middot; Waiting for the link — with a code</h4>
+    <div class="frame"><div class="screen">
+      <div class="bar"><i class="ti ti-arrow-left"></i><span>Sign in with email</span></div>
+      <div class="body">
+        <h2 class="h">Check your email</h2>
+        <p class="p">We sent a link to <b>kari@example.com</b>. Open it on this device.</p>
+        <div class="note note-plain"><i class="ti ti-arrow-ramp-right"></i><span>Link opening in a different browser? Type the code from the email here instead — it does the same thing.</span></div>
+        <div class="sect">Code from the email</div>
+        <div class="field code">K7F2Q9</div>
+        <div class="btn btn-primary">Sign in</div>
+        <div style="flex: 1;"></div>
+        <div class="link dim">Send again (0:42)</div>
+        <div class="link">Trouble signing in?</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h4>3 &middot; Provider linked (once)</h4>
+    <div class="frame"><div class="screen">
+      <div class="bar"><i class="ti ti-menu-2"></i><span class="grow">Library</span><i class="ti ti-search"></i></div>
+      <div class="body">
+        <div class="note note-accent"><i class="ti ti-link"></i><span><b>Your Google sign-in was linked to the account you already have.</b><br>You are signed in as kari@example.com, not as a new user.</span></div>
+        <div class="sect">My plans</div>
+        <div class="card">
+          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">LSOR Eidene 2026</div><div class="s">6 exercises &middot; published</div></div><span class="pill pill-accent">My account</span></div>
+          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">Winter camp Voss</div><div class="s">3 exercises &middot; local</div></div></div>
+          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">Avalanche course 2</div><div class="s">4 exercises &middot; published before sign-in</div></div><span class="pill"><i class="ti ti-world" style="font-size: 11px;"></i> Public</span></div>
+        </div>
+        <div class="note note-plain"><i class="ti ti-info-circle"></i><span>&ldquo;Avalanche course 2&rdquo; was published before you signed in and is still open to everyone. You can fork your own copy under your account.</span></div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+</body>
+</html>

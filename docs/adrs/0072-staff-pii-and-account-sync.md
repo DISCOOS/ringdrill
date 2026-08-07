@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-08-04
 deciders: ["kengu"]
 consulted: []
@@ -200,7 +200,7 @@ May.
 
 **4. `shared` withholds the roster from the other account. It does not remove
 it from the plan.** `AccessPolicy.shared`
-([ADR-0025](./0025-authorization-and-publish-policy.md), phase 5) grants write
+([ADR-0025](./0025-authorization-and-publish-policy.md)) grants write
 access on a plan to a *different* account — a different set of people, and in
 data-protection terms a different controller. So plan content crosses that
 boundary and the roster does not.
@@ -253,12 +253,150 @@ they are real work rather than paperwork:
 5. **A route for data subjects who are not users** — someone on a colleague's
    roster asking what is held, correcting it, or having it removed.
 6. **EU residency settled, and a sub-processor list** covering hosting, backups
-   and any support tooling that can read the data.
+   and any support tooling that can read the data. One entry is already known:
+   the transactional mail provider is **Resend**, which stores account data
+   (including recipient addresses) in the US under SCCs and EU-US Data Privacy
+   Framework certification — a *sending* region in Ireland is dispatch, not
+   residency. That is settled for the account release, which stores no rosters.
+   If roster residency has to be strictly EU, the mail entry is the one already
+   on the wrong side of that line, and swapping it is behind the send seam
+   ADR-0073 forces to exist.
 
-Roster sync is not one of the six phases in the rollout plan; those phases are
+Roster sync is not part of the account release; that release is
 about authorising *catalog writes*. It is the first feature the account model
-unlocks, it lands as its own piece of work after phase 5 makes multi-member
-accounts real, and the six items above are its entry criteria.
+unlocks, it lands as its own piece of work once the account release has made
+multi-member accounts real, and the six items above are its entry criteria.
+
+### Follow-up: the catalog entry as a distinct object — now [ADR-0074](./0074-catalog-entry-as-distinct-object.md)
+
+This ADR says a published plan is "two artifacts, not one blob with a policy on
+it", and stops at *copies*. Raised on approval (2026-08-05): they may be
+different **objects** — publishing derives a catalog entry with its own
+identity and lifecycle, rather than putting the account's plan into a public
+state.
+
+That strengthens the guarantee here rather than changing it. A catalog object
+with no `staff` field cannot represent a roster, so the strip stops being an
+operation code must remember and becomes something the type cannot express —
+the same move [ADR-0018](./0018-roleplayer-data-model.md) made with the folder
+boundary, one level further in. Two places already assume it:
+
+* `Plan.computeContentHash`'s denylist warning
+  ([`lib/models/plan.dart`](../../lib/models/plan.dart)) — "anything added to
+  `Plan` in future is published by default … the anticipated direction is a
+  catalog of *templates* … which is an allowlist question, not a denylist one".
+  A distinct catalog object is that allowlist.
+* [DESIGN-015](../design/015-accounts-and-iam.md) §9 — deleting an account does
+  not delete published catalog plans, which only makes sense if they have
+  separate lifecycles.
+
+It is a separate decision because it reaches past PII: publish becomes
+derive-and-put, unpublish becomes delete-the-catalog-object with the account
+plan untouched, and `accessPolicy` arguably belongs on the catalog object
+rather than on the plan ([ADR-0025](./0025-authorization-and-publish-policy.md)).
+Convenient timing: today *only* the catalog object exists — account-side
+storage is the new thing — so this is a boundary named before the second store
+is built, not a migration.
+
+**And the criterion should be "instance data", not "PII"** (raised 2026-08-05).
+If public plans converge on being *templates*, then adding staff is
+**hydrating** one, and the catalog object excludes the roster *because it is
+run-specific* — PII-exclusion becomes a consequence rather than the rule. That
+is more durable in both directions: it survives a new PII-bearing field, and it
+catches run-specific data that a PII rule waves through.
+
+There is already such a case, and it is published today. `DrillVariable` holds
+the declaration and the value in one object
+([`lib/models/drill_variable.dart`](../../lib/models/drill_variable.dart)), and
+`variables` is re-added to the canonical publish map in `computeContentHash` —
+`staff` is the only genuine exclusion. So the duty phone number, KO number and
+talegruppe that the authoring guidance tells authors to put in variables rather
+than prose travel to the catalog with the plan. Not a privacy problem; a
+staleness and usefulness one, since a forker inherits somebody else's
+operational values.
+
+Two consequences for ADR-0074 when it is written:
+
+* **Define the catalog object by an allowlist from day one**, even if it
+  initially admits everything except `staff`. Tightening toward a real template
+  is then an edit to one list, which is exactly what
+  [`lib/models/plan.dart`](../../lib/models/plan.dart)'s denylist warning asks
+  for and what a denylist can never provide.
+* **Splitting `DrillVariable` into declaration and value is the step after**,
+  and it is a schema change. Worth knowing before someone attempts it as a
+  refactor. Hydration itself is not hypothetical — ADR-0046 and
+  [ADR-0068](./0068-cascaded-fields-and-scoped-overrides.md)'s scoped-override
+  cascade already hydrate values within a plan; a template is the same
+  mechanism with an outer scope.
+
+### The other half of ADR-0074: namespaced slugs — now decided there
+
+Raised 2026-08-05 while accepting that an `anon` plan stays unclaimable. That
+is only tolerable if a slug is unique **per namespace** rather than globally —
+one namespace per account, plus `anon` for the wiki corpus. Identity is then
+`(namespace, slug)`, which makes it the same decision as the catalog object
+rather than a separate one: what the object is, what it carries, how it is
+addressed.
+
+What it buys:
+
+* **Fork keeps the name.** [ADR-0025](./0025-authorization-and-publish-policy.md)
+  lists as an accepted cost that a user forking a `public` plan "end[s] up with
+  a new slug, not the original one". Namespaced, they keep the same name in
+  their own namespace, beside the original. No `(kopi)` suffix, no `-2`.
+* **The 409 gets informative.** `drills-upload.js` answers
+  `x-conflict-kind: slug` today when someone else holds the name. Namespaced it
+  only fires within your own account, which is the case where it means
+  something.
+* **Policy and identity separate cleanly.** The namespace says who published
+  it; `accessPolicy` says who may write to it. An account-owned plan at
+  `public` policy is ordinary, not a contradiction.
+
+What it costs, stated plainly: **global uniqueness does not disappear, it moves
+up one level.** Accounts need a human-readable handle (`@redcross-bergen`, not
+`a_xK3nP2v…`) and those must be globally unique. That is a better place for the
+constraint — there are far fewer accounts than plans, a handle is chosen once
+and deliberately, and squatting becomes bounded rather than a race on every
+plan name.
+
+Back-compat is free: `/d/<slug>` keeps resolving to the `anon` namespace, so
+the three live plans and every link already shared keep working, and account
+plans take the namespaced form. Threading the namespace through
+`/i/<slug>` ([ADR-0015](./0015-shareable-install-links.md)), the MCP catalog
+tools that take a bare slug ([ADR-0060](./0060-remote-mcp-server.md)), the
+`slug-index` key and the feed item shape is the actual work.
+
+### Future work: default values and publish placeholders
+
+Raised 2026-08-05, alongside the framing above and not yet decided.
+
+A variable could carry a **default** (template-level) as well as its current
+value (run-level), and publishing could emit a **placeholder** — `________`, or
+something shaped like the type — in place of a value that is decided on the day.
+
+Three reasons this is the same idea as the split above, approached from the
+authoring side rather than the type side:
+
+* A placeholder *is* an un-hydrated slot, made visible. It is what a template
+  should show for a value nobody has filled in yet, and it is why omitting the
+  value outright is the wrong answer: an unresolved `{{var.x}}` renders as
+  broken, while a blank renders as *fill me in*.
+* The domain already does this on paper. The 2026 LSOR booklet wrote `Lag 2.X`
+  as a hand-filled wildcard 39 times
+  ([ADR-0066](./0066-team-scope-for-cross-reference-tokens.md)) because paper
+  cannot compute. A publish placeholder is that blank line, digital.
+* It fixes the staleness noted above without inventing a second mechanism: a
+  forker inherits a blank to fill rather than somebody else's duty phone
+  number.
+
+Open questions if it is picked up: whether the marker is per-variable and
+author-set (likely — the author knows which numbers are theirs) or inferred
+from `VariableType` (guessy); whether the placeholder is stored or derived at
+publish; and how the publish dialog previews what will actually go out, since
+a substitution the author cannot see before publishing is worse than none.
+Note that a *value*, unlike `staff/`, is not PII by default — a duty number
+belongs to a role. The reason to placeholder it is that it is run-specific,
+which is the same criterion as everything else here.
 
 ### Relationship to ADR-0018
 
@@ -279,7 +417,7 @@ servers* — and a second, private destination is admitted alongside it.
 * Good: "Uploaded but not public" becomes a state the backend can actually
   represent. That is worth having on its own — today `published` is a listing
   flag that reads like an access control, which is its own latent trap.
-* Good: The `shared` boundary is decided before phase 5 designs a UI around it,
+* Good: The `shared` boundary is decided before its UI is designed,
   rather than discovered when someone notices a roster crossed to another
   organisation.
 * Good: Sharing a plan is non-destructive to the owner. No grant, policy flip
