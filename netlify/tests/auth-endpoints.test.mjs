@@ -1,0 +1,247 @@
+/**
+ * The auth surface end to end, under AUTH_MODE=mock with the mail channel
+ * short-circuited (ADR-0073) — no provider, no mailbox, real code path.
+ *
+ * This is the test that justifies the adapter: the full sign-in round trip runs
+ * in CI, against the same endpoints and the same claim assembly production uses.
+ */
+import { test } from "node:test";
+import assert from "node:assert/strict";
+
+import { createHandler } from "../functions/auth.js";
+import { createMockAdapter } from "../functions/lib/mail/index.js";
+import { createAdapter, generateKeypair, verifyJwt, ISSUER, AUDIENCE } from "../functions/lib/auth/index.js";
+import { putMember } from "../functions/lib/identity.js";
+
+const KEYS = generateKeypair();
+
+function fakeStore() {
+    const data = new Map();
+    return {
+        data,
+        async get(key, opts) {
+            const raw = data.get(key);
+            return raw === undefined ? null : (opts?.type === "json" ? JSON.parse(raw) : raw);
+        },
+        async set(key, value, opts = {}) {
+            if (opts.onlyIfNew && data.has(key)) return { modified: false };
+            data.set(key, value);
+            return { modified: true };
+        },
+        async delete(key) { data.delete(key); },
+        async list({ prefix = "", cursor } = {}) {
+            if (cursor) return { blobs: [], cursor: undefined };
+            return { blobs: [...data.keys()].filter((k) => k.startsWith(prefix)).map((key) => ({ key })), cursor: undefined };
+        },
+    };
+}
+
+function harness() {
+    const raw = {
+        accounts: fakeStore(), users: fakeStore(), identities: fakeStore(), members: fakeStore(),
+        emailIndex: fakeStore(), handles: fakeStore(), sessions: fakeStore(), challenges: fakeStore(),
+    };
+    const stores = {
+        accounts: () => raw.accounts, users: () => raw.users, identities: () => raw.identities,
+        members: () => raw.members, emailIndex: () => raw.emailIndex, handles: () => raw.handles,
+        sessions: () => raw.sessions,
+    };
+    const mailer = createMockAdapter();
+    const handler = createHandler({
+        env: {
+            AUTH_MODE: "mock",
+            AUTH_SIGNING_KEY_PRIVATE: KEYS.privateKey,
+            AUTH_SIGNING_KEY_PUBLIC: KEYS.publicKey,
+            PUBLIC_APP_ORIGIN: "https://ringdrill.app",
+        },
+        stores,
+        challengeStore: () => raw.challenges,
+        sessionStore: () => raw.sessions,
+        mailer,
+    });
+    return { handler, stores, raw, mailer };
+}
+
+const post = (route, body, headers = {}) =>
+    new Request(`https://api.ringdrill.app/api/auth/${route}`, {
+        method: "POST", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(body),
+    });
+
+async function signIn(h, email = "kari@example.com") {
+    const started = await (await h.handler(post("start-email", { email, locale: "nb" }))).json();
+    const done = await h.handler(post("callback", { challengeId: started.challengeId, code: started.code, deviceLabel: "iPhone 15" }));
+    return { started, session: await done.json(), status: done.status };
+}
+
+// ---------- start-email ----------
+
+test("start-email sends the template and returns the code only under mock", async () => {
+    const h = harness();
+    const res = await h.handler(post("start-email", { email: "Kari@Example.com ", locale: "nb" }));
+    const body = await res.json();
+
+    assert.equal(res.status, 200);
+    assert.ok(body.challengeId);
+    assert.ok(body.code, "mock returns the code so the flow runs with no mail provider");
+
+    assert.equal(h.mailer.outbox.length, 1);
+    assert.equal(h.mailer.outbox[0].to, "kari@example.com", "the address is normalised before anything is stored");
+    assert.match(h.mailer.outbox[0].subject, /Innloggingslenken/, "locale is honoured");
+    assert.match(h.mailer.outbox[0].text, new RegExp(body.code));
+});
+
+test("start-email rejects an obviously invalid address", async () => {
+    const h = harness();
+    assert.equal((await h.handler(post("start-email", { email: "not-an-email" }))).status, 400);
+});
+
+// ---------- callback ----------
+
+test("callback mints a verifiable access token and opens a session", async () => {
+    const h = harness();
+    const { session, status } = await signIn(h);
+
+    assert.equal(status, 200);
+    assert.ok(session.refreshToken);
+    assert.ok(session.sessionId);
+    assert.equal(session.accountCreated, true);
+
+    // The property that matters is that the token the server issued is one the
+    // *active adapter* accepts. Under mock that is a test token, under live a
+    // signed JWT — asserting the format would test the mode, not the loop.
+    const adapter = await createAdapter({ env: { AUTH_MODE: "mock" } });
+    const principal = await adapter.authenticate(
+        new Request("https://api.ringdrill.app/x", { headers: { authorization: `Bearer ${session.accessToken}` } }),
+    );
+    assert.equal(principal.ok, true);
+    assert.equal(principal.anonymous, false);
+    assert.equal(principal.userId, session.user.id);
+    assert.equal(principal.accounts.length, 1, "a personal account, created on first sign-in");
+    assert.equal(principal.role, "owner");
+});
+
+test("callback refuses a wrong code and reports the attempts left", async () => {
+    const h = harness();
+    const started = await (await h.handler(post("start-email", { email: "kari@example.com" }))).json();
+    const res = await h.handler(post("callback", { challengeId: started.challengeId, code: "ZZZZZZ" }));
+    assert.equal(res.status, 401);
+    assert.equal((await res.json()).attemptsLeft, 4);
+});
+
+test("a second sign-in with the same address is the same user and account", async () => {
+    const h = harness();
+    const first = await signIn(h);
+    const second = await signIn(h);
+    assert.equal(second.session.user.id, first.session.user.id);
+    assert.equal(second.session.accountCreated, false);
+    assert.equal(h.raw.accounts.data.size, 1);
+});
+
+// ---------- refresh ----------
+
+test("refresh rotates the token and re-reads roles, so a change lands without signing out", async () => {
+    const h = harness();
+    const { session } = await signIn(h);
+
+    // Somebody adds this user to an organisation between token mints.
+    await putMember("a_bergen", session.user.id, "guest", { acceptedAt: "2026-08-08" }, h.stores);
+
+    const res = await h.handler(post("refresh", { sessionId: session.sessionId, refreshToken: session.refreshToken }));
+    const body = await res.json();
+    assert.equal(res.status, 200);
+    assert.notEqual(body.refreshToken, session.refreshToken, "rotated on every use");
+
+    const adapter = await createAdapter({ env: { AUTH_MODE: "mock" } });
+    const principal = await adapter.authenticate(
+        new Request("https://api.ringdrill.app/x", { headers: { authorization: `Bearer ${body.accessToken}` } }),
+    );
+    assert.ok(principal.accounts.includes("a_bergen"));
+    assert.equal(principal.roles.a_bergen, "guest");
+});
+
+test("REPLAY: reusing a rotated refresh token is 401 and the session is gone", async () => {
+    const h = harness();
+    const { session } = await signIn(h);
+    await h.handler(post("refresh", { sessionId: session.sessionId, refreshToken: session.refreshToken }));
+
+    const replay = await h.handler(post("refresh", { sessionId: session.sessionId, refreshToken: session.refreshToken }));
+    assert.equal(replay.status, 401);
+    assert.equal((await replay.json()).error, "replayed");
+    assert.equal(h.raw.sessions.data.size, 0, "the session is ended, not merely refused");
+});
+
+// ---------- logout ----------
+
+test("logout is 204 whether or not the session existed", async () => {
+    const h = harness();
+    const { session } = await signIn(h);
+    assert.equal((await h.handler(post("logout", { sessionId: session.sessionId }))).status, 204);
+    // Telling a caller which session ids are real is free reconnaissance.
+    assert.equal((await h.handler(post("logout", { sessionId: "never-existed" }))).status, 204);
+});
+
+// ---------- me ----------
+
+test("me returns the user, their accounts with roles, and their devices", async () => {
+    const h = harness();
+    const { session } = await signIn(h);
+    await putMember("a_bergen", session.user.id, "member", { acceptedAt: "2026-08-08" }, h.stores);
+    await h.stores.accounts().set("a_bergen", JSON.stringify({
+        id: "a_bergen", displayName: "Red Cross Bergen", type: "organization", handle: "redcross-bergen",
+    }));
+
+    // A fresh token so the new membership is in the claims.
+    const refreshed = await (await h.handler(post("refresh", { sessionId: session.sessionId, refreshToken: session.refreshToken }))).json();
+
+    const res = await h.handler(new Request("https://api.ringdrill.app/api/auth/me", {
+        headers: { authorization: `Bearer ${refreshed.accessToken}` },
+    }));
+    const body = await res.json();
+
+    assert.equal(res.status, 200);
+    assert.equal(body.user.email, "kari@example.com");
+    const org = body.accounts.find((a) => a.id === "a_bergen");
+    assert.equal(org.handle, "redcross-bergen");
+    assert.equal(org.role, "member");
+    assert.deepEqual(body.devices.map((d) => d.deviceLabel), ["iPhone 15"]);
+    for (const d of body.devices) assert.equal(d.refreshHash, undefined);
+});
+
+test("me is 401 without a token", async () => {
+    const h = harness();
+    const res = await h.handler(new Request("https://api.ringdrill.app/api/auth/me"));
+    assert.equal(res.status, 401);
+});
+
+test("an unknown route under /api/auth is 404, not a 500", async () => {
+    const h = harness();
+    assert.equal((await h.handler(post("nope", {}))).status, 404);
+});
+
+test("under AUTH_MODE=live the server signs a real JWT, verifiable with the public key", async () => {
+    // The complement of the mock case: the same claim assembly, the other
+    // format. Together they are the ADR-0073 claim — one code path, two modes.
+    const h = harness();
+    const live = createHandler({
+        env: {
+            AUTH_MODE: "live",
+            AUTH_SIGNING_KEY_PRIVATE: KEYS.privateKey,
+            AUTH_SIGNING_KEY_PUBLIC: KEYS.publicKey,
+        },
+        stores: h.stores,
+        challengeStore: () => h.raw.challenges,
+        sessionStore: () => h.raw.sessions,
+        mailer: h.mailer,
+    });
+
+    const started = await (await live(post("start-email", { email: "kari@example.com" }))).json();
+    // In live the code is never in the response — it would be the credential.
+    assert.equal(started.code, undefined);
+    const code = h.mailer.outbox.at(-1).text.match(/[A-Z2-9]{6}/)[0];
+
+    const session = await (await live(post("callback", { challengeId: started.challengeId, code }))).json();
+    const verified = verifyJwt(session.accessToken, [KEYS.publicKey], { issuer: ISSUER, audience: AUDIENCE });
+    assert.equal(verified.ok, true);
+    assert.equal(verified.claims.sub, session.user.id);
+    assert.equal(verified.claims.roles[verified.claims.act], "owner");
+});

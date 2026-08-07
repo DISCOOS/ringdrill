@@ -99,6 +99,14 @@
 # The direct `/.netlify/functions/<name>` path always works too — it is
 # served natively by Netlify and does not require an entry here. The
 # old cached PWA on apex still uses it, and continues to.
+# The auth surface (ADR-0024). One function, five routes — see
+# netlify/functions/auth.js for why they are not five functions.
+[[redirects]]
+    from = "/api/auth/*"
+    to = "/.netlify/functions/auth/:splat"
+    status = 200
+    force = true
+
 [[redirects]]
     from = "/api/drills-upload"
     to = "/.netlify/functions/drills-upload"
