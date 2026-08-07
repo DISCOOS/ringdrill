@@ -228,22 +228,22 @@
             <div style="display: flex; gap: 16px; align-items: flex-start;">
               <div class="card" style="flex: 1;">
                 <div class="item"><div class="av">KG</div><div class="grow"><div class="t">Kari Gulbrandsen (deg)</div><div class="s">kari@example.com</div></div><span class="pill pill-accent">Eier</span></div>
-                <div class="item" style="background: var(--color-background-secondary);"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">ola@example.com</div></div><span class="pill">Redakt&oslash;r</span></div>
-                <div class="item"><div class="av">MS</div><div class="grow"><div class="t">Mari Sund</div><div class="s">mari@example.com</div></div><span class="pill">Leser</span></div>
+                <div class="item" style="background: var(--color-background-secondary);"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">ola@example.com</div></div><span class="pill">Medlem</span></div>
+                <div class="item"><div class="av">MS</div><div class="grow"><div class="t">Mari Sund</div><div class="s">mari@example.com</div></div><span class="pill">Gjest</span></div>
                 <div class="item"><div class="av"><i class="ti ti-mail" style="font-size: 15px;"></i></div><div class="grow"><div class="t">per@example.com</div><div class="s">Invitert 3. august</div></div><span class="pill pill-warn">Invitert</span></div>
               </div>
               <div class="card" style="width: 300px;">
                 <div class="item" style="gap: 10px;"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">ola@example.com · medlem siden 14. juni</div></div></div>
                 <div class="item" style="display: block; padding: 12px;">
                   <div class="sect" style="margin: 0 0 8px 0;">Tilgang i organisasjonen</div>
-                  <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px;"><div class="radio"></div><div><div class="t">Eier</div><div class="s">Kan publisere, endre tilgang og styre medlemmer</div></div></div>
-                  <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px;"><div class="radio radio-on"></div><div><div class="t">Redakt&oslash;r</div><div class="s">Kan publisere oppdateringer til planene</div></div></div>
-                  <div style="display: flex; gap: 10px; align-items: flex-start;"><div class="radio"></div><div><div class="t">Leser</div><div class="s">Kan lese planene. Kan ikke publisere</div></div></div>
+                  <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px;"><div class="radio"></div><div><div class="t">Eier</div><div class="s">Kan styre medlemmer og tilgang, i tillegg til alt et medlem kan</div></div></div>
+                  <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px;"><div class="radio radio-on"></div><div><div class="t">Medlem</div><div class="s">Er med i organisasjonen. Kan lese og publisere planene</div></div></div>
+                  <div style="display: flex; gap: 10px; align-items: flex-start;"><div class="radio"></div><div><div class="t">Gjest</div><div class="s">Kan lese planene. Er ikke med i organisasjonen</div></div></div>
                 </div>
                 <div class="item"><i class="ti ti-user-minus" style="color: var(--danger-text);"></i><div class="grow"><div class="t" style="color: var(--danger-text);">Fjern fra organisasjonen</div></div></div>
               </div>
             </div>
-            <div class="note note-plain"><i class="ti ti-database"></i><span><b>Hva lagres om kontoen?</b> Planer, og — n&aring;r plansynk kommer — stablista som er f&oslash;rt for dem. Bare medlemmer av denne organisasjonen ser den. En publisert plan i katalogen inneholder aldri stab (ADR-0072).</span></div>
+            <div class="note note-plain"><i class="ti ti-database"></i><span><b>Hva lagres om kontoen?</b> Planer, og — n&aring;r plansynk kommer — stablista som er f&oslash;rt for dem. Bare eiere og medlemmer ser den — ikke gjester, og ikke andre kontoer planen er delt med. En publisert plan i katalogen inneholder aldri stab (ADR-0072).</span></div>
           </div>
         </div>
       </div>

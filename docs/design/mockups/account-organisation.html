@@ -207,12 +207,12 @@
         <div class="sect">Medlemmer · 4</div>
         <div class="card">
           <div class="item"><div class="av">KG</div><div class="grow"><div class="t">Kari Gulbrandsen <span class="s" style="display: inline;">(deg)</span></div><div class="s">Eneste eier</div></div><span class="pill pill-accent">Eier</span></div>
-          <div class="item"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">ola@example.com</div></div><span class="pill">Redakt&oslash;r</span><i class="ti ti-chevron-right"></i></div>
-          <div class="item"><div class="av">MS</div><div class="grow"><div class="t">Mari Sund</div><div class="s">mari@example.com</div></div><span class="pill">Leser</span><i class="ti ti-chevron-right"></i></div>
+          <div class="item"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">ola@example.com</div></div><span class="pill">Medlem</span><i class="ti ti-chevron-right"></i></div>
+          <div class="item"><div class="av">MS</div><div class="grow"><div class="t">Mari Sund</div><div class="s">mari@example.com</div></div><span class="pill">Gjest</span><i class="ti ti-chevron-right"></i></div>
           <div class="item"><div class="av"><i class="ti ti-mail" style="font-size:15px;"></i></div><div class="grow"><div class="t">per@example.com</div><div class="s">Invitert 3. august · ikke svart</div></div><span class="pill pill-warn">Invitert</span></div>
           <div class="item dim"><div class="av"><i class="ti ti-mail-x" style="font-size:15px;"></i></div><div class="grow"><div class="t">lise@exampel.com</div><div class="s" style="color: var(--danger-text);">E-posten kom i retur · sjekk adressen</div></div><span class="pill">Feilet</span></div>
         </div>
-        <div class="note note-plain"><i class="ti ti-info-circle"></i><span><b>Tilgang</b> gjelder planer i organisasjonen. Rollen din under en &oslash;velse settes i menyen.</span></div>
+        <div class="note note-plain"><i class="ti ti-info-circle"></i><span><b>Tilgang</b> gjelder standingen din i organisasjonen. Den sier ingenting om hvilken rolle du kan ha under en &oslash;velse — en gjest kan v&aelig;re &oslash;velsesleder.</span></div>
         <div style="flex: 1;"></div>
         <div class="btn"><i class="ti ti-user-plus"></i> Inviter noen til &aring; samarbeide</div>
       </div>
@@ -227,9 +227,9 @@
         <div class="item" style="border: 0; padding: 0 0 4px;"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">ola@example.com</div></div></div>
         <div class="sect" style="margin-top: 2px;">Tilgang i organisasjonen</div>
         <div class="card">
-          <div class="item"><div class="radio"></div><div class="grow"><div class="t">Eier</div><div class="s">Kan publisere, endre hvem som har tilgang til planene, og styre medlemmer</div></div></div>
-          <div class="item"><div class="radio radio-on"></div><div class="grow"><div class="t">Redakt&oslash;r</div><div class="s">Kan publisere oppdateringer til planene</div></div></div>
-          <div class="item"><div class="radio"></div><div class="grow"><div class="t">Leser</div><div class="s">Kan lese planene. Kan ikke publisere</div></div></div>
+          <div class="item"><div class="radio"></div><div class="grow"><div class="t">Eier</div><div class="s">Kan styre medlemmer og tilgang, i tillegg til alt et medlem kan</div></div></div>
+          <div class="item"><div class="radio radio-on"></div><div class="grow"><div class="t">Medlem</div><div class="s">Er med i organisasjonen. Kan lese og publisere planene</div></div></div>
+          <div class="item"><div class="radio"></div><div class="grow"><div class="t">Gjest</div><div class="s">Kan lese planene. Er ikke med i organisasjonen</div></div></div>
         </div>
         <div class="note note-plain"><i class="ti ti-bolt"></i><span>Endringen gjelder fra neste gang Ola gj&oslash;r noe. Han trenger ikke logge inn p&aring; nytt.</span></div>
         <div class="btn btn-danger"><i class="ti ti-user-minus"></i> Fjern fra organisasjonen</div>
@@ -244,7 +244,7 @@
         <div class="grab"></div>
         <h2 class="h">Fjerne Ola Hansen?</h2>
         <div class="card">
-          <div class="item"><i class="ti ti-lock"></i><div class="grow"><div class="s" style="margin: 0;">Ola mister tilgang til planene i organisasjonen, og kan ikke publisere oppdateringer.</div></div></div>
+          <div class="item"><i class="ti ti-lock"></i><div class="grow"><div class="s" style="margin: 0;">Ola mister tilgang til planene i organisasjonen, og kan ikke publisere oppdateringer. Han st&aring;r fritt til &aring; ha hvilken som helst rolle under en &oslash;velse — det henger ikke sammen.</div></div></div>
           <div class="item"><i class="ti ti-device-mobile"></i><div class="grow"><div class="s" style="margin: 0;"><b>Planer han allerede har lastet ned blir liggende p&aring; hans egen enhet.</b> Vi kan ikke fjerne dem derfra.</div></div></div>
         </div>
         <div class="btn btn-danger">Fjern Ola</div>
@@ -262,9 +262,9 @@
         <p class="p">Personen trenger ikke ha RingDrill fra f&oslash;r. Invitasjonen kobles n&aring;r de logger inn f&oslash;rste gang.</p>
         <div class="sect">Tilgang</div>
         <div class="card">
-          <div class="item"><div class="radio"></div><div class="grow"><div class="t">Eier</div><div class="s">Kan publisere, endre tilgang og styre medlemmer</div></div></div>
-          <div class="item"><div class="radio radio-on"></div><div class="grow"><div class="t">Redakt&oslash;r</div><div class="s">Kan publisere oppdateringer til planene</div></div></div>
-          <div class="item"><div class="radio"></div><div class="grow"><div class="t">Leser</div><div class="s">Kan lese planene. Kan ikke publisere</div></div></div>
+          <div class="item"><div class="radio"></div><div class="grow"><div class="t">Eier</div><div class="s">Kan styre medlemmer og tilgang, i tillegg til alt et medlem kan</div></div></div>
+          <div class="item"><div class="radio radio-on"></div><div class="grow"><div class="t">Medlem</div><div class="s">Er med i organisasjonen. Kan lese og publisere planene</div></div></div>
+          <div class="item"><div class="radio"></div><div class="grow"><div class="t">Gjest</div><div class="s">Kan lese planene. Er ikke med i organisasjonen</div></div></div>
         </div>
         <div class="note note-plain"><i class="ti ti-user-check"></i><span>Tilgangen velges n&aring;, ikke n&aring;r invitasjonen godtas. &laquo;Invitert&raquo; er en tilstand, ikke en rolle.</span></div>
         <div style="flex: 1;"></div>

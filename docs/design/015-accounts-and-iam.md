@@ -29,7 +29,8 @@ related_adrs:
 > strings are the `nb` labels the app ships. **Status: Proposed.** The model is
 > settled by [ADR-0024](../adrs/0024-account-and-identity-model.md) and
 > [ADR-0025](../adrs/0025-authorization-and-publish-policy.md); this document
-> decides what the user sees and does, and flags four calls that are still open.
+> decides what the user sees and does. It also **amends ADR-0024's
+> `MemberRole`** to `{owner, member, guest}` — see §6.1.
 
 ## TL;DR
 
@@ -41,9 +42,10 @@ when a second person is invited, and a recovery path for the situations that
 replace "forgot my password" in a world with no passwords.
 
 The two things most likely to go wrong are not screens. They are **two role
-vocabularies that must never be presented as one setting** (§7), and **an
-account page that has to say plainly what an account holds** now that a roster
-can travel with a plan (§8).
+vocabularies that must not be conflated** (§7) — solved by scoping `MemberRole`
+to the account side so nothing about it implies a `StaffRole` — and **an account
+page that has to say plainly what an account holds** now that a roster can
+travel with a plan (§8).
 
 ## 1. What this designs, and what it does not
 
@@ -256,8 +258,8 @@ changes, in these terms:
 
 * The account gets a name of its own (defaulting to the user's, editable).
 * Plans owned by it stay owned by it — nothing moves, nothing republishes.
-* The invited person will be able to *(role-dependent)* publish updates to those
-  plans.
+* The invited person joins as `member` and can publish updates to those plans.
+  `guest` is offered on the same sheet for someone who should only read.
 * It cannot be undone by removing the member. The account stays an organisation.
 
 That last point is the one users get wrong, so it is stated before the action
@@ -301,19 +303,42 @@ the native button; nothing else about the flow changes per platform.
 
 ## 6. Member management
 
-### 6.1 Roles, and exactly what each may do
+### 6.1 Roles, and exactly what each is for
 
-Three, from ADR-0024, and the page must describe them in terms of consequences
-rather than names:
+**`MemberRole` is `{owner, member, guest}`, and it is the account/administration
+axis only.** This amends ADR-0024's original `{owner, editor, viewer}`; the
+reasoning is recorded there.
 
-| Role | `nb` | May |
+| Role | `nb` | Is |
 |---|---|---|
-| `owner` | Eier | Everything an editor may, plus: change a plan's access policy, invite and remove members, change roles, rename the organisation |
-| `editor` | Redaktør | Publish updates to the account's plans |
-| `viewer` | Leser | Read the account's plans. No publishing |
+| `owner` | Eier | The person who administers the account: invites, removes, changes roles, renames it, changes a plan's access policy |
+| `member` | Medlem | In the account. Reads and publishes its plans |
+| `guest` | Gjest | Admitted from outside to read. Not part of the group |
 
-The role picker shows the one-line consequence under each name. "Redaktør" means
-nothing on its own; *"Kan publisere oppdateringer til planene"* means something.
+Two things this replaces, and why:
+
+**`editor` described nobody.** Everyone trusted with the account is a potential
+editor of its plans — that is what being in it means. A tier that grants "may
+publish" implied the default was *not* to be able to publish, which is backwards
+for a group that plans exercises together. `member` says the true thing: you are
+in, and being in is what lets you work.
+
+**`viewer` named a capability; `guest` names a relationship.** "Can view" is not
+the decision being made when someone is added at that level. "This person is
+admitted, but is not one of us" is. The rename makes the tier legible in the one
+place it matters — the invite — and it gives §8 a line it can draw without
+inventing a new axis.
+
+The role picker still shows a consequence line under each name, because a role
+name alone never carries its own meaning:
+
+* **Eier** — *"Kan styre medlemmer og tilgang, i tillegg til alt et medlem kan."*
+* **Medlem** — *"Er med i organisasjonen. Kan lese og publisere planene."*
+* **Gjest** — *"Kan lese planene. Er ikke med i organisasjonen."*
+
+A fourth tier between owner and member — an *admin* who manages people but
+cannot delete the account — fits the model without a change and is not added
+now, because at one-organisation-per-hjelpekorps scale there is nobody to be it.
 
 ### 6.2 Inviting
 
@@ -354,9 +379,9 @@ in with a verified identity for it.
 always has at least one `owner`. The last owner's role picker has "Eier" locked
 with a reason, rather than showing an option that will fail.
 
-## 7. Two role vocabularies, and why they must never merge
+## 7. Two role vocabularies, kept apart by the model rather than by the UI
 
-This is the highest-risk part of the design.
+This is the highest-risk part of the design, and the fix is structural.
 
 The app already has `StaffRole` — `{director, instructor, actor, other}`,
 Norwegian *øvelsesleder / veileder / markør / annet* — which does two jobs
@@ -364,32 +389,37 @@ Norwegian *øvelsesleder / veileder / markør / annet* — which does two jobs
 [ADR-0057](../adrs/0057-role-gated-editing.md)): it is a person's role on the
 roster, and it is *this device's* role, gating which edit affordances appear.
 
-`MemberRole` — `{owner, editor, viewer}` — is a completely different axis: what
-a signed-in user may do to *plans owned by an account*, enforced by the server.
+`MemberRole` answers a different question entirely: **what is your standing in
+the account.** Who administers it, who is in it, who was let in to look.
 
-They are independent, and both are true at once. A person can be `viewer` on
-the organisation and `director` on the exercise: they may not publish, and they
-may edit everything locally. Nothing about that is contradictory, but it reads
-as a contradiction if the two ever appear as one "role" setting.
+**It says nothing about what you do on an exercise, and that is a property of
+the model, not a rule about screens.** No `MemberRole` value implies, permits,
+constrains or derives a `StaffRole`, in either direction. A `guest` may be the
+*øvelsesleder* running the drill. An `owner` may be `other` on the roster and
+have no edit rights at all. Both are ordinary, not edge cases.
 
-Design rules, non-negotiable:
+An earlier draft of this section stated that as a UI-presentation rule — keep
+them on separate screens, use different words. That was too weak. A
+presentation rule survives exactly as long as everyone remembers it, and the
+first person to add a "role" dropdown that offers both sets breaks it silently.
+Scoping `MemberRole` to the account side makes the separation something the
+model enforces, and the UI rules below are then consequences rather than
+discipline:
 
 1. **Different surfaces.** `StaffRole` lives on the roster and in the drawer's
-   role switcher. `MemberRole` lives only on the account page. Neither surface
-   mentions the other's values.
-2. **Different words in `nb`.** *Rolle* is already spent on `StaffRole`. The
-   members list uses *Tilgang* for the `MemberRole` column, and the role picker
-   is titled *"Tilgang i organisasjonen"*.
-3. **Never derived from each other.** No rule anywhere maps `owner`→`director`
-   or back. They answer different questions.
-4. The account page carries one explanatory line: *"Tilgang gjelder planer i
+   role switcher. `MemberRole` lives only on the account page.
+2. **Different words in `nb`.** *Rolle* is spent on `StaffRole`. The members
+   list uses *Tilgang*, and the picker is titled *"Tilgang i organisasjonen"*.
+3. **No mapping function exists.** Not `owner`→`director`, not the reverse, not
+   a default, not a suggestion at invite time.
+4. One explanatory line on the account page: *"Tilgang gjelder planer i
    organisasjonen. Rollen din under en øvelse settes i menyen."*
 
 There is a third axis already in the codebase —
 [ADR-0063](../adrs/0063-per-field-brief-visibility.md)'s per-field brief
-visibility, which decides which *fields* a given audience sees within a plan
-that a device already has. Three axes is the real number, and the account page
-should not pretend otherwise.
+visibility, which decides which *fields* a given audience sees within a plan a
+device already has. Three axes is the real number, and the account page should
+not pretend otherwise.
 
 ## 8. What an account holds — the sentence that has to exist
 
@@ -412,21 +442,30 @@ entry criteria. Until then this section describes plans only, and the roster
 sentence is absent rather than aspirational. The heading exists from the first
 account release so there is one obvious place for it to grow.
 
-### 8.1 Open call — does a `viewer` see the roster?
+### 8.1 Members see the roster. Guests do not.
 
-ADR-0072 ties roster visibility to **account membership**, not to `MemberRole`.
-Read literally, a `viewer` — someone admitted to the organisation with no
-publishing rights — receives the roster with the plan.
+ADR-0072 ties roster visibility to **being in the account**, and §6.1's
+`{owner, member, guest}` is what makes that a usable line rather than an open
+question:
 
-That is defensible (they were admitted to the organisation; the roster is the
-duty list for an exercise they are presumably working) and it keeps the rule to
-one axis. The alternative is roster visibility keyed on role, which introduces a
-fourth axis on top of §7's three.
+* **`owner` and `member` see the roster.** They are the group running the
+  exercise. The duty list is what they are collaborating on.
+* **`guest` does not.** A guest was admitted to read the plan, not to join the
+  group. Someone else's colleagues' phone numbers are not part of "have a look
+  at our plan".
 
-**Recommendation: keep it to membership.** But it is a deliberate call about
-personal data, it is invisible in the code once written, and it should be made
-explicitly rather than inherited from an implementation detail. Flagged for
-decision before the sync work starts.
+This is not a fourth axis. It is the same membership axis with the outsider tier
+named honestly, which is most of why `viewer` became `guest` — under the old
+vocabulary, "does a viewer see the roster?" had no principled answer, because
+`viewer` described a capability and the question is about belonging.
+
+The `AccessPolicy.shared` case follows from the same rule and needs no separate
+one: a member of the *grantee* account is not in the *owning* account, so they
+get the plan and not the roster (ADR-0072 §4).
+
+Withholding stays a **read-time projection**, never a write-time strip. Changing
+someone from `member` to `guest`, or removing them, must not touch the stored
+plan. Their next request simply returns less.
 
 ## 9. States that are easy to forget
 
@@ -456,8 +495,10 @@ decision before the sync work starts.
 
 ## 11. Open questions
 
-1. **Does a `viewer` see the roster?** §8.1. Recommendation: yes, keep visibility
-   on membership. Needs an explicit decision before sync work.
+1. **Does an `owner` need to be distinguishable from an *admin*?** §6.1 leaves
+   one tier where a bigger organisation would have two — someone who manages
+   people but cannot delete the account or transfer ownership. No model change
+   needed to add it later; the question is only whether anyone wants it.
 2. **Organisation naming in `nb`.** "Organisasjon" is settled for the model and
    the account type, but not every group of people running a drill is an
    organisation. The *invite* copy can stay team-shaped

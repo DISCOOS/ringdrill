@@ -339,8 +339,8 @@ covers the happy path on each phase.
   squatter cannot inherit the real owner's verified identity. No
   in-place adoption exists, so a squatter cannot claim a wiki slug
   either.
-* **Insider takeover.** A hostile `editor` is demoted or removed by an
-  `owner`. Later hardening: audit log of policy and member changes.
+* **Insider takeover.** A hostile `member` is demoted to `guest`, or
+  removed, by an `owner`. Later hardening: audit log of policy and member changes.
 
 ## Communication
 

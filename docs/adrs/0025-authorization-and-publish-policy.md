@@ -36,8 +36,9 @@ mobile and the PWA without reshuffling the existing OCC contract
 * New plans default to "protected from strangers". An anonymous third
   party must not be able to overwrite a freshly published plan.
 * Account-locked plans can be co-owned without sharing credentials.
-  Members with role `editor` or `owner` of the owning Account can
-  publish.
+  Anyone in the owning Account who is not a `guest` can publish
+  (`owner` or `member` — see [ADR-0024](./0024-account-and-identity-model.md)'s
+  2026-08-05 amendment).
 * Public-write plans remain a first-class option. Publishing a training
   plan that anyone can fork and extend (or directly edit, in the
   fully-public case) is a legitimate use case in its own right, not a
@@ -138,12 +139,12 @@ Each catalog endpoint runs this check before any business logic:
 | Endpoint                  | Required policy + role                                         |
 |---------------------------|----------------------------------------------------------------|
 | `POST /api/drills/upload` for new slug | Authenticated User. Slug claimed for `activeAccount`. Policy initialised to `account`. |
-| `POST /api/drills/upload` to existing slug, policy `account`  | Member of owning Account with role `owner` or `editor`. |
-| `POST /api/drills/upload` to existing slug, policy `shared`   | Member of the owning Account OR member of any account in `shared.accountIds`, with role `owner` or `editor` on that account. |
+| `POST /api/drills/upload` to existing slug, policy `account`  | Member of owning Account with role `owner` or `member`. A `guest` is refused. |
+| `POST /api/drills/upload` to existing slug, policy `shared`   | Member of the owning Account OR of any account in `shared.accountIds`, with role `owner` or `member` on that account. A `guest` is refused on either side. |
 | `POST /api/drills/upload` to existing slug, policy `public`   | Authenticated User OR no token. Backward-compatible with today's flow. |
 | `GET /api/market/feed`, `GET /d/:slug`, `GET /api/drills/head/:slug` | Public. Same as today. No authentication. |
 | `POST /api/drills/policy` (new)        | `owner` of the owning Account. Changes the plan's `accessPolicy` and the `shared.accountIds` list. |
-| `POST /api/accounts/:id/members` (new) | Member of Account with role `owner`. Invites another User as `editor` or `viewer`. |
+| `POST /api/accounts/:id/members` (new) | Member of Account with role `owner`. Invites another User as `member` or `guest`. |
 | `* /api/admin/*`                       | Bearer `ADMIN_TOKEN` (preserved) OR Bearer access token of a User with the `admin` flag (future). |
 
 `accessPolicy` is stored on the existing meta blob
