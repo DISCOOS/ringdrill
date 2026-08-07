@@ -597,6 +597,69 @@ pub_c = '''
       </div>'''
 
 
+# ---------------------------------------------------------------- cli auth
+TERM_STYLE = "font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.75; white-space: pre-wrap; background: #14140f; color: #d8d5c8; padding: 14px; border-radius: var(--border-radius-md); flex: none;"
+
+cli_a = '''
+      <div class="bar"><i class="ti ti-terminal-2"></i><span class="grow">Terminal</span></div>
+      <div class="body">
+        <div style="''' + TERM_STYLE + '''"><span style="color: #7fb98a;">$</span> ringdrill auth login
+
+  Open  <span style="color: #6FD3B0; text-decoration: underline;">ringdrill.app/auth/device</span>
+  Code  <span style="color: #fff; font-weight: 600; letter-spacing: 0.08em;">WDJB-MDQN</span>
+
+  Waiting&hellip;  expires 9:47</div>
+        <div class="note note-plain"><i class="ti ti-browser"></i><span>The browser opens by itself when stdout is a TTY. The URL and code are printed either way, so a headless shell over SSH works the same.</span></div>
+        <div class="note note-plain"><i class="ti ti-refresh"></i><span>The CLI polls at the interval the server hands back, and honours <b>slow_down</b>. Nothing is typed back into the terminal.</span></div>
+        <div style="flex: 1;"></div>
+        <div class="note note-warn"><i class="ti ti-robot"></i><span><b>CI does not use this flow.</b> It is interactive by construction. Automation keeps a long-lived token in <b>RINGDRILL_ACCESS_TOKEN</b>.</span></div>
+      </div>'''
+
+cli_b = '''
+      <div class="bar"><i class="ti ti-lock"></i><span class="grow">ringdrill.app/auth/device</span></div>
+      <div class="body">
+        <h2 class="h">Authorise RingDrill CLI</h2>
+        <div class="note note-warn"><i class="ti ti-eye-check"></i><span><b>Check this matches your terminal.</b><br><span style="font-size: 15px; font-weight: 600; letter-spacing: 0.1em;">WDJB-MDQN</span><br>If it does not, someone else is asking for access. Cancel.</span></div>
+        <div class="sect">Signed in as</div>
+        <div class="card"><div class="item"><div class="av">KG</div><div class="grow"><div class="t">Kari Gulbrandsen</div><div class="s">kari@example.com</div></div></div></div>
+        <div class="sect">The CLI will be able to act as you in</div>
+        <div class="card">
+          <div class="item"><i class="ti ti-user"></i><div class="grow"><div class="t">Kari Gulbrandsen</div><div class="s">Personal account &middot; owner</div></div></div>
+          <div class="item"><i class="ti ti-users-group"></i><div class="grow"><div class="t">Red Cross Bergen</div><div class="s">Organisation &middot; owner</div></div></div>
+        </div>
+        <div class="note note-plain"><i class="ti ti-info-circle"></i><span>It can do everything you can do — publish plans, change who has access, manage members. There is no narrower grant to choose.</span></div>
+        <div class="sect">Will appear as</div>
+        <div class="card"><div class="item"><i class="ti ti-device-laptop"></i><div class="grow"><div class="t">RingDrill CLI &middot; kengu-mbp</div><div class="s">Sign it out any time from Account &rarr; Devices</div></div></div></div>
+        <div class="btn btn-primary">Authorise</div>
+        <div class="btn">Cancel</div>
+      </div>'''
+
+cli_c = '''
+      <div class="bar"><i class="ti ti-terminal-2"></i><span class="grow">Terminal</span></div>
+      <div class="body">
+        <div style="''' + TERM_STYLE + '''"><span style="color: #7fb98a;">$</span> ringdrill auth login
+
+  Open  <span style="color: #6FD3B0; text-decoration: underline;">ringdrill.app/auth/device</span>
+  Code  <span style="color: #fff; font-weight: 600; letter-spacing: 0.08em;">WDJB-MDQN</span>
+
+  <span style="color: #7fb98a;">&check;</span> Authorised
+    kari@example.com
+    Red Cross Bergen (active)
+    ~/.config/ringdrill/
+      credentials.json
+
+<span style="color: #7fb98a;">$</span> ringdrill auth status
+
+  kari@example.com
+  Kari Gulbrandsen   owner
+  Red Cross Bergen   owner
+  CLI &middot; kengu-mbp</div>
+        <div class="note note-accent"><i class="ti ti-key"></i><span>A separately revocable session. Signing the CLI out does not touch the phone, and signing the phone out does not touch the CLI &mdash; which a shared session could not offer.</span></div>
+        <div style="flex: 1;"></div>
+        <div class="note note-plain"><i class="ti ti-logout"></i><span><b>ringdrill auth logout</b> clears the credentials file and ends the session server-side.</span></div>
+      </div>'''
+
+
 
 def main():
     page("auth-signin.html", "Sign-in",
@@ -638,6 +701,13 @@ def main():
          [("1 &middot; Signed out &mdash; not a gate", pub_a),
           ("2 &middot; Personal account", pub_b),
           ("3 &middot; Organisation, republish", pub_c)])
+
+
+    page("cli-auth.html", "CLI device authorization",
+         "DESIGN-015 &sect;3.5. The CLI uses the device authorization grant (RFC 8628), not a second magic link: the browser is already signed in, so nobody authenticates twice, and the grant gets its own consent step and its own revocable session. The warning block in the middle is not decoration &mdash; echoing the code back is what stops someone being talked into approving an attacker&rsquo;s device (RFC 8628 &sect;5.4).",
+         [("1 &middot; Start the flow", cli_a),
+          ("2 &middot; Browser consent", cli_b),
+          ("3 &middot; Authorised", cli_c)])
 
 
 if __name__ == "__main__":

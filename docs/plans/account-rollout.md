@@ -181,15 +181,33 @@ Ordered by dependency, not by risk. Everything below ships together.
   without an account keeps today's three. ARB: `libraryOnlineTab` →
   `libraryPublicTab`, new `libraryAccountTab`; `make i18n` after.
 
-### CLI
+### CLI — deferred, but designed
 
-* `ringdrill login` runs the magic-link flow over the terminal, using the code
-  path as primary (a terminal has no browser callback worth relying on).
-* `admin: true` on User records gates `/api/admin`. Named `admin`, not
+**Not in this release.** The CLI keeps `RINGDRILL_ADMIN_TOKEN` and changes
+nothing, which is why goal 4 holds without any work here.
+
+It is designed now because two of its endpoints have to be known before the
+auth surface is built rather than bolted on afterwards
+([DESIGN-015](../design/015-accounts-and-iam.md) §3.5):
+
+* `POST /api/auth/device/start` and `POST /api/auth/device/token` — the device
+  authorization grant ([RFC 8628](https://www.rfc-editor.org/rfc/rfc8628)).
+  `ringdrill auth login` prints a URL and a short code, the browser reuses the
+  session it already has, a consent screen states what is being granted, and
+  the CLI polls until it is.
+* A **consent screen** at `/auth/device` on the web surface, which echoes the
+  code back for the user to check against their terminal. That echo is the
+  mitigation for RFC 8628 §5.4's phishing case and is not optional.
+* `admin: true` on User records to gate `/api/admin`. Named `admin`, not
   `staff`, so it cannot be confused with the `Staff` roster entity or the
   `staff/` PII folder (ADR-0025).
-* `ADMIN_TOKEN` stays accepted. Removing it is a **follow-up**, not part of
-  this release — see "Cutover".
+
+Two properties this buys that a CLI-shaped magic link would not: nobody
+authenticates twice, and the CLI becomes a **separately revocable session**
+appearing in Account → Devices, signed out without touching the phone.
+
+Removing `ADMIN_TOKEN` is a later step again, after CI has moved to
+`RINGDRILL_ACCESS_TOKEN` — see "Cutover".
 
 ## Auth mode
 
@@ -248,9 +266,10 @@ sequencing:
 4. **Ship web.** Minutes. Web users can sign in.
 5. **Ship mobile.** Days, gated on review. Until it lands, mobile publishes
    anonymously — which is exactly today's behaviour, not a degraded mode.
-6. **Follow-up release: retire `ADMIN_TOKEN`.** Only after CI has been
-   migrated to `RINGDRILL_ACCESS_TOKEN` and no script in the repo references
-   the old name.
+6. **Later: `ringdrill auth login`** (device grant, DESIGN-015 §3.5), then
+   **retire `ADMIN_TOKEN`** once CI has moved to `RINGDRILL_ACCESS_TOKEN` and
+   no script in the repo references the old name. Two separate releases, both
+   after this one.
 
 Step 5 is why goal 3 matters operationally and not only philosophically: the
 old app is an anonymous client, and an anonymous client has to keep working or
@@ -351,8 +370,9 @@ Two consequences for this release:
   agent holds a token: an MCP client is neither the app nor the CLI. Until
   then the rate limit is the only control, and that remains correct rather
   than a gap.
-* **The CLI's admin commands.** `bin/ringdrill.dart` gains `login` in this
-  release and keeps `RINGDRILL_ADMIN_TOKEN` working until the follow-up.
+* **The CLI's admin commands.** `bin/ringdrill.dart` is untouched by this
+  release and keeps `RINGDRILL_ADMIN_TOKEN`. `ringdrill auth login` and the
+  device-grant endpoints follow separately, designed in DESIGN-015 §3.5.
 
 ## Open questions
 
