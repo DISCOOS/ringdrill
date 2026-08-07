@@ -267,6 +267,7 @@ signin_a = '''
         <div style="height: 2px;"></div>
         <div class="btn btn-dark"><i class="ti ti-brand-apple"></i> Continue with Apple</div>
         <div class="btn"><i class="ti ti-brand-google"></i> Continue with Google</div>
+        <div class="btn"><i class="ti ti-brand-windows"></i> Continue with Microsoft</div>
         <div class="btn"><i class="ti ti-mail"></i> Continue with email</div>
         <div class="note note-plain"><i class="ti ti-user-plus"></i><span>We create a personal account for you. It owns the plans you publish. There is no password to choose or forget.</span></div>
         <div style="flex: 1;"></div>
@@ -321,9 +322,10 @@ rec_b = '''
       <div class="body">
         <div class="note note-plain"><i class="ti ti-eye-off"></i><span>Deliberately generic. This screen never reveals whether an address has an account.</span></div>
         <h2 class="h">Try another sign-in</h2>
-        <p class="p">If <b>kari@example.com</b> has an account, it may also have Apple or Google sign-in. Both lead to the same account.</p>
+        <p class="p">If <b>kari@example.com</b> has an account, it may also have Apple, Google or Microsoft sign-in. All lead to the same account.</p>
         <div class="btn btn-dark"><i class="ti ti-brand-apple"></i> Continue with Apple</div>
         <div class="btn"><i class="ti ti-brand-google"></i> Continue with Google</div>
+        <div class="btn"><i class="ti ti-brand-windows"></i> Continue with Microsoft</div>
         <div class="sect">Otherwise</div>
         <div class="card">
           <div class="item"><i class="ti ti-refresh"></i><div class="grow"><div class="t">Send the link again</div><div class="s">Check your spam folder too</div></div></div>
@@ -372,6 +374,7 @@ pers_b = '''
         <div class="card">
           <div class="item"><i class="ti ti-mail"></i><div class="grow"><div class="t">Email</div><div class="s">kari@example.com</div></div><span class="pill pill-accent">Active</span></div>
           <div class="item"><i class="ti ti-brand-google"></i><div class="grow"><div class="t">Google</div><div class="s">kari@example.com</div></div></div>
+          <div class="item"><i class="ti ti-brand-windows"></i><div class="grow"><div class="t">Microsoft</div><div class="s">kari@rodekors.org &middot; work account</div></div></div>
           <div class="item"><i class="ti ti-plus"></i><div class="grow"><div class="t">Link Apple</div><div class="s">Recommended: gives you a second way in</div></div></div>
         </div>
         <div class="sect">Devices</div>
@@ -691,6 +694,7 @@ inv_b = '''
         <div class="sect">Sign in to accept</div>
         <div class="btn btn-dark"><i class="ti ti-brand-apple"></i> Continue with Apple</div>
         <div class="btn"><i class="ti ti-brand-google"></i> Continue with Google</div>
+        <div class="btn"><i class="ti ti-brand-windows"></i> Continue with Microsoft</div>
         <div class="btn"><i class="ti ti-mail"></i> Continue with email</div>
         <div class="note note-plain"><i class="ti ti-user-plus"></i><span>No RingDrill account yet? Signing in creates your own personal account. Joining an organisation does not replace it &mdash; you keep both.</span></div>
         <div style="flex: 1;"></div>

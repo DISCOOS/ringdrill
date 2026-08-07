@@ -40,7 +40,7 @@ Signing in is optional and stays optional. **No account is the normal state of
 an install, not a step someone has yet to complete.** Signing in buys one thing
 — nobody changes your published plan without you — and it must not become a
 wall in front of planning, reading the catalog, or running a drill. The surface is small: one
-sign-in screen with three providers, one account page that grows a members list
+sign-in screen with four providers, one account page that grows a members list
 when a second person is invited, and a recovery path for the situations that
 replace "forgot my password" in a world with no passwords.
 
@@ -78,7 +78,7 @@ person can use RingDrill for a full exercise and never see an account.
 | Entity | What it is | User-visible as |
 |---|---|---|
 | `User` | A person | "You" — name, email, linked sign-in methods |
-| `Identity` | One provider login (`email`, `apple`, `google`) | Rows under "Sign-in methods" |
+| `Identity` | One provider login (`email`, `apple`, `google`, `microsoft`) | Rows under "Sign-in methods" |
 | `Account` | What owns plans | "Account" — personal or organisation |
 | `Member` | (User, role) on an account | Rows in the members list |
 
@@ -166,13 +166,26 @@ Ordered by platform so the native option is first, per
 
 | Platform | Order |
 |---|---|
-| iOS, macOS | Apple, Google, e-post |
-| Android | Google, Apple, e-post |
-| Web, Windows, Linux | Google, e-post, Apple |
+| iOS, macOS | Apple, Google, Microsoft, email |
+| Android | Google, Microsoft, Apple, email |
+| Windows | Microsoft, Google, Apple, email |
+| Web, Linux | Google, Microsoft, Apple, email |
 
-E-post is always present and always last of the "big" two, because it is the
-fallback that works when a provider account is unavailable — which is the whole
-of §4.
+Email is always present and always last, because it is the fallback that works
+when a provider account is unavailable — which is the whole of §4.
+
+**Microsoft covers both flavours** through one adapter: personal
+(outlook.com) and work/school (Entra ID — `@rodekors.org`,
+`@folkehjelp.no`). A volunteer signing in with their korps address is the case
+that motivates it ([ADR-0024](../adrs/0024-account-and-identity-model.md),
+amended 2026-08-05).
+
+**Four buttons is the ceiling for a flat list.** At four the screen stays a
+single column with no disclosure. A fifth provider — `feide` or `vipps` are the
+reserved candidates — turns this into the top three plus *"More ways to sign
+in"*, with email still directly visible because recovery depends on it. Stating
+the threshold now means the next provider does not quietly make this screen
+worse.
 
 The screen is one column: title, one line of purpose (*"Signing in protects the
 plans you publish. You can use RingDrill without signing in."*), the

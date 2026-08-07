@@ -152,9 +152,12 @@ Ordered by dependency, not by risk. Everything below ships together.
   `ringdrill.auth.refreshToken`); non-sensitive mirror (user, accounts,
   activeAccount) in `SharedPreferences` under `app:auth:v1:*`.
 * Routes `/auth/login`, `/auth/callback`. Cold-start route stays `/library`.
-* Sign in with Apple (iOS, macOS), Google (Android, web), email link
-  everywhere. All three ship together — App Store guideline 4.8 requires Apple
-  parity as soon as Google is offered.
+* Sign in with Apple (iOS, macOS), Google (Android, web), Microsoft (personal
+  and work/school via the `common` endpoint), email link everywhere. Ordering
+  per platform is [DESIGN-015](../design/015-accounts-and-iam.md) §3.2; the
+  catalogue and the reasoning — including why `bankid` is rejected rather than
+  reserved — is [ADR-0024](../adrs/0024-account-and-identity-model.md), amended
+  2026-08-05. Only `email` is on the critical path; the rest are adapters.
 * Sign-in entry points, account pages, recovery, member management: all
   specified in [DESIGN-015](../design/015-accounts-and-iam.md) §3–§6.
 * Add `policy` and `ownerAccountId` to `PlanSource.catalog`, defaulting to

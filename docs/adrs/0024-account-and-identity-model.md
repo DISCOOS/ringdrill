@@ -53,10 +53,10 @@ identity-provider sign-ins map onto them. The authorisation rules live in
 * The PII boundary from [ADR-0018](./0018-roleplayer-data-model.md) must
   hold. Account/identity records are themselves PII (email, name) and must
   never leak into published `.drill` archives.
-* Apple Sign In and Google Sign In ship together. Each is the obvious
-  default on its platform (Apple on iOS/macOS, Google on Android). App
-  Store guideline 4.8 also requires Apple parity as soon as any other
-  social provider is offered, which Google triggers.
+* Each platform gets its native provider from day one: Apple on iOS/macOS,
+  Google on Android, Microsoft on Windows. See the provider catalogue below
+  for the full list and for a more careful reading of App Store guideline 4.8
+  than this driver originally carried.
 
 ## Considered options
 
@@ -125,7 +125,7 @@ sealed class User with _$User {
 sealed class Identity with _$Identity {
   const factory Identity({
     required String userId,
-    required IdentityProvider provider, // email | apple | google | feide
+    required IdentityProvider provider, // email | apple | google | microsoft
     required String subject,            // provider-side stable ID
     required String email,              // for display; primaryEmail wins on conflict
     required DateTime addedAt,
@@ -170,11 +170,56 @@ offer manual linking later.
 
 ### Provider catalogue
 
-Initial allowlist at first ship: `email`, `apple`, `google`. Apple and
-Google ship together so each platform has its native provider from day
-one. `feide` and `bankid` are reserved for later if demand from schools
-or HRS partners materialises. New providers need only a server-side
-adapter and a login-UI entry, no model change.
+> **Amended 2026-08-05.** `microsoft` added to the ship list; `bankid` moved
+> from reserved to rejected, with the reason recorded; `vipps` added as
+> reserved. The App Store 4.8 claim below is restated more carefully.
+
+| Provider | Status | Why |
+|---|---|---|
+| `email` | **Ships** | The fallback that works when a provider account does not, and what account recovery depends on ([DESIGN-015](../design/015-accounts-and-iam.md) §4) |
+| `apple` | **Ships** | Native on iOS/macOS, and the low-risk answer to App Store review |
+| `google` | **Ships** | Native on Android, and the widest coverage of the three |
+| `microsoft` | **Ships** | One adapter over the `common` endpoint covers personal (outlook.com) *and* work/school (Entra ID) accounts — `@rodekors.org`, `@folkehjelp.no` |
+| `feide` | Reserved | Norwegian education federation. Relevant if courses run through schools |
+| `vipps` | Reserved | Norwegian, near-universal, OIDC. Plausibly better volunteer reach than a work account, since people sign in as themselves more often than as their employer |
+| `bankid` | **Rejected** | See below |
+
+**The property that decides whether a provider can be added at all** is whether
+it returns a **verified email**. Identity linking (above) joins a new provider
+to an existing User on verified-email match; a provider that does not return
+one creates duplicate Users and breaks the "we linked your Google login"
+notice. Apple's relay counts, Google, Microsoft, Feide and Vipps all qualify.
+
+**Why `bankid` is rejected rather than reserved.** It is identity *proofing* —
+it establishes who someone legally is, at a per-authentication cost, for an app
+that never needs to know. It also returns a national identity rather than a
+verified email, so it fails the linking test above and would need a parallel
+mechanism. Left as "reserved" it reads as planned and invites somebody to start
+it. If a regulatory driver ever appears, this entry is the thing to revisit,
+deliberately.
+
+**On Microsoft's two flavours.** The `common` endpoint covers both with one
+adapter, but they are not the same operationally. Work/school accounts bring
+tenant admin consent, possible conditional-access surprises, and an
+organisation's IT department into the support path. They also open a door worth
+knowing about: **domain-verified organisations** — signing in with
+`@rodekors.org` could eventually suggest the right Account automatically. That
+is a separate feature and not part of the account release, but it is the reason
+the work/school flavour is worth the extra support surface.
+
+New providers need only a server-side adapter and a login-UI entry, no model
+change. **No provider beyond `email` is on the critical path**, which is the
+point of that property: the list can grow on demand rather than by prediction.
+
+**On App Store guideline 4.8.** An earlier draft of this ADR said 4.8 "requires
+Apple parity as soon as any other social provider is offered". That overstates
+it. The guideline applies when an app uses a third-party or social login
+*exclusively*, and requires an equivalent privacy-preserving option — limited
+to name and email, with the option to keep the email private, and no tracking.
+Our own email magic link plausibly *is* such an option. Sign in with Apple
+still ships on iOS and macOS because it is the native expectation and the
+predictable path through review, not because the guideline compels it. Check
+the current wording before relying on either reading.
 
 ### Storage layout (Netlify Blobs)
 
