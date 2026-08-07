@@ -25,8 +25,9 @@ related_adrs:
 
 # Accounts and IAM — sign-in, recovery, account pages and member management
 
-> This document is in English. Model and field names are English; Norwegian
-> strings are the `nb` labels the app ships. **Status: Proposed.** The model is
+> This document and its mockups are in English, per
+> [`AGENTS.md`](../../AGENTS.md) rule 12. `nb` wording appears only where the
+> Norwegian word choice is itself the decision (§7). **Status: Proposed.** The model is
 > settled by [ADR-0024](../adrs/0024-account-and-identity-model.md) and
 > [ADR-0025](../adrs/0025-authorization-and-publish-policy.md); this document
 > decides what the user sees and does. It also **amends ADR-0024's
@@ -49,8 +50,8 @@ page that has to say plainly what an account holds** now that a roster can
 travel with a plan (§8).
 
 One rename escapes the account surface entirely and touches every user: the
-plan selector's *På nett* tab becomes *Offentlig*, because once an account tab
-is also on the network, "online" stops distinguishing anything (§5.7).
+plan selector's *Online* tab becomes *Public*, because once an account tab is
+also on the network, "online" stops distinguishing anything (§5.7).
 
 ## 1. What this designs, and what it does not
 
@@ -74,9 +75,9 @@ person can use RingDrill for a full exercise and never see an account.
 
 | Entity | What it is | User-visible as |
 |---|---|---|
-| `User` | A person | "Deg" — name, email, linked sign-in methods |
-| `Identity` | One provider login (`email`, `apple`, `google`) | Rows under "Innloggingsmetoder" |
-| `Account` | What owns plans | "Konto" — personal or organisation |
+| `User` | A person | "You" — name, email, linked sign-in methods |
+| `Identity` | One provider login (`email`, `apple`, `google`) | Rows under "Sign-in methods" |
+| `Account` | What owns plans | "Account" — personal or organisation |
 | `Member` | (User, role) on an account | Rows in the members list |
 
 A `User` may be a member of several `Account`s. A personal account is created
@@ -134,10 +135,10 @@ only path that carries the staff roster to someone outside the account
 
 Three, and no more:
 
-1. **Drawer tile.** "Logg inn" above "Innstillinger". After sign-in it becomes
+1. **Drawer tile.** "Sign in" above "Settings". After sign-in it becomes
    the user's name with the active account beneath it.
-2. **Library hint.** One dismissible line at the top of "Mine planer":
-   *"Logg inn for å sikre planene dine."* Dismissed state persists. It does not
+2. **Library hint.** One dismissible line at the top of "My plans":
+   *"Sign in to protect your plans."* Dismissed state persists. It does not
    reappear.
 3. **At the moment it is needed.** Publishing a plan while signed out shows the
    publish dialog with a signed-out notice, not a blocking gate: the user can
@@ -165,15 +166,15 @@ E-post is always present and always last of the "big" two, because it is the
 fallback that works when a provider account is unavailable — which is the whole
 of §4.
 
-The screen is one column: title, one line of purpose (*"Innlogging brukes til å
-sikre planene du publiserer. Du kan bruke RingDrill uten å logge inn."*), the
+The screen is one column: title, one line of purpose (*"Signing in protects the
+plans you publish. You can use RingDrill without signing in."*), the
 provider buttons, and a text link to *"Hva lagres om meg?"* that opens §8's
 explanation. No password field exists anywhere in the app.
 
 ### 3.3 The magic-link flow, and its one hard problem
 
-Enter email → *"Vi har sendt en lenke til kari@example.com. Åpne den på denne
-enheten."* → tap link → signed in.
+Enter email → *"We sent a link to kari@example.com. Open it on this device."* →
+tap link → signed in.
 
 The hard part is that **the link may open in a different browser or on a
 different device than the one waiting for it.** Mail apps have their own web
@@ -215,21 +216,21 @@ Out of scope beyond that; see ADR-0024 and rollout phase 6.
 *"Logg ut"* on the account page, with a confirm that states the one thing users
 will worry about: **local plans stay on the device.** Signing out does not
 delete, unpublish, or hide anything. Tokens are cleared, the drawer returns to
-"Logg inn", and every plan in Library is exactly where it was.
+"Sign in", and every plan in Library is exactly where it was.
 
 ## 4. Account recovery — what replaces "forgot my password"
 
 There are no passwords, so there is nothing to reset. There are four situations
 that actually occur, and each needs a different answer. The recovery entry point
-is one link on the sign-in screen: *"Får du ikke logget inn?"*
+is one link on the sign-in screen: *"Trouble signing in?"*
 
 ### 4.1 "I can't receive the magic link"
 
 Most common and least dramatic. If another `Identity` is linked to the same
 `User`, the answer is *use it*: the recovery screen lists the sign-in methods
 that exist for that address without revealing whether the address has an account
-at all — it says *"Hvis kari@example.com har en konto, kan den også ha Apple-
-eller Google-innlogging. Prøv disse."* Generic on purpose.
+at all — it says *"If kari@example.com has an account, it may also have Apple
+or Google sign-in. Try those."* Generic on purpose.
 
 If email is the only identity, the honest answer is that we cannot help without
 identity-proofing, and we are not going to build identity-proofing. Which makes
@@ -242,7 +243,7 @@ arbitrary senders, and a user can disable forwarding per app. ADR-0024 flags
 this as a known bad consequence. Design response:
 
 * At sign-in with Apple, if the relay is used, prompt once — not as a wall — to
-  *"Legg til en e-postadresse du kan nå"*, explaining it is used only for
+  *"Add an email address you can reach"*, explaining it is used only for
   recovery.
 * If forwarding is later broken, Apple sign-in itself still works. The relay
   only matters for the email path, so this degrades to §4.1 with Apple as the
@@ -266,8 +267,8 @@ access while nobody can change policy or membership.
 
 **The design answer is prevention, and it belongs on the members screen, not in
 recovery.** An organisation with exactly one owner shows a persistent, low-key
-advisory: *"Denne organisasjonen har én eier. Legg til en til, så mister dere
-ikke tilgangen hvis noen blir utilgjengelig."* Not a modal, not blocking,
+advisory: *"This organisation has one owner. Add another, so access is not lost
+if someone becomes unavailable."* Not a modal, not blocking,
 dismissible per organisation but re-shown when membership changes.
 
 When it happens anyway: a support path (email) with the honest caveat that
@@ -289,15 +290,15 @@ counting an account as onboarding progress
 ADR-0024 creates it automatically at first sign-in — so the UI must never
 present "sign in" and "create an account" as separate decisions or separate
 screens. It must, however, *say* that this is what happens, on the sign-in
-screen itself: *"Vi oppretter en personlig konto for deg. Den eier planene du
-publiserer."* A thing created silently on your behalf is worse than a thing
-you were told about.
+screen itself: *"We create a personal account for you. It owns the plans you
+publish."* A thing created silently on your behalf is worse than a thing you
+were told about.
 
 **Opting out has two levels, and they are not the same:**
 
-* **Logg ut** — tokens cleared, local plans untouched, account still exists.
+* **Sign out** — tokens cleared, local plans untouched, account still exists.
   Reversible by signing in again. §3.6.
-* **Slett konto** — `User`, `Identity` rows, memberships and account-scoped
+* **Delete account** — `User`, `Identity` rows, memberships and account-scoped
   data are removed. Plans already published to the catalog are **not** deleted,
   because other people have installed them; the slug survives with its owner
   reference dropped. The confirm says exactly that, because "delete my account"
@@ -358,7 +359,7 @@ the wrong account discovers it at the worst possible moment otherwise.
 
 Follows the existing master/detail model
 ([ADR-0030](../adrs/0030-wide-screen-master-detail-layout.md)): Settings is the
-master list, "Konto" a detail pane. The members list becomes a two-pane layout
+master list, "Account" a detail pane. The members list becomes a two-pane layout
 of its own — members in the list, the selected member's roles and actions in the
 detail pane — rather than the bottom sheet used on phone
 ([ADR-0027](../adrs/0027-unified-bottom-sheet-chrome.md)). Forms promote to
@@ -371,8 +372,8 @@ the native button; nothing else about the flow changes per platform.
 ### 5.7 The plan selector grows a fourth tab
 
 `showOpenPlanDialog` ([`library_view.dart`](../../lib/views/library_view.dart))
-is today `LibraryTab { myPlans, online, fromFile }` — *Mine planer* / *På nett*
-/ *Ny fra fil*. Accounts add a source that is neither local nor public, so the
+is today `LibraryTab { myPlans, online, fromFile }` — *My plans* / *Online* /
+*New from file*. Accounts add a source that is neither local nor public, so the
 enum becomes:
 
 | Tab | `nb` | `en` | Holds |
@@ -384,11 +385,11 @@ enum becomes:
 
 Two decisions in that table.
 
-**`online` is renamed to `public`, and the label changes with it.** *På nett*
-described *where the plan lives*, which stops distinguishing anything the moment
-the account tab is also on the network. *Offentlig* describes **who can read
-it**, which is the question a user is actually asking when they pick between the
-two tabs. The rename is the honest one, and it is worth the churn precisely
+**`online` is renamed to `public`, and the label changes with it.** *Online*
+(`nb` *På nett*) described *where the plan lives*, which stops distinguishing
+anything the moment the account tab is also on the network. *Public* (`nb`
+*Offentlig*) describes **who can read it**, which is the question a user is
+actually asking when they pick between the two tabs. The rename is the honest one, and it is worth the churn precisely
 because the old word becomes ambiguous rather than merely imprecise.
 
 **The account tab does not exist until there is an account.** A signed-out
@@ -414,11 +415,11 @@ already produces for free.
 which is "may you work on the plans".** This amends ADR-0024's original
 `{owner, editor, viewer}`; the reasoning is recorded there.
 
-| Role | `nb` | Publishes | Sees the roster | Administers |
+| Role | Label (`en` / `nb`) | Publishes | Sees the roster | Administers |
 |---|---|:--:|:--:|:--:|
-| `owner` | Eier | ✔ | ✔ | ✔ |
-| `member` | Medlem | ✔ | ✔ | — |
-| `guest` | Gjest | ✔ | — | — |
+| `owner` | Owner / Eier | ✔ | ✔ | ✔ |
+| `member` | Member / Medlem | ✔ | ✔ | — |
+| `guest` | Guest / Gjest | ✔ | — | — |
 
 **Everyone admitted to the account can publish its plans.** The account
 protects a plan from *strangers*; someone the account deliberately added is not
@@ -440,9 +441,9 @@ phone numbers. One question, one answer, nothing to misremember.
 The role picker shows the consequence under each name, because a role name
 alone never carries its own meaning:
 
-* **Eier** — *"Kan styre medlemmer og tilgang, i tillegg til alt et medlem kan."*
-* **Medlem** — *"Kan lese og publisere planene, og ser stablista."*
-* **Gjest** — *"Kan lese og publisere planene, men ser ikke stablista."*
+* **Owner** — *"Manages members and access, plus everything a member can do."*
+* **Member** — *"Reads and publishes the plans, and sees the staff roster."*
+* **Guest** — *"Reads and publishes the plans, but does not see the roster."*
 
 …under a single line that stops the picker reading as a permission ladder:
 *"Alle du legger til kan jobbe med planene. Forskjellen er om de ser stablista —
@@ -457,7 +458,7 @@ now, because at one-organisation-per-hjelpekorps scale there is nobody to be it.
 By email address, with the role chosen at invite time. Three states follow:
 
 * **Invited** — `acceptedAt == null`. The row shows the address, the chosen
-  role, and *"Invitert 3. august"*, with *"Send på nytt"* and *"Trekk tilbake"*.
+  role, and *"Invited 3 August"*, with *"Send again"* and *"Withdraw"*.
 * **Accepted** — a normal member row.
 * **Bounced or expired** — surfaced on the row, not hidden in a log.
 
@@ -481,18 +482,18 @@ in with a verified identity for it.
   the member's next request; no re-login. **Demotion is not a way to withdraw
   trust.** Moving someone from `member` to `guest` takes away their view of the
   roster and nothing else; they still publish. For someone who should no longer
-  be working on the plans at all, the action is *Fjern*, and the UI must not
+  be working on the plans at all, the action is *Remove*, and the UI must not
   offer demotion as a softer alternative.
-* **Remove** — confirm names what the person loses (*"Kari mister tilgang til
-  planene i organisasjonen. Planer hun har lastet ned blir liggende på hennes
-  egen enhet."*). That second sentence is not optional: it is true, and users
-  will assume otherwise.
+* **Remove** — confirm names what the person loses (*"Kari loses access to
+  the organisation's plans. Plans she has already downloaded stay on her own
+  device."*). That second sentence is not optional: it is true, and users will
+  assume otherwise.
 * **Leave** — a member may remove themselves. An owner may not leave if they are
-  the last owner; the button explains why and offers *"Gjør noen andre til
-  eier først"*.
+  the last owner; the button explains why and offers *"Make someone else an
+  owner first"*.
 
 **Invariant, enforced server-side and reflected in the UI:** an organisation
-always has at least one `owner`. The last owner's role picker has "Eier" locked
+always has at least one `owner`. The last owner's role picker has "Owner" locked
 with a reason, rather than showing an option that will fail.
 
 ## 7. Two role vocabularies, kept apart by the model rather than by the UI
@@ -528,8 +529,10 @@ discipline:
    list uses *Tilgang*, and the picker is titled *"Tilgang i organisasjonen"*.
 3. **No mapping function exists.** Not `owner`→`director`, not the reverse, not
    a default, not a suggestion at invite time.
-4. One explanatory line on the account page: *"Tilgang gjelder planer i
-   organisasjonen. Rollen din under en øvelse settes i menyen."*
+4. One explanatory line on the account page: *"Access applies to the
+   organisation's plans. Your role during an exercise is set in the menu."*
+   (`nb`: *"Tilgang gjelder planer i organisasjonen. Rollen din under en øvelse
+   settes i menyen."*)
 
 There is a third axis already in the codebase —
 [ADR-0063](../adrs/0063-per-field-brief-visibility.md)'s per-field brief
@@ -612,8 +615,8 @@ plan. Their next request simply returns less.
 | [`mockups/auth-recovery.html`](./mockups/auth-recovery.html) | The four §4 situations, and the single-owner advisory |
 | [`mockups/account-personal.html`](./mockups/account-personal.html) | Drawer signed-in state, personal account page, upgrade-to-organisation sheet |
 | [`mockups/account-organisation.html`](./mockups/account-organisation.html) | Members list with pending invite, role picker, remove confirm, invite form |
-| [`mockups/account-wide.html`](./mockups/account-wide.html) | Wide-screen and web master/detail layout for Settings → Konto |
-| [`mockups/library-tabs.html`](./mockups/library-tabs.html) | The plan selector without an account (three tabs, as today) and with one (four tabs, `Konto` added, `På nett` → `Offentlig`) |
+| [`mockups/account-wide.html`](./mockups/account-wide.html) | Wide-screen and web master/detail layout for Settings → Account |
+| [`mockups/library-tabs.html`](./mockups/library-tabs.html) | The plan selector without an account (three tabs, as today) and with one (four tabs, `Account` added, `Online` → `Public`) |
 
 ## 11. Open questions
 

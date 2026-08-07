@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="nb">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RingDrill — Personlig konto</title>
+<title>RingDrill — Personal account</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
 <style>
   :root {
@@ -191,73 +191,74 @@
   .master { width: 260px; border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; }
   .detail { flex: 1; display: flex; flex-direction: column; }
   .detail-inner { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
-  .kv { display: flex; gap: 10px; font-size: 13px; }
 </style>
 </head>
 <body>
 
-<p class="caption">DESIGN-015 &sect;5.1–5.2. For en enkeltplanlegger er kontoen bokf&oslash;ring, s&aring; siden er kort og kontovelgeren er skjult. Oppgraderingen til organisasjon sier hva som endrer seg <i>f&oslash;r</i> handlingen — s&aelig;rlig at den ikke kan angres, som er det brukere tar feil av. Alternativet &laquo;ny organisasjon i stedet&raquo; ligger p&aring; samme ark.</p>
+<p class="caption">DESIGN-015 &sect;5.2–5.3. For a single planner the account is bookkeeping, so the page is short and the account switcher is hidden. The upgrade to an organisation states what changes <i>before</i> the action — especially that it cannot be undone, which is the part users get wrong. The alternative, &ldquo;create a new organisation instead&rdquo;, sits on the same sheet.</p>
+
+<p class="caption" style="max-width: 760px; font-size: 12px; opacity: .8;">Copy is shown in <b>en</b>. The app ships <b>nb</b> as well; where the exact Norwegian wording is part of the decision, DESIGN-015 quotes it inline.</p>
 
 <div class="row">
   <div class="panel">
-    <h4>1 · Meny, innlogget</h4>
+    <h4>1 &middot; Drawer, signed in</h4>
     <div class="frame"><div class="screen">
       <div class="bar"><i class="ti ti-x"></i><span>RingDrill</span></div>
       <div class="body" style="gap: 10px;">
         <div class="item" style="border: 0; padding: 4px 2px 10px;"><div class="av">KG</div><div class="grow"><div class="t">Kari Gulbrandsen</div><div class="s">kari@example.com</div></div><i class="ti ti-chevron-right"></i></div>
-        <div class="note note-plain"><i class="ti ti-user"></i><span>Personlig konto. Ingen kontovelger — den vises f&oslash;rst n&aring;r du er med i mer enn &eacute;n konto.</span></div>
+        <div class="note note-plain"><i class="ti ti-user"></i><span>Personal account. No account switcher — it appears only once you belong to more than one.</span></div>
         <div class="card">
-          <div class="item"><i class="ti ti-books"></i><div class="grow"><div class="t">Bibliotek</div></div></div>
-          <div class="item"><i class="ti ti-badge"></i><div class="grow"><div class="t">Min rolle</div><div class="s">&Oslash;velsesleder</div></div><i class="ti ti-chevron-right"></i></div>
-          <div class="item"><i class="ti ti-settings"></i><div class="grow"><div class="t">Innstillinger</div></div></div>
-          <div class="item"><i class="ti ti-help"></i><div class="grow"><div class="t">Hjelp</div></div></div>
+          <div class="item"><i class="ti ti-books"></i><div class="grow"><div class="t">Library</div></div></div>
+          <div class="item"><i class="ti ti-badge"></i><div class="grow"><div class="t">My role</div><div class="s">Exercise director</div></div><i class="ti ti-chevron-right"></i></div>
+          <div class="item"><i class="ti ti-settings"></i><div class="grow"><div class="t">Settings</div></div></div>
+          <div class="item"><i class="ti ti-help"></i><div class="grow"><div class="t">Help</div></div></div>
         </div>
-        <div class="note note-warn"><i class="ti ti-alert-circle"></i><span><b>To ulike roller.</b> &laquo;Min rolle&raquo; her er rollen din under en &oslash;velse (ADR-0057). Tilgang til planer i en organisasjon settes p&aring; kontosiden. De m&aring; aldri sl&aring;s sammen.</span></div>
+        <div class="note note-warn"><i class="ti ti-alert-circle"></i><span><b>Two different roles.</b> &ldquo;My role&rdquo; here is your role during an exercise (ADR-0057). Access to an organisation&rsquo;s plans is set on the account page. They must never be merged.</span></div>
       </div>
     </div></div>
   </div>
   <div class="panel">
-    <h4>2 · Personlig kontoside</h4>
+    <h4>2 &middot; Personal account page</h4>
     <div class="frame"><div class="screen">
-      <div class="bar"><i class="ti ti-arrow-left"></i><span>Konto</span></div>
+      <div class="bar"><i class="ti ti-arrow-left"></i><span>Account</span></div>
       <div class="body">
-        <div class="item" style="border: 0; padding: 2px;"><div class="av">KG</div><div class="grow"><div class="t">Kari Gulbrandsen</div><div class="s">kari@example.com · Personlig konto</div></div></div>
-        <div class="sect">Innloggingsmetoder</div>
+        <div class="item" style="border: 0; padding: 2px;"><div class="av">KG</div><div class="grow"><div class="t">Kari Gulbrandsen</div><div class="s">kari@example.com &middot; Personal account</div></div></div>
+        <div class="sect">Sign-in methods</div>
         <div class="card">
-          <div class="item"><i class="ti ti-mail"></i><div class="grow"><div class="t">E-post</div><div class="s">kari@example.com</div></div><span class="pill pill-accent">Aktiv</span></div>
+          <div class="item"><i class="ti ti-mail"></i><div class="grow"><div class="t">Email</div><div class="s">kari@example.com</div></div><span class="pill pill-accent">Active</span></div>
           <div class="item"><i class="ti ti-brand-google"></i><div class="grow"><div class="t">Google</div><div class="s">kari@example.com</div></div></div>
-          <div class="item"><i class="ti ti-plus"></i><div class="grow"><div class="t">Koble til Apple</div><div class="s">Anbefalt: gir deg en vei inn til</div></div></div>
+          <div class="item"><i class="ti ti-plus"></i><div class="grow"><div class="t">Link Apple</div><div class="s">Recommended: gives you a second way in</div></div></div>
         </div>
-        <div class="sect">Enheter</div>
+        <div class="sect">Devices</div>
         <div class="card">
-          <div class="item"><i class="ti ti-device-mobile"></i><div class="grow"><div class="t">iPhone 15 · denne</div><div class="s">Aktiv n&aring;</div></div></div>
-          <div class="item"><i class="ti ti-device-laptop"></i><div class="grow"><div class="t">MacBook Pro</div><div class="s">Sist brukt 2. august</div></div><span class="pill">Logg av</span></div>
+          <div class="item"><i class="ti ti-device-mobile"></i><div class="grow"><div class="t">iPhone 15 &middot; this one</div><div class="s">Active now</div></div></div>
+          <div class="item"><i class="ti ti-device-laptop"></i><div class="grow"><div class="t">MacBook Pro</div><div class="s">Last used 2 August</div></div><span class="pill">Sign out</span></div>
         </div>
-        <div class="sect">Organisasjon</div>
-        <div class="card"><div class="item"><i class="ti ti-users-group"></i><div class="grow"><div class="t">Opprett organisasjon</div><div class="s">For &aring; dele planer med flere</div></div><i class="ti ti-chevron-right"></i></div></div>
-        <div class="card"><div class="item"><i class="ti ti-database"></i><div class="grow"><div class="t">Hva lagres om kontoen?</div></div><i class="ti ti-chevron-right"></i></div></div>
-        <div class="btn">Logg ut</div>
-        <div class="btn btn-danger">Slett konto</div>
+        <div class="sect">Organisation</div>
+        <div class="card"><div class="item"><i class="ti ti-users-group"></i><div class="grow"><div class="t">Create organisation</div><div class="s">To share plans with others</div></div><i class="ti ti-chevron-right"></i></div></div>
+        <div class="card"><div class="item"><i class="ti ti-database"></i><div class="grow"><div class="t">What is stored about the account?</div></div><i class="ti ti-chevron-right"></i></div></div>
+        <div class="btn">Sign out</div>
+        <div class="btn btn-danger">Delete account</div>
       </div>
     </div></div>
   </div>
   <div class="panel">
-    <h4>3 · Oppgrader til organisasjon</h4>
+    <h4>3 &middot; Upgrade to an organisation</h4>
     <div class="frame"><div class="screen">
       <div class="scrim"></div>
       <div class="sheet">
         <div class="grab"></div>
-        <h2 class="h">Inviter Ola — og gj&oslash;r kontoen til en organisasjon</h2>
-        <p class="p">For &aring; dele planer med noen andre m&aring; den personlige kontoen din bli en organisasjon. Da skjer dette:</p>
+        <h2 class="h">Invite Ola — and turn this into an organisation</h2>
+        <p class="p">To share plans with someone else, your personal account has to become an organisation. Here is what changes:</p>
         <div class="card">
-          <div class="item"><i class="ti ti-tag"></i><div class="grow"><div class="s" style="margin: 0;">Kontoen f&aring;r sitt eget navn. Foresl&aring;tt: <b>Kari Gulbrandsen</b></div></div></div>
-          <div class="item"><i class="ti ti-file-check"></i><div class="grow"><div class="s" style="margin: 0;">Planene dine blir liggende der de er. Ingenting flyttes eller publiseres p&aring; nytt.</div></div></div>
-          <div class="item"><i class="ti ti-pencil"></i><div class="grow"><div class="s" style="margin: 0;">Ola blir <b>Medlem</b>, og kan lese og publisere dem.</div></div></div>
-          <div class="item"><i class="ti ti-lock"></i><div class="grow"><div class="s" style="margin: 0;"><b>Dette kan ikke angres.</b> Kontoen forblir en organisasjon selv om du fjerner Ola igjen.</div></div></div>
+          <div class="item"><i class="ti ti-tag"></i><div class="grow"><div class="s" style="margin: 0;">The account gets a name of its own. Suggested: <b>Kari Gulbrandsen</b></div></div></div>
+          <div class="item"><i class="ti ti-file-check"></i><div class="grow"><div class="s" style="margin: 0;">Your plans stay where they are. Nothing moves and nothing is republished.</div></div></div>
+          <div class="item"><i class="ti ti-pencil"></i><div class="grow"><div class="s" style="margin: 0;">Ola joins as <b>Member</b>, and can read and publish them.</div></div></div>
+          <div class="item"><i class="ti ti-lock"></i><div class="grow"><div class="s" style="margin: 0;"><b>This cannot be undone.</b> The account stays an organisation even if you remove Ola again.</div></div></div>
         </div>
-        <div class="btn btn-primary">Gj&oslash;r om og inviter</div>
-        <div class="btn">Opprett en ny organisasjon i stedet</div>
-        <div class="link">Avbryt</div>
+        <div class="btn btn-primary">Convert and invite</div>
+        <div class="btn">Create a new organisation instead</div>
+        <div class="link">Cancel</div>
       </div>
     </div></div>
   </div>

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="nb">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RingDrill — Innlogging</title>
+<title>RingDrill — Sign-in</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
 <style>
   :root {
@@ -191,61 +191,62 @@
   .master { width: 260px; border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; }
   .detail { flex: 1; display: flex; flex-direction: column; }
   .detail-inner { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
-  .kv { display: flex; gap: 10px; font-size: 13px; }
 </style>
 </head>
 <body>
 
-<p class="caption">DESIGN-015 &sect;3. Innlogging er valgfritt og st&aring;r aldri i veien for planlegging. Provider-rekkef&oslash;lgen f&oslash;lger plattformen (her iOS). Kodefeltet i midten l&oslash;ser det vanskeligste problemet med magiske lenker: at lenken &aring;pner seg et annet sted enn der du startet. Til h&oslash;yre varsles automatisk provider-kobling &eacute;n gang — en bruker som logger inn med en annen knapp og havner p&aring; samme konto skal f&aring; vite hvorfor.</p>
+<p class="caption">DESIGN-015 &sect;3. Signing in is optional and never blocks planning. Provider order follows the platform (iOS here). The code field in the middle solves the hardest problem with magic links — that the link opens somewhere other than where you started. On the right, provider linking is announced once: someone who signs in with a different button and lands in the same account should be told why.</p>
+
+<p class="caption" style="max-width: 760px; font-size: 12px; opacity: .8;">Copy is shown in <b>en</b>. The app ships <b>nb</b> as well; where the exact Norwegian wording is part of the decision, DESIGN-015 quotes it inline.</p>
 
 <div class="row">
   <div class="panel">
-    <h4>1 · Velg innlogging (iOS)</h4>
+    <h4>1 &middot; Choose a sign-in</h4>
     <div class="frame"><div class="screen">
-      <div class="bar"><i class="ti ti-arrow-left"></i><span>Logg inn</span></div>
+      <div class="bar"><i class="ti ti-arrow-left"></i><span>Sign in</span></div>
       <div class="body">
-        <h2 class="h">Sikre planene dine</h2>
-        <p class="p">Innlogging brukes til &aring; sikre planene du publiserer, slik at ingen andre kan endre dem. <b>Du kan bruke RingDrill uten &aring; logge inn.</b></p>
+        <h2 class="h">Protect your plans</h2>
+        <p class="p">Signing in protects the plans you publish, so nobody else can change them. <b>You can use RingDrill without signing in.</b></p>
         <div style="height: 2px;"></div>
-        <div class="btn btn-dark"><i class="ti ti-brand-apple"></i> Fortsett med Apple</div>
-        <div class="btn"><i class="ti ti-brand-google"></i> Fortsett med Google</div>
-        <div class="btn"><i class="ti ti-mail"></i> Fortsett med e-post</div>
-        <div class="note note-plain"><i class="ti ti-lock-open"></i><span>Ingen passord. Vi sender en lenke eller bruker Apple/Google.</span></div>
+        <div class="btn btn-dark"><i class="ti ti-brand-apple"></i> Continue with Apple</div>
+        <div class="btn"><i class="ti ti-brand-google"></i> Continue with Google</div>
+        <div class="btn"><i class="ti ti-mail"></i> Continue with email</div>
+        <div class="note note-plain"><i class="ti ti-user-plus"></i><span>We create a personal account for you. It owns the plans you publish. There is no password to choose or forget.</span></div>
         <div style="flex: 1;"></div>
-        <div class="link">Hva lagres om meg?</div>
+        <div class="link">What is stored about me?</div>
       </div>
     </div></div>
   </div>
   <div class="panel">
-    <h4>2 · Venter p&aring; lenke — med kode</h4>
+    <h4>2 &middot; Waiting for the link — with a code</h4>
     <div class="frame"><div class="screen">
-      <div class="bar"><i class="ti ti-arrow-left"></i><span>Logg inn med e-post</span></div>
+      <div class="bar"><i class="ti ti-arrow-left"></i><span>Sign in with email</span></div>
       <div class="body">
-        <h2 class="h">Sjekk e-posten din</h2>
-        <p class="p">Vi har sendt en lenke til <b>kari@example.com</b>. &Aring;pne den p&aring; denne enheten.</p>
-        <div class="note note-plain"><i class="ti ti-arrow-ramp-right"></i><span>&Aring;pner lenken seg i en annen nettleser? Skriv inn koden fra e-posten her i stedet — den gj&oslash;r det samme.</span></div>
-        <div class="sect">Kode fra e-posten</div>
+        <h2 class="h">Check your email</h2>
+        <p class="p">We sent a link to <b>kari@example.com</b>. Open it on this device.</p>
+        <div class="note note-plain"><i class="ti ti-arrow-ramp-right"></i><span>Link opening in a different browser? Type the code from the email here instead — it does the same thing.</span></div>
+        <div class="sect">Code from the email</div>
         <div class="field code">K7F2Q9</div>
-        <div class="btn btn-primary">Logg inn</div>
+        <div class="btn btn-primary">Sign in</div>
         <div style="flex: 1;"></div>
-        <div class="link dim">Send p&aring; nytt (0:42)</div>
-        <div class="link">F&aring;r du ikke logget inn?</div>
+        <div class="link dim">Send again (0:42)</div>
+        <div class="link">Trouble signing in?</div>
       </div>
     </div></div>
   </div>
   <div class="panel">
-    <h4>3 · Provider koblet (&eacute;n gang)</h4>
+    <h4>3 &middot; Provider linked (once)</h4>
     <div class="frame"><div class="screen">
-      <div class="bar"><i class="ti ti-menu-2"></i><span class="grow">Bibliotek</span><i class="ti ti-search"></i></div>
+      <div class="bar"><i class="ti ti-menu-2"></i><span class="grow">Library</span><i class="ti ti-search"></i></div>
       <div class="body">
-        <div class="note note-accent"><i class="ti ti-link"></i><span><b>Google-innloggingen ble koblet til kontoen du allerede har.</b><br>Du er logget inn som kari@example.com, ikke som en ny bruker.</span></div>
-        <div class="sect">Mine planer</div>
+        <div class="note note-accent"><i class="ti ti-link"></i><span><b>Your Google sign-in was linked to the account you already have.</b><br>You are signed in as kari@example.com, not as a new user.</span></div>
+        <div class="sect">My plans</div>
         <div class="card">
-          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">LSOR Eidene 2026</div><div class="s">6 &oslash;velser · publisert</div></div><span class="pill pill-accent">Min konto</span></div>
-          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">Vintersamling Voss</div><div class="s">3 &oslash;velser · lokal</div></div></div>
-          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">Skredkurs trinn 2</div><div class="s">4 &oslash;velser · publisert f&oslash;r innlogging</div></div><span class="pill"><i class="ti ti-world" style="font-size:11px;"></i> &Aring;pen</span></div>
+          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">LSOR Eidene 2026</div><div class="s">6 exercises &middot; published</div></div><span class="pill pill-accent">My account</span></div>
+          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">Winter camp Voss</div><div class="s">3 exercises &middot; local</div></div></div>
+          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">Avalanche course 2</div><div class="s">4 exercises &middot; published before sign-in</div></div><span class="pill"><i class="ti ti-world" style="font-size: 11px;"></i> Public</span></div>
         </div>
-        <div class="note note-plain"><i class="ti ti-info-circle"></i><span>&laquo;Skredkurs trinn 2&raquo; ble publisert f&oslash;r du logget inn, og er fortsatt &aring;pen for alle. Du kan lage din egen kopi under kontoen din.</span></div>
+        <div class="note note-plain"><i class="ti ti-info-circle"></i><span>&ldquo;Avalanche course 2&rdquo; was published before you signed in and is still open to everyone. You can fork your own copy under your account.</span></div>
       </div>
     </div></div>
   </div>

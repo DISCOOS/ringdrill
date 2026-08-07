@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="nb">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RingDrill — Konto p&aring; bred skjerm og web</title>
+<title>RingDrill — Account on wide screen and web</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
 <style>
   :root {
@@ -191,59 +191,60 @@
   .master { width: 260px; border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; }
   .detail { flex: 1; display: flex; flex-direction: column; }
   .detail-inner { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
-  .kv { display: flex; gap: 10px; font-size: 13px; }
 </style>
 </head>
 <body>
 
-<p class="caption">DESIGN-015 &sect;5.5. P&aring; bred skjerm og p&aring; web f&oslash;lger kontosiden master/detail-modellen fra ADR-0030: medlemslista er master, valgt medlem er detalj — ikke et bunnark. Kontovelgeren ligger i topplinja, og m&aring; ogs&aring; vises i publiseringsdialogen, slik at ingen publiserer til feil konto uten &aring; se det.</p>
+<p class="caption">DESIGN-015 &sect;5.6. On wide screens and on the web the account page follows the master/detail model from ADR-0030: the member list is master and the selected member is detail, not a bottom sheet. The account switcher sits in the top bar, and must also appear in the publish dialog so nobody publishes to the wrong account without seeing it.</p>
+
+<p class="caption" style="max-width: 760px; font-size: 12px; opacity: .8;">Copy is shown in <b>en</b>. The app ships <b>nb</b> as well; where the exact Norwegian wording is part of the decision, DESIGN-015 quotes it inline.</p>
 
 <div class="row">
   <div class="panel panel-wide">
-    <h4>Innstillinger → Medlemmer · 1280&times;800</h4>
+    <h4>Settings &rarr; Members &middot; 1280&times;800</h4>
     <div class="frame"><div class="screen">
-      <div class="bar"><i class="ti ti-menu-2"></i><span class="grow">Innstillinger</span><div class="pill pill-accent"><i class="ti ti-users-group" style="font-size: 11px;"></i> R&oslash;de Kors Bergen</div><i class="ti ti-selector"></i></div>
+      <div class="bar"><i class="ti ti-menu-2"></i><span class="grow">Settings</span><div class="pill pill-accent"><i class="ti ti-users-group" style="font-size: 11px;"></i> Red Cross Bergen</div><i class="ti ti-selector"></i></div>
       <div class="split">
         <div class="master">
           <div class="body" style="padding: 12px 10px; gap: 8px;">
             <div class="card">
-              <div class="item"><i class="ti ti-user"></i><div class="grow"><div class="t">Konto</div></div><i class="ti ti-chevron-right"></i></div>
-              <div class="item" style="background: var(--accent-fill);"><i class="ti ti-users-group" style="color: var(--accent-text);"></i><div class="grow"><div class="t" style="color: var(--accent-text); font-weight: 500;">Medlemmer</div><div class="s" style="color: var(--accent-text); opacity: .85;">4 medlemmer · 1 invitert</div></div></div>
-              <div class="item"><i class="ti ti-badge"></i><div class="grow"><div class="t">Min rolle</div><div class="s">&Oslash;velsesleder</div></div></div>
-              <div class="item"><i class="ti ti-map"></i><div class="grow"><div class="t">Kart</div></div></div>
-              <div class="item"><i class="ti ti-bell"></i><div class="grow"><div class="t">Varsler</div></div></div>
-              <div class="item"><i class="ti ti-chart-dots"></i><div class="grow"><div class="t">Personvern</div></div></div>
+              <div class="item"><i class="ti ti-user"></i><div class="grow"><div class="t">Account</div></div><i class="ti ti-chevron-right"></i></div>
+              <div class="item" style="background: var(--accent-fill);"><i class="ti ti-users-group" style="color: var(--accent-text);"></i><div class="grow"><div class="t" style="color: var(--accent-text); font-weight: 500;">Members</div><div class="s" style="color: var(--accent-text); opacity: .85;">4 members &middot; 1 invited</div></div></div>
+              <div class="item"><i class="ti ti-badge"></i><div class="grow"><div class="t">My role</div><div class="s">Exercise director</div></div></div>
+              <div class="item"><i class="ti ti-map"></i><div class="grow"><div class="t">Map</div></div></div>
+              <div class="item"><i class="ti ti-bell"></i><div class="grow"><div class="t">Notifications</div></div></div>
+              <div class="item"><i class="ti ti-chart-dots"></i><div class="grow"><div class="t">Privacy</div></div></div>
             </div>
-            <div class="note note-plain"><i class="ti ti-info-circle"></i><span>&laquo;Min rolle&raquo; og &laquo;Medlemmer&raquo; er ulike akser, og ligger derfor som s&oslash;sken — aldri som &eacute;n innstilling.</span></div>
+            <div class="note note-plain"><i class="ti ti-info-circle"></i><span>&ldquo;My role&rdquo; and &ldquo;Members&rdquo; are different axes, so they sit as siblings — never as one setting.</span></div>
           </div>
         </div>
         <div class="detail">
           <div class="detail-inner">
             <div style="display: flex; align-items: center; gap: 12px;">
-              <div class="av" style="width: 40px; height: 40px; font-size: 14px;">RK</div>
-              <div class="grow"><div style="font-size: 17px; font-weight: 500;">R&oslash;de Kors Hjelpekorps Bergen</div><div class="s">Organisasjon · opprettet 12. juni 2026</div></div>
-              <div class="btn" style="height: 36px; padding: 0 14px;"><i class="ti ti-user-plus"></i> Inviter</div>
+              <div class="av" style="width: 40px; height: 40px; font-size: 14px;">RC</div>
+              <div class="grow"><div style="font-size: 17px; font-weight: 500;">Red Cross Mountain Rescue Bergen</div><div class="s">Organisation &middot; created 12 June 2026</div></div>
+              <div class="btn" style="height: 36px; padding: 0 14px;"><i class="ti ti-user-plus"></i> Invite</div>
             </div>
-            <div class="note note-warn"><i class="ti ti-alert-triangle"></i><span><b>Denne organisasjonen har &eacute;n eier.</b> Legg til en til, s&aring; mister dere ikke tilgangen hvis noen blir utilgjengelig.</span></div>
+            <div class="note note-warn"><i class="ti ti-alert-triangle"></i><span><b>This organisation has one owner.</b> Add another, so access is not lost if someone becomes unavailable.</span></div>
             <div style="display: flex; gap: 16px; align-items: flex-start;">
               <div class="card" style="flex: 1;">
-                <div class="item"><div class="av">KG</div><div class="grow"><div class="t">Kari Gulbrandsen (deg)</div><div class="s">kari@example.com</div></div><span class="pill pill-accent">Eier</span></div>
-                <div class="item" style="background: var(--color-background-secondary);"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">ola@example.com</div></div><span class="pill">Medlem</span></div>
-                <div class="item"><div class="av">MS</div><div class="grow"><div class="t">Mari Sund</div><div class="s">mari@example.com</div></div><span class="pill">Gjest</span></div>
-                <div class="item"><div class="av"><i class="ti ti-mail" style="font-size: 15px;"></i></div><div class="grow"><div class="t">per@example.com</div><div class="s">Invitert 3. august</div></div><span class="pill pill-warn">Invitert</span></div>
+                <div class="item"><div class="av">KG</div><div class="grow"><div class="t">Kari Gulbrandsen (you)</div><div class="s">kari@example.com</div></div><span class="pill pill-accent">Owner</span></div>
+                <div class="item" style="background: var(--color-background-secondary);"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">ola@example.com</div></div><span class="pill">Member</span></div>
+                <div class="item"><div class="av">MS</div><div class="grow"><div class="t">Mari Sund</div><div class="s">mari@example.com</div></div><span class="pill">Guest</span></div>
+                <div class="item"><div class="av"><i class="ti ti-mail" style="font-size: 15px;"></i></div><div class="grow"><div class="t">per@example.com</div><div class="s">Invited 3 August</div></div><span class="pill pill-warn">Invited</span></div>
               </div>
               <div class="card" style="width: 300px;">
-                <div class="item" style="gap: 10px;"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">ola@example.com · medlem siden 14. juni</div></div></div>
+                <div class="item" style="gap: 10px;"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">ola@example.com &middot; member since 14 June</div></div></div>
                 <div class="item" style="display: block; padding: 12px;">
-                  <div class="sect" style="margin: 0 0 8px 0;">Tilgang i organisasjonen</div>
-                  <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px;"><div class="radio"></div><div><div class="t">Eier</div><div class="s">Kan styre medlemmer og tilgang, i tillegg til alt et medlem kan</div></div></div>
-                  <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px;"><div class="radio radio-on"></div><div><div class="t">Medlem</div><div class="s">Kan lese og publisere planene, og ser stablista</div></div></div>
-                  <div style="display: flex; gap: 10px; align-items: flex-start;"><div class="radio"></div><div><div class="t">Gjest</div><div class="s">Kan lese og publisere planene, men ser ikke stablista</div></div></div>
+                  <div class="sect" style="margin: 0 0 8px 0;">Access in the organisation</div>
+                  <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px;"><div class="radio"></div><div><div class="t">Owner</div><div class="s">Manages members and access, plus everything a member can do</div></div></div>
+                  <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px;"><div class="radio radio-on"></div><div><div class="t">Member</div><div class="s">Reads and publishes the plans, and sees the staff roster</div></div></div>
+                  <div style="display: flex; gap: 10px; align-items: flex-start;"><div class="radio"></div><div><div class="t">Guest</div><div class="s">Reads and publishes the plans, but does not see the roster</div></div></div>
                 </div>
-                <div class="item"><i class="ti ti-user-minus" style="color: var(--danger-text);"></i><div class="grow"><div class="t" style="color: var(--danger-text);">Fjern fra organisasjonen</div></div></div>
+                <div class="item"><i class="ti ti-user-minus" style="color: var(--danger-text);"></i><div class="grow"><div class="t" style="color: var(--danger-text);">Remove from the organisation</div></div></div>
               </div>
             </div>
-            <div class="note note-plain"><i class="ti ti-database"></i><span><b>Hva lagres om kontoen?</b> Planer, og — n&aring;r plansynk kommer — stablista som er f&oslash;rt for dem. Alle i organisasjonen kan publisere. Bare eiere og medlemmer <b>ser stablista</b> — ikke gjester, og ikke andre kontoer planen er delt med. En publisert plan i katalogen inneholder aldri stab (ADR-0072).</span></div>
+            <div class="note note-plain"><i class="ti ti-database"></i><span><b>What is stored about the account?</b> Plans, and — once plan sync ships — the staff roster entered for them. Everyone in the organisation can publish; only owners and members <b>see the roster</b>, not guests, and not other accounts the plan is shared with. A plan published to the catalog never carries it (ADR-0072).</span></div>
           </div>
         </div>
       </div>

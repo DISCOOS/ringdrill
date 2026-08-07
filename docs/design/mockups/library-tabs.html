@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="nb">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RingDrill — Planvelgeren med konto</title>
+<title>RingDrill — Plan selector with an account</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
 <style>
   :root {
@@ -191,41 +191,42 @@
   .master { width: 260px; border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; }
   .detail { flex: 1; display: flex; flex-direction: column; }
   .detail-inner { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
-  .kv { display: flex; gap: 10px; font-size: 13px; }
 </style>
 </head>
 <body>
 
-<p class="caption">DESIGN-015 &sect;5.7. Kontoer legger til en kilde som verken er lokal eller offentlig, s&aring; velgeren g&aring;r fra tre faner til fire — men bare for den som faktisk har en konto. &laquo;P&aring; nett&raquo; blir &laquo;Offentlig&raquo;, fordi ordet slutter &aring; skille noe som helst i det &oslash;yeblikket Konto-fanen ogs&aring; ligger p&aring; nett.</p>
+<p class="caption">DESIGN-015 &sect;5.7. Accounts add a source that is neither local nor public, so the selector goes from three tabs to four — but only for someone who actually has an account. &ldquo;Online&rdquo; becomes &ldquo;Public&rdquo;, because the word stops distinguishing anything the moment the Account tab is also on the network.</p>
+
+<p class="caption" style="max-width: 760px; font-size: 12px; opacity: .8;">Copy is shown in <b>en</b>. The app ships <b>nb</b> as well; where the exact Norwegian wording is part of the decision, DESIGN-015 quotes it inline.</p>
 
 <div class="row">
   <div class="panel">
-    <h4>Uten konto — som i dag</h4>
+    <h4>No account — as today</h4>
     <div class="frame"><div class="screen">
-      <div class="bar"><i class="ti ti-x"></i><span class="grow">&Aring;pne plan</span></div>
-        <div style="display: flex; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 12.5px;"><div style="flex: 1; text-align: center; padding: 11px 2px; white-space: nowrap; color: var(--accent); font-weight: 500; box-shadow: inset 0 -2px 0 var(--accent);">Mine planer</div><div style="flex: 1; text-align: center; padding: 11px 2px; white-space: nowrap; color: var(--color-text-secondary);">Offentlig</div><div style="flex: 1; text-align: center; padding: 11px 2px; white-space: nowrap; color: var(--color-text-secondary);">Ny fra fil</div></div>
+      <div class="bar"><i class="ti ti-x"></i><span class="grow">Open plan</span></div>
+        <div style="display: flex; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 12.5px;"><div style="flex: 1; text-align: center; padding: 11px 2px; white-space: nowrap; color: var(--accent); font-weight: 500; box-shadow: inset 0 -2px 0 var(--accent);">My plans</div><div style="flex: 1; text-align: center; padding: 11px 2px; white-space: nowrap; color: var(--color-text-secondary);">Public</div><div style="flex: 1; text-align: center; padding: 11px 2px; white-space: nowrap; color: var(--color-text-secondary);">New from file</div></div>
       <div class="body">
         <div class="card">
-          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">Vintersamling Voss</div><div class="s">3 &oslash;velser · endret i g&aring;r</div></div></div>
-          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">Skredkurs trinn 2</div><div class="s">4 &oslash;velser · endret 28. juli</div></div></div>
+          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">Winter camp Voss</div><div class="s">3 exercises &middot; edited yesterday</div></div></div>
+          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">Avalanche course 2</div><div class="s">4 exercises &middot; edited 28 July</div></div></div>
         </div>
-        <div class="note note-accent"><i class="ti ti-check"></i><span><b>Tre faner, som i dag.</b> Uten konto finnes ikke Konto-fanen. Ingen merkelapp, ingen &laquo;fullf&oslash;r oppsettet&raquo; — dette er en ferdig tilstand, ikke et steg p&aring; veien.</span></div>
-        <div class="note note-plain"><i class="ti ti-pencil"></i><span>Eneste endring for en utlogget bruker: <b>&laquo;P&aring; nett&raquo; heter n&aring; &laquo;Offentlig&raquo;</b> — det svarer p&aring; hvem som kan lese planen, ikke hvor den ligger.</span></div>
+        <div class="note note-accent"><i class="ti ti-check"></i><span><b>Three tabs, exactly as today.</b> With no account there is no Account tab. No badge, no &ldquo;finish setting up&rdquo; — this is a finished state, not a step on the way to one.</span></div>
+        <div class="note note-plain"><i class="ti ti-pencil"></i><span>The only change for a signed-out user: <b>&ldquo;Online&rdquo; is now &ldquo;Public&rdquo;</b> — it answers who can read the plan, not where it is stored.</span></div>
       </div>
     </div></div>
   </div>
   <div class="panel">
-    <h4>Med organisasjon — fjerde fane</h4>
+    <h4>With an organisation — fourth tab</h4>
     <div class="frame"><div class="screen">
-      <div class="bar"><i class="ti ti-x"></i><span class="grow">&Aring;pne plan</span><div class="pill pill-accent">R&oslash;de Kors Bergen</div></div>
-        <div style="display: flex; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 12.5px;"><div style="flex: 1; text-align: center; padding: 11px 2px; white-space: nowrap; color: var(--color-text-secondary);">Mine planer</div><div style="flex: 1; text-align: center; padding: 11px 2px; white-space: nowrap; color: var(--accent); font-weight: 500; box-shadow: inset 0 -2px 0 var(--accent);">Konto</div><div style="flex: 1; text-align: center; padding: 11px 2px; white-space: nowrap; color: var(--color-text-secondary);">Offentlig</div><div style="flex: 1; text-align: center; padding: 11px 2px; white-space: nowrap; color: var(--color-text-secondary);">Ny fra fil</div></div>
+      <div class="bar"><i class="ti ti-x"></i><span class="grow">Open plan</span><div class="pill pill-accent">Red Cross Bergen</div></div>
+        <div style="display: flex; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 12.5px;"><div style="flex: 1; text-align: center; padding: 11px 2px; white-space: nowrap; color: var(--color-text-secondary);">My plans</div><div style="flex: 1; text-align: center; padding: 11px 2px; white-space: nowrap; color: var(--accent); font-weight: 500; box-shadow: inset 0 -2px 0 var(--accent);">Account</div><div style="flex: 1; text-align: center; padding: 11px 2px; white-space: nowrap; color: var(--color-text-secondary);">Public</div><div style="flex: 1; text-align: center; padding: 11px 2px; white-space: nowrap; color: var(--color-text-secondary);">New from file</div></div>
       <div class="body">
         <div class="card">
-          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">LSOR Eidene 2026</div><div class="s">6 &oslash;velser · publisert · v5</div></div><span class="pill pill-accent"><i class="ti ti-users-group" style="font-size: 11px;"></i></span></div>
-          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">H&oslash;stsamling 2026</div><div class="s">2 &oslash;velser · ikke publisert</div></div><span class="pill">Utkast</span></div>
+          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">LSOR Eidene 2026</div><div class="s">6 exercises &middot; published &middot; v5</div></div><span class="pill pill-accent"><i class="ti ti-users-group" style="font-size: 11px;"></i></span></div>
+          <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">Autumn camp 2026</div><div class="s">2 exercises &middot; not published</div></div><span class="pill">Draft</span></div>
         </div>
-        <div class="note note-plain"><i class="ti ti-eye-off"></i><span>&laquo;H&oslash;stsamling 2026&raquo; er ikke publisert og finnes ikke i katalogen. Den er likevel her, fordi kontoen eier den — det er nettopp forskjellen p&aring; denne fanen og &laquo;Offentlig&raquo;.</span></div>
-        <div class="note note-plain"><i class="ti ti-switch-horizontal"></i><span>Fanen f&oslash;lger den aktive kontoen i toppen. Er du med i flere, bytter du der — fanene multipliserer ikke.</span></div>
+        <div class="note note-plain"><i class="ti ti-eye-off"></i><span>&ldquo;Autumn camp 2026&rdquo; is not published and is not in the catalog. It is still here, because the account owns it — which is exactly what separates this tab from &ldquo;Public&rdquo;.</span></div>
+        <div class="note note-plain"><i class="ti ti-switch-horizontal"></i><span>The tab follows the active account in the top bar. Belong to several and you switch there; the tabs do not multiply.</span></div>
       </div>
     </div></div>
   </div>
