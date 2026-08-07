@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-08-08
 deciders: ["kengu"]
 consulted: []
@@ -260,7 +260,57 @@ What changes is that tightening it later — splitting `DrillVariable`, adding
 publish placeholders (ADR-0072's "Future work") — becomes an edit to one
 declaration rather than an archaeology exercise.
 
-### 4. What has to be threaded through
+### 4. Storage keys, and the two traps in them
+
+Neither §1 nor §2 survives contact with today's key layout, and the reasons are
+worth stating because both look fine until they do not.
+
+**Today the catalog blob path embeds the owning account:**
+
+```
+drills/<ownerId>/<planId>/{latest.drill, <v>.drill, meta.json}
+```
+
+**Trap one: lifecycle independence would be a convention, not a fact.**
+§1 promises that deleting an account leaves its published entries standing.
+With the account in the path, "delete the account" must *not* sweep
+`drills/<accountId>/*` — an explicit exception, precisely the kind of special
+case §1 exists to remove. A rule you have to remember is not a guarantee.
+
+**Trap two: a rename would become a blob migration.** §2 allows handle
+renames. If the key were `catalog/<handle>/<slug>/`, every rename would move
+every blob the account has published, and the sweep hazard above would come
+straight back under a new prefix.
+
+Both are avoided the same way: **the catalog blob key contains neither the
+account nor the handle.** Entries are stored under an opaque catalog-entry id,
+and `(namespace, slug)` resolves to it through the index:
+
+```
+slug-index/<namespace>/<slug>   →  { entryId, planId, ownerAccountId, createdAt }
+catalog/<entryId>/{latest.drill, <v>.drill, meta.json}
+```
+
+That makes each property structural rather than remembered: a handle rename
+rewrites index keys and touches no blob; account deletion has no prefix that
+could match a catalog entry; and the entry outlives both because nothing in its
+address depends on them.
+
+Consumers of the current layout: `keysFor`,
+[`market-feed.js`](../../netlify/functions/market-feed.js) (`prefix:
+"drills/"`) and [`drills-admin.js`](../../netlify/functions/drills-admin.js)'s
+version listing. The data migration is the three live plans — a script.
+
+**The write path does not carry a namespace.** `POST /api/drills/upload` takes
+a slug and nothing else: the namespace comes from the bearer token and
+`X-Active-Account` ([ADR-0025](./0025-authorization-and-publish-policy.md)),
+and an anonymous upload lands in `anon`. Only *reads* need it in the URL,
+because `/d/` is unauthenticated and CDN-cached — a link has to mean the same
+thing to everyone who opens it
+([ADR-0015](./0015-shareable-install-links.md)), which it cannot if resolution
+depends on who is asking.
+
+### 5. What has to be threaded through
 
 The namespace is not confined to the storage key:
 
@@ -297,6 +347,9 @@ The namespace is not confined to the storage key:
   two routes, the feed, MCP). Each is small; forgetting one produces a
   404 rather than a silent error, which is the good direction, but it is still
   five places.
+* Bad: the catalog store has to be re-keyed (§4) before either guarantee is
+  real. Cheap at three plans and steadily less so — this is the part that gets
+  more expensive by waiting, not less.
 * Bad: two objects means they can diverge — an account plan edited without
   republishing. That is already true and already handled (OCC, `ProgramDiff`,
   the three-way refresh from
