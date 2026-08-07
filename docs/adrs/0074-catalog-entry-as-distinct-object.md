@@ -174,12 +174,34 @@ neither pretending to be the other.
 A namespace is an **account handle**, or the reserved `anon`.
 
 ```
-/d/lsor-eidene-2026                       →  anon namespace   (unchanged, forever)
-/d/@redcross-bergen/lsor-eidene-2026      →  account namespace
+/d/lsor-eidene-2026                      →  anon namespace   (unchanged, forever)
+/d/lsor-eidene-2026@5                    →  anon, version 5  (unchanged)
+/d/redcross-bergen/lsor-eidene-2026      →  account namespace
+/d/redcross-bergen/lsor-eidene-2026@5    →  account, version 5
 ```
 
-The `@` sigil keeps handles from ever colliding with route segments, so no
-reserved-word list is needed for `api`, `auth`, `mcp` and friends.
+**No sigil.** An earlier draft prefixed handles with `@`, justified as avoiding
+collisions with route segments like `api` and `mcp`. That justification is
+wrong: those are *root* routes, and a handle only ever appears under `/d/` or
+`/i/`, so it cannot collide with them.
+
+**Segment count disambiguates on its own.** `sanitizeSlug`
+([`lib/shared.js`](../../netlify/functions/lib/shared.js)) strips everything
+outside `[a-z0-9-]`, so a slug can never contain `/`. One segment means `anon`,
+two means namespaced, and there is no third reading.
+
+A sigil would also have been actively harmful here, because **`@` is already
+spoken for in this route** as the version separator —
+[`deep-link.js`](../../netlify/functions/deep-link.js) parses
+`^([^@/]+)(?:@([^/]+))?$`. `/d/@redcross-bergen/lsor-eidene-2026@5` gives `@`
+two meanings in one path. Without the sigil the namespace and the version
+compose cleanly, as the examples above show.
+
+The one thing a sigil would buy is reserving the option of **root-level account
+pages** (`ringdrill.app/redcross-bergen`), which would need a reserved-word
+list to coexist with `/api`, `/d`, `/i`, `/mcp` and `/brief`. No such page
+exists or is planned, and that is the moment to choose a sigil — not now, for a
+page that may never be built.
 
 **Back-compat is free and permanent.** `/d/<slug>` resolves in `anon`, which is
 where all three live plans are and where anonymous publishing keeps putting new
@@ -244,8 +266,10 @@ The namespace is not confined to the storage key:
 
 * `slug-index` keys become `<namespace>/<slug>`.
 * `deep-link.js` (`/d/`) and the install-link route (`/i/`,
-  [ADR-0015](./0015-shareable-install-links.md)) parse the optional `@handle`
-  segment.
+  [ADR-0015](./0015-shareable-install-links.md)) accept an optional leading
+  namespace segment. `deep-link.js`'s current pattern already rejects `/`
+  inside the tail, so this is a widened match rather than a rewrite, and the
+  existing `@version` suffix is untouched.
 * Feed items gain the namespace, so a client can address what it just read.
 * The MCP catalog tools take a bare slug today
   ([ADR-0060](./0060-remote-mcp-server.md)) and need the namespaced form —
