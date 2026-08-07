@@ -22,6 +22,7 @@ A design doc is not an ADR. ADRs record architectural decisions that constrain t
 | DESIGN-012 | [A unified cast pill on person/actor rows](./012-unified-cast-pill.md) | Accepted | 2026-07-19 |
 | DESIGN-013 | [Actionable field chips (tap-to-call, open-in-maps), per output format](./013-actionable-field-chips.md) | Accepted | 2026-07-19 |
 | DESIGN-014 | [Source format and the plan compiler](./014-source-format-and-plan-compiler.md) | Accepted | 2026-07-28 |
+| DESIGN-015 | [Accounts and IAM — sign-in, recovery, account pages and member management](./015-accounts-and-iam.md) | Proposed | 2026-08-05 |
 
 ## Folder layout
 

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Kontogjenoppretting</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root {
+    color-scheme: light dark;
+    --color-background-page: #f5f5f4;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f1efe8;
+    --color-background-tertiary: #e9e7e0;
+    --color-text-primary: #2c2c2a;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #888780;
+    --color-border-secondary: rgba(0, 0, 0, 0.3);
+    --color-border-tertiary: rgba(0, 0, 0, 0.12);
+    --accent: #1D9E75;
+    --accent-fill: #E1F5EE;
+    --accent-text: #0F6E56;
+    --warn-fill: #FDF1DC;
+    --warn-text: #8A5A12;
+    --danger-text: #B3261E;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-page: #1a1a1a;
+      --color-background-primary: #242322;
+      --color-background-secondary: #2e2d2b;
+      --color-background-tertiary: #3a3a37;
+      --color-text-primary: #f1efe8;
+      --color-text-secondary: #b4b2a9;
+      --color-text-tertiary: #888780;
+      --color-border-secondary: rgba(255, 255, 255, 0.3);
+      --color-border-tertiary: rgba(255, 255, 255, 0.12);
+      --accent-fill: #16362E;
+      --accent-text: #6FD3B0;
+      --warn-fill: #3A2E17;
+      --warn-text: #E8C07A;
+      --danger-text: #F2B8B5;
+    }
+  }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-page);
+    color: var(--color-text-primary);
+    padding: 24px 16px;
+    box-sizing: border-box;
+  }
+  .caption {
+    max-width: 1120px;
+    margin: 0 auto 20px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+    text-align: center;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    align-items: flex-start;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .panel { width: 320px; }
+  .panel-wide { width: 100%; max-width: 1060px; }
+  .panel > h4 {
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-tertiary);
+    margin: 0 0 8px 2px;
+  }
+  .frame {
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-lg);
+    padding: 10px;
+  }
+  .screen {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 560px;
+    position: relative;
+  }
+  .bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    font-size: 15px; font-weight: 500;
+    color: var(--color-text-primary);
+  }
+  .bar i { font-size: 18px; color: var(--color-text-secondary); }
+  .body { padding: 16px 14px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .h { font-size: 18px; font-weight: 500; margin: 0; }
+  .p { font-size: 13px; line-height: 1.6; color: var(--color-text-secondary); margin: 0; }
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    height: 44px; border-radius: var(--border-radius-md);
+    font-size: 14px; font-weight: 500;
+    border: 0.5px solid var(--color-border-secondary);
+    flex: none;
+  }
+  .btn i { font-size: 18px; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: transparent; }
+  .btn-dark { background: #000; color: #fff; border-color: transparent; }
+  .btn-danger { color: var(--danger-text); }
+  .sect {
+    font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--color-text-tertiary); margin: 6px 0 -4px 2px;
+  }
+  .card {
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    flex: none;
+  }
+  .item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 12px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+  }
+  .item:last-child { border-bottom: 0; }
+  .item i { font-size: 18px; color: var(--color-text-secondary); flex: none; }
+  .t { font-size: 14px; }
+  .s { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; line-height: 1.45; }
+  .grow { flex: 1; min-width: 0; }
+  .av {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--color-background-tertiary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; color: var(--color-text-secondary);
+    flex: none;
+  }
+  .pill {
+    font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 999px;
+    background: var(--color-background-tertiary); color: var(--color-text-secondary);
+    white-space: nowrap; flex: none;
+  }
+  .pill-accent { background: var(--accent-fill); color: var(--accent-text); }
+  .pill-warn { background: var(--warn-fill); color: var(--warn-text); }
+  .note {
+    display: flex; gap: 10px; padding: 11px 12px;
+    border-radius: var(--border-radius-md);
+    font-size: 12px; line-height: 1.55;
+    flex: none;
+  }
+  .note i { font-size: 16px; flex: none; margin-top: 1px; }
+  .note-accent { background: var(--accent-fill); color: var(--accent-text); }
+  .note-warn { background: var(--warn-fill); color: var(--warn-text); }
+  .note-plain { background: var(--color-background-secondary); color: var(--color-text-secondary); }
+  .field {
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    padding: 11px 12px; font-size: 14px;
+    color: var(--color-text-tertiary);
+    flex: none;
+  }
+  .code {
+    letter-spacing: 0.38em; font-size: 19px; text-align: center;
+    color: var(--color-text-primary); font-weight: 500;
+  }
+  .link { font-size: 13px; color: var(--accent-text); text-align: center; flex: none; }
+  .sheet {
+    margin-top: auto;
+    background: var(--color-background-primary);
+    border-top: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    box-shadow: 0 -10px 28px rgba(0,0,0,0.13);
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .scrim { flex: 1; background: rgba(0,0,0,0.28); }
+  .grab { width: 34px; height: 4px; border-radius: 2px; background: var(--color-border-tertiary); margin: 0 auto 4px; flex: none; }
+  .radio { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--color-border-secondary); flex: none; }
+  .radio-on { border-color: var(--accent); border-width: 5.5px; }
+  .dim { opacity: 0.42; }
+  .split { display: flex; flex: 1; min-height: 0; }
+  .master { width: 260px; border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; }
+  .detail { flex: 1; display: flex; flex-direction: column; }
+  .detail-inner { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .kv { display: flex; gap: 10px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<p class="caption">DESIGN-015 &sect;4. Uten passord finnes ikke &laquo;glemt passord&raquo;. Disse fire situasjonene erstatter den, og bare den siste taper data. Svaret p&aring; den er forebygging, ikke gjenoppretting — derfor bor r&aring;det p&aring; medlemsskjermen (panel 3), ikke i gjenopprettingsflyten.</p>
+
+<div class="row">
+  <div class="panel">
+    <h4>1 · De fire situasjonene</h4>
+    <div class="frame"><div class="screen">
+      <div class="bar"><i class="ti ti-arrow-left"></i><span>F&aring;r du ikke logget inn?</span></div>
+      <div class="body">
+        <p class="p">Det finnes ingen passord i RingDrill, s&aring; det er ingenting &aring; tilbakestille. Velg det som passer:</p>
+        <div class="card">
+          <div class="item"><i class="ti ti-mail-off"></i><div class="grow"><div class="t">Jeg f&aring;r ikke e-posten</div><div class="s">Lenken kommer ikke fram</div></div><i class="ti ti-chevron-right"></i></div>
+          <div class="item"><i class="ti ti-brand-apple"></i><div class="grow"><div class="t">Apple-adressen min virker ikke</div><div class="s">&laquo;Skjul e-postadressen&raquo; videresender ikke lenger</div></div><i class="ti ti-chevron-right"></i></div>
+          <div class="item"><i class="ti ti-device-mobile-off"></i><div class="grow"><div class="t">Jeg mistet enheten jeg var logget inn p&aring;</div><div class="s">Logg av enheten, og logg inn p&aring; nytt her</div></div><i class="ti ti-chevron-right"></i></div>
+          <div class="item"><i class="ti ti-users-group"></i><div class="grow"><div class="t">Jeg er eneste eier og kommer ikke inn</div><div class="s">Krever manuell hjelp</div></div><i class="ti ti-chevron-right"></i></div>
+        </div>
+        <div style="flex: 1;"></div>
+        <div class="note note-plain"><i class="ti ti-shield-lock"></i><span>Vi verifiserer ikke identitet automatisk. Derfor er den beste sikringen &aring; ha mer enn &eacute;n innloggingsmetode.</span></div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h4>2 · Generisk svar, ingen lekkasje</h4>
+    <div class="frame"><div class="screen">
+      <div class="bar"><i class="ti ti-arrow-left"></i><span>Jeg f&aring;r ikke e-posten</span></div>
+      <div class="body">
+        <div class="note note-plain"><i class="ti ti-eye-off"></i><span>Teksten er bevisst generell. Skjermen r&oslash;per ikke om adressen har en konto.</span></div>
+        <h2 class="h">Pr&oslash;v en annen innlogging</h2>
+        <p class="p">Hvis <b>kari@example.com</b> har en konto, kan den ogs&aring; ha Apple- eller Google-innlogging. Begge f&oslash;rer til samme konto.</p>
+        <div class="btn btn-dark"><i class="ti ti-brand-apple"></i> Fortsett med Apple</div>
+        <div class="btn"><i class="ti ti-brand-google"></i> Fortsett med Google</div>
+        <div class="sect">Ellers</div>
+        <div class="card">
+          <div class="item"><i class="ti ti-refresh"></i><div class="grow"><div class="t">Send lenken p&aring; nytt</div><div class="s">Sjekk ogs&aring; s&oslash;ppelpost</div></div></div>
+          <div class="item"><i class="ti ti-pencil"></i><div class="grow"><div class="t">Bruk en annen adresse</div><div class="s">Oppretter en ny konto</div></div></div>
+        </div>
+        <div style="flex: 1;"></div>
+        <div class="note note-warn"><i class="ti ti-alert-triangle"></i><span>Er e-post din eneste innlogging, og adressen er utilgjengelig, kan vi ikke &aring;pne kontoen for deg.</span></div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h4>3 · Forebygging: &eacute;n eier</h4>
+    <div class="frame"><div class="screen">
+      <div class="bar"><i class="ti ti-arrow-left"></i><span class="grow">Medlemmer</span><i class="ti ti-user-plus"></i></div>
+      <div class="body">
+        <div class="note note-warn"><i class="ti ti-alert-triangle"></i><span><b>Denne organisasjonen har &eacute;n eier.</b> Legg til en til, s&aring; mister dere ikke tilgangen hvis noen blir utilgjengelig.<br><span style="opacity:.85;">Ikke blokkerende. Kan skjules, men kommer tilbake n&aring;r medlemslista endres.</span></span></div>
+        <div class="sect">R&oslash;de Kors Hjelpekorps Bergen</div>
+        <div class="card">
+          <div class="item"><div class="av">KG</div><div class="grow"><div class="t">Kari Gulbrandsen <span class="s" style="display:inline;">(deg)</span></div><div class="s">kari@example.com</div></div><span class="pill pill-accent">Eier</span></div>
+          <div class="item"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">ola@example.com</div></div><span class="pill">Redakt&oslash;r</span></div>
+          <div class="item"><div class="av">MS</div><div class="grow"><div class="t">Mari Sund</div><div class="s">mari@example.com</div></div><span class="pill">Leser</span></div>
+        </div>
+        <div class="btn"><i class="ti ti-crown"></i> Gj&oslash;r noen til eier</div>
+        <div style="flex: 1;"></div>
+        <div class="note note-plain"><i class="ti ti-info-circle"></i><span>Vi gir ikke selvbetjent eierskifte til den som er utestengt — det ville v&aelig;rt en overtakelsesmekanisme.</span></div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+</body>
+</html>
