@@ -322,6 +322,38 @@ Two consequences for ADR-0074 when it is written:
   cascade already hydrate values within a plan; a template is the same
   mechanism with an outer scope.
 
+### Future work: default values and publish placeholders
+
+Raised 2026-08-05, alongside the framing above and not yet decided.
+
+A variable could carry a **default** (template-level) as well as its current
+value (run-level), and publishing could emit a **placeholder** — `________`, or
+something shaped like the type — in place of a value that is decided on the day.
+
+Three reasons this is the same idea as the split above, approached from the
+authoring side rather than the type side:
+
+* A placeholder *is* an un-hydrated slot, made visible. It is what a template
+  should show for a value nobody has filled in yet, and it is why omitting the
+  value outright is the wrong answer: an unresolved `{{var.x}}` renders as
+  broken, while a blank renders as *fill me in*.
+* The domain already does this on paper. The 2026 LSOR booklet wrote `Lag 2.X`
+  as a hand-filled wildcard 39 times
+  ([ADR-0066](./0066-team-scope-for-cross-reference-tokens.md)) because paper
+  cannot compute. A publish placeholder is that blank line, digital.
+* It fixes the staleness noted above without inventing a second mechanism: a
+  forker inherits a blank to fill rather than somebody else's duty phone
+  number.
+
+Open questions if it is picked up: whether the marker is per-variable and
+author-set (likely — the author knows which numbers are theirs) or inferred
+from `VariableType` (guessy); whether the placeholder is stored or derived at
+publish; and how the publish dialog previews what will actually go out, since
+a substitution the author cannot see before publishing is worse than none.
+Note that a *value*, unlike `staff/`, is not PII by default — a duty number
+belongs to a role. The reason to placeholder it is that it is run-specific,
+which is the same criterion as everything else here.
+
 ### Relationship to ADR-0018
 
 This amends [ADR-0018](./0018-roleplayer-data-model.md)'s PII boundary, which is
