@@ -188,6 +188,14 @@ Goal: flip the default for new plans without changing existing ones.
 * Publish dialog gets an "Advanced → make this plan public" toggle
   for users who deliberately want anyone-can-edit behaviour on a new
   plan (e.g. a shared training plan for a community).
+* `GET /api/accounts/:id/plans` (new, authenticated): plans owned by an
+  account, published or not. `market-feed` cannot serve this — it filters on
+  `published` and is public by design.
+* Plan selector gains its fourth tab and `online` is renamed `public`
+  ([DESIGN-015](../design/015-accounts-and-iam.md) §5.7). The tab is absent
+  for signed-out users, so the default install keeps today's three. ARB keys
+  `libraryOnlineTab` → `libraryPublicTab` plus a new `libraryAccountTab`;
+  `make i18n` after.
 
 Exit criteria: a freshly published plan from a signed-in user cannot
 be overwritten by a stranger. Existing `public` plans behave unchanged,

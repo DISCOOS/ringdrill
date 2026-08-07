@@ -34,9 +34,10 @@ related_adrs:
 
 ## TL;DR
 
-Signing in is optional and stays optional. It buys one thing — **nobody changes
-your published plan without you** — and it must not become a wall in front of
-planning, reading the catalog, or running a drill. The surface is small: one
+Signing in is optional and stays optional. **No account is the normal state of
+an install, not a step someone has yet to complete.** Signing in buys one thing
+— nobody changes your published plan without you — and it must not become a
+wall in front of planning, reading the catalog, or running a drill. The surface is small: one
 sign-in screen with three providers, one account page that grows a members list
 when a second person is invited, and a recovery path for the situations that
 replace "forgot my password" in a world with no passwords.
@@ -47,12 +48,17 @@ to the account side so nothing about it implies a `StaffRole` — and **an accou
 page that has to say plainly what an account holds** now that a roster can
 travel with a plan (§8).
 
+One rename escapes the account surface entirely and touches every user: the
+plan selector's *På nett* tab becomes *Offentlig*, because once an account tab
+is also on the network, "online" stops distinguishing anything (§5.7).
+
 ## 1. What this designs, and what it does not
 
-**In scope:** sign-in and provider linking; account recovery; the personal
-account page; the personal→organisation upgrade; the organisation account page;
-invite, accept, change role, remove and leave; the active-account switcher; how
-all of it lays out on phone, wide screen and web.
+**In scope:** sign-in and provider linking; account recovery; opting in and
+out; the personal account page; the personal→organisation upgrade; the
+organisation account page; invite, accept, change role, remove and leave; the
+active-account switcher; the fourth tab this adds to the plan selector; how all
+of it lays out on phone, wide screen and web.
 
 **Out of scope:** the authorisation matrix itself (ADR-0025), the storage model
 (ADR-0024), roster sync (ADR-0072 — the account page must *describe* what an
@@ -88,8 +94,39 @@ projects with no Organization node at all, and the org appears only when a
 domain does. ADR-0024 instead models the single-person case as a degenerate
 organisation, which buys a uniform `accountId` on every plan and one code path
 for ownership. The cost is that "your personal account" is a thing the UI has to
-explain at all, which is why §5.1 works hard to make it nearly invisible until
+explain at all, which is why §5.2 works hard to make it nearly invisible until
 it matters.
+
+### 2.1 Sharing has exactly two shapes, and no third
+
+**A `guest` is an authenticated user.** There is no anonymous guest: being a
+guest means holding an `Identity`, which means having a `User`, which means
+having a personal `Account` of your own. Admitting a guest to your organisation
+is admitting *a person who signed in*, and the sign-in is theirs, not something
+you provision for them.
+
+That constrains the sharing model to two shapes, which is worth stating plainly
+because designers and users both keep reaching for a third:
+
+| Who you want to reach | How | What they need |
+|---|---|---|
+| Me, or my group | Members of the owning account (`owner`, `member`) | To sign in |
+| One named outsider | Add them as `guest` | To sign in — they get their own personal account |
+| Another group | `AccessPolicy.shared` to their account (phase 5) | An account of their own |
+| Anyone at all | `AccessPolicy.public`, via the catalog | Nothing |
+
+**There is no "secret link for one person who will not sign in".** If the person
+will not authenticate, the only server-side option is `public` — the plan is in
+the catalog and anyone can read it. Designing a fourth tier of unauthenticated
+per-person sharing would mean bearer URLs, which are credentials that leak
+through browser history, chat logs and screenshots, for a case the two existing
+shapes already cover.
+
+The escape hatch for "give it to one person without publishing it" is the one
+that already exists and needs no account at all: **hand them the `.drill`
+file.** Peer-to-peer transfer is untouched by any of this, and it is also the
+only path that carries the staff roster to someone outside the account
+([ADR-0072](../adrs/0072-staff-pii-and-account-sync.md)).
 
 ## 3. Sign-in
 
@@ -237,9 +274,39 @@ When it happens anyway: a support path (email) with the honest caveat that
 verification is manual and slow. No self-service ownership transfer, because
 self-service ownership transfer is a takeover mechanism.
 
-## 5. Account pages
+## 5. Accounts in the UI
 
-### 5.1 Personal — nearly invisible
+### 5.1 The default is no account, and it stays the default
+
+**No account is the normal state of a RingDrill install, not a state on the way
+to a real one.** A person can plan, run, brief, import, export and install from
+the catalog forever without signing in, and nothing in the UI should imply they
+are missing a step. No badge on the drawer, no "complete your setup", no
+counting an account as onboarding progress
+([DESIGN-007](./007-onboarding-and-help.md) ends without one).
+
+**Opting in is one act, not two.** Signing in *is* getting a personal account —
+ADR-0024 creates it automatically at first sign-in — so the UI must never
+present "sign in" and "create an account" as separate decisions or separate
+screens. It must, however, *say* that this is what happens, on the sign-in
+screen itself: *"Vi oppretter en personlig konto for deg. Den eier planene du
+publiserer."* A thing created silently on your behalf is worse than a thing
+you were told about.
+
+**Opting out has two levels, and they are not the same:**
+
+* **Logg ut** — tokens cleared, local plans untouched, account still exists.
+  Reversible by signing in again. §3.6.
+* **Slett konto** — `User`, `Identity` rows, memberships and account-scoped
+  data are removed. Plans already published to the catalog are **not** deleted,
+  because other people have installed them; the slug survives with its owner
+  reference dropped. The confirm says exactly that, because "delete my account"
+  reasonably sounds like it should unpublish, and it does not.
+
+The `guest` role does not weaken any of this, but it does have a consequence
+worth stating where people will look for it — see §2.1.
+
+### 5.2 Personal — nearly invisible
 
 For a single planner, an account is bookkeeping. The personal account page is
 therefore short: name, email, linked sign-in methods, sessions, *"Opprett
@@ -250,7 +317,7 @@ account).
 The page states what the account holds (§8), because that sentence has to exist
 somewhere and this is where a user looks for it.
 
-### 5.2 Upgrading to an organisation
+### 5.3 Upgrading to an organisation
 
 ADR-0024 says inviting a second person upgrades a personal account to an
 organisation *after explicit confirmation*. The confirmation must say what
@@ -271,12 +338,12 @@ wants to share one plan with one colleague usually wants the upgrade; a user
 setting up for a whole hjelpekorps usually wants the fresh organisation. Both
 are one tap.
 
-### 5.3 Organisation
+### 5.4 Organisation
 
 Adds: the organisation name (editable by owners), the members list (§6), and the
 single-owner advisory from §4.4. Everything else is the same page.
 
-### 5.4 The active-account switcher
+### 5.5 The active-account switcher
 
 Appears in the drawer under the user's name only when the user belongs to more
 than one account. It sets the account that new publishes are claimed for, and it
@@ -287,7 +354,7 @@ and needs no re-authentication.
 will publish to, and that line is tappable to switch. A user who publishes to
 the wrong account discovers it at the worst possible moment otherwise.
 
-### 5.5 Wide screen and web
+### 5.6 Wide screen and web
 
 Follows the existing master/detail model
 ([ADR-0030](../adrs/0030-wide-screen-master-detail-layout.md)): Settings is the
@@ -300,6 +367,44 @@ dialogs, per ADR-0030.
 On iOS and macOS the page uses the platform-adaptive chrome from
 [ADR-0033](../adrs/0033-platform-adaptive-ui-on-ios.md). Sign in with Apple uses
 the native button; nothing else about the flow changes per platform.
+
+### 5.7 The plan selector grows a fourth tab
+
+`showOpenPlanDialog` ([`library_view.dart`](../../lib/views/library_view.dart))
+is today `LibraryTab { myPlans, online, fromFile }` — *Mine planer* / *På nett*
+/ *Ny fra fil*. Accounts add a source that is neither local nor public, so the
+enum becomes:
+
+| Tab | `nb` | `en` | Holds |
+|---|---|---|---|
+| `myPlans` | Mine planer | My plans | On this device |
+| `account` | Konto | Account | Owned by the active account. Written by its members, not visible to strangers |
+| `public` | Offentlig | Public | The open catalog. Anyone can read; `public`-policy plans anyone can write |
+| `fromFile` | Ny fra fil | New from file | Import a `.drill` |
+
+Two decisions in that table.
+
+**`online` is renamed to `public`, and the label changes with it.** *På nett*
+described *where the plan lives*, which stops distinguishing anything the moment
+the account tab is also on the network. *Offentlig* describes **who can read
+it**, which is the question a user is actually asking when they pick between the
+two tabs. The rename is the honest one, and it is worth the churn precisely
+because the old word becomes ambiguous rather than merely imprecise.
+
+**The account tab does not exist until there is an account.** A signed-out
+user sees exactly today's three tabs, in today's order, with one renamed. This
+is not only §5.1's principle applied consistently — it also solves the crowding,
+because four tabs of Norwegian labels on a 375 pt phone is genuinely tight and
+most installs will never see the fourth. When the user belongs to more than one
+account, the tab follows the active account (§5.5) rather than multiplying.
+
+**Backend consequence, not currently in the rollout plan.** The account tab
+needs "list plans owned by account X, published or not", which no endpoint
+provides — `market-feed` filters on `published` and is public by design. This is
+a new authenticated endpoint (`GET /api/accounts/:id/plans`), and it lands with
+phase 4 at the earliest, since before then no plan is reliably account-owned.
+Until it exists the tab is not shown, which the "no account, no tab" rule
+already produces for free.
 
 ## 6. Member management
 
@@ -508,6 +613,7 @@ plan. Their next request simply returns less.
 | [`mockups/account-personal.html`](./mockups/account-personal.html) | Drawer signed-in state, personal account page, upgrade-to-organisation sheet |
 | [`mockups/account-organisation.html`](./mockups/account-organisation.html) | Members list with pending invite, role picker, remove confirm, invite form |
 | [`mockups/account-wide.html`](./mockups/account-wide.html) | Wide-screen and web master/detail layout for Settings → Konto |
+| [`mockups/library-tabs.html`](./mockups/library-tabs.html) | The plan selector without an account (three tabs, as today) and with one (four tabs, `Konto` added, `På nett` → `Offentlig`) |
 
 ## 11. Open questions
 
