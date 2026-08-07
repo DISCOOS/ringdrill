@@ -260,6 +260,37 @@ about authorising *catalog writes*. It is the first feature the account model
 unlocks, it lands as its own piece of work once the account release has made
 multi-member accounts real, and the six items above are its entry criteria.
 
+### Follow-up: the catalog entry as a distinct object (proposed ADR-0074)
+
+This ADR says a published plan is "two artifacts, not one blob with a policy on
+it", and stops at *copies*. Raised on approval (2026-08-05): they may be
+different **objects** — publishing derives a catalog entry with its own
+identity and lifecycle, rather than putting the account's plan into a public
+state.
+
+That strengthens the guarantee here rather than changing it. A catalog object
+with no `staff` field cannot represent a roster, so the strip stops being an
+operation code must remember and becomes something the type cannot express —
+the same move [ADR-0018](./0018-roleplayer-data-model.md) made with the folder
+boundary, one level further in. Two places already assume it:
+
+* `Plan.computeContentHash`'s denylist warning
+  ([`lib/models/plan.dart`](../../lib/models/plan.dart)) — "anything added to
+  `Plan` in future is published by default … the anticipated direction is a
+  catalog of *templates* … which is an allowlist question, not a denylist one".
+  A distinct catalog object is that allowlist.
+* [DESIGN-015](../design/015-accounts-and-iam.md) §9 — deleting an account does
+  not delete published catalog plans, which only makes sense if they have
+  separate lifecycles.
+
+It is a separate decision because it reaches past PII: publish becomes
+derive-and-put, unpublish becomes delete-the-catalog-object with the account
+plan untouched, and `accessPolicy` arguably belongs on the catalog object
+rather than on the plan ([ADR-0025](./0025-authorization-and-publish-policy.md)).
+Convenient timing: today *only* the catalog object exists — account-side
+storage is the new thing — so this is a boundary named before the second store
+is built, not a migration.
+
 ### Relationship to ADR-0018
 
 This amends [ADR-0018](./0018-roleplayer-data-model.md)'s PII boundary, which is
