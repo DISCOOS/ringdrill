@@ -111,6 +111,14 @@ Ordered by dependency, not by risk. Everything below ships together.
   Magic link with a 6-character code alternative
   ([DESIGN-015](../design/015-accounts-and-iam.md) §3.3), sender
   `noreply@ringdrill.app`, templates in `netlify/functions/_email/`.
+* **The mail channel, which several flows depend on** — not only sign-in:
+  invitations to addresses with no account (DESIGN-015 §6.4), verifying a
+  second address (the Apple-relay fix, §3.5), bounce webhooks so a failed
+  invite shows on the member row, and security notices. Outbound only: a
+  transactional send API, no MX record and no inbox. **SPF, DKIM and DMARC on
+  `ringdrill.app`** are part of this and matter more than usual — a magic link
+  or an invitation in a spam folder is a silently broken flow, not a degraded
+  one.
 * JWT signing (ed25519) with `AUTH_SIGNING_KEY_PRIVATE` /
   `AUTH_SIGNING_KEY_PUBLIC`.
 * `authenticate(request)` helper: anonymous, authenticated, or 401 — behind the
@@ -380,9 +388,11 @@ Two consequences for this release:
 ## Open questions
 
 * Mail provider: Resend (simpler, EU residency available) vs SES (cheaper at
-  scale, more configuration). No longer blocks the start of the work —
-  [ADR-0073](../adrs/0073-auth-mode-and-adapters.md)'s `mock` adapter needs no
-  provider — but it does block the production cutover.
+  scale, more configuration). Still does not block the start of the work —
+  [ADR-0073](../adrs/0073-auth-mode-and-adapters.md)'s `mock` adapter
+  short-circuits the whole channel, invitations included — but it blocks the
+  production cutover, and the scope is wider than "magic links": transactional
+  send, bounce webhooks, and domain authentication on `ringdrill.app`.
 * Whether creating a realtime session
   ([ADR-0009](../adrs/0009-realtime-transport-and-session-model.md)) should
   require a signed-in identity. Current default is no; revisit after the

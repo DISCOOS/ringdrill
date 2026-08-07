@@ -66,7 +66,7 @@ plan selector; how all of it lays out on phone, wide screen and web.
 **Out of scope:** the authorisation matrix itself (ADR-0025), the storage model
 (ADR-0024), roster sync (ADR-0072 — the account page must *describe* what an
 account holds, but sync ships later), and the CLI's `login` beyond one note in
-§3.5.
+§3.6.
 
 **Not gated by sign-in, and this is load-bearing:** creating and editing plans,
 importing and exporting `.drill` files, browsing and installing from the
@@ -174,6 +174,24 @@ Ordered by platform so the native option is first, per
 Email is always present and always last, because it is the fallback that works
 when a provider account is unavailable — which is the whole of §4.
 
+**`email` is not a droppable provider**, and the reason is infrastructure
+rather than preference. A transactional mail channel is required whether or not
+anyone signs in with it:
+
+* **Invitations** (§6.2, §6.4) go to an address that may have no account yet.
+  There is no other way to reach that person.
+* **Verifying a second address** is the fix for the Apple-relay duplicate
+  (§3.5), and verification means sending mail.
+* **Bounce handling** — §6.2 renders "Email bounced" as a state on the member
+  row, which comes from the provider's webhook.
+* Security notices (refresh-token replay, §4.3) and deletion confirmation
+  (§5.1) both want a channel that is not the app.
+
+Given the channel exists, `email` as a *sign-in* provider costs one endpoint
+and one screen, and buys the guideline 4.8 fallback, the recovery path, and the
+only remedy for a relay-address duplicate. There is no password anywhere in
+this: `email` means a magic link with a code fallback (§3.3).
+
 **Microsoft covers both flavours** through one adapter: personal
 (outlook.com) and work/school (Entra ID — `@rodekors.org`,
 `@folkehjelp.no`). A volunteer signing in with their korps address is the case
@@ -226,7 +244,56 @@ different button and lands in the same account should be told why.
 Unverified emails never auto-link. They create a separate `User`, and the
 account page offers *"Koble til en annen innloggingsmetode"* for manual linking.
 
-### 3.5 CLI — device authorization, not a second magic link
+### 3.5 Signing in on a device whose native provider is not the one you used
+
+Someone signs up on the web with Google, then installs the iOS app, where §3.2
+puts Apple first. Three things can happen and only the last is a problem — but
+it is a bad one, so it gets designed rather than discovered.
+
+**She taps Google.** It works. On iOS this runs through
+`ASWebAuthenticationSession`, the system browser sheet, which shares cookies
+with Safari — already signed into Google there, and it is one tap. Apple does
+not restrict this: guideline 4.8 requires an equivalent option to be *offered*,
+not that Apple's be used. This is the common case and it needs no design.
+
+**She taps Apple, and her Apple ID carries her real address.** Verified-email
+match (§3.4) links the new Apple identity to the User she already has, and she
+is told after the fact. Works.
+
+**She taps Apple with Hide My Email.** Apple returns
+`xyz@privaterelay.appleid.com` — *verified*, and permanently different from her
+Google address. Step 2 cannot match, step 3 fires, and she gets **a second User
+with a second personal account and none of her plans**. Two Apple specifics
+make it worse: the relay address will never equal her real one, and Apple
+returns the real email **only on first authorization** — every later sign-in
+gives the subject alone, so a missed capture cannot be recovered from Apple.
+
+The response, in order of when it applies:
+
+1. **Ask the relay user for a reachable address, and verify it.** §4.2 already
+   prompts for this once, framed as recovery. It is doing double duty: a
+   *verified* second address is exactly the key step 2 needs, so verifying it
+   turns a would-be duplicate into a link. This is the main fix, and it is the
+   reason the `email` provider is not optional — without a channel to verify a
+   second address, case three has no remedy at all.
+2. **Recognise the shape and offer, once, without blocking.** A brand-new User,
+   created via Apple, with a relay address and zero plans is the highest-risk
+   duplicate we can detect. Say so plainly — *"Used RingDrill before? Add the
+   address you used and we will connect them."* — as a dismissible line, not a
+   wall. A genuinely new user dismisses it and never sees it again.
+3. **Never merge on a guess.** No heuristic joins two accounts automatically.
+   Two accounts is confusing; silently merging the wrong two is worse, and
+   there is no undo.
+
+**Be honest about what is left over.** If somebody does end up with two
+accounts, **there is no merge in this release.** Linking the identity makes
+future sign-ins converge on one of them, but plans already published under the
+other stay there; moving them means exporting and importing `.drill` files. An
+account-merge flow is a real feature with real edge cases (two personal
+accounts, memberships on both, published slugs on both) and inventing it before
+anyone has hit the problem is the wrong order.
+
+### 3.6 CLI — device authorization, not a second magic link
 
 **Ships after the account release**, not in it. Designed here so the two new
 endpoints it needs are known before the auth surface is built.
@@ -291,7 +358,7 @@ change and are not worth inventing before someone needs them.
 keeps a long-lived personal token in `RINGDRILL_ACCESS_TOKEN`, which is what
 replaces `RINGDRILL_ADMIN_TOKEN` — see the rollout plan.
 
-### 3.6 Signing out
+### 3.7 Signing out
 
 *"Logg ut"* on the account page, with a confirm that states the one thing users
 will worry about: **local plans stay on the device.** Signing out does not

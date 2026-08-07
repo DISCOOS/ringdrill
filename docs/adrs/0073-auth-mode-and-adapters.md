@@ -114,10 +114,15 @@ branch. In `mock`:
 
 What `mock` replaces is the two *dependencies*, not the flow:
 
-* **Mail.** `POST /api/auth/start-email` returns the 6-character code in the
-  response body instead of mailing it. The magic-link flow then runs end to end
-  with no provider — the client posts the code back to `/api/auth/callback`
-  exactly as it would after reading an email.
+* **Mail — all of it, not just sign-in.** `POST /api/auth/start-email` returns
+  the 6-character code in the response body instead of mailing it, so the
+  magic-link flow runs end to end with no provider. The same applies to every
+  other outbound message the system sends: an invitation
+  ([DESIGN-015](../design/015-accounts-and-iam.md) §6.4) returns its link in
+  the response, and an address-verification returns its code. Mail is a
+  *dependency* of several flows, not a feature of one, so `mock` has to
+  short-circuit the channel rather than a single endpoint — otherwise
+  invitations become the one thing nobody can test locally.
 * **Signature verification.** A `test.` token carries its claims in the clear
   instead of being verified against a public key.
 
