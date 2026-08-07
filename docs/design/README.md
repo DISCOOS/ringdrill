@@ -43,7 +43,19 @@ docs/design/
     └── wide-screen.html
 ```
 
-Each design doc lives at the top level. Visual mockups are saved as standalone HTML files under `mockups/`, so they can be opened directly in a browser without a build step. Mockups use the same Tabler icon font and CSS variables as the in-app Cowork-style preview, but adapted to work offline against the CDN.
+Each design doc lives at the top level. Visual mockups are saved as standalone HTML files under `mockups/`, so they can be opened directly in a browser without a build step.
+
+Mockups use the same Tabler icon font and CSS variables as the in-app Cowork-style preview, but adapted to work offline against the CDN.
+
+### Generated mockups
+
+The DESIGN-015 account mockups (`auth-*.html`, `account-*.html`, `library-tabs.html`) are **generated**. Edit [`tools/generate_design_mockups.py`](../../tools/generate_design_mockups.py) and re-run it — do not hand-edit the HTML:
+
+```bash
+python3 tools/generate_design_mockups.py
+```
+
+They share a CSS harness and a role vocabulary that spans four files, and editing those by hand is how they drift apart. Everything older in the folder is hand-written, and still `nb`; new documentation is English per [`AGENTS.md`](../../AGENTS.md) rule 12.
 
 ## When to write a design doc
 
