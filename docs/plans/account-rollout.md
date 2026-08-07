@@ -132,12 +132,20 @@ Ordered by dependency, not by risk. Everything below ships together.
   sub-processor holding EU personal data and belongs on the list from day one
   rather than being discovered later.
 
-  **Swapping later is cheap, and not by accident.**
-  [ADR-0073](../adrs/0073-auth-mode-and-adapters.md) requires `mock` to
-  short-circuit the whole mail channel, which means a send seam has to exist
-  anyway. If EU residency ever becomes a hard requirement — a korps or an HRS
-  partner asking — SES `eu-north-1` (Stockholm) keeps data in region and the
-  change is behind that seam.
+  **Swapping later is cheap, and specified rather than hoped for.**
+  [ADR-0075](../adrs/0075-mail-provider-adapter.md) puts sending behind a
+  `MAIL_PROVIDER` adapter and keeps the two expensive things on our side:
+  templates render in `netlify/functions/_email/` before the adapter is called
+  (hosted vendor templates are the lock-in trap that is invisible until you try
+  to leave), and bounce webhooks normalise to a common `MailEvent` so §6.2
+  reads one vocabulary. If EU residency becomes a hard requirement, SES
+  `eu-north-1` (Stockholm) keeps data in region and the change is one adapter
+  plus one webhook normaliser.
+* **The mail seam** ([ADR-0075](../adrs/0075-mail-provider-adapter.md)):
+  `MAIL_PROVIDER = resend | ses | mock | console`, templates in-repo in both
+  locales, per-provider webhook normalisers, namespaced message ids. Invitation
+  mail uses the *inviting* user's locale; request-driven mail uses the
+  requesting client's.
 * **The mail channel, which several flows depend on** — not only sign-in:
   invitations to addresses with no account (DESIGN-015 §6.4), verifying a
   second address (the Apple-relay fix, §3.5), bounce webhooks so a failed
