@@ -110,7 +110,8 @@ Ordered by dependency, not by risk. Everything below ships together.
   `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`.
   Magic link with a 6-character code alternative
   ([DESIGN-015](../design/015-accounts-and-iam.md) §3.3), sender
-  `noreply@ringdrill.app`, templates in `netlify/functions/_email/`.
+  `noreply@mail.ringdrill.app` (a subdomain, see "Open questions"),
+  templates in `netlify/functions/_email/`.
 * **The mail channel, which several flows depend on** — not only sign-in:
   invitations to addresses with no account (DESIGN-015 §6.4), verifying a
   second address (the Apple-relay fix, §3.5), bounce webhooks so a failed
@@ -393,6 +394,26 @@ Two consequences for this release:
   short-circuits the whole channel, invitations included — but it blocks the
   production cutover, and the scope is wider than "magic links": transactional
   send, bounce webhooks, and domain authentication on `ringdrill.app`.
+
+  **Google Workspace is not the answer for the outbound half**, even though we
+  have it. It returns bounces as a DSN email to the sending mailbox rather than
+  as a webhook, so the "Email bounced" member state
+  ([DESIGN-015](../design/015-accounts-and-iam.md) §6.2) would mean polling and
+  parsing a mailbox; there is no delivery event stream; and transactional
+  volume would share domain reputation with actual correspondence, in both
+  directions. Google has no first-party transactional API — GCP's own guidance
+  points at third parties, and Compute Engine blocks port 25.
+
+  **Workspace does cover the inbound half**, which is otherwise unowned:
+  §4.4's sole-owner lockout is the one place in this design where a human has
+  to intervene, and it needs a monitored address. `support@ringdrill.app`
+  belongs on Workspace.
+
+  **Send from a subdomain.** With human mail on `ringdrill.app`, transactional
+  should leave from `noreply@mail.ringdrill.app` so its reputation is isolated.
+  Practically that means the existing SPF record grows an `include:` and a
+  second DKIM selector joins Workspace's — small, but it surprises anyone who
+  assumes the domain is already set up.
 * Whether creating a realtime session
   ([ADR-0009](../adrs/0009-realtime-transport-and-session-model.md)) should
   require a signed-in identity. Current default is no; revisit after the
