@@ -113,7 +113,7 @@ because designers and users both keep reaching for a third:
 |---|---|---|
 | Me, or my group | Members of the owning account (`owner`, `member`) | To sign in |
 | One named outsider | Add them as `guest` | To sign in — they get their own personal account |
-| Another group | `AccessPolicy.shared` to their account (phase 5) | An account of their own |
+| Another group | `AccessPolicy.shared` to their account | An account of their own |
 | Anyone at all | `AccessPolicy.public`, via the catalog | Nothing |
 
 **There is no "secret link for one person who will not sign in".** If the person
@@ -146,6 +146,12 @@ Three, and no more:
    [ADR-0008](../adrs/0008-persistent-program-library-and-catalog.md)), and the
    notice explains what signing in would add. This is the entry point that will
    actually convert, and it is the one that must not feel like a paywall.
+
+   ADR-0025's authorisation matrix originally required an authenticated user
+   for *any* new slug, which would have made this entry point a gate after all.
+   It was amended on 2026-08-05 to keep anonymous new-slug publishing — what
+   makes §5.1's "no account is a finished state" true all the way through the
+   one flow where it would otherwise quietly stop being true.
 
 There is no sign-in step in onboarding
 ([DESIGN-007](./007-onboarding-and-help.md)). A first-run user has no plan worth
@@ -209,7 +215,7 @@ account page offers *"Koble til en annen innloggingsmetode"* for manual linking.
 
 `ringdrill login` runs the same email flow with the code path from §3.3 as the
 primary affordance, since a terminal has no browser callback worth relying on.
-Out of scope beyond that; see ADR-0024 and rollout phase 6.
+Out of scope beyond that; see ADR-0024 and the rollout plan's CLI section.
 
 ### 3.6 Signing out
 
@@ -399,13 +405,13 @@ because four tabs of Norwegian labels on a 375 pt phone is genuinely tight and
 most installs will never see the fourth. When the user belongs to more than one
 account, the tab follows the active account (§5.5) rather than multiplying.
 
-**Backend consequence, not currently in the rollout plan.** The account tab
-needs "list plans owned by account X, published or not", which no endpoint
-provides — `market-feed` filters on `published` and is public by design. This is
-a new authenticated endpoint (`GET /api/accounts/:id/plans`), and it lands with
-phase 4 at the earliest, since before then no plan is reliably account-owned.
-Until it exists the tab is not shown, which the "no account, no tab" rule
-already produces for free.
+**Backend consequence.** The account tab needs "list plans owned by account X,
+published or not", which no endpoint provides — `market-feed` filters on
+`published` and is public by design. That is a new authenticated endpoint,
+`GET /api/accounts/:id/plans`, now listed in
+[`../plans/account-rollout.md`](../plans/account-rollout.md). Until it exists
+the tab is not shown, which the "no account, no tab" rule already produces for
+free.
 
 ## 6. Member management
 
@@ -462,15 +468,14 @@ By email address, with the role chosen at invite time. Three states follow:
 * **Accepted** — a normal member row.
 * **Bounced or expired** — surfaced on the row, not hidden in a log.
 
-> **Correction to the rollout plan.** Phase 5 of
-> [`../plans/account-rollout.md`](../plans/account-rollout.md) says an invite
-> "creates a Member with role `pending` until the invitee signs in and accepts".
-> That is wrong against ADR-0024's model, where `Member` carries `role` *and*
-> `invitedAt`/`acceptedAt`. Pending is a **state** (`acceptedAt == null`), not a
-> role — the role is already decided at invite time and does not change on
-> acceptance. Making it a role would mean a fourth `MemberRole` value that no
-> permission rule ever names, which is exactly the shape that got `other` its
-> "carries no rights" warning in DESIGN-011.
+> **Pending is a state, not a role.** An earlier draft of
+> [`../plans/account-rollout.md`](../plans/account-rollout.md) said an invite
+> "creates a Member with role `pending`". That is wrong against ADR-0024's
+> model, where `Member` carries `role` *and* `invitedAt`/`acceptedAt`: the role
+> is decided at invite time and does not change on acceptance. Making it a role
+> would mean a fourth `MemberRole` value that no permission rule ever names —
+> exactly the shape that got `other` its "carries no rights" warning in
+> DESIGN-011. The plan no longer says it.
 
 Inviting an address that has no `User` yet is normal and must work: the invite
 is addressed to the email, and the `Member` binds when that person first signs
@@ -556,8 +561,8 @@ kontoen?"*:
 * That entering someone else's name and number makes them a data subject, with
   a link to the privacy statement.
 
-**Sequencing note.** Roster sync ships after rollout phase 5 against ADR-0072's
-entry criteria. Until then this section describes plans only, and the roster
+**Sequencing note.** Roster sync is not in the account release; it ships
+separately against ADR-0072's entry criteria. Until then this section describes plans only, and the roster
 sentence is absent rather than aspirational. The heading exists from the first
 account release so there is one obvious place for it to grow.
 
@@ -601,7 +606,7 @@ plan. Their next request simply returns less.
 * **Slow invite.** The invite row appears immediately in `Invited` state; the
   send is optimistic and shows failure on the row.
 * **Plans published before signing in.** They remain `anon`-owned and are not
-  claimed. Library shows the fork affordance (rollout phase 3) rather than
+  claimed. Library shows the fork affordance rather than
   implying they became yours. The account page does not list them.
 * **Deleting the account.** Removes `User`, `Identity` rows, memberships and
   account-scoped data. Published catalog plans are **not** deleted, because

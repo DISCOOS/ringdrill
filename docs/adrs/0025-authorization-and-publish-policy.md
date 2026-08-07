@@ -140,7 +140,8 @@ Each catalog endpoint runs this check before any business logic:
 
 | Endpoint                  | Required policy + role                                         |
 |---------------------------|----------------------------------------------------------------|
-| `POST /api/drills/upload` for new slug | Authenticated User. Slug claimed for `activeAccount`. Policy initialised to `account`. |
+| `POST /api/drills/upload` for new slug, authenticated | Slug claimed for `activeAccount`. Policy initialised to `account`. |
+| `POST /api/drills/upload` for new slug, anonymous | Allowed. Slug claimed for `ownerId="anon"`, policy initialised to `public`. Same as today. |
 | `POST /api/drills/upload` to existing slug, policy `account`  | Any member of the owning Account, at any role (`owner`, `member` or `guest`). Non-members are refused. |
 | `POST /api/drills/upload` to existing slug, policy `shared`   | Any member of the owning Account OR of any account in `shared.accountIds`, at any role. |
 | `POST /api/drills/upload` to existing slug, policy `public`   | Authenticated User OR no token. Backward-compatible with today's flow. |
@@ -148,6 +149,16 @@ Each catalog endpoint runs this check before any business logic:
 | `POST /api/drills/policy` (new)        | `owner` of the owning Account. Changes the plan's `accessPolicy` and the `shared.accountIds` list. |
 | `POST /api/accounts/:id/members` (new) | Member of Account with role `owner`. Invites another User as `member` or `guest`. |
 | `* /api/admin/*`                       | Bearer `ADMIN_TOKEN` (preserved) OR Bearer access token of a User with the `admin` flag (future). |
+
+> **Amended 2026-08-05.** The original matrix required an authenticated User
+> for *any* new slug, which would have ended anonymous publishing the day
+> enforcement shipped. That contradicts this ADR's own first decision driver
+> ("no silent breakage"), [ADR-0008](./0008-persistent-program-library-and-catalog.md)'s
+> wiki model, and [DESIGN-015](../design/015-accounts-and-iam.md) §5.1, where
+> having no account is a finished state rather than a step someone has yet to
+> take. An anonymous new-slug publish therefore keeps working exactly as it
+> does today and produces an `anon`-owned `public` plan. Signing in is what
+> buys protection; it is not what buys the ability to publish.
 
 `accessPolicy` is stored on the existing meta blob
 (`drills/<accountId>/<programId>/meta.json`), defaulting to `account` for
@@ -158,14 +169,13 @@ update.
 
 ### Rollout order for the policy variants
 
-`account` and `public` ship together with the policy mechanism itself
-(phase 3 in [`../plans/account-rollout.md`](../plans/account-rollout.md)).
-`shared` ships with organisation accounts (phase 5), since
-cross-account write delegation only has a coherent UI once organisations
-exist. The freezed sealed class is defined with all three variants from
-day one so the schema does not have to migrate when `shared` lands.
-Until then, the server rejects `accessPolicy: shared` writes with 400
-to make the gap explicit.
+All three variants ship together in the one account release
+([`../plans/account-rollout.md`](../plans/account-rollout.md), collapsed from
+six phases on 2026-08-05). An earlier draft held `shared` back until
+organisations existed and had the server reject it with 400 in the meantime;
+that separation no longer buys anything, since organisations ship in the same
+release. The freezed sealed class carries all three variants regardless, so
+the schema never has to migrate.
 
 ### Token shape
 
@@ -297,7 +307,7 @@ schema 1.3 here; that is withdrawn.
 The UI surfaces policy in two places: an icon next to the slug in
 Library (account, shared and globe), and a "Tilgang" / "Access" section
 in the publish dialog where the owner can switch between `account` and
-`public`. The `shared` variant is hidden until phase 5.
+`public`, and `shared` once the plan is owned by an organisation.
 
 ### Relation to today's conflict resolution
 

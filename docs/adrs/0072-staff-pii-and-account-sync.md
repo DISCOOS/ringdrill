@@ -200,7 +200,7 @@ May.
 
 **4. `shared` withholds the roster from the other account. It does not remove
 it from the plan.** `AccessPolicy.shared`
-([ADR-0025](./0025-authorization-and-publish-policy.md), phase 5) grants write
+([ADR-0025](./0025-authorization-and-publish-policy.md)) grants write
 access on a plan to a *different* account — a different set of people, and in
 data-protection terms a different controller. So plan content crosses that
 boundary and the roster does not.
@@ -255,10 +255,10 @@ they are real work rather than paperwork:
 6. **EU residency settled, and a sub-processor list** covering hosting, backups
    and any support tooling that can read the data.
 
-Roster sync is not one of the six phases in the rollout plan; those phases are
+Roster sync is not part of the account release; that release is
 about authorising *catalog writes*. It is the first feature the account model
-unlocks, it lands as its own piece of work after phase 5 makes multi-member
-accounts real, and the six items above are its entry criteria.
+unlocks, it lands as its own piece of work once the account release has made
+multi-member accounts real, and the six items above are its entry criteria.
 
 ### Relationship to ADR-0018
 
@@ -279,7 +279,7 @@ servers* — and a second, private destination is admitted alongside it.
 * Good: "Uploaded but not public" becomes a state the backend can actually
   represent. That is worth having on its own — today `published` is a listing
   flag that reads like an access control, which is its own latent trap.
-* Good: The `shared` boundary is decided before phase 5 designs a UI around it,
+* Good: The `shared` boundary is decided before its UI is designed,
   rather than discovered when someone notices a roster crossed to another
   organisation.
 * Good: Sharing a plan is non-destructive to the owner. No grant, policy flip
