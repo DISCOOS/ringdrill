@@ -2,14 +2,14 @@ import { unzipSync, strFromU8, zipSync } from "fflate";
 import {
     keysFor, readJson, readJsonStrong, sanitizeSlug,
     getSlugRecord, getSlugRecordStrong, claimSlug, sha256Hex,
-    toStrongEtag, nowIso, originFromRequest, readDrillBytes,
+    toStrongEtag, nowIso, originFromRequest,
     writeBinaryConditional, writeJsonConditional,
     corsPreflight, withCors, reportLegacyProgramIdUsage
 } from "./lib/shared.js";
 // The PII strip and the schema gate live in their own module so their tests can
 // import the real code rather than a copy — see lib/drill-pii.js.
 import {
-    KNOWN_SCHEMA_MAX, isSchemaTooNew, stripPiiFolders
+    KNOWN_SCHEMA_MAX, isSchemaTooNew, stripPiiFolders, readCatalogArchive
 } from "./lib/drill-pii.js";
 
 
@@ -307,12 +307,16 @@ export default async function (request) {
         const explicitVersion = qs.get("version");
         const published = (qs.get("published") || "false").toLowerCase() === "true";
 
-        const rawBytes = await readDrillBytes(request);
+        // The PII strip happens at the read, not at a call site further down
+        // (ADR-0072). readCatalogArchive is the only sanctioned way for a
+        // catalog-bound handler to obtain uploaded bytes, so unstripped ones
+        // are not something this function could get hold of by accident.
+        // stripActorsAndValidate below strips again — stripPiiFolders is
+        // idempotent — because belt and braces cost nothing here and the
+        // failure mode of neither is silent.
+        const { bytes: rawBytes } = await readCatalogArchive(request);
 
-        // ---- Strip actors/ and validate schema ----
-        // actors/ contains PII (phone, real name) and must never reach the
-        // catalog. The strip is server-side only; peer-to-peer .drill files
-        // legitimately carry actors/.
+        // ---- Validate schema (and strip again, harmlessly) ----
         const { strippedBytes, program, error: archiveError } = stripActorsAndValidate(request, rawBytes);
         if (archiveError) return archiveError;
         const bytes = strippedBytes;

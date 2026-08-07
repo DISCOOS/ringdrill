@@ -1,3 +1,4 @@
+import { unzipSync, zipSync } from "fflate";
 /**
  * The PII boundary for published .drill archives, and the schema gate beside it.
  *
@@ -60,4 +61,36 @@ export function stripPiiFolders(files) {
 export function isSchemaTooNew(schema) {
     if (schema == null) return false;
     return compareSchemas(String(schema), KNOWN_SCHEMA_MAX) > 0;
+}
+
+/**
+ * Read catalog-bound archive bytes, stripped at the door (ADR-0072).
+ *
+ * **This is the only sanctioned way for a catalog-bound handler to read an
+ * uploaded archive.** The strip used to live at `drills-upload`'s call site,
+ * which was correct and remembered rather than structural: a second endpoint
+ * that accepted archive bytes would have had to know to call it, and the
+ * failure mode of forgetting is silent — PII reaches a publicly readable blob,
+ * nothing errors, no test fails, and we hear about it from someone else.
+ *
+ * Moving it to the read means unstripped catalog bytes are not something a
+ * handler can obtain by accident. `netlify/tests/pii-ingest.test.mjs` enumerates
+ * the functions that read request bodies and fails when a new one bypasses this.
+ *
+ * Downstream validation may strip again; `stripPiiFolders` is idempotent, so
+ * the belt and the braces do not interfere.
+ */
+export async function readCatalogArchive(request, { readBytes } = {}) {
+    const read = readBytes ?? (await import("./shared.js")).readDrillBytes;
+    const rawBytes = await read(request);
+    try {
+        const files = unzipSync(new Uint8Array(rawBytes));
+        return { bytes: Buffer.from(zipSync(stripPiiFolders(files))), stripped: true };
+    } catch {
+        // Not a readable archive. Hand the bytes back untouched so the caller
+        // produces its own "invalid archive" 400 with the message it wants —
+        // but say plainly that nothing was stripped, so no caller can mistake
+        // this for a clean read.
+        return { bytes: rawBytes, stripped: false };
+    }
 }
