@@ -322,6 +322,43 @@ Two consequences for ADR-0074 when it is written:
   cascade already hydrate values within a plan; a template is the same
   mechanism with an outer scope.
 
+### The other half of ADR-0074: namespaced slugs
+
+Raised 2026-08-05 while accepting that an `anon` plan stays unclaimable. That
+is only tolerable if a slug is unique **per namespace** rather than globally —
+one namespace per account, plus `anon` for the wiki corpus. Identity is then
+`(namespace, slug)`, which makes it the same decision as the catalog object
+rather than a separate one: what the object is, what it carries, how it is
+addressed.
+
+What it buys:
+
+* **Fork keeps the name.** [ADR-0025](./0025-authorization-and-publish-policy.md)
+  lists as an accepted cost that a user forking a `public` plan "end[s] up with
+  a new slug, not the original one". Namespaced, they keep the same name in
+  their own namespace, beside the original. No `(kopi)` suffix, no `-2`.
+* **The 409 gets informative.** `drills-upload.js` answers
+  `x-conflict-kind: slug` today when someone else holds the name. Namespaced it
+  only fires within your own account, which is the case where it means
+  something.
+* **Policy and identity separate cleanly.** The namespace says who published
+  it; `accessPolicy` says who may write to it. An account-owned plan at
+  `public` policy is ordinary, not a contradiction.
+
+What it costs, stated plainly: **global uniqueness does not disappear, it moves
+up one level.** Accounts need a human-readable handle (`@redcross-bergen`, not
+`a_xK3nP2v…`) and those must be globally unique. That is a better place for the
+constraint — there are far fewer accounts than plans, a handle is chosen once
+and deliberately, and squatting becomes bounded rather than a race on every
+plan name.
+
+Back-compat is free: `/d/<slug>` keeps resolving to the `anon` namespace, so
+the three live plans and every link already shared keep working, and account
+plans take the namespaced form. Threading the namespace through
+`/i/<slug>` ([ADR-0015](./0015-shareable-install-links.md)), the MCP catalog
+tools that take a bare slug ([ADR-0060](./0060-remote-mcp-server.md)), the
+`slug-index` key and the feed item shape is the actual work.
+
 ### Future work: default values and publish placeholders
 
 Raised 2026-08-05, alongside the framing above and not yet decided.
