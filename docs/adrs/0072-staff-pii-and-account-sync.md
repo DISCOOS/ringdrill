@@ -291,6 +291,37 @@ Convenient timing: today *only* the catalog object exists — account-side
 storage is the new thing — so this is a boundary named before the second store
 is built, not a migration.
 
+**And the criterion should be "instance data", not "PII"** (raised 2026-08-05).
+If public plans converge on being *templates*, then adding staff is
+**hydrating** one, and the catalog object excludes the roster *because it is
+run-specific* — PII-exclusion becomes a consequence rather than the rule. That
+is more durable in both directions: it survives a new PII-bearing field, and it
+catches run-specific data that a PII rule waves through.
+
+There is already such a case, and it is published today. `DrillVariable` holds
+the declaration and the value in one object
+([`lib/models/drill_variable.dart`](../../lib/models/drill_variable.dart)), and
+`variables` is re-added to the canonical publish map in `computeContentHash` —
+`staff` is the only genuine exclusion. So the duty phone number, KO number and
+talegruppe that the authoring guidance tells authors to put in variables rather
+than prose travel to the catalog with the plan. Not a privacy problem; a
+staleness and usefulness one, since a forker inherits somebody else's
+operational values.
+
+Two consequences for ADR-0074 when it is written:
+
+* **Define the catalog object by an allowlist from day one**, even if it
+  initially admits everything except `staff`. Tightening toward a real template
+  is then an edit to one list, which is exactly what
+  [`lib/models/plan.dart`](../../lib/models/plan.dart)'s denylist warning asks
+  for and what a denylist can never provide.
+* **Splitting `DrillVariable` into declaration and value is the step after**,
+  and it is a schema change. Worth knowing before someone attempts it as a
+  refactor. Hydration itself is not hypothetical — ADR-0046 and
+  [ADR-0068](./0068-cascaded-fields-and-scoped-overrides.md)'s scoped-override
+  cascade already hydrate values within a plan; a template is the same
+  mechanism with an outer scope.
+
 ### Relationship to ADR-0018
 
 This amends [ADR-0018](./0018-roleplayer-data-model.md)'s PII boundary, which is
