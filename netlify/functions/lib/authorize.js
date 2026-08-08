@@ -48,12 +48,30 @@ function deny(status, reason) {
 }
 
 /**
+ * Normalise a caller-requested policy for a *new* plan.
+ *
+ * Only `account` and `public` are offerable at publish time. `shared` names
+ * specific grantee accounts, which is a separate decision made after the plan
+ * exists (DESIGN-015 §5.8's dialog offers the first two and a picker for the
+ * third), so it is refused here rather than silently downgraded.
+ */
+export function requestedPolicy(raw) {
+    if (raw == null || raw === "") return null;
+    const value = String(raw).toLowerCase();
+    if (value === ACCESS_POLICIES.ACCOUNT || value === ACCESS_POLICIES.PUBLIC) return value;
+    return "invalid";
+}
+
+/**
  * Decide whether this principal may write this slug, and under what ownership.
  *
  * `existing` is the slug-index record (null for a new slug) and `meta` is the
- * plan's stored meta.json (null for a new slug).
+ * plan's stored meta.json (null for a new slug). `requestedAccessPolicy` is
+ * honoured for a new plan only — an existing plan's policy is changed through
+ * authorizePolicyChange, so an ordinary update can never widen access as a side
+ * effect.
  */
-export function authorizeCatalogWrite({ principal, existing, meta }) {
+export function authorizeCatalogWrite({ principal, existing, meta, requestedAccessPolicy = null }) {
     const authenticated = !!principal && principal.ok !== false && !principal.anonymous;
 
     // ---- New slug ----
@@ -67,7 +85,20 @@ export function authorizeCatalogWrite({ principal, existing, meta }) {
             return { ok: true, ownerId: ANON_OWNER, accessPolicy: ACCESS_POLICIES.PUBLIC, claimed: true };
         }
         if (!principal.accountId) return deny(403, "no_active_account");
-        return { ok: true, ownerId: principal.accountId, accessPolicy: ACCESS_POLICIES.ACCOUNT, claimed: true };
+
+        // A signed-in user may publish a new plan openly on purpose
+        // (DESIGN-015 §5.8: "Open to everyone"). Defaulting to `account` is the
+        // protective choice, but forcing it would mean nobody who signs in can
+        // contribute to the shared corpus again — which is the wiki model
+        // ADR-0025 keeps as a first-class option, not a legacy one.
+        const requested = requestedPolicy(requestedAccessPolicy);
+        if (requested === "invalid") return deny(400, "invalid_access_policy");
+        return {
+            ok: true,
+            ownerId: principal.accountId,
+            accessPolicy: requested ?? ACCESS_POLICIES.ACCOUNT,
+            claimed: true,
+        };
     }
 
     // ---- Existing slug ----

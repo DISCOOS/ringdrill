@@ -90,6 +90,21 @@ protection, it is not the price of publishing. `ownerId` is taken from the
 verified principal, and the legacy `?ownerId=` parameter is ignored — it is
 accepted as a no-op for one release so older clients are not broken.
 
+**A signed-in user may still publish openly.** Two ways, both intact:
+
+* *Overwrite an existing public plan* — a `public` plan stays writable by
+  anyone, signed in or not. The upload looks for the slug in the caller's own
+  namespace first and then in `anon`, so signing in never costs you write
+  access to a plan you have been co-editing.
+* *Publish a new plan openly* — pass `?accessPolicy=public`. It is owned by
+  your account but writable by anyone. Without the parameter a new plan
+  defaults to `account`, which is the protective choice; `shared` is refused
+  here, since it names specific grantee accounts and is set afterwards through
+  `/api/drills/policy`.
+
+A requested policy applies to a **new** plan only. An existing plan keeps the
+policy it has, so an ordinary update can never widen access as a side effect.
+
 Concurrency is still guarded by `If-Match` (OCC), which runs after
 authorisation.
 

@@ -187,3 +187,62 @@ test("a refused principal on a new slug lands anon/public rather than claiming a
     const d = authorizeCatalogWrite({ principal: refused, existing: null, meta: null });
     assert.equal(d.ownerId, ANON_OWNER);
 });
+
+// ---------- publishing a new plan openly, on purpose (DESIGN-015 §5.8) ----------
+
+test("a signed-in user may publish a NEW plan as public", async () => {
+    // Defaulting to `account` is the protective choice, but forcing it would
+    // mean nobody who signs in can contribute to the shared corpus again —
+    // and ADR-0025 keeps the wiki model as a first-class option, not a legacy
+    // one.
+    const d = authorizeCatalogWrite({
+        principal: bergenMember, existing: null, meta: null, requestedAccessPolicy: "public",
+    });
+    assert.equal(d.ok, true);
+    assert.equal(d.ownerId, "a_bergen", "still owned by the account that published it");
+    assert.equal(d.accessPolicy, ACCESS_POLICIES.PUBLIC);
+});
+
+test("the default is still account when nothing is requested", () => {
+    const d = authorizeCatalogWrite({ principal: bergenMember, existing: null, meta: null });
+    assert.equal(d.accessPolicy, ACCESS_POLICIES.ACCOUNT);
+});
+
+test("`shared` is refused at publish time rather than silently downgraded", () => {
+    // It names specific grantee accounts, which is a decision made after the
+    // plan exists.
+    const d = authorizeCatalogWrite({
+        principal: bergenMember, existing: null, meta: null, requestedAccessPolicy: "shared",
+    });
+    assert.equal(d.ok, false);
+    assert.equal(d.status, 400);
+    assert.equal(d.reason, "invalid_access_policy");
+});
+
+test("nonsense is refused, not ignored", () => {
+    const d = authorizeCatalogWrite({
+        principal: bergenMember, existing: null, meta: null, requestedAccessPolicy: "everyone-lol",
+    });
+    assert.equal(d.reason, "invalid_access_policy");
+});
+
+test("a requested policy cannot change an EXISTING plan's policy", () => {
+    // Widening access must go through /api/drills/policy, never as a side
+    // effect of an ordinary publish.
+    const d = authorizeCatalogWrite({
+        principal: bergenOwner,
+        existing: slug("a_bergen"),
+        meta: metaFor("a_bergen", ACCESS_POLICIES.ACCOUNT),
+        requestedAccessPolicy: "public",
+    });
+    assert.equal(d.ok, true);
+    assert.equal(d.accessPolicy, ACCESS_POLICIES.ACCOUNT, "unchanged");
+});
+
+test("an anonymous publish is public regardless of what it asks for", () => {
+    const d = authorizeCatalogWrite({
+        principal: anonymous, existing: null, meta: null, requestedAccessPolicy: "account",
+    });
+    assert.equal(d.ownerId, ANON_OWNER);
+    assert.equal(d.accessPolicy, ACCESS_POLICIES.PUBLIC, "there is no account to scope it to");
+});

@@ -317,7 +317,13 @@ export default async function (request) {
         // read before the decision rather than after. keysForEntry, never
         // keysFor: a pre-migration entry still lives in the old layout.
         const existingMeta = existing ? await readJson(keysForEntry(existing).meta, null) : null;
-        const decision = authorizeCatalogWrite({ principal, existing, meta: existingMeta });
+        const decision = authorizeCatalogWrite({
+            principal, existing, meta: existingMeta,
+            // Honoured for a new plan only. Changing an existing plan's policy
+            // is POST /api/drills/policy, so that an ordinary update can never
+            // widen access as a side effect.
+            requestedAccessPolicy: qs.get("accessPolicy"),
+        });
         if (!decision.ok) {
             return withCors(request, new Response(
                 JSON.stringify({ error: decision.reason }),
