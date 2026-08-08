@@ -182,6 +182,8 @@ Kept as a running list; add to it rather than trusting memory.
 * Whether to convert `drills-admin`'s `listall` to enumerate `catalog/` or to
   keep enumerating the index. The index is authoritative post-migration and
   cheaper; the blob scan is what exists today.
-* Whether `GET /api/accounts/:id/plans` (DESIGN-015 §5.7's fourth tab) should
-  scan the index by namespace or maintain a per-account list. The scan is fine
-  at current scale and is the same shape as `membershipsOf`.
+**Settled:** `GET /api/accounts/:id/plans` (DESIGN-015 §5.7's fourth tab) scans
+the index by namespace prefix rather than maintaining a per-account list. The
+scan is fine at current scale, is the same shape as `membershipsOf`, and has no
+second copy to keep in step. Revisit if an account ever holds enough plans for
+the paging to bite — a maintained list is the answer then, not a bigger page.

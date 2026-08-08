@@ -137,6 +137,77 @@ curl -X POST "https://ringdrill.app/api/drills/policy?slug=lsor-eidene-2026" \
   -d '{"accessPolicy":"shared","sharedAccountIds":["a_redcross_fjell"]}'
 ```
 
+## Accounts and identity
+
+New in the accounts work ([ADR-0024](./adrs/0024-account-and-identity-model.md),
+[DESIGN-015](./design/015-accounts-and-iam.md)). **An account is optional** — the
+app works fully without one, and that stays the default.
+
+### Auth
+
+One function, five routes, because they share the token minting and the
+membership lookup; splitting them would mean five copies of the claim assembly,
+which is the one part where a mistake is a security bug rather than a 500.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/api/auth/start-email` | Begin email sign-in — sends a magic link and a code |
+| `POST` | `/api/auth/callback` | Exchange a provider result or an email code for tokens |
+| `POST` | `/api/auth/refresh` | Refresh the access token |
+| `POST` | `/api/auth/logout` | Revoke the session |
+| `GET` | `/api/auth/me` | The current principal, its accounts and roles |
+
+`acts` and `roles` are read from stored memberships **every time a token is
+minted**, so a role change takes effect on the next refresh rather than needing
+a sign-out. That is why the token carries the map rather than the server looking
+it up per request.
+
+Behaviour depends on `AUTH_MODE`
+([ADR-0073](./adrs/0073-auth-mode-and-adapters.md)) — `live`, `mock` or `off`.
+It is a deployment mode, not a feature flag: `mock` accepts `test.`-prefixed
+tokens so the backend can be exercised without a live IAM instance, and mints
+only what the active mode can verify.
+
+### Accounts and members
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/api/accounts` | Create an organisation, or upgrade a personal account (`upgradeAccountId`) |
+| `GET` | `/api/accounts/{id}/members` | The roster, with each row's state |
+| `POST` | `/api/accounts/{id}/members` | Invite by email — owner only |
+| `PATCH` | `/api/accounts/{id}/members/{userId}` | Change a role — owner only |
+| `DELETE` | `/api/accounts/{id}/members/{userId}` | Remove a member, or leave |
+| `GET` | `/api/accounts/{id}/plans` | The account's plans — the Library's fourth tab |
+
+Three rules are enforced here rather than assumed by callers:
+
+* **Only an owner administers.** Publishing follows from membership — every
+  member publishes, guests included — so `owner` does not mean "can do more with
+  plans", it means "can decide who else is here".
+* **An organisation always keeps one accepted owner.** Demoting or removing the
+  last one is refused, not offered and then failed.
+* **Invited is a state, not a role.** The role is chosen at invite time and
+  confers nothing until the invitation is accepted.
+
+`GET .../plans` lists **unpublished plans too** — an account library showing
+only what had been published would omit exactly the drafts the tab exists for —
+and each item says which it is. Guests see the list: guest is a *personal-data*
+tier, so what a guest does not get is the roster inside a plan, enforced on the
+download path ([ADR-0072](./adrs/0072-staff-pii-and-account-sync.md)), not by
+hiding the plan.
+
+### Two role vocabularies
+
+Never conflate these. `MemberRole` is the account/administration axis;
+`StaffRole` is the roster and device-edit gate
+([ADR-0057](./adrs/0057-role-gated-editing.md)). Somebody can be an account `guest` and
+a drill `director` at the same time.
+
+| | Values | Governs |
+|---|---|---|
+| `MemberRole` | `owner`, `member`, `guest` | Who administers the account, and who sees its people |
+| `StaffRole` | `director`, `instructor`, `actor`, `other` | What somebody does in a drill |
+
 ## Status codes
 
 Unknown slug → `404`. Unknown `/api/*` path → `404` with `{ "error": "not_found" }`.

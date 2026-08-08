@@ -1,10 +1,14 @@
 import { getStore } from "@netlify/blobs";
-import { corsPreflight, withCors } from "./lib/shared.js";
+import {
+    corsPreflight, withCors, metaToFeedItem,
+    getDrillsStore as _getDrillsStore, getSlugIndexStore as _getSlugIndexStore,
+} from "./lib/shared.js";
 import { authenticate } from "./lib/auth/index.js";
 import {
     acceptedOwners, claimHandle, defaultStores, getAccount, getUser, membersOf, membershipsOf,
     newId, normalizeEmail, putMember, removeMember, upgradeToOrganisation, validateHandle,
 } from "./lib/identity.js";
+import { keysForEntry } from "./lib/catalog.js";
 import { createMailer, sendTemplate } from "./lib/mail/index.js";
 
 /**
@@ -34,6 +38,8 @@ export function createHandler({
     now = Date.now,
     stores = defaultStores,
     inviteStore = () => getStore("invitations", strong),
+    getDrillsStore = _getDrillsStore,
+    getSlugIndexStore = _getSlugIndexStore,
     mailer = null,
 } = {}) {
     return async function (request) {
@@ -62,6 +68,12 @@ export function createHandler({
                 if (request.method === "POST" && !memberUserId) return withCors(request, await invite(request, accountId, principal));
                 if (request.method === "PATCH" && memberUserId) return withCors(request, await changeRole(request, accountId, memberUserId, principal));
                 if (request.method === "DELETE" && memberUserId) return withCors(request, await remove(accountId, memberUserId, principal));
+            }
+
+            // GET /api/accounts/:id/plans — the Library's fourth tab
+            // (DESIGN-015 §5.7).
+            if (section === "plans" && !memberUserId && request.method === "GET") {
+                return withCors(request, await listPlans(request, accountId, principal));
             }
 
             return withCors(request, json({ error: "not_found" }, 404));
@@ -135,6 +147,73 @@ export function createHandler({
             });
         }
         return json({ members: out, singleOwner: acceptedOwners(members).length === 1 });
+    }
+
+    /**
+     * The account's plans — every member sees them, guests included.
+     *
+     * Guest is a *personal-data* tier, not a smaller view of the catalog: a
+     * guest publishes like anyone else, so hiding the account's plans from
+     * them would hide the thing they were invited to work on. What a guest
+     * does not get is the roster inside a plan, and that is enforced on the
+     * download path where the roster actually is (ADR-0072), not here.
+     *
+     * Unlike the public feed this lists **unpublished** plans too. An account
+     * library that showed only what had been published would omit precisely
+     * the drafts the tab exists for.
+     *
+     * The scan is by index prefix. `slugIndexKey` is `<namespace>/<slug>` and
+     * the stored namespace is the account **id**, so `"<accountId>/"` selects
+     * exactly this account — the trailing slash is what stops `a_bergen/`
+     * matching `a_bergen2/x`. No dedupe against flat legacy keys is needed
+     * here the way the feed needs one: accounts did not exist before the
+     * migration, so nothing account-namespaced can have a pre-migration twin.
+     */
+    async function listPlans(request, accountId, principal) {
+        if (!isMember(principal, accountId)) return json({ error: "not_a_member" }, 403);
+
+        const url = new URL(request.url);
+        const limit = clampInt(url.searchParams.get("limit"), 1, 100, 50);
+        const origin = url.origin;
+
+        const idx = getSlugIndexStore();
+        const drills = getDrillsStore();
+        const prefix = `${accountId}/`;
+
+        const items = [];
+        let cursor = url.searchParams.get("cursor") || undefined;
+        let nextCursor;
+
+        while (items.length < limit) {
+            const page = await idx.list({ prefix, cursor, limit: 100 });
+            cursor = page.cursor;
+
+            for (const b of page.blobs || []) {
+                const key = String(b.key);
+                const rec = await idx.get(key, { type: "json" });
+                if (!rec) continue;
+
+                const meta = await drills.get(keysForEntry(rec).meta, { type: "json" });
+                if (!meta) continue;
+
+                items.push({
+                    ...metaToFeedItem(meta, { origin, namespace: accountId }),
+                    // The feed can assume `published`; this list cannot, so it
+                    // says so per item rather than leaving the client to guess
+                    // from a missing field.
+                    published: meta.published === true,
+                });
+                if (items.length >= limit) break;
+            }
+
+            if (!cursor || items.length >= limit) {
+                nextCursor = cursor;
+                break;
+            }
+        }
+
+        items.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+        return json(nextCursor ? { items, nextCursor } : { items });
     }
 
     async function invite(request, accountId, principal) {
@@ -226,6 +305,12 @@ export function createHandler({
         await removeMember(accountId, memberUserId, stores);
         return new Response(null, { status: 204 });
     }
+}
+
+function clampInt(v, min, max, dflt) {
+    const n = Number.parseInt(v ?? "", 10);
+    if (Number.isNaN(n)) return dflt;
+    return Math.min(max, Math.max(min, n));
 }
 
 export default createHandler();

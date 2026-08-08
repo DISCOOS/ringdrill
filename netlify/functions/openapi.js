@@ -17,6 +17,7 @@ const SPEC = {
     ],
     tags: [
         { name: "catalog", description: "Public catalog and files" },
+        { name: "accounts", description: "Accounts, members and their plans (ADR-0024)" },
         { name: "admin", description: "Requires bearer token" },
     ],
     components: {
@@ -200,6 +201,30 @@ const SPEC = {
                     400: { description: "Unusable slug, archive or requested policy" },
                     403: { description: "Not permitted to write this plan" },
                     409: { description: "Slug/version conflict" },
+                },
+            },
+        },
+        "/api/accounts/{id}/plans": {
+            get: {
+                tags: ["accounts"],
+                summary: "List an account's plans",
+                description:
+                    "The Library's fourth tab (DESIGN-015 §5.7). Any member may read it, guests included: "
+                    + "guest is a personal-data tier, so what a guest does not get is the roster inside a "
+                    + "plan (ADR-0072), not the plan's existence.\n\n"
+                    + "Unlike the public feed this includes **unpublished** plans, and each item says which "
+                    + "it is — an account library showing only what had been published would omit exactly "
+                    + "the drafts the tab exists for.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    { name: "id", in: "path", required: true, schema: { type: "string" } },
+                    { name: "limit", in: "query", schema: { type: "integer", minimum: 1, maximum: 100, default: 50 } },
+                    { name: "cursor", in: "query", schema: { type: "string" } },
+                ],
+                responses: {
+                    200: { description: "`{ items: [...], nextCursor? }`" },
+                    401: { description: "Not signed in" },
+                    403: { description: "Not a member of this account" },
                 },
             },
         },

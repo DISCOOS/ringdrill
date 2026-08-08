@@ -34,10 +34,26 @@ function fakeStore() {
     };
 }
 
-function harness() {
+/** A store whose values are already objects, matching the catalog stores. */
+function jsonStore(seed = {}) {
+    const data = new Map(Object.entries(seed));
+    return {
+        data,
+        async get(key) { return data.get(key) ?? null; },
+        async set(key, value) { data.set(key, value); return { modified: true }; },
+        async delete(key) { data.delete(key); },
+        async list({ prefix = "", cursor } = {}) {
+            if (cursor) return { blobs: [], cursor: undefined };
+            return { blobs: [...data.keys()].filter((k) => k.startsWith(prefix)).map((key) => ({ key })), cursor: undefined };
+        },
+    };
+}
+
+function harness({ index = {}, drills = {} } = {}) {
     const raw = {
         accounts: fakeStore(), users: fakeStore(), identities: fakeStore(), members: fakeStore(),
         emailIndex: fakeStore(), handles: fakeStore(), sessions: fakeStore(), invites: fakeStore(),
+        index: jsonStore(index), drills: jsonStore(drills),
     };
     const stores = {
         accounts: () => raw.accounts, users: () => raw.users, identities: () => raw.identities,
@@ -48,6 +64,8 @@ function harness() {
     const handler = createHandler({
         env: { AUTH_MODE: "mock", PUBLIC_APP_ORIGIN: "https://ringdrill.app" },
         stores, inviteStore: () => raw.invites, mailer,
+        getSlugIndexStore: () => raw.index,
+        getDrillsStore: () => raw.drills,
     });
     return { handler, stores, raw, mailer };
 }
@@ -232,4 +250,118 @@ test("removing somebody who is not a member is 404", async () => {
     const h = harness();
     await orgWith(h, { u_1: "owner" });
     assert.equal((await call(h, "DELETE", "/a_bergen/members/u_nope", { as: token("u_1", { a_bergen: "owner" }) })).status, 404);
+});
+
+// ---------- plans (the Library's fourth tab, DESIGN-015 §5.7) ----------
+
+const planMeta = (o) => ({
+    programId: o.id, slug: o.slug, name: o.name, description: "",
+    published: o.published ?? true, exerciseCount: 1,
+    versions: [{ v: "1", etag: '"e1"', size: 9, updatedAt: o.updatedAt ?? "2026-06-01T00:00:00.000Z" }],
+});
+
+/** One account with two plans, plus an anon plan and another account's plan. */
+function catalog() {
+    return {
+        index: {
+            "a_bergen/vinter": { entryId: "e_1", planId: "p_1", ownerAccountId: "a_bergen" },
+            "a_bergen/host": { entryId: "e_2", planId: "p_2", ownerAccountId: "a_bergen" },
+            // Neither of these may appear in a_bergen's list.
+            "anon/lsor": { entryId: "e_3", planId: "p_3", ownerAccountId: null },
+            "a_bergen2/annet": { entryId: "e_4", planId: "p_4", ownerAccountId: "a_bergen2" },
+        },
+        drills: {
+            "catalog/e_1/meta.json": planMeta({ id: "p_1", slug: "vinter", name: "Vinter", updatedAt: "2026-07-01T00:00:00.000Z" }),
+            "catalog/e_2/meta.json": planMeta({ id: "p_2", slug: "host", name: "Høst", published: false, updatedAt: "2026-06-01T00:00:00.000Z" }),
+            "catalog/e_3/meta.json": planMeta({ id: "p_3", slug: "lsor", name: "LSOR" }),
+            "catalog/e_4/meta.json": planMeta({ id: "p_4", slug: "annet", name: "Annet" }),
+        },
+    };
+}
+
+test("an account's plans list only that account's plans", async () => {
+    const h = harness(catalog());
+    await orgWith(h, { u_1: "owner" });
+
+    const res = await call(h, "GET", "/a_bergen/plans", { as: token("u_1", { a_bergen: "owner" }) });
+    assert.equal(res.status, 200);
+    const { items } = await res.json();
+
+    // The trailing slash in the prefix is what keeps `a_bergen2` out; the anon
+    // namespace is a different account entirely.
+    assert.deepEqual(items.map((i) => i.slug).sort(), ["host", "vinter"]);
+});
+
+test("unpublished plans are listed, and say so", async () => {
+    // An account library that showed only published plans would omit exactly
+    // the drafts the tab exists for.
+    const h = harness(catalog());
+    await orgWith(h, { u_1: "owner" });
+
+    const { items } = await (await call(h, "GET", "/a_bergen/plans", { as: token("u_1", { a_bergen: "owner" }) })).json();
+    const host = items.find((i) => i.slug === "host");
+    assert.equal(host.published, false);
+    assert.equal(items.find((i) => i.slug === "vinter").published, true);
+});
+
+test("each item carries the account namespace in its URL", async () => {
+    const h = harness(catalog());
+    await orgWith(h, { u_1: "owner" });
+
+    const { items } = await (await call(h, "GET", "/a_bergen/plans", { as: token("u_1", { a_bergen: "owner" }) })).json();
+    assert.equal(items.find((i) => i.slug === "vinter").namespace, "a_bergen");
+    assert.match(items.find((i) => i.slug === "vinter").latestUrl, /\/d\/a_bergen\/vinter$/);
+});
+
+test("a guest sees the account's plans — guest is a PII tier, not a smaller catalog", async () => {
+    // Hiding the plans from a guest would hide the thing they were invited to
+    // work on. What a guest does not get is the roster inside a plan, and that
+    // is enforced on the download path (ADR-0072), not here.
+    const h = harness(catalog());
+    await orgWith(h, { u_1: "owner", u_3: "guest" });
+
+    const res = await call(h, "GET", "/a_bergen/plans", { as: token("u_3", { a_bergen: "guest" }) });
+    assert.equal(res.status, 200);
+    assert.equal((await res.json()).items.length, 2);
+});
+
+test("a non-member cannot list an account's plans", async () => {
+    const h = harness(catalog());
+    await orgWith(h, { u_1: "owner" });
+
+    const res = await call(h, "GET", "/a_bergen/plans", { as: token("u_9", { a_other: "owner" }) });
+    assert.equal(res.status, 403);
+    assert.equal((await res.json()).error, "not_a_member");
+});
+
+test("listing an account's plans requires authentication", async () => {
+    const h = harness(catalog());
+    assert.equal((await call(h, "GET", "/a_bergen/plans")).status, 401);
+});
+
+test("an index entry whose meta is missing is skipped, not returned half-built", async () => {
+    const c = catalog();
+    delete c.drills["catalog/e_2/meta.json"];
+    const h = harness(c);
+    await orgWith(h, { u_1: "owner" });
+
+    const { items } = await (await call(h, "GET", "/a_bergen/plans", { as: token("u_1", { a_bergen: "owner" }) })).json();
+    assert.deepEqual(items.map((i) => i.slug), ["vinter"]);
+});
+
+test("an account with no plans gets an empty list, not a 404", async () => {
+    const h = harness(catalog());
+    await orgWith(h, { u_1: "owner" });
+    await h.stores.accounts().set("a_empty", JSON.stringify({ id: "a_empty", displayName: "Empty", type: "organization" }));
+    await putMember("a_empty", "u_1", "owner", { acceptedAt: "2026-08-01" }, h.stores);
+
+    const res = await call(h, "GET", "/a_empty/plans", { as: token("u_1", { a_empty: "owner" }) });
+    assert.equal(res.status, 200);
+    assert.deepEqual((await res.json()).items, []);
+});
+
+test("POST to the plans route is not a route", async () => {
+    const h = harness(catalog());
+    await orgWith(h, { u_1: "owner" });
+    assert.equal((await call(h, "POST", "/a_bergen/plans", { as: token("u_1", { a_bergen: "owner" }), body: {} })).status, 404);
 });
