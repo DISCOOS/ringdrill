@@ -257,7 +257,7 @@ export function latestVersionEntry(versions) {
 // ADR-0025's matrix before OCC, and `ownerId` is taken from the verified
 // principal rather than a query parameter. The value here is therefore a real
 // property of the plan, not a label.
-export function metaToFeedItem(meta, { origin }) {
+export function metaToFeedItem(meta, { origin, namespace = null }) {
     const latest = latestVersionEntry(meta.versions);
     return {
         // planId is the Plan-rename name; programId stays too until every
@@ -285,7 +285,11 @@ export function metaToFeedItem(meta, { origin }) {
         place: (typeof meta.place === "string" && meta.place) ? meta.place : null,
         languageCode: typeof meta.languageCode === "string" ? meta.languageCode : null,
         tags: Array.isArray(meta.tags) ? meta.tags : [],
-        latestUrl: `${origin}/d/${meta.slug}`,
+        // The namespace an entry lives in (ADR-0074 §2). `anon` is omitted from
+        // the path, so every link published before namespaces existed keeps
+        // exactly the shape it had.
+        namespace: namespace && namespace !== "anon" ? namespace : null,
+        latestUrl: `${origin}/d/${namespace && namespace !== "anon" ? `${namespace}/` : ""}${meta.slug}`,
         updatedAt: latest?.updatedAt || null,
     };
 }

@@ -12,7 +12,7 @@ import { createHandler } from "../functions/market-feed.js";
 
 function makeStore(metaByKey) {
     return {
-        list: async ({ prefix }) => ({
+        list: async ({ prefix = "" } = {}) => ({
             blobs: Object.keys(metaByKey)
                 .filter((k) => k.startsWith(prefix))
                 .map((key) => ({ key })),
@@ -21,6 +21,34 @@ function makeStore(metaByKey) {
         get: async (key) => metaByKey[key] ?? null,
     };
 }
+
+/**
+ * The feed enumerates the slug index rather than scanning blobs (ADR-0074 §4):
+ * post-migration a blob scan cannot produce a feed, because meta.json carries
+ * no namespace and latestUrl needs one. These helpers build an index that
+ * points at whichever layout the meta keys are in.
+ */
+function indexFor(metaByKey) {
+    const records = {};
+    for (const key of Object.keys(metaByKey)) {
+        if (!key.endsWith("/meta.json")) continue;
+        const meta = metaByKey[key];
+        if (key.startsWith("catalog/")) {
+            const entryId = key.split("/")[1];
+            const ns = meta.ownerId && meta.ownerId !== "anon" ? meta.ownerId : "anon";
+            records[`${ns}/${meta.slug}`] = { entryId, planId: meta.programId, ownerId: meta.ownerId };
+        } else {
+            const [, ownerId, planId] = key.split("/");
+            records[meta.slug] = { ownerId, programId: planId };
+        }
+    }
+    return makeStore(records);
+}
+
+const handlerFor = (metaByKey) => createHandler({
+    getDrillsStore: () => makeStore(metaByKey),
+    getSlugIndexStore: () => indexFor(metaByKey),
+});
 
 function req(path) {
     return new Request(`http://api.ringdrill.app${path}`);
@@ -47,7 +75,7 @@ const MODERN_META = {
 };
 
 test("published items carry the widened shape", async () => {
-    const handler = createHandler({ getDrillsStore: () => makeStore(MODERN_META) });
+    const handler = handlerFor(MODERN_META);
     const res = await handler(req("/api/market-feed"));
     assert.equal(res.status, 200);
     const { items } = await res.json();
@@ -66,6 +94,9 @@ test("published items carry the widened shape", async () => {
         place: "Bergen, Norway",
         languageCode: "nb",
         tags: ["sar"],
+        // A pre-migration record is addressed flat, so it reports no namespace
+        // and keeps its bare /d/<slug> URL (ADR-0074 §2).
+        namespace: null,
         latestUrl: "http://api.ringdrill.app/d/modern-plan",
         updatedAt: "2026-02-01T00:00:00.000Z",
     });
@@ -82,7 +113,7 @@ test("unpublished items are omitted", async () => {
             versions: [],
         },
     };
-    const handler = createHandler({ getDrillsStore: () => makeStore(metaByKey) });
+    const handler = handlerFor(metaByKey);
     const res = await handler(req("/api/market-feed"));
     const { items } = await res.json();
     assert.equal(items.length, 0);
@@ -99,7 +130,7 @@ test("a legacy blob (no exerciseCount/author/accessPolicy) projects with gracefu
             versions: [],
         },
     };
-    const handler = createHandler({ getDrillsStore: () => makeStore(metaByKey) });
+    const handler = handlerFor(metaByKey);
     const res = await handler(req("/api/market-feed"));
     const { items } = await res.json();
     assert.equal(items.length, 1);
@@ -125,7 +156,7 @@ test("items are sorted by updatedAt descending", async () => {
             versions: [{ v: "1", updatedAt: "2026-03-01T00:00:00.000Z" }],
         },
     };
-    const handler = createHandler({ getDrillsStore: () => makeStore(metaByKey) });
+    const handler = handlerFor(metaByKey);
     const res = await handler(req("/api/market-feed"));
     const { items } = await res.json();
     assert.deepEqual(items.map((i) => i.slug), ["newer", "older"]);
@@ -138,7 +169,49 @@ test("non-GET method → 405", async () => {
 });
 
 test("response has cache-control: public, max-age=30", async () => {
-    const handler = createHandler({ getDrillsStore: () => makeStore(MODERN_META) });
+    const handler = handlerFor(MODERN_META);
     const res = await handler(req("/api/market-feed"));
     assert.equal(res.headers.get("cache-control"), "public, max-age=30");
+});
+
+// ---------- ADR-0074 §2: namespaces in the feed ----------
+
+const MIGRATED_META = {
+    "catalog/e_1/meta.json": {
+        programId: "prog-a", slug: "lsor", name: "LSOR", ownerId: "anon",
+        published: true, versions: [{ v: "1", updatedAt: "2026-03-01T00:00:00.000Z" }],
+    },
+    "catalog/e_2/meta.json": {
+        programId: "prog-b", slug: "vinter", name: "Vinter", ownerId: "a_bergen",
+        published: true, versions: [{ v: "1", updatedAt: "2026-03-02T00:00:00.000Z" }],
+    },
+};
+
+test("a migrated anon entry keeps its bare URL; an account entry gains its namespace", async () => {
+    const { items } = await (await handlerFor(MIGRATED_META)(req("/api/market-feed"))).json();
+    const anon = items.find((i) => i.slug === "lsor");
+    const owned = items.find((i) => i.slug === "vinter");
+
+    assert.equal(anon.namespace, null);
+    assert.equal(anon.latestUrl, "http://api.ringdrill.app/d/lsor");
+    assert.equal(owned.namespace, "a_bergen");
+    assert.equal(owned.latestUrl, "http://api.ringdrill.app/d/a_bergen/vinter");
+});
+
+test("mid-migration, a slug present both flat and namespaced is listed once", async () => {
+    // The copy phase leaves the flat key in place until cleanup, so both point
+    // at the same plan. Listing it twice would show a duplicate in the catalog.
+    const both = {
+        "drills/anon/prog-a/meta.json": {
+            programId: "prog-a", slug: "lsor", name: "LSOR (old)", ownerId: "anon",
+            published: true, versions: [{ v: "1", updatedAt: "2026-03-01T00:00:00.000Z" }],
+        },
+        "catalog/e_1/meta.json": {
+            programId: "prog-a", slug: "lsor", name: "LSOR", ownerId: "anon",
+            published: true, versions: [{ v: "1", updatedAt: "2026-03-01T00:00:00.000Z" }],
+        },
+    };
+    const { items } = await (await handlerFor(both)(req("/api/market-feed"))).json();
+    assert.equal(items.length, 1);
+    assert.equal(items[0].name, "LSOR", "the migrated record wins over its flat twin");
 });
