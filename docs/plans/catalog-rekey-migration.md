@@ -5,8 +5,8 @@ ADR decides that a catalog entry is a distinct object identified by
 `(namespace, slug)` and keyed by an opaque entry id; this document is the
 runbook for getting the live catalog there without breaking a link.
 
-Status: **not started.** The code exists and is tested; the blocking list below
-is not yet cleared.
+Status: **ready to run.** The blocking list below is cleared; steps 1-6 are
+not yet done.
 
 ## What changes
 
@@ -45,23 +45,24 @@ in `lib/catalog.js` makes them independently convertible, but the migration must
 not run until **all** are done: a migrated plan would 404 from the ones left
 behind, and new publishes would land back in the old layout.
 
-- [x] `deep-link.js` — `/d/` download. **Converted.**
-- [ ] `drills-head.js` — HEAD metadata. Feeds ADR-0010's refresh polling, so a
-      break here silently stops every client noticing catalog updates.
-- [ ] `drills-preview.js` — `/i/` install links (ADR-0015).
-- [ ] `market-feed.js` — lists `prefix: "drills/"`. Must list `catalog/` and
-      carry the namespace into `latestUrl`, or every feed link points at the
-      wrong shape.
-- [ ] `drills-upload.js` — still writes the old layout and claims flat slugs.
-      **Until this is converted the migration is Sisyphean**: each new publish
-      creates another pre-migration entry.
-- [ ] `mcp-backend.js` — `search_catalog` and `get_plan` use `getSlugRecord`,
-      `keysFor` and `prefix: "drills/"`. Easy to forget: it is a *library*
-      under `lib/`, not a function, and the hosted MCP endpoint is the one
-      surface with no test that would notice.
-- [ ] `drills-admin.js` — `listall`, `versions` and `deleteall` all assume the
-      old layout. `deleteall` is the dangerous one: it must not delete a
-      migrated entry's *old* blobs and call the plan gone.
+- [x] `deep-link.js` — `/d/` download.
+- [x] `drills-upload.js` — publishes into the new layout and claims namespaced
+      slugs. Done first, because while it wrote the old layout every publish
+      created another entry to migrate.
+- [x] `market-feed.js` — enumerates the index and carries the namespace into
+      `latestUrl`.
+- [x] `drills-head.js` — HEAD metadata, feeding ADR-0010's refresh polling.
+- [x] `drills-preview.js` — `/i/` install links (ADR-0015).
+- [x] `mcp-backend.js` — `search_catalog` and `get_plan`.
+- [x] `drills-admin.js` — `listall`, `versions`, `deleteversion`, `deleteall`.
+      Every action resolves through one helper so none can drift onto a single
+      layout while the others move, and `deleteall` takes its prefix from the
+      record rather than deriving an owner-scoped one — otherwise it would
+      delete nothing, report success, and leave the plan still being served.
+
+**All clear as of 2026-08-08.** The legacy `keysFor` / `getSlugRecord` imports
+are gone from every function, so no reader can reach the old layout except
+through `keysForEntry`'s deliberate fallback.
 
 **Checked and not applicable:** `make mcp-bundle`. The Dart→JS compiler bundle
 covers `lib/data/source/`, `lib/models/`, `lib/services/brief/` and `lib/l10n/`;

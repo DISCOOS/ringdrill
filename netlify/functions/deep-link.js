@@ -2,7 +2,6 @@
 import {
     MIME_DRILL,
     readBinary, readJson,
-    getSlugRecord, keysFor,
     sha256Hex, toStrongEtag,
     latestVersionEntry,
     corsPreflight, withCors

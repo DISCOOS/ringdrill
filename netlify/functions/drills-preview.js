@@ -1,10 +1,11 @@
 import {
-    getSlugRecord as _getSlugRecord,
     readJson as _readJson,
-    keysFor,
     corsPreflight,
     withCors,
 } from "./lib/shared.js";
+import {
+    findEntry as _findEntry, keysForEntry, parseCatalogPath, resolveNamespace as _resolveNamespace,
+} from "./lib/catalog.js";
 
 const STRINGS = {
     nb: {
@@ -251,7 +252,7 @@ function notFoundHtml(locale) {
     return `<!DOCTYPE html><html lang="${locale}"><head><meta charset="utf-8"><title>${s.notFound} · RingDrill</title><link rel="icon" type="image/png" sizes="512x512" href="https://ringdrill.app/brand/logo.png"></head><body><h1>${s.notFound}</h1></body></html>`;
 }
 
-export function createHandler({ getSlugRecord = _getSlugRecord, readJson = _readJson } = {}) {
+export function createHandler({ findEntry = _findEntry, resolveNamespace = _resolveNamespace, readJson = _readJson } = {}) {
     return async function (request) {
         const preflight = corsPreflight(request);
         if (preflight) return preflight;
@@ -280,7 +281,13 @@ export function createHandler({ getSlugRecord = _getSlugRecord, readJson = _read
                 }));
             }
 
-            const rec = await getSlugRecord(slug);
+            // An /i/ link may carry a namespace segment too, so a shared
+            // install link for an account-owned plan resolves the same way its
+            // /d/ counterpart does (ADR-0074 §2). Dual-read via findEntry.
+            const parsed = parseCatalogPath(slug);
+            const slugOnly = parsed?.slug ?? slug;
+            const ns = await resolveNamespace(parsed?.explicitNamespace ? parsed.namespace : null, {});
+            const rec = await findEntry({ namespace: ns.namespace, slug: slugOnly });
             if (!rec) {
                 const locale = pickLocale(request);
                 return withCors(request, new Response(notFoundHtml(locale), {
@@ -289,7 +296,7 @@ export function createHandler({ getSlugRecord = _getSlugRecord, readJson = _read
                 }));
             }
 
-            const { meta: metaKey } = keysFor({ ownerId: rec.ownerId, programId: rec.programId, version: "latest" });
+            const { meta: metaKey } = keysForEntry(rec, "latest");
             const meta = await readJson(metaKey, null);
 
             if (!meta || !meta.published) {

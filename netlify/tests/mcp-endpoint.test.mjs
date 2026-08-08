@@ -40,17 +40,24 @@ function fakeCatalog({ archive } = {}) {
             },
         ],
     };
+    const record = { ownerId: "anon", programId: "prog-1" };
     return {
         getDrillsStore: () => ({
-            list: async () => ({
-                blobs: [{ key: "drills/anon/prog-1/meta.json" }],
-            }),
+            list: async () => ({ blobs: [{ key: "drills/anon/prog-1/meta.json" }] }),
             get: async () => meta,
         }),
-        getSlugRecord: async (slug) =>
-            slug === "test-plan"
-                ? { ownerId: "anon", programId: "prog-1" }
-                : null,
+        // The catalog is enumerated through the slug index now, not a blob
+        // scan (ADR-0074 §4): meta.json carries no namespace, and a catalog
+        // item needs one to be addressable. This fixture is a pre-migration
+        // record — a flat key with no entryId — which is the state the
+        // migration starts from.
+        getSlugIndexStore: () => ({
+            list: async () => ({ blobs: [{ key: "test-plan" }] }),
+            get: async () => record,
+        }),
+        findEntry: async ({ slug }) =>
+            slug === "test-plan" ? { ...record, slug, legacy: true } : null,
+        resolveNamespace: async (ns) => ({ namespace: ns ?? "anon", canonical: ns ?? "anon" }),
         readJson: async () => meta,
         readBinary: async () => archive ?? null,
     };
