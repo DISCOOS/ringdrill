@@ -64,6 +64,15 @@ behind, and new publishes would land back in the old layout.
 are gone from every function, so no reader can reach the old layout except
 through `keysForEntry`'s deliberate fallback.
 
+**Both layouts are covered by tests**, so the dual-read is not taken on trust.
+`netlify/tests/mcp-catalog-layout.test.mjs` and
+`netlify/tests/drills-admin-layout.test.mjs` each run every case twice — once
+against a pre-migration record, once against a migrated one — because the
+failure mode this migration invites is a reader that works perfectly on one
+side and silently answers wrong on the other. These were the two surfaces with
+no handler test at all; `drills-admin` had none because it was the one function
+without a `createHandler({ deps })` seam, which it now has.
+
 **Checked and not applicable:** `make mcp-bundle`. The Dart→JS compiler bundle
 covers `lib/data/source/`, `lib/models/`, `lib/services/brief/` and `lib/l10n/`;
 `mcp-backend.js` is plain JS and is not in `mcp-compiler-bundle.sources.json`,
@@ -142,9 +151,12 @@ Kept as a running list; add to it rather than trusting memory.
   phases use the strong store; do not "simplify" that away.
 * **`drills-upload` before anything else.** While it still writes the old
   layout, every publish creates another entry to migrate.
-* **`deleteall` in `drills-admin`** deletes by `drills/<ownerId>/<programId>/`
-  prefix. After migration that prefix is empty for a migrated plan, so the
-  delete silently succeeds having removed nothing.
+* **`deleteall` in `drills-admin`** *used* to delete by the
+  `drills/<ownerId>/<programId>/` prefix, which after migration is empty for a
+  migrated plan — so it would have removed nothing, reported success, and left
+  the plan still being served. Fixed: it takes the prefix from the record via
+  `keysForEntry`, and removes whichever index key the record came from. Left
+  here because it is the shape any *new* delete path will be tempted into.
 * **CDN caching.** `/d/` responses are CDN-cached. Content is byte-identical
   across the move so a cached 200 stays correct — but a 404 served during a
   window where the index points at bytes that are not there yet could be

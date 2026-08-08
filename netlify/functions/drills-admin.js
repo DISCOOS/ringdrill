@@ -1,17 +1,42 @@
 // netlify/functions/drills-admin.js
 import {
-    getSlugIndexStore,
-    keysFor, readJson, readJsonStrong, readBinary, readBinaryStrong,
-    writeJsonConditional, writeBinaryConditional, getBlobEtag,
+    getSlugIndexStore as _getSlugIndexStore,
+    getDrillsStore as _getDrillsStore,
+    readJson as _readJson, readJsonStrong as _readJsonStrong,
+    readBinary as _readBinary, readBinaryStrong as _readBinaryStrong,
+    writeJsonConditional as _writeJsonConditional,
+    writeBinaryConditional as _writeBinaryConditional,
+    getBlobEtag as _getBlobEtag,
     nowIso,
     corsPreflight, withCors
 } from "./lib/shared.js";
 import {
-    findEntry, keysForEntry, parseCatalogPath, resolveNamespace, slugIndexKey,
+    findEntry as _findEntry, keysForEntry, parseCatalogPath,
+    resolveNamespace as _resolveNamespace, slugIndexKey,
 } from "./lib/catalog.js";
-import { getDrillsStore } from "./lib/shared.js";
 
-export default async function (request) {
+/**
+ * `createHandler({ deps })`, matching every other function in this directory.
+ *
+ * It was the one without a seam, and that is exactly why `deleteall` — the most
+ * destructive action in the codebase — had no handler test until the catalog
+ * re-key made it obviously dangerous.
+ */
+export function createHandler({
+    env = process.env,
+    getSlugIndexStore = _getSlugIndexStore,
+    getDrillsStore = _getDrillsStore,
+    findEntry = _findEntry,
+    resolveNamespace = _resolveNamespace,
+    readJson = _readJson,
+    readJsonStrong = _readJsonStrong,
+    readBinary = _readBinary,
+    readBinaryStrong = _readBinaryStrong,
+    writeJsonConditional = _writeJsonConditional,
+    writeBinaryConditional = _writeBinaryConditional,
+    getBlobEtag = _getBlobEtag,
+} = {}) {
+    return async function (request) {
     const preflight = corsPreflight(request);
     if (preflight) return preflight;
 
@@ -24,7 +49,7 @@ export default async function (request) {
 
     try {
         // ---- Auth (Bearer ADMIN_TOKEN) ----
-        const token = (process.env.ADMIN_TOKEN || "").trim();
+        const token = (env.ADMIN_TOKEN || "").trim();
         const auth  = request.headers.get("authorization") || "";
         const ok = token && auth.toLowerCase().startsWith("bearer ") && auth.slice(7).trim() === token;
         if (!ok) return json({ error: "Unauthorized" }, 401);
@@ -340,6 +365,7 @@ export default async function (request) {
     } catch (e) {
         return json({ error: String(e?.message || e) }, 500);
     }
+    };
 }
 
 function clampInt(v, min, max, dflt) {
@@ -347,3 +373,5 @@ function clampInt(v, min, max, dflt) {
     if (Number.isNaN(n)) return dflt;
     return Math.min(max, Math.max(min, n));
 }
+
+export default createHandler();
