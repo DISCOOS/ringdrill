@@ -1098,6 +1098,121 @@ class AppLocalizationsNb extends AppLocalizations {
       'Klarte ikke å oppdatere deling. Planen er publisert bare til kontoen din.';
 
   @override
+  String get accountTitle => 'Konto';
+
+  @override
+  String get accountMembersTitle => 'Medlemmer';
+
+  @override
+  String get accountRoleOwner => 'Eier';
+
+  @override
+  String get accountRoleMember => 'Medlem';
+
+  @override
+  String get accountRoleGuest => 'Gjest';
+
+  @override
+  String get accountRoleOwnerHint =>
+      'Styrer medlemmer og tilgang, i tillegg til alt et medlem kan.';
+
+  @override
+  String get accountRoleMemberHint =>
+      'Leser og publiserer planene, og ser stablista.';
+
+  @override
+  String get accountRoleGuestHint =>
+      'Leser og publiserer planene, men ser ikke stablista.';
+
+  @override
+  String get accountRolePickerLead =>
+      'Alle du legger til kan jobbe med planene. Forskjellen er om de ser stablista — navnene og telefonnumrene til folkene deres.';
+
+  @override
+  String get accountStateInvited => 'Invitert';
+
+  @override
+  String get accountStateFailed => 'Levering feilet';
+
+  @override
+  String get accountInviteAction => 'Inviter';
+
+  @override
+  String get accountInviteEmailLabel => 'E-postadresse';
+
+  @override
+  String accountInviteSent(String email) {
+    return 'Invitasjon sendt til $email';
+  }
+
+  @override
+  String get accountWithdrawAction => 'Trekk tilbake';
+
+  @override
+  String get accountRemoveAction => 'Fjern';
+
+  @override
+  String get accountLeaveAction => 'Forlat';
+
+  @override
+  String get accountChangeRoleAction => 'Endre rolle';
+
+  @override
+  String get accountSingleOwnerAdvisory =>
+      'Denne organisasjonen har én eier. Legg til én til, så tilgangen ikke går tapt om noen blir utilgjengelig.';
+
+  @override
+  String get accountLastOwnerRefused => 'En organisasjon må ha minst én eier.';
+
+  @override
+  String get accountOwnerOnly => 'Bare en eier kan gjøre dette.';
+
+  @override
+  String get accountActionFailed => 'Det virket ikke. Prøv igjen.';
+
+  @override
+  String get inviteTitle => 'Invitasjon';
+
+  @override
+  String inviteJoinPrompt(String inviter, String organisation, String role) {
+    return '$inviter inviterte deg til å bli med i $organisation som $role.';
+  }
+
+  @override
+  String inviteSignInToAccept(String email) {
+    return 'Logg inn som $email for å godta.';
+  }
+
+  @override
+  String get inviteAcceptAction => 'Godta';
+
+  @override
+  String inviteAccepted(String organisation) {
+    return 'Du er nå med i $organisation.';
+  }
+
+  @override
+  String get inviteStateAccepted => 'Denne invitasjonen er allerede godtatt.';
+
+  @override
+  String get inviteStateWithdrawn => 'Denne invitasjonen ble trukket tilbake.';
+
+  @override
+  String get inviteStateExpired => 'Denne invitasjonen er utløpt. Be om en ny.';
+
+  @override
+  String get inviteStateOrganisationDeleted =>
+      'Den organisasjonen finnes ikke lenger.';
+
+  @override
+  String get inviteStateNotFound => 'Vi fant ikke den invitasjonen.';
+
+  @override
+  String inviteWrongIdentity(String email, String organisation) {
+    return 'Denne invitasjonen ble sendt til $email, og du er logget inn som en annen. Logg inn med den adressen, eller be en eier i $organisation invitere adressen du bruker.';
+  }
+
+  @override
   String get publishPublishesTo => 'Publiseres til';
 
   @override

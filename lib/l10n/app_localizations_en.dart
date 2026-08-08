@@ -1102,6 +1102,124 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not update sharing. The plan is published to your account only.';
 
   @override
+  String get accountTitle => 'Account';
+
+  @override
+  String get accountMembersTitle => 'Members';
+
+  @override
+  String get accountRoleOwner => 'Owner';
+
+  @override
+  String get accountRoleMember => 'Member';
+
+  @override
+  String get accountRoleGuest => 'Guest';
+
+  @override
+  String get accountRoleOwnerHint =>
+      'Manages members and access, plus everything a member can do.';
+
+  @override
+  String get accountRoleMemberHint =>
+      'Reads and publishes the plans, and sees the staff roster.';
+
+  @override
+  String get accountRoleGuestHint =>
+      'Reads and publishes the plans, but does not see the roster.';
+
+  @override
+  String get accountRolePickerLead =>
+      'Everyone you add can work on the plans. The difference is whether they see the staff roster — your people\'s names and phone numbers.';
+
+  @override
+  String get accountStateInvited => 'Invited';
+
+  @override
+  String get accountStateFailed => 'Delivery failed';
+
+  @override
+  String get accountInviteAction => 'Invite';
+
+  @override
+  String get accountInviteEmailLabel => 'Email address';
+
+  @override
+  String accountInviteSent(String email) {
+    return 'Invitation sent to $email';
+  }
+
+  @override
+  String get accountWithdrawAction => 'Withdraw';
+
+  @override
+  String get accountRemoveAction => 'Remove';
+
+  @override
+  String get accountLeaveAction => 'Leave';
+
+  @override
+  String get accountChangeRoleAction => 'Change role';
+
+  @override
+  String get accountSingleOwnerAdvisory =>
+      'This organisation has one owner. Add another, so access is not lost if someone becomes unavailable.';
+
+  @override
+  String get accountLastOwnerRefused =>
+      'An organisation must keep at least one owner.';
+
+  @override
+  String get accountOwnerOnly => 'Only an owner can do this.';
+
+  @override
+  String get accountActionFailed => 'That did not work. Try again.';
+
+  @override
+  String get inviteTitle => 'Invitation';
+
+  @override
+  String inviteJoinPrompt(String inviter, String organisation, String role) {
+    return '$inviter invited you to join $organisation as $role.';
+  }
+
+  @override
+  String inviteSignInToAccept(String email) {
+    return 'Sign in as $email to accept.';
+  }
+
+  @override
+  String get inviteAcceptAction => 'Accept';
+
+  @override
+  String inviteAccepted(String organisation) {
+    return 'You have joined $organisation.';
+  }
+
+  @override
+  String get inviteStateAccepted =>
+      'This invitation has already been accepted.';
+
+  @override
+  String get inviteStateWithdrawn => 'This invitation was withdrawn.';
+
+  @override
+  String get inviteStateExpired =>
+      'This invitation has expired. Ask for a new one.';
+
+  @override
+  String get inviteStateOrganisationDeleted =>
+      'That organisation no longer exists.';
+
+  @override
+  String get inviteStateNotFound => 'We could not find that invitation.';
+
+  @override
+  String inviteWrongIdentity(String email, String organisation) {
+    return 'This invitation was sent to $email, and you are signed in as someone else. Sign in with that address, or ask an owner of $organisation to invite the address you use.';
+  }
+
+  @override
   String get publishPublishesTo => 'Publishes to';
 
   @override

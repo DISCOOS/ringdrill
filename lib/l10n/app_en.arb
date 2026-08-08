@@ -1260,6 +1260,72 @@
   "@publishSharingFailed": {
     "description": "Says where the plan actually ended up, because a failed sharing step leaves it *less* open than asked for and the user needs to know which."
   },
+  "accountTitle": "Account",
+  "accountMembersTitle": "Members",
+  "accountRoleOwner": "Owner",
+  "accountRoleMember": "Member",
+  "accountRoleGuest": "Guest",
+  "accountRoleOwnerHint": "Manages members and access, plus everything a member can do.",
+  "accountRoleMemberHint": "Reads and publishes the plans, and sees the staff roster.",
+  "accountRoleGuestHint": "Reads and publishes the plans, but does not see the roster.",
+  "accountRolePickerLead": "Everyone you add can work on the plans. The difference is whether they see the staff roster — your people's names and phone numbers.",
+  "@accountRolePickerLead": {
+    "description": "Sits above the role options (DESIGN-015 §6.1). Without it the picker reads as a permission ladder, which it is not: every role publishes, and the role decides administration and whether the roster is visible."
+  },
+  "accountStateInvited": "Invited",
+  "accountStateFailed": "Delivery failed",
+  "@accountStateFailed": {
+    "description": "A bounced or expired invitation is surfaced on the row rather than hidden in a log (DESIGN-015 §6.2)."
+  },
+  "accountInviteAction": "Invite",
+  "accountInviteEmailLabel": "Email address",
+  "accountInviteSent": "Invitation sent to {email}",
+  "@accountInviteSent": {
+    "placeholders": { "email": { "type": "String" } }
+  },
+  "accountWithdrawAction": "Withdraw",
+  "accountRemoveAction": "Remove",
+  "accountLeaveAction": "Leave",
+  "accountChangeRoleAction": "Change role",
+  "accountSingleOwnerAdvisory": "This organisation has one owner. Add another, so access is not lost if someone becomes unavailable.",
+  "@accountSingleOwnerAdvisory": {
+    "description": "DESIGN-015 §4.4. The design answer to an unrecoverable organisation is prevention, and it belongs on this screen rather than in a recovery flow. Low-key and never blocking: not a modal, not a warning colour."
+  },
+  "accountLastOwnerRefused": "An organisation must keep at least one owner.",
+  "accountOwnerOnly": "Only an owner can do this.",
+  "accountActionFailed": "That did not work. Try again.",
+  "inviteTitle": "Invitation",
+  "inviteJoinPrompt": "{inviter} invited you to join {organisation} as {role}.",
+  "@inviteJoinPrompt": {
+    "placeholders": {
+      "inviter": { "type": "String" },
+      "organisation": { "type": "String" },
+      "role": { "type": "String" }
+    }
+  },
+  "inviteSignInToAccept": "Sign in as {email} to accept.",
+  "@inviteSignInToAccept": {
+    "description": "The link identifies the invitation but grants nothing; accepting needs an identity (DESIGN-015 §6.4). Naming the address is what makes the instruction actionable.",
+    "placeholders": { "email": { "type": "String" } }
+  },
+  "inviteAcceptAction": "Accept",
+  "inviteAccepted": "You have joined {organisation}.",
+  "@inviteAccepted": {
+    "placeholders": { "organisation": { "type": "String" } }
+  },
+  "inviteStateAccepted": "This invitation has already been accepted.",
+  "inviteStateWithdrawn": "This invitation was withdrawn.",
+  "inviteStateExpired": "This invitation has expired. Ask for a new one.",
+  "inviteStateOrganisationDeleted": "That organisation no longer exists.",
+  "inviteStateNotFound": "We could not find that invitation.",
+  "inviteWrongIdentity": "This invitation was sent to {email}, and you are signed in as someone else. Sign in with that address, or ask an owner of {organisation} to invite the address you use.",
+  "@inviteWrongIdentity": {
+    "description": "Both remedies, because the invitee can act on either and neither is obvious (DESIGN-015 §6.4). Binding to whoever opens the link would turn a forwarded email into account access, so this is a refusal that has to explain itself.",
+    "placeholders": {
+      "email": { "type": "String" },
+      "organisation": { "type": "String" }
+    }
+  },
   "publishPublishesTo": "Publishes to",
   "@publishPublishesTo": {
     "description": "Label above the account a publish will land in (DESIGN-015 §5.8 decision 2). Someone who publishes to the wrong account otherwise finds out afterwards."

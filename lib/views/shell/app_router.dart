@@ -16,6 +16,7 @@ import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/concept_primer_screen.dart';
 import 'package:ringdrill/views/install_link_handler.dart';
+import 'package:ringdrill/views/invite_page.dart';
 import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/migration_page.dart';
 import 'package:ringdrill/web/install_guide_page.dart'
@@ -228,6 +229,16 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
           path: '/migrate',
           parentNavigatorKey: key,
           builder: (context, state) => const MigrationPage(),
+        ),
+        // Answering an invitation (DESIGN-015 §6.4). A real route rather than
+        // a dialog, because the link arrives by email and is opened cold —
+        // often on a device where nobody is signed in yet, and on mobile as a
+        // universal link into the installed app.
+        GoRoute(
+          path: '/invite/:token',
+          parentNavigatorKey: key,
+          builder: (context, state) =>
+              InvitePage(token: state.pathParameters['token']!),
         ),
       ],
       // Brief routes — not tabs; pushed over the root navigator as a

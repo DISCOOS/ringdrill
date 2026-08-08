@@ -5,6 +5,7 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/views/about_page.dart';
+import 'package:ringdrill/views/account_page.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/feedback.dart';
 import 'package:ringdrill/views/migration_page.dart';
@@ -260,17 +261,37 @@ class MainDrawer extends StatelessWidget {
                   },
                 );
               }
+              final account = AuthService.instance.state.activeAccount;
               return ListTile(
                 leading: const Icon(Icons.account_circle),
                 title: Text(localizations.accountSignedInAs(user.displayName)),
-                subtitle: Text(localizations.signOutAction),
-                onTap: () async {
-                  final navigator = Navigator.of(context);
-                  if (await confirmSignOut(context)) {
-                    await AuthService.instance.signOut();
-                  }
-                  navigator.maybePop();
-                },
+                subtitle: Text(
+                  account?.displayName ?? localizations.accountTitle,
+                ),
+                // Tapping opens the account; signing out is the trailing
+                // action rather than the whole row's job. Making the row
+                // itself sign out would put a destructive-feeling action
+                // where people expect navigation.
+                onTap: account == null
+                    ? null
+                    : () {
+                        Navigator.pop(context);
+                        openFormSurface<void>(
+                          context,
+                          builder: (_) => AccountPage(account: account),
+                        );
+                      },
+                trailing: IconButton(
+                  icon: const Icon(Icons.logout),
+                  tooltip: localizations.signOutAction,
+                  onPressed: () async {
+                    final navigator = Navigator.of(context);
+                    if (await confirmSignOut(context)) {
+                      await AuthService.instance.signOut();
+                    }
+                    navigator.maybePop();
+                  },
+                ),
               );
             },
           ),

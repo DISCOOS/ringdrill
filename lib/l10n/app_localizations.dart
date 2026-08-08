@@ -1826,6 +1826,204 @@ abstract class AppLocalizations {
   /// **'Could not update sharing. The plan is published to your account only.'**
   String get publishSharingFailed;
 
+  /// No description provided for @accountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountTitle;
+
+  /// No description provided for @accountMembersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get accountMembersTitle;
+
+  /// No description provided for @accountRoleOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get accountRoleOwner;
+
+  /// No description provided for @accountRoleMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Member'**
+  String get accountRoleMember;
+
+  /// No description provided for @accountRoleGuest.
+  ///
+  /// In en, this message translates to:
+  /// **'Guest'**
+  String get accountRoleGuest;
+
+  /// No description provided for @accountRoleOwnerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Manages members and access, plus everything a member can do.'**
+  String get accountRoleOwnerHint;
+
+  /// No description provided for @accountRoleMemberHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads and publishes the plans, and sees the staff roster.'**
+  String get accountRoleMemberHint;
+
+  /// No description provided for @accountRoleGuestHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads and publishes the plans, but does not see the roster.'**
+  String get accountRoleGuestHint;
+
+  /// Sits above the role options (DESIGN-015 §6.1). Without it the picker reads as a permission ladder, which it is not: every role publishes, and the role decides administration and whether the roster is visible.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone you add can work on the plans. The difference is whether they see the staff roster — your people\'s names and phone numbers.'**
+  String get accountRolePickerLead;
+
+  /// No description provided for @accountStateInvited.
+  ///
+  /// In en, this message translates to:
+  /// **'Invited'**
+  String get accountStateInvited;
+
+  /// A bounced or expired invitation is surfaced on the row rather than hidden in a log (DESIGN-015 §6.2).
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery failed'**
+  String get accountStateFailed;
+
+  /// No description provided for @accountInviteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite'**
+  String get accountInviteAction;
+
+  /// No description provided for @accountInviteEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address'**
+  String get accountInviteEmailLabel;
+
+  /// No description provided for @accountInviteSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation sent to {email}'**
+  String accountInviteSent(String email);
+
+  /// No description provided for @accountWithdrawAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw'**
+  String get accountWithdrawAction;
+
+  /// No description provided for @accountRemoveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get accountRemoveAction;
+
+  /// No description provided for @accountLeaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get accountLeaveAction;
+
+  /// No description provided for @accountChangeRoleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Change role'**
+  String get accountChangeRoleAction;
+
+  /// DESIGN-015 §4.4. The design answer to an unrecoverable organisation is prevention, and it belongs on this screen rather than in a recovery flow. Low-key and never blocking: not a modal, not a warning colour.
+  ///
+  /// In en, this message translates to:
+  /// **'This organisation has one owner. Add another, so access is not lost if someone becomes unavailable.'**
+  String get accountSingleOwnerAdvisory;
+
+  /// No description provided for @accountLastOwnerRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'An organisation must keep at least one owner.'**
+  String get accountLastOwnerRefused;
+
+  /// No description provided for @accountOwnerOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only an owner can do this.'**
+  String get accountOwnerOnly;
+
+  /// No description provided for @accountActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That did not work. Try again.'**
+  String get accountActionFailed;
+
+  /// No description provided for @inviteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation'**
+  String get inviteTitle;
+
+  /// No description provided for @inviteJoinPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'{inviter} invited you to join {organisation} as {role}.'**
+  String inviteJoinPrompt(String inviter, String organisation, String role);
+
+  /// The link identifies the invitation but grants nothing; accepting needs an identity (DESIGN-015 §6.4). Naming the address is what makes the instruction actionable.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in as {email} to accept.'**
+  String inviteSignInToAccept(String email);
+
+  /// No description provided for @inviteAcceptAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get inviteAcceptAction;
+
+  /// No description provided for @inviteAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'You have joined {organisation}.'**
+  String inviteAccepted(String organisation);
+
+  /// No description provided for @inviteStateAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'This invitation has already been accepted.'**
+  String get inviteStateAccepted;
+
+  /// No description provided for @inviteStateWithdrawn.
+  ///
+  /// In en, this message translates to:
+  /// **'This invitation was withdrawn.'**
+  String get inviteStateWithdrawn;
+
+  /// No description provided for @inviteStateExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This invitation has expired. Ask for a new one.'**
+  String get inviteStateExpired;
+
+  /// No description provided for @inviteStateOrganisationDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'That organisation no longer exists.'**
+  String get inviteStateOrganisationDeleted;
+
+  /// No description provided for @inviteStateNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not find that invitation.'**
+  String get inviteStateNotFound;
+
+  /// Both remedies, because the invitee can act on either and neither is obvious (DESIGN-015 §6.4). Binding to whoever opens the link would turn a forwarded email into account access, so this is a refusal that has to explain itself.
+  ///
+  /// In en, this message translates to:
+  /// **'This invitation was sent to {email}, and you are signed in as someone else. Sign in with that address, or ask an owner of {organisation} to invite the address you use.'**
+  String inviteWrongIdentity(String email, String organisation);
+
   /// Label above the account a publish will land in (DESIGN-015 §5.8 decision 2). Someone who publishes to the wrong account otherwise finds out afterwards.
   ///
   /// In en, this message translates to:
