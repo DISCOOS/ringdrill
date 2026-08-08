@@ -165,20 +165,83 @@ const SPEC = {
         },
         "/api/drills-upload": {
             post: {
-                tags: ["admin"],
+                tags: ["catalog"],
                 summary: "Upload or replace a drill",
-                description: "Body is the .drill archive. name, description and tags are read from program.json inside it.",
-                security: [{ bearerAuth: [] }],
+                description:
+                    "Body is the .drill archive. name, description and tags are read from program.json inside it.\n\n"
+                    + "Authentication is **optional**: anonymous publishing keeps working, and a public plan stays "
+                    + "writable by anyone. Signing in buys protection, it is not the price of publishing "
+                    + "(ADR-0025). The owner is taken from the verified token; the legacy `ownerId` query "
+                    + "parameter is ignored.",
+                // Two entries: `{}` is "no auth", the second is "bearer token".
+                // Listing both is how OpenAPI spells optional — a single
+                // bearerAuth entry would claim anonymous upload is rejected.
+                security: [{}, { bearerAuth: [] }],
                 parameters: [
                     { name: "slug", in: "query", schema: { type: "string" } },
                     { name: "published", in: "query", schema: { type: "boolean", default: false } },
                     { name: "version", in: "query", schema: { type: "string" } },
+                    {
+                        name: "accessPolicy",
+                        in: "query",
+                        description:
+                            "Applies to a **new** plan only, so an ordinary update can never widen access as a "
+                            + "side effect. Anonymous new plans are always public. `shared` is refused here — it "
+                            + "names grantee accounts and is set afterwards via /api/drills/policy.",
+                        schema: { type: "string", enum: ["account", "public"] },
+                    },
                 ],
                 requestBody: {
                     required: true,
                     content: { "application/vnd.ringdrill+zip": { schema: { type: "string", format: "binary" } } },
                 },
-                responses: { 200: { description: "Stored" }, 401: { description: "Missing or invalid token" }, 409: { description: "Slug/version conflict" } },
+                responses: {
+                    200: { description: "Stored" },
+                    400: { description: "Unusable slug, archive or requested policy" },
+                    403: { description: "Not permitted to write this plan" },
+                    409: { description: "Slug/version conflict" },
+                },
+            },
+        },
+        "/api/drills/policy": {
+            post: {
+                tags: ["catalog"],
+                summary: "Change a plan's access policy",
+                description:
+                    "Owner-only, and deliberately separate from upload: publishing and re-deciding who may see a "
+                    + "plan are different decisions, and folding them together is how an update silently widens "
+                    + "access (ADR-0025).",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    { name: "slug", in: "query", required: true, schema: { type: "string" } },
+                ],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["accessPolicy"],
+                                properties: {
+                                    accessPolicy: { type: "string", enum: ["account", "shared", "public"] },
+                                    sharedAccountIds: {
+                                        type: "array",
+                                        items: { type: "string" },
+                                        description: "Required and non-empty when accessPolicy is `shared`. Cleared when it is not.",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: { description: "Updated" },
+                    400: { description: "Unknown policy, or `shared` with no grantee accounts" },
+                    401: { description: "Not signed in" },
+                    403: { description: "Not the owner, or the plan is anon-owned and has no owner to check" },
+                    404: { description: "Unknown slug" },
+                    412: { description: "Changed concurrently — re-read and retry" },
+                },
             },
         },
     },

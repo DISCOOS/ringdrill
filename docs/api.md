@@ -108,6 +108,35 @@ policy it has, so an ordinary update can never widen access as a side effect.
 Concurrency is still guarded by `If-Match` (OCC), which runs after
 authorisation.
 
+### Access policy
+
+| Method | Path | Returns |
+|--------|------|---------|
+| `POST` | `/api/drills/policy?slug={slug}` | Changes a plan's access policy. Body: `{ "accessPolicy": "account"\|"shared"\|"public", "sharedAccountIds": [...] }` |
+
+**Owner-only** — the one operation where `MemberRole` rank matters. Every member
+of an owning account may publish; only an owner may re-decide who can see the
+result.
+
+It is a separate endpoint rather than a parameter on upload, deliberately:
+publishing a new version and changing who may read a plan are different
+decisions, and folding them together is exactly how an ordinary update ends up
+silently widening access.
+
+* `shared` **requires** a non-empty `sharedAccountIds`. Storing it empty would
+  read as "shared" in the UI while behaving as `account`, so it is a `400`.
+* Moving *away* from `shared` clears the grantee list, so a stale entry cannot
+  keep granting access the UI no longer shows.
+* An `anon`-owned plan has no owner to check, so its policy cannot be changed
+  (`403`). There is no path from anonymous to owned.
+* A concurrent change answers `412` rather than overwriting — re-read and retry.
+
+```bash
+curl -X POST "https://ringdrill.app/api/drills/policy?slug=lsor-eidene-2026" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"accessPolicy":"shared","sharedAccountIds":["a_redcross_fjell"]}'
+```
+
 ## Status codes
 
 Unknown slug → `404`. Unknown `/api/*` path → `404` with `{ "error": "not_found" }`.
