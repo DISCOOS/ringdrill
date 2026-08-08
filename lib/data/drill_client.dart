@@ -325,12 +325,36 @@ class DrillClient {
 
   final http.Client _http;
 
+  /// Supplies a bearer token for authenticated calls, or null when signed out.
+  ///
+  /// A callback rather than a reference to the auth service, deliberately.
+  /// This file is in the CLI's import closure, which must stay free of
+  /// `package:flutter/*` — and the service that owns the session cannot be
+  /// (it reads the platform keychain). A function is the widest seam that
+  /// crosses that line.
+  ///
+  /// **Anonymous is a supported state, not a failure.** Every catalog read and
+  /// an anonymous publish must keep working with no token at all
+  /// (ADR-0025): signing in buys protection, it is not the price of using the
+  /// catalog.
+  final Future<String?> Function()? accessToken;
+
   DrillClient({
     required this.baseUrl,
     this.functionsBasePath = '/api',
     this.deepLinkBasePath = '/d',
+    this.accessToken,
     http.Client? httpClient,
   }) : _http = httpClient ?? http.Client();
+
+  /// `{'authorization': 'Bearer …'}`, or empty when signed out.
+  ///
+  /// Callers spread this into their header map. It is never an error for it to
+  /// be empty — see [accessToken].
+  Future<Map<String, String>> _authHeader() async {
+    final token = await accessToken?.call();
+    return token == null ? const {} : {'authorization': 'Bearer $token'};
+  }
 
   Future<bool> exists(String slug, {int? version}) async {
     final h = await head(slug, version: version);
@@ -354,22 +378,74 @@ class DrillClient {
     String? ifMatchEtag,
     String ownerId = 'anon',
     bool published = false,
+    String? accessPolicy,
   }) => _uploadOnce(
     file,
     ownerId: ownerId,
     published: published,
     ifMatchEtag: ifMatchEtag,
+    accessPolicy: accessPolicy,
   );
+
+  // -------------------------------
+  // Access policy (drills-policy) — POST
+  // -------------------------------
+  /// Change who can see a published plan (ADR-0025). Owner-only, and separate
+  /// from [upload] on purpose: publishing a new version and re-deciding who
+  /// may read a plan are different decisions, and folding them together is how
+  /// an ordinary update silently widens access.
+  ///
+  /// [sharedAccountIds] is required and non-empty when [accessPolicy] is
+  /// `shared`; the server refuses an empty list rather than storing something
+  /// that reads as "shared" and behaves as "account".
+  Future<void> setAccessPolicy(
+    String slug, {
+    required String accessPolicy,
+    List<String> sharedAccountIds = const [],
+  }) async {
+    final uri = _buildFnUri('drills-policy', query: {'slug': slug});
+    final res = await _http.post(
+      uri,
+      headers: {'content-type': 'application/json', ...await _authHeader()},
+      body: jsonEncode({
+        'accessPolicy': accessPolicy,
+        if (sharedAccountIds.isNotEmpty) 'sharedAccountIds': sharedAccountIds,
+      }),
+    );
+    if (res.statusCode >= 400) {
+      String? reason;
+      try {
+        reason =
+            (jsonDecode(res.body) as Map<String, dynamic>)['error'] as String?;
+      } on FormatException {
+        reason = null;
+      }
+      throw DrillApiException(
+        reason ?? 'policy_change_failed',
+        status: res.statusCode,
+        body: res.body,
+      );
+    }
+  }
 
   Future<DrillUploadResponse> _uploadOnce(
     DrillFile file, {
     String? ifMatchEtag,
     String ownerId = 'anon',
     bool published = false,
+    String? accessPolicy,
   }) async {
     final plan = file.plan();
     final qs = <String, String>{
+      // Ignored by the server since ADR-0025 — the owner comes from the
+      // verified token, because a caller-supplied owner is a caller-supplied
+      // claim of ownership. Still sent for one release so an older backend
+      // does not see it vanish.
       'ownerId': ownerId,
+      // Applies to a *new* plan only, so an ordinary update can never widen
+      // access as a side effect. `shared` is not accepted here: it names
+      // grantee accounts and is set afterwards via [setAccessPolicy].
+      'accessPolicy': ?accessPolicy,
       // planId is the current name (ADR-0055); the server also accepts the
       // legacy programId, but this client always sends the new one.
       'planId': plan.uuid,
@@ -390,6 +466,9 @@ class DrillClient {
         // Server accepts raw binary or base64. We send raw.
         'content-type': 'application/octet-stream',
         'if-match': ?ifMatchEtag,
+        // The only place ownership is decided. Absent when signed out, which
+        // is a supported publish, not a failure.
+        ...await _authHeader(),
       },
       body: file.content,
     );

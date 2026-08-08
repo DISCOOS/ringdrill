@@ -10,6 +10,7 @@ import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/drill_library.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/services/auth_service.dart';
 import 'package:ringdrill/services/catalog_refresh_indicator_registry.dart';
 import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/exercise_service.dart';
@@ -489,6 +490,12 @@ DrillClient buildCatalogClient() {
     baseUrl: baseUrl,
     functionsBasePath: AppConfig.functionsBasePathFor(baseUrl),
     deepLinkBasePath: AppConfig.deepLinkBasePathFor(baseUrl),
+    // Null when no session has been installed — every widget test, and every
+    // signed-out run. Both are supported states: the catalog reads publicly
+    // and an anonymous publish is a first-class path (ADR-0025).
+    accessToken: AuthService.isInstalled
+        ? () => AuthService.instance.accessToken()
+        : null,
   );
 }
 

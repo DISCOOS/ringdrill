@@ -113,6 +113,15 @@
     status = 200
     force = true
 
+# Answering an invitation (DESIGN-015 §6.4). Separate from /api/accounts/*
+# because the describe step must work signed out — the landing page has to
+# say "sign in as ola@example.com" before anyone has signed in.
+[[redirects]]
+    from = "/api/invitations/*"
+    to = "/.netlify/functions/invitations/:splat"
+    status = 200
+    force = true
+
 # The auth surface (ADR-0024). One function, five routes — see
 # netlify/functions/auth.js for why they are not five functions.
 [[redirects]]
