@@ -1084,13 +1084,35 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryCatalog => 'Katalog';
 
   @override
-  String get libraryOnlineTab => 'På nett';
+  String get libraryAccountTab => 'Konto';
+
+  @override
+  String libraryAccountSubtitle(String account) {
+    return 'Planer som eies av $account';
+  }
+
+  @override
+  String get libraryAccountSignedOut =>
+      'Logg inn for å se planer organisasjonen din eier. Du trenger ingen konto for å bruke RingDrill.';
+
+  @override
+  String get libraryAccountEmpty => 'Denne kontoen har ingen planer ennå';
+
+  @override
+  String get libraryAccountDraft => 'Utkast';
+
+  @override
+  String get libraryAccountPicker => 'Bytt konto';
+
+  @override
+  String get libraryOnlineTab => 'Offentlig';
 
   @override
   String get libraryMyPlansSubtitle => 'Velg en lagret plan for å fortsette';
 
   @override
-  String get libraryOnlineSubtitle => 'Hent en plan fra bibliotek på nett';
+  String get libraryOnlineSubtitle =>
+      'Hent en plan fra den offentlige katalogen';
 
   @override
   String get libraryFromFileSubtitle =>
@@ -1098,7 +1120,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get libraryEmptyMyPlans =>
-      'Du har ingen lagrede planer. Bla i «På nett» eller «Ny fra fil» for å komme i gang.';
+      'Du har ingen lagrede planer. Bla i «Offentlig» eller «Ny fra fil» for å komme i gang.';
 
   @override
   String get libraryFromFilePickAction => 'Velg fil';
@@ -1217,7 +1239,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryDelete => 'Slett';
 
   @override
-  String get libraryEmptyCatalog => 'Ingen planer på nett ennå';
+  String get libraryEmptyCatalog => 'Ingen publiserte planer ennå';
 
   @override
   String get libraryErrorLoad => 'Kunne ikke laste planer fra nett';

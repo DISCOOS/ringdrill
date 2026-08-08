@@ -1802,10 +1802,46 @@ abstract class AppLocalizations {
   /// **'Catalog'**
   String get libraryCatalog;
 
+  /// Fourth tab of the Open... library (DESIGN-015 §5.7) — the plans the signed-in account owns, drafts included.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get libraryAccountTab;
+
+  /// Footer under the account tab's list. Names which account is shown, because a user can belong to several.
+  ///
+  /// In en, this message translates to:
+  /// **'Plans owned by {account}'**
+  String libraryAccountSubtitle(String account);
+
+  /// Account tab with nobody signed in. Says plainly that an account is optional (DESIGN-015 §5.1), so an empty tab does not read as a setup step the user skipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to see plans your organisation owns. You do not need an account to use RingDrill.'**
+  String get libraryAccountSignedOut;
+
+  /// Empty state for the account tab when the account owns no plans.
+  ///
+  /// In en, this message translates to:
+  /// **'This account has no plans yet'**
+  String get libraryAccountEmpty;
+
+  /// Chip on an unpublished account plan. The account tab lists drafts where the public tab cannot, so each row has to say which it is.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get libraryAccountDraft;
+
+  /// Tooltip on the account tab's account switcher. Only shown when the user belongs to more than one account.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch account'**
+  String get libraryAccountPicker;
+
   /// No description provided for @libraryOnlineTab.
   ///
   /// In en, this message translates to:
-  /// **'Online'**
+  /// **'Public'**
   String get libraryOnlineTab;
 
   /// No description provided for @libraryMyPlansSubtitle.
@@ -1817,7 +1853,7 @@ abstract class AppLocalizations {
   /// No description provided for @libraryOnlineSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Get a plan from the shared online library'**
+  /// **'Get a plan from the public catalog'**
   String get libraryOnlineSubtitle;
 
   /// No description provided for @libraryFromFileSubtitle.
@@ -1829,7 +1865,7 @@ abstract class AppLocalizations {
   /// No description provided for @libraryEmptyMyPlans.
   ///
   /// In en, this message translates to:
-  /// **'You have no saved plans. Browse \'Online\' or \'New from file\' to get started.'**
+  /// **'You have no saved plans. Browse \'Public\' or \'New from file\' to get started.'**
   String get libraryEmptyMyPlans;
 
   /// No description provided for @libraryFromFilePickAction.
@@ -2015,7 +2051,7 @@ abstract class AppLocalizations {
   /// No description provided for @libraryEmptyCatalog.
   ///
   /// In en, this message translates to:
-  /// **'Nothing online yet'**
+  /// **'Nothing published yet'**
   String get libraryEmptyCatalog;
 
   /// No description provided for @libraryErrorLoad.

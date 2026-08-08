@@ -1088,14 +1088,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryCatalog => 'Catalog';
 
   @override
-  String get libraryOnlineTab => 'Online';
+  String get libraryAccountTab => 'Account';
+
+  @override
+  String libraryAccountSubtitle(String account) {
+    return 'Plans owned by $account';
+  }
+
+  @override
+  String get libraryAccountSignedOut =>
+      'Sign in to see plans your organisation owns. You do not need an account to use RingDrill.';
+
+  @override
+  String get libraryAccountEmpty => 'This account has no plans yet';
+
+  @override
+  String get libraryAccountDraft => 'Draft';
+
+  @override
+  String get libraryAccountPicker => 'Switch account';
+
+  @override
+  String get libraryOnlineTab => 'Public';
 
   @override
   String get libraryMyPlansSubtitle => 'Pick a saved plan to continue';
 
   @override
-  String get libraryOnlineSubtitle =>
-      'Get a plan from the shared online library';
+  String get libraryOnlineSubtitle => 'Get a plan from the public catalog';
 
   @override
   String get libraryFromFileSubtitle =>
@@ -1103,7 +1123,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get libraryEmptyMyPlans =>
-      'You have no saved plans. Browse \'Online\' or \'New from file\' to get started.';
+      'You have no saved plans. Browse \'Public\' or \'New from file\' to get started.';
 
   @override
   String get libraryFromFilePickAction => 'Choose file';
@@ -1221,7 +1241,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryDelete => 'Delete';
 
   @override
-  String get libraryEmptyCatalog => 'Nothing online yet';
+  String get libraryEmptyCatalog => 'Nothing published yet';
 
   @override
   String get libraryErrorLoad => 'Could not load online plans';

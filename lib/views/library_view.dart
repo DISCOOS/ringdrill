@@ -8,6 +8,7 @@ import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/services/auth_service.dart';
 import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
@@ -31,7 +32,13 @@ import 'package:share_plus/share_plus.dart';
 /// Which tab [showOpenPlanDialog] should land on when it opens. Order
 /// matches the [TabBar] in [_LibraryBodyState.build] so `.index` can be
 /// used directly as the [TabController]'s initial index.
-enum LibraryTab { myPlans, online, fromFile }
+///
+/// `account` sits between `online` and `fromFile` rather than at the end,
+/// because the three plan *sources* belong together and "New from file" is the
+/// action. [online] keeps its name while its label became "Public"
+/// (DESIGN-015 §5.7): renaming the enum would churn every call site to say the
+/// same thing.
+enum LibraryTab { myPlans, online, account, fromFile }
 
 Future<void> showOpenPlanDialog(
   BuildContext context, {
@@ -95,7 +102,7 @@ class _LibraryBodyState extends State<_LibraryBody>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 3,
+      length: LibraryTab.values.length,
       vsync: this,
       initialIndex: widget.initialTab.index,
     );
@@ -104,7 +111,7 @@ class _LibraryBodyState extends State<_LibraryBody>
     // expectation that feedback is scoped to the in-progress action.
     _tabController.addListener(() {
       if ((_fromFileError != null || _fromFileBundleResult != null) &&
-          _tabController.index != 2) {
+          _tabController.index != LibraryTab.fromFile.index) {
         setState(() {
           _fromFileError = null;
           _fromFileBundleResult = null;
@@ -133,8 +140,13 @@ class _LibraryBodyState extends State<_LibraryBody>
               tabs: [
                 Tab(text: localizations.libraryMyPlans),
                 Tab(text: localizations.libraryOnlineTab),
+                Tab(text: localizations.libraryAccountTab),
                 Tab(text: localizations.fromFileAction),
               ],
+              // Four labels do not fit a phone's width side by side, and a
+              // squeezed tab bar truncates every label rather than the longest.
+              isScrollable: true,
+              tabAlignment: TabAlignment.center,
             ),
             Expanded(
               child: TabBarView(
@@ -142,6 +154,7 @@ class _LibraryBodyState extends State<_LibraryBody>
                 children: [
                   _buildMyPlans(context),
                   _buildCatalog(context),
+                  _buildAccountPlans(context),
                   _buildFromFile(context),
                 ],
               ),
@@ -311,6 +324,99 @@ class _LibraryBodyState extends State<_LibraryBody>
           return;
         }
         await _installCatalog(item);
+      },
+    );
+  }
+
+  /// The account's own plans (DESIGN-015 §5.7).
+  ///
+  /// Reuses [CatalogBrowser] with a different loader rather than growing a
+  /// near-copy: install, busy state, empty and error states are all the same
+  /// problem, and two implementations would drift the first time either
+  /// changed.
+  ///
+  /// Signed out is not an error state here. An account is optional and stays
+  /// optional (§5.1), so this reads as an explanation rather than a setup step
+  /// somebody skipped — no badge, no call to action dressed as a warning.
+  Widget _buildAccountPlans(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
+    if (!AuthService.isInstalled) {
+      // Only in tests and `AUTH_MODE=off` builds. Same message: there is
+      // nothing the user could do differently.
+      return EmptyState(
+        icon: Icons.badge_outlined,
+        text: localizations.libraryAccountSignedOut,
+      );
+    }
+
+    return ListenableBuilder(
+      listenable: AuthService.instance,
+      builder: (context, _) {
+        final account = AuthService.instance.state.activeAccount;
+        if (account == null) {
+          return EmptyState(
+            icon: Icons.badge_outlined,
+            text: localizations.libraryAccountSignedOut,
+          );
+        }
+
+        return CatalogBrowser(
+          // Keyed by account so switching organisations rebuilds the state
+          // rather than showing the previous account's list against the new
+          // account's footer.
+          key: ValueKey('account-plans-${account.accountId}'),
+          subtitle: localizations.libraryAccountSubtitle(account.displayName),
+          emptyText: localizations.libraryAccountEmpty,
+          loader: () => active_actions.buildCatalogClient().accountPlans(
+            account.accountId,
+          ),
+          installedSlugs: _installedCatalogSlugs(),
+          showActiveRadio: true,
+          activeSlug: _planService.activePlan?.source.whenOrNull(
+            catalog: (slug, latestEtag, installedAt, latestVersion) => slug,
+          ),
+          trailingBuilder: (context, item, installed, busy, onTap) {
+            if (busy) {
+              return const Padding(
+                padding: EdgeInsets.all(8),
+                child: SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              );
+            }
+            // A draft is the one thing this tab shows that the public one
+            // cannot, so it is labelled rather than left to be inferred from
+            // its absence elsewhere. It is a listing flag, not a lock: the
+            // plan is still downloadable by anyone with the link.
+            final chips = <Widget>[
+              if (item.published == false)
+                Chip(label: Text(localizations.libraryAccountDraft)),
+              if (installed) Chip(label: Text(localizations.libraryInstalled)),
+            ];
+            if (chips.isNotEmpty) {
+              return Row(mainAxisSize: MainAxisSize.min, children: chips);
+            }
+            return FilledButton(
+              onPressed: onTap,
+              child: Text(localizations.libraryInstall),
+            );
+          },
+          onItemTap: (context, item) async {
+            final installedPlan = _installedPlanForSlug(item.slug);
+            if (installedPlan != null) {
+              await _activate(
+                context,
+                installedPlan.uuid,
+                closeOnSuccess: true,
+              );
+              return;
+            }
+            await _installCatalog(item);
+          },
+        );
       },
     );
   }

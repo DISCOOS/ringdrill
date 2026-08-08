@@ -165,6 +165,21 @@ class MarketFeedItem {
   /// principal rather than from a request parameter, so `"account"` really does
   /// mean only that account's members can publish. Safe to render as a lock.
   final String? accessPolicy;
+
+  /// Whether the plan is listed in the public feed.
+  ///
+  /// Null from `/api/market-feed`, which by construction only ever returns
+  /// published plans — a `true` there would be noise. Set by
+  /// [DrillClient.accountPlans], where the tab deliberately includes drafts
+  /// and has to say which is which.
+  ///
+  /// It is a *listing* flag, not access control: `/d/<slug>` serves any
+  /// uploaded slug either way. Rendering it as a lock would be a lie.
+  final bool? published;
+
+  /// The account namespace the plan lives in (ADR-0074 §2), or null for an
+  /// anonymous plan — whose URL has no namespace segment and never will.
+  final String? namespace;
   final List<String> tags;
   final Uri latestUrl;
   final DateTime? updatedAt;
@@ -176,6 +191,8 @@ class MarketFeedItem {
     this.exerciseCount,
     this.author,
     this.accessPolicy,
+    this.published,
+    this.namespace,
     required this.tags,
     required this.latestUrl,
     this.updatedAt,
@@ -189,6 +206,8 @@ class MarketFeedItem {
     exerciseCount: (j['exerciseCount'] as num?)?.toInt(),
     author: j['author'] as String?,
     accessPolicy: j['accessPolicy'] as String?,
+    published: j['published'] as bool?,
+    namespace: j['namespace'] as String?,
     tags: (j['tags'] as List<dynamic>? ?? const <dynamic>[])
         .map((e) => e.toString())
         .toList(),
@@ -658,6 +677,55 @@ class DrillClient {
         body: res.body,
       ),
     };
+  }
+
+  // -------------------------------
+  // An account's plans — GET
+  // -------------------------------
+  /// The plans owned by [accountId], for the Library's account tab
+  /// (DESIGN-015 §5.7).
+  ///
+  /// Same item shape as [marketFeed] on purpose, so the browser that renders
+  /// the public catalog renders this too. Two things differ, and both follow
+  /// from it being an account's own library rather than a public feed:
+  ///
+  /// * It **includes unpublished plans**, flagged per item via
+  ///   [MarketFeedItem.published]. A tab that hid drafts would hide what the
+  ///   tab is for.
+  /// * It requires a token and is never cached — the answer depends on who is
+  ///   asking, so a shared cache entry would be wrong for everyone but the
+  ///   first caller.
+  Future<MarketFeedPageResponse> accountPlans(
+    String accountId, {
+    int limit = 50,
+    String? cursor,
+  }) async {
+    final uri = _buildFnUri(
+      'accounts/$accountId/plans',
+      query: {'limit': limit.toString(), 'cursor': ?cursor},
+    );
+    final res = await _http.get(
+      uri,
+      headers: {'accept': 'application/json', ...await _authHeader()},
+    );
+    if (res.statusCode != 200) {
+      throw DrillApiException(
+        'Account plans failed',
+        status: res.statusCode,
+        body: res.body,
+      );
+    }
+    try {
+      return MarketFeedPageResponse.fromJson(
+        jsonDecode(res.body) as Map<String, dynamic>,
+      );
+    } on FormatException catch (e) {
+      throw DrillApiException(
+        'Account plans returned invalid JSON: ${e.message}',
+        status: res.statusCode,
+        body: res.body,
+      );
+    }
   }
 
   // --------------------------------------------
