@@ -49,7 +49,11 @@ export function createHandler({
         try {
             const { pathname } = new URL(request.url);
             const tail = pathname.replace(/^.*\/(?:\.netlify\/functions\/accounts|api\/accounts)\/?/, "");
-            const parts = tail.split("/").filter(Boolean);
+            // Decoded, because a pending member is keyed by email address and
+            // arrives percent-encoded (`pending%3Aola%40example.com`). Account
+            // ids and section names are unaffected — there is nothing in them
+            // to decode.
+            const parts = tail.split("/").filter(Boolean).map(safeDecode);
 
             const principal = await authenticate(request, { env, now });
             if (!principal.ok) return withCors(request, json({ error: principal.reason }, principal.status));
@@ -290,6 +294,20 @@ export function createHandler({
         // administration.
         if (!leaving && !isOwner(principal, accountId)) return json({ error: "owner_role_required" }, 403);
 
+        // Withdrawing an invitation that has not been answered. A pending row
+        // is keyed by address and has no userId, so the lookup below could
+        // never find it — leaving the owner with a roster entry they could see
+        // and not remove, and the invitee with a link that still works.
+        // "Withdrawn" is one of the states the invite page renders
+        // (DESIGN-015 §6.4), which requires this to be possible.
+        if (memberUserId.startsWith("pending:")) {
+            if (!isOwner(principal, accountId)) return json({ error: "owner_role_required" }, 403);
+            const key = `${accountId}/${memberUserId}`;
+            if (!(await stores.members().get(key, { type: "json" }))) return json({ error: "no_such_member" }, 404);
+            await stores.members().delete(key);
+            return new Response(null, { status: 204 });
+        }
+
         const members = await membersOf(accountId, stores);
         const target = members.find((m) => m.userId === memberUserId);
         if (!target) return json({ error: "no_such_member" }, 404);
@@ -305,6 +323,11 @@ export function createHandler({
         await removeMember(accountId, memberUserId, stores);
         return new Response(null, { status: 204 });
     }
+}
+
+/** A malformed escape (`%ZZ`) is a bad URL, not a server fault. */
+function safeDecode(s) {
+    try { return decodeURIComponent(s); } catch { return null; }
 }
 
 function clampInt(v, min, max, dflt) {

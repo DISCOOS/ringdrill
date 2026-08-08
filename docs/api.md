@@ -196,6 +196,39 @@ tier, so what a guest does not get is the roster inside a plan, enforced on the
 download path ([ADR-0072](./adrs/0072-staff-pii-and-account-sync.md)), not by
 hiding the plan.
 
+### Answering an invitation
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/api/invitations/{token}` | What this invitation is, and what state it is in. **Works signed out** |
+| `POST` | `/api/invitations/{token}/accept` | Accept it. Requires signing in |
+| `DELETE` | `/api/accounts/{id}/members/pending:{email}` | Withdraw an unanswered invitation — owner only |
+
+Two properties, both security properties rather than conveniences:
+
+* **The link is not a credential.** `ringdrill.app/invite/<token>` identifies
+  *which* invitation is being answered and grants nothing on its own. That is
+  what reconciles an emailed link with DESIGN-015 §2.1's rejection of
+  unauthenticated bearer URLs for sharing plans: a forwarded plan link hands
+  over content, a forwarded invite link gets the holder a sign-in prompt they
+  cannot satisfy.
+* **The invited address is what binds.** Accepting requires the signed-in user
+  to hold a *verified* identity for the address the invitation was sent to.
+  Someone invited at `ola@example.com` who signs in as somebody else gets a
+  `403` naming both remedies — sign in with the invited address, or ask the
+  owner to re-invite the one they actually use.
+
+The describe route is deliberately anonymous: the landing page has to say "sign
+in as ola@example.com to accept" *before* anyone has signed in, which it cannot
+do if reading the invitation already requires being the right person.
+
+`state` is one of `pending`, `accepted`, `withdrawn`, `expired` or
+`organisation_deleted`, and accept adds `wrong_identity`. Each is reported by
+name because the page renders a different message for each. Accepting is
+single-use, but the token is *marked* rather than deleted — the same link is
+routinely opened twice on two devices, and the second visit should say "already
+accepted", not "no such invitation".
+
 ### Two role vocabularies
 
 Never conflate these. `MemberRole` is the account/administration axis;

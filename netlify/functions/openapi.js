@@ -204,6 +204,50 @@ const SPEC = {
                 },
             },
         },
+        "/api/invitations/{token}": {
+            get: {
+                tags: ["accounts"],
+                summary: "What this invitation is, and what state it is in",
+                description:
+                    "**Anonymous on purpose.** The landing page has to say \"sign in as ola@example.com to "
+                    + "accept\" before anyone has signed in, which it cannot do if reading the invitation "
+                    + "already requires being the right person.\n\n"
+                    + "The link is not a credential: it identifies which invitation is being answered and "
+                    + "grants nothing on its own (DESIGN-015 §6.4).",
+                security: [{}],
+                parameters: [{ name: "token", in: "path", required: true, schema: { type: "string" } }],
+                responses: {
+                    200: {
+                        description:
+                            "`state` is one of `pending`, `accepted`, `withdrawn`, `expired`, "
+                            + "`organisation_deleted` — each rendered differently by the page",
+                    },
+                    404: { description: "No such invitation" },
+                },
+            },
+        },
+        "/api/invitations/{token}/accept": {
+            post: {
+                tags: ["accounts"],
+                summary: "Accept an invitation",
+                description:
+                    "Requires the signed-in user to hold a **verified** identity for the address the "
+                    + "invitation was sent to. Binding to whoever opens the link would turn a forwarded "
+                    + "email into account access.\n\n"
+                    + "Single-use, but the token is marked rather than deleted, so a second visit reports "
+                    + "`accepted` instead of `not_found` — the same link is routinely opened on two devices.",
+                security: [{ bearerAuth: [] }],
+                parameters: [{ name: "token", in: "path", required: true, schema: { type: "string" } }],
+                responses: {
+                    200: { description: "Joined — `{ accepted, accountId, organisation, role }`" },
+                    401: { description: "Not signed in — following the link is not accepting it" },
+                    403: { description: "`wrong_identity`, with the invited address and organisation so the page can offer both remedies" },
+                    404: { description: "No such invitation" },
+                    409: { description: "Already accepted" },
+                    410: { description: "Withdrawn, expired, or the organisation was deleted" },
+                },
+            },
+        },
         "/api/accounts/{id}/plans": {
             get: {
                 tags: ["accounts"],
