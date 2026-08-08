@@ -1250,6 +1250,56 @@
   "library": "Library",
   "libraryMyPlans": "My plans",
   "libraryCatalog": "Catalog",
+  "publishSharedAccountsLabel": "Account IDs",
+  "@publishSharedAccountsLabel": {
+    "description": "Field for the accounts a `shared` plan is shared with. Ids rather than handles, because a handle can be changed and an id cannot (ADR-0074)."
+  },
+  "publishSharedAccountsHelper": "Separate several with commas. Ask the other account's owner for their ID.",
+  "publishSharingApplied": "Sharing updated",
+  "publishSharingFailed": "Could not update sharing. The plan is published to your account only.",
+  "@publishSharingFailed": {
+    "description": "Says where the plan actually ended up, because a failed sharing step leaves it *less* open than asked for and the user needs to know which."
+  },
+  "publishPublishesTo": "Publishes to",
+  "@publishPublishesTo": {
+    "description": "Label above the account a publish will land in (DESIGN-015 §5.8 decision 2). Someone who publishes to the wrong account otherwise finds out afterwards."
+  },
+  "publishSwitchAccount": "Switch",
+  "publishSharingLabel": "Sharing",
+  "@publishSharingLabel": {
+    "description": "Heading for the access-policy choice. Deliberately NOT 'Access' — DESIGN-015 §7 reserves that word for a person's standing in an account, and using it here too would put a plan's write policy and a member's role under one word. This dialog is choosing how the *plan* is shared."
+  },
+  "publishSharingAccountOnly": "Only my account",
+  "publishSharingOrgOnly": "{organisation} only",
+  "@publishSharingOrgOnly": {
+    "placeholders": { "organisation": { "type": "String" } }
+  },
+  "publishSharingShared": "Shared with other accounts",
+  "publishSharingPublic": "Open to everyone",
+  "@publishSharingPublic": {
+    "description": "The `public` policy, phrased as its consequence rather than its policy name — as are all four options (DESIGN-015 §5.8 decision 3)."
+  },
+  "publishSharingSharedHint": "Choose which accounts after publishing.",
+  "@publishSharingSharedHint": {
+    "description": "Shown under the 'Shared with other accounts' option. The grantee list is set afterwards through the plan's sharing screen, because the server refuses `shared` with no accounts named."
+  },
+  "publishAnonymousExplanation": "You are not signed in, so open to everyone is the only option. Signing in would let you keep this plan to your account.",
+  "@publishAnonymousExplanation": {
+    "description": "One plain line, no warning colour and no lock icon (DESIGN-015 §5.8 decision 1). Anonymous publishing is a supported workflow, not a degraded one, so this must not read as a paywall."
+  },
+  "publishSignInFirst": "Sign in first",
+  "@publishSignInFirst": {
+    "description": "The alternative action below Publish when signed out. Publish stays the primary action — this is an offer, not a gate."
+  },
+  "publishStaffNeverPublished": "Staff details are never published.",
+  "@publishStaffNeverPublished": {
+    "description": "Belongs on this screen and nowhere else (DESIGN-015 §5.8). The publish dialog is the exact moment someone wonders whether the phone numbers they typed are about to become public, and the only screen where answering costs nothing."
+  },
+  "publishRosterStaysInside": "The roster stays inside {organisation}. A shared account gets the plan, not the people.",
+  "@publishRosterStaysInside": {
+    "description": "The organisation half of the PII promise, which is the part people get wrong (ADR-0072).",
+    "placeholders": { "organisation": { "type": "String" } }
+  },
   "signInEntry": "Sign in",
   "@signInEntry": {
     "description": "Drawer entry that opens the sign-in screen. Plain and unadorned — DESIGN-015 §5.1 forbids a badge or a 'complete your setup' nudge, because no account is the normal state rather than a step on the way to one."

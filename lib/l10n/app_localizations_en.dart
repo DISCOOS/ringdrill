@@ -1088,6 +1088,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryCatalog => 'Catalog';
 
   @override
+  String get publishSharedAccountsLabel => 'Account IDs';
+
+  @override
+  String get publishSharedAccountsHelper =>
+      'Separate several with commas. Ask the other account\'s owner for their ID.';
+
+  @override
+  String get publishSharingApplied => 'Sharing updated';
+
+  @override
+  String get publishSharingFailed =>
+      'Could not update sharing. The plan is published to your account only.';
+
+  @override
+  String get publishPublishesTo => 'Publishes to';
+
+  @override
+  String get publishSwitchAccount => 'Switch';
+
+  @override
+  String get publishSharingLabel => 'Sharing';
+
+  @override
+  String get publishSharingAccountOnly => 'Only my account';
+
+  @override
+  String publishSharingOrgOnly(String organisation) {
+    return '$organisation only';
+  }
+
+  @override
+  String get publishSharingShared => 'Shared with other accounts';
+
+  @override
+  String get publishSharingPublic => 'Open to everyone';
+
+  @override
+  String get publishSharingSharedHint =>
+      'Choose which accounts after publishing.';
+
+  @override
+  String get publishAnonymousExplanation =>
+      'You are not signed in, so open to everyone is the only option. Signing in would let you keep this plan to your account.';
+
+  @override
+  String get publishSignInFirst => 'Sign in first';
+
+  @override
+  String get publishStaffNeverPublished => 'Staff details are never published.';
+
+  @override
+  String publishRosterStaysInside(String organisation) {
+    return 'The roster stays inside $organisation. A shared account gets the plan, not the people.';
+  }
+
+  @override
   String get signInEntry => 'Sign in';
 
   @override

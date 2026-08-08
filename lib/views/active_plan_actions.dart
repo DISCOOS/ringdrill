@@ -449,7 +449,16 @@ Future<void> publishActivePlan(BuildContext context) async {
     planUuid: plan.uuid,
     slug: input.slug,
     client: _buildPublishClient(),
+    accessPolicy: input.sharing.wireValue,
   );
+  // `shared` names specific grantee accounts, which the upload endpoint
+  // refuses — so the plan lands as `account` (the protective half of what was
+  // asked for) and the grantees follow here, through the owner-only policy
+  // endpoint. Doing it the other way round would leave a window where the
+  // plan is more open than intended.
+  if (input.needsGrantees && context.mounted) {
+    await _promptForSharedAccounts(context, slug: input.slug);
+  }
 }
 
 Future<void> publishAsActivePlan(BuildContext context) async {
@@ -471,7 +480,78 @@ Future<void> publishAsActivePlan(BuildContext context) async {
     planUuid: plan.uuid,
     slug: input.slug,
     client: _buildPublishClient(),
+    accessPolicy: input.sharing.wireValue,
   );
+  if (input.needsGrantees && context.mounted) {
+    await _promptForSharedAccounts(context, slug: input.slug);
+  }
+}
+
+/// Ask which accounts a `shared` plan is shared with, then apply it.
+///
+/// Deliberately a follow-up rather than a field in the publish dialog: the
+/// grantee list is the one part of the decision that needs somebody else's
+/// account id, and blocking the publish on finding one would make "shared"
+/// the hardest option to choose rather than the middle one.
+Future<void> _promptForSharedAccounts(
+  BuildContext context, {
+  required String slug,
+}) async {
+  final localizations = AppLocalizations.of(context)!;
+  final controller = TextEditingController();
+  final ids = await showAdaptiveDialog<List<String>>(
+    context: context,
+    builder: (context) => AlertDialog.adaptive(
+      title: Text(localizations.publishSharingShared),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        decoration: InputDecoration(
+          labelText: localizations.publishSharedAccountsLabel,
+          helperText: localizations.publishSharedAccountsHelper,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(localizations.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(
+            context,
+            controller.text
+                .split(RegExp(r'[,\s]+'))
+                .map((s) => s.trim())
+                .where((s) => s.isNotEmpty)
+                .toList(),
+          ),
+          child: Text(localizations.save),
+        ),
+      ],
+    ),
+  );
+  controller.dispose();
+  // Cancelling leaves the plan at `account`, which is the safe outcome — it is
+  // less open than asked for, never more.
+  if (ids == null || ids.isEmpty) return;
+
+  try {
+    await _buildPublishClient().setAccessPolicy(
+      slug,
+      accessPolicy: 'shared',
+      sharedAccountIds: ids,
+    );
+    if (context.mounted) {
+      _showSnackBar(context, localizations.publishSharingApplied);
+    }
+  } catch (e, stackTrace) {
+    debugPrint('[publishSharedAccounts] failed: $e');
+    if (context.mounted) {
+      _showSnackBar(context, localizations.publishSharingFailed);
+    }
+    unawaited(Sentry.captureException(e, stackTrace: stackTrace));
+  }
 }
 
 /// Builds a [DrillClient] pointed at the catalog endpoint. When the base URL

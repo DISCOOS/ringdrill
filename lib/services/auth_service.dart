@@ -324,6 +324,14 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// Put the service into a given state without a round trip.
+  ///
+  /// Widget tests need a signed-in service to render against, and driving the
+  /// real sign-in through a scripted transport in every such test would test
+  /// the transport rather than the widget.
+  @visibleForTesting
+  void debugSetStateForTest(AuthState state) => _publish(state);
+
   void _publish(AuthState next) {
     _state = next;
     notifyListeners();

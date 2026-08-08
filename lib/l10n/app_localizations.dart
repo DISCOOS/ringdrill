@@ -1802,6 +1802,102 @@ abstract class AppLocalizations {
   /// **'Catalog'**
   String get libraryCatalog;
 
+  /// Field for the accounts a `shared` plan is shared with. Ids rather than handles, because a handle can be changed and an id cannot (ADR-0074).
+  ///
+  /// In en, this message translates to:
+  /// **'Account IDs'**
+  String get publishSharedAccountsLabel;
+
+  /// No description provided for @publishSharedAccountsHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Separate several with commas. Ask the other account\'s owner for their ID.'**
+  String get publishSharedAccountsHelper;
+
+  /// No description provided for @publishSharingApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing updated'**
+  String get publishSharingApplied;
+
+  /// Says where the plan actually ended up, because a failed sharing step leaves it *less* open than asked for and the user needs to know which.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update sharing. The plan is published to your account only.'**
+  String get publishSharingFailed;
+
+  /// Label above the account a publish will land in (DESIGN-015 §5.8 decision 2). Someone who publishes to the wrong account otherwise finds out afterwards.
+  ///
+  /// In en, this message translates to:
+  /// **'Publishes to'**
+  String get publishPublishesTo;
+
+  /// No description provided for @publishSwitchAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch'**
+  String get publishSwitchAccount;
+
+  /// Heading for the access-policy choice. Deliberately NOT 'Access' — DESIGN-015 §7 reserves that word for a person's standing in an account, and using it here too would put a plan's write policy and a member's role under one word. This dialog is choosing how the *plan* is shared.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing'**
+  String get publishSharingLabel;
+
+  /// No description provided for @publishSharingAccountOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only my account'**
+  String get publishSharingAccountOnly;
+
+  /// No description provided for @publishSharingOrgOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'{organisation} only'**
+  String publishSharingOrgOnly(String organisation);
+
+  /// No description provided for @publishSharingShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with other accounts'**
+  String get publishSharingShared;
+
+  /// The `public` policy, phrased as its consequence rather than its policy name — as are all four options (DESIGN-015 §5.8 decision 3).
+  ///
+  /// In en, this message translates to:
+  /// **'Open to everyone'**
+  String get publishSharingPublic;
+
+  /// Shown under the 'Shared with other accounts' option. The grantee list is set afterwards through the plan's sharing screen, because the server refuses `shared` with no accounts named.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which accounts after publishing.'**
+  String get publishSharingSharedHint;
+
+  /// One plain line, no warning colour and no lock icon (DESIGN-015 §5.8 decision 1). Anonymous publishing is a supported workflow, not a degraded one, so this must not read as a paywall.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not signed in, so open to everyone is the only option. Signing in would let you keep this plan to your account.'**
+  String get publishAnonymousExplanation;
+
+  /// The alternative action below Publish when signed out. Publish stays the primary action — this is an offer, not a gate.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in first'**
+  String get publishSignInFirst;
+
+  /// Belongs on this screen and nowhere else (DESIGN-015 §5.8). The publish dialog is the exact moment someone wonders whether the phone numbers they typed are about to become public, and the only screen where answering costs nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff details are never published.'**
+  String get publishStaffNeverPublished;
+
+  /// The organisation half of the PII promise, which is the part people get wrong (ADR-0072).
+  ///
+  /// In en, this message translates to:
+  /// **'The roster stays inside {organisation}. A shared account gets the plan, not the people.'**
+  String publishRosterStaysInside(String organisation);
+
   /// Drawer entry that opens the sign-in screen. Plain and unadorned — DESIGN-015 §5.1 forbids a badge or a 'complete your setup' nudge, because no account is the normal state rather than a step on the way to one.
   ///
   /// In en, this message translates to:

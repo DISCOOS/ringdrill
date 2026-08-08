@@ -1084,6 +1084,63 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryCatalog => 'Katalog';
 
   @override
+  String get publishSharedAccountsLabel => 'Konto-ID-er';
+
+  @override
+  String get publishSharedAccountsHelper =>
+      'Skill flere med komma. Spør eieren av den andre kontoen om ID-en.';
+
+  @override
+  String get publishSharingApplied => 'Deling oppdatert';
+
+  @override
+  String get publishSharingFailed =>
+      'Klarte ikke å oppdatere deling. Planen er publisert bare til kontoen din.';
+
+  @override
+  String get publishPublishesTo => 'Publiseres til';
+
+  @override
+  String get publishSwitchAccount => 'Bytt';
+
+  @override
+  String get publishSharingLabel => 'Deling';
+
+  @override
+  String get publishSharingAccountOnly => 'Bare min konto';
+
+  @override
+  String publishSharingOrgOnly(String organisation) {
+    return 'Bare $organisation';
+  }
+
+  @override
+  String get publishSharingShared => 'Delt med andre kontoer';
+
+  @override
+  String get publishSharingPublic => 'Åpen for alle';
+
+  @override
+  String get publishSharingSharedHint =>
+      'Velg hvilke kontoer etter publisering.';
+
+  @override
+  String get publishAnonymousExplanation =>
+      'Du er ikke logget inn, så åpen for alle er det eneste alternativet. Logger du inn, kan du beholde planen på din egen konto.';
+
+  @override
+  String get publishSignInFirst => 'Logg inn først';
+
+  @override
+  String get publishStaffNeverPublished =>
+      'Opplysninger om stab publiseres aldri.';
+
+  @override
+  String publishRosterStaysInside(String organisation) {
+    return 'Staben blir liggende i $organisation. En delt konto får planen, ikke personene.';
+  }
+
+  @override
   String get signInEntry => 'Logg inn';
 
   @override
