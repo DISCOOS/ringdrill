@@ -18,6 +18,7 @@ import {
     findEntry,
     keysForEntry,
     parseCatalogPath,
+    findUploadTarget,
     resolveNamespace,
     slugIndexKey,
     storedNamespaceFor,
@@ -192,4 +193,57 @@ test("THE POINT OF §2: the same slug in two namespaces is two entries", async (
     assert.equal(anon.ok, true);
     assert.equal(mine.ok, true, "no -2 suffix, no (kopi)");
     assert.notEqual(anon.record.entryId, mine.record.entryId);
+});
+
+// ---------- upload targeting: the ADR-0074 §4 / ADR-0025 conflict ----------
+
+const anonPrincipal = { ok: true, anonymous: true };
+const bergen = { ok: true, anonymous: false, userId: "u_1", accountId: "a_bergen", accounts: ["a_bergen"], roles: { a_bergen: "member" } };
+
+test("an anonymous upload targets anon", async () => {
+    const store = fakeStore();
+    const t = await findUploadTarget({ principal: anonPrincipal, slug: "new-plan" }, { store });
+    assert.equal(t.namespace, ANON_NAMESPACE);
+    assert.equal(t.existing, null);
+});
+
+test("a new slug is claimed in the caller's own namespace", async () => {
+    const store = fakeStore();
+    const t = await findUploadTarget({ principal: bergen, slug: "new-plan" }, { store });
+    assert.equal(t.namespace, "a_bergen");
+    assert.equal(t.existing, null);
+});
+
+test("the caller's own namespace wins when the slug exists in both", async () => {
+    const store = fakeStore({
+        [slugIndexKey("a_bergen", "lsor")]: { entryId: "e_mine" },
+        [slugIndexKey(ANON_NAMESPACE, "lsor")]: { entryId: "e_theirs" },
+    });
+    const t = await findUploadTarget({ principal: bergen, slug: "lsor" }, { store });
+    assert.equal(t.existing.entryId, "e_mine");
+    assert.equal(t.foundIn, "a_bergen");
+});
+
+test("LOOKUP falls back to anon, so a signed-in user keeps the wiki model", async () => {
+    // Without this, ADR-0025's "policy public → authenticated user may write"
+    // row is unreachable: everyone who signs in silently loses write access to
+    // the public plans they have been co-editing.
+    const store = fakeStore({ [slugIndexKey(ANON_NAMESPACE, "lsor")]: { entryId: "e_theirs" } });
+    const t = await findUploadTarget({ principal: bergen, slug: "lsor" }, { store });
+    assert.equal(t.existing.entryId, "e_theirs");
+    assert.equal(t.foundIn, ANON_NAMESPACE, "authorisation is then asked about the right plan");
+});
+
+test("CLAIMING does not fall back — a brand new slug never lands in anon for a signed-in user", async () => {
+    const store = fakeStore();
+    const t = await findUploadTarget({ principal: bergen, slug: "brand-new" }, { store });
+    assert.equal(t.namespace, "a_bergen");
+    assert.equal(t.foundIn, null);
+});
+
+test("a pre-migration flat record is still found through the anon fallback", async () => {
+    const store = fakeStore({ "lsor": { ownerId: "anon", programId: "p_1" } });
+    const t = await findUploadTarget({ principal: bergen, slug: "lsor" }, { store });
+    assert.equal(t.existing.legacy, true);
+    assert.equal(t.foundIn, ANON_NAMESPACE);
 });

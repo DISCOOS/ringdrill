@@ -1,7 +1,6 @@
 import { unzipSync, strFromU8, zipSync } from "fflate";
 import {
-    keysFor, readJson, readJsonStrong, sanitizeSlug,
-    getSlugRecord, getSlugRecordStrong, claimSlug, sha256Hex,
+    readJson, readJsonStrong, sanitizeSlug, sha256Hex,
     toStrongEtag, nowIso, originFromRequest,
     writeBinaryConditional, writeJsonConditional,
     corsPreflight, withCors, reportLegacyProgramIdUsage
@@ -15,6 +14,7 @@ import {
 // exhaustively without blob storage — see lib/authorize.js and ADR-0025.
 import { authenticate } from "./lib/auth/index.js";
 import { authorizeCatalogWrite, readAccessPolicy } from "./lib/authorize.js";
+import { ANON_NAMESPACE, claimEntry, findUploadTarget, keysForEntry } from "./lib/catalog.js";
 
 
 // Parse every top-level exercises/<uuid>.json entry once, returning both the
@@ -292,8 +292,6 @@ export default async function (request) {
         // mapping, so a stale answer picks the wrong branch. The claim path recovers on
         // its own (see below), but an incorrect record here is a 409 for a legitimate
         // re-upload.
-        const existing = await getSlugRecordStrong(slug);
-
         // planId is the Plan-rename name (ADR-0055); programId is accepted as a
         // fallback for callers that haven't upgraded yet, and its use is
         // reported to Sentry so we know when it's safe to remove.
@@ -302,13 +300,23 @@ export default async function (request) {
             await reportLegacyProgramIdUsage({ function: "drills-upload", slug });
         }
 
+        const slugTakenResponse = () => withCors(request, new Response(
+            `Slug '${slug}' already in use`,
+            { status: 409, headers: { "x-conflict-kind": "slug" } }
+        ));
+
         // ---- Authorisation (ADR-0025), before OCC and before any write ----
-        // The existing plan's meta decides which matrix row applies, so it is
-        // read before the decision rather than after.
-        const existingMeta = existing
-            ? await readJson(keysFor({ ownerId: existing.ownerId, programId: existing.programId, version: "_" }).meta, null)
-            : null;
         const principal = await authenticate(request);
+
+        // Lookup falls back to anon, claiming does not — see findUploadTarget
+        // for why, and which two ADRs it reconciles.
+        const target = await findUploadTarget({ principal, slug }, { strong: true });
+        const existing = target.existing;
+
+        // The existing plan's meta decides which matrix row applies, so it is
+        // read before the decision rather than after. keysForEntry, never
+        // keysFor: a pre-migration entry still lives in the old layout.
+        const existingMeta = existing ? await readJson(keysForEntry(existing).meta, null) : null;
         const decision = authorizeCatalogWrite({ principal, existing, meta: existingMeta });
         if (!decision.ok) {
             return withCors(request, new Response(
@@ -326,6 +334,19 @@ export default async function (request) {
         const ownerId = decision.ownerId;
         const programId = programIdParam ?? existing?.programId
             ?? (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2) + Date.now().toString(36));
+
+        // Claim a new entry, or keep serving the one we found. The record
+        // carries the layout, so every key below comes from keysForEntry and
+        // no call site branches on old-versus-new.
+        let entry = existing;
+        if (!entry) {
+            const claimed = await claimEntry({
+                namespace: target.namespace, slug, planId: programId,
+                ownerAccountId: ownerId === ANON_NAMESPACE ? null : ownerId,
+            });
+            if (!claimed.ok) return slugTakenResponse();
+            entry = { ...claimed.record, namespace: target.namespace, slug, legacy: false };
+        }
 
         const explicitVersion = qs.get("version");
         const published = (qs.get("published") || "false").toLowerCase() === "true";
@@ -348,33 +369,20 @@ export default async function (request) {
         // The query string carries only operation params (ADR-0043).
         const { name, description, tags } = resolveCatalogFields({ program, slug });
 
-        // ---- Slug claim / ownership check ----
-        const slugTakenResponse = () => withCors(request, new Response(
-            `Slug '${slug}' already in use`,
-            { status: 409, headers: { "x-conflict-kind": "slug" } }
-        ));
-        if (!existing) {
-            // Atomic create (onlyIfNew)
-            const claimed = await claimSlug(slug, { ownerId, programId, createdAt: nowIso() });
-            if (!claimed) {
-                // someone else created between our read and write → verify ownership
-                // Strong: `claimSlug` is atomic whatever the read consistency
-                // (`onlyIfNew` reads nothing), but this re-read decides whether the
-                // winner was us. Eventually consistent, it can answer `null` or a
-                // pre-claim record and turn a legitimate re-upload into a 409.
-                const now = await getSlugRecordStrong(slug);
-                if (!now || now.ownerId !== ownerId || now.programId !== programId) {
-                    return slugTakenResponse();
-                }
-            }
-        } else {
-            // Slug exists — enforce same mapping unless caller explicitly changed it
-            if (existing.ownerId !== ownerId || existing.programId !== programId) {
-                return slugTakenResponse();
-            }
+        // ---- Plan-id consistency ----
+        // The claim itself happened above, atomically via claimEntry. What is
+        // left is the case an existing entry is being re-uploaded under a
+        // different planId, which is a different plan wearing the same name.
+        //
+        // Ownership is no longer re-checked here: it was decided by the
+        // authorisation matrix, and re-deriving it from a request parameter is
+        // exactly the hole that let anyone read an owner off the feed and hand
+        // it back.
+        if (existing && existing.programId && existing.programId !== programId) {
+            return slugTakenResponse();
         }
 
-        const { latest, meta } = keysFor({ ownerId, programId, version: "_" });
+        const { latest, meta } = keysForEntry(entry, "_");
         // Strong, because this object is mutated and written back at the end of the
         // handler: the version entry for this upload is appended to
         // `currentMeta.versions`. An eventually consistent read here means a second
@@ -451,7 +459,7 @@ export default async function (request) {
               }, 0) + 1;
         for (let attempt = 0; ; attempt++) {
             version = explicitVersion ?? String(attemptVersion);
-            versioned = keysFor({ ownerId, programId, version }).versioned;
+            versioned = keysForEntry(entry, version).versioned;
             vRes = await writeBinaryConditional(versioned, bytes, { onlyIfNew: true });
             if (vRes.modified) break;
             if (explicitVersion || attempt >= maxVersionRetries) {

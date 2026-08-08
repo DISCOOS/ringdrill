@@ -182,3 +182,50 @@ export async function claimEntry({ namespace, slug, planId, ownerAccountId }, { 
     const { modified } = await idx.set(slugIndexKey(namespace, slug), JSON.stringify(record), { onlyIfNew: true });
     return modified ? { ok: true, record } : { ok: false, reason: "taken" };
 }
+
+/**
+ * Which entry an upload of `slug` is targeting, and where a new one would land.
+ *
+ * **Lookup falls back to `anon`; claiming does not.** That asymmetry resolves a
+ * conflict between two ADRs, and it is worth stating because neither is wrong
+ * on its own:
+ *
+ * * [ADR-0074](../../../docs/adrs/0074-catalog-entry-as-distinct-object.md) §4
+ *   says the write path carries no namespace — an authenticated upload lands in
+ *   the caller's account.
+ * * [ADR-0025](../../../docs/adrs/0025-authorization-and-publish-policy.md)'s
+ *   matrix says an authenticated user may write an existing `public` plan.
+ *
+ * Taken literally together, the second is unreachable: if the namespace is
+ * always the caller's, a signed-in user can never address an `anon` plan by
+ * slug, and everyone who signs in silently loses the wiki model on the plans
+ * they have been co-editing. So an *existing* entry is looked for in the
+ * caller's namespace first and then in `anon`, while a *new* slug is always
+ * claimed in the caller's own. Authorisation is unchanged either way — finding
+ * the `anon` entry does not grant anything, it just means the matrix gets asked
+ * about the right plan.
+ *
+ * Known gap, deliberately not invented around: a signed-in user cannot create
+ * `<their-account>/<slug>` while `anon/<slug>` exists — the fallback finds the
+ * anon one. That is the fork-keeps-its-name case, and giving it an explicit
+ * signal is a client-visible API decision rather than something to guess at
+ * here.
+ */
+export function uploadNamespaceFor(principal) {
+    const authenticated = !!principal && principal.ok !== false && !principal.anonymous;
+    return authenticated && principal.accountId ? principal.accountId : ANON_NAMESPACE;
+}
+
+export async function findUploadTarget({ principal, slug }, opts = {}) {
+    const namespace = uploadNamespaceFor(principal);
+
+    const own = await findEntry({ namespace, slug }, opts);
+    if (own) return { existing: own, namespace, foundIn: namespace };
+
+    if (namespace !== ANON_NAMESPACE) {
+        const shared = await findEntry({ namespace: ANON_NAMESPACE, slug }, opts);
+        if (shared) return { existing: shared, namespace: ANON_NAMESPACE, foundIn: ANON_NAMESPACE };
+    }
+
+    return { existing: null, namespace, foundIn: null };
+}
