@@ -1084,6 +1084,75 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryCatalog => 'Katalog';
 
   @override
+  String get signInEntry => 'Logg inn';
+
+  @override
+  String get signInTitle => 'Logg inn i RingDrill';
+
+  @override
+  String get signInWhatYouGet =>
+      'Vi oppretter en personlig konto for deg. Den eier planene du publiserer.';
+
+  @override
+  String get signInOptional =>
+      'Du trenger ingen konto for å bruke RingDrill. Planer, briefer og katalogen virker uten innlogging.';
+
+  @override
+  String get signInEmailLabel => 'E-postadresse';
+
+  @override
+  String get signInEmailInvalid => 'Skriv inn en e-postadresse';
+
+  @override
+  String get signInSendCode => 'Fortsett';
+
+  @override
+  String signInCodeSent(String email) {
+    return 'Vi sendte en lenke og en sekssifret kode til $email. Begge virker.';
+  }
+
+  @override
+  String get signInCodeLabel => 'Sekssifret kode';
+
+  @override
+  String get signInVerify => 'Logg inn';
+
+  @override
+  String get signInUseAnotherEmail => 'Bruk en annen adresse';
+
+  @override
+  String get signInFailed => 'Det virket ikke. Sjekk koden og prøv igjen.';
+
+  @override
+  String get signInCodeExpired => 'Koden er utløpt. Be om en ny.';
+
+  @override
+  String get signInTooManyAttempts => 'For mange forsøk. Be om en ny kode.';
+
+  @override
+  String get signInNetworkError =>
+      'Fikk ikke kontakt med RingDrill. Sjekk nettverket og prøv igjen.';
+
+  @override
+  String get signInProvidersComingSoon =>
+      'Innlogging med Apple, Google eller Microsoft kommer.';
+
+  @override
+  String get signOutAction => 'Logg ut';
+
+  @override
+  String get signOutConfirmTitle => 'Logge ut?';
+
+  @override
+  String get signOutConfirmBody =>
+      'Planene dine blir liggende på denne enheten, og kontoen din slettes ikke. Du kan logge inn igjen når som helst.';
+
+  @override
+  String accountSignedInAs(String name) {
+    return 'Logget inn som $name';
+  }
+
+  @override
   String get libraryAccountTab => 'Konto';
 
   @override

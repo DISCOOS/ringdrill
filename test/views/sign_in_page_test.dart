@@ -1,0 +1,258 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:ringdrill/data/auth_client.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/services/auth_service.dart';
+import 'package:ringdrill/views/sign_in_page.dart';
+
+/// The sign-in screen (DESIGN-015 §3.3, §5.1).
+///
+/// Most of these assert *copy*, which is unusual for a widget test and is the
+/// point here: the design's two hard rules about this screen are both things
+/// it has to say, not things it has to do. Dropping either sentence would be
+/// invisible to any behavioural test and would break the design.
+
+class FakeTransport extends http.BaseClient {
+  final List<http.BaseRequest> requests = [];
+  final List<http.Response> _script;
+  int _i = 0;
+
+  FakeTransport(this._script);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    requests.add(request);
+    final res = _i < _script.length ? _script[_i++] : _script.last;
+    return http.StreamedResponse(
+      Stream.value(utf8.encode(res.body)),
+      res.statusCode,
+      headers: res.headers,
+    );
+  }
+}
+
+http.Response _json(Map<String, dynamic> body, [int status = 200]) =>
+    http.Response(jsonEncode(body), status);
+
+final _challenge = _json({'challengeId': 'c_1', 'expiresInMs': 600000});
+
+final _session = _json({
+  'accessToken': 'at_1',
+  'refreshToken': 'rt_1',
+  'sessionId': 's_1',
+  'expiresIn': 3600,
+  'user': {'id': 'u_1', 'displayName': 'Kari', 'email': 'kari@example.com'},
+  'accounts': ['a_kari'],
+  'roles': {'a_kari': 'owner'},
+});
+
+final _me = _json({
+  'user': {'id': 'u_1', 'displayName': 'Kari', 'email': 'kari@example.com'},
+  'accounts': [
+    {
+      'id': 'a_kari',
+      'displayName': 'Kari',
+      'type': 'personal',
+      'role': 'owner',
+    },
+  ],
+  'activeAccount': 'a_kari',
+  'devices': [],
+});
+
+FakeTransport install(List<http.Response> script) {
+  final fake = FakeTransport(script);
+  AuthService.install(
+    AuthService(
+      client: AuthClient(baseUrl: 'https://api.test', httpClient: fake),
+      store: InMemoryAuthTokenStore(),
+    ),
+  );
+  return fake;
+}
+
+Future<void> pumpSignIn(WidgetTester tester, {VoidCallback? onSignedIn}) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('en'),
+      home: SignInPage(onSignedIn: onSignedIn),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  tearDown(AuthService.resetForTest);
+
+  group('what the screen has to say', () {
+    testWidgets('discloses that an account is being created', (tester) async {
+      // Signing in *is* getting an account (ADR-0024 creates it), so this is
+      // the only place the user is told. A thing created silently on your
+      // behalf is worse than a thing you were told about.
+      install([_challenge]);
+      await pumpSignIn(tester);
+
+      expect(
+        find.text(
+          'We create a personal account for you. '
+          'It owns the plans you publish.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('says an account is optional', (tester) async {
+      // §5.1: no account is the normal state. Somebody who opened this by
+      // accident must be able to leave believing nothing is wrong.
+      install([_challenge]);
+      await pumpSignIn(tester);
+
+      expect(find.textContaining('You do not need an account'), findsOneWidget);
+    });
+
+    testWidgets('offers sign-in without a separate create-account choice', (
+      tester,
+    ) async {
+      // Presenting them as two decisions is the mistake §5.1 rules out.
+      install([_challenge]);
+      await pumpSignIn(tester);
+
+      expect(find.textContaining('Create an account'), findsNothing);
+      expect(find.textContaining('Sign up'), findsNothing);
+    });
+  });
+
+  group('the email flow', () {
+    testWidgets('rejects a non-address before asking the server', (
+      tester,
+    ) async {
+      final fake = install([_challenge]);
+      await pumpSignIn(tester);
+
+      await tester.enterText(find.byType(TextField), 'not-an-address');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Enter an email address'), findsOneWidget);
+      expect(fake.requests, isEmpty, reason: 'no round trip for a typo');
+    });
+
+    testWidgets('moves to the code step and names the address', (tester) async {
+      install([_challenge]);
+      await pumpSignIn(tester);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      // Both redemptions are the same challenge, so the copy must not imply
+      // that using the code forfeits the link.
+      // Asserted as the whole sentence: the address also sits in the email
+      // field above, so a textContaining on the address alone matches twice.
+      expect(
+        find.text(
+          'We sent a link and a six-digit code to kari@example.com. '
+          'Either one works.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Six-digit code'), findsOneWidget);
+    });
+
+    testWidgets('signs in and calls back', (tester) async {
+      install([_challenge, _session, _me]);
+      var resumed = false;
+      await pumpSignIn(tester, onSignedIn: () => resumed = true);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).last, '123456');
+      await tester.tap(find.text('Sign in'));
+      await tester.pumpAndSettle();
+
+      expect(AuthService.instance.isSignedIn, isTrue);
+      // The callback is what lets a caller resume an interrupted flow —
+      // accepting an invitation, say — instead of dropping the user
+      // somewhere with no explanation.
+      expect(resumed, isTrue);
+    });
+
+    testWidgets('a wrong code is retryable, not a dead end', (tester) async {
+      install([
+        _challenge,
+        _json({'error': 'bad_code'}, 401),
+      ]);
+      await pumpSignIn(tester);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).last, '000000');
+      await tester.tap(find.text('Sign in'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Check the code'), findsOneWidget);
+      // Still on the code step with the field live — a failure that sent the
+      // user back to the start would make them request a second code and
+      // invalidate the one they already have.
+      expect(find.text('Six-digit code'), findsOneWidget);
+      expect(AuthService.instance.isSignedIn, isFalse);
+    });
+
+    testWidgets('an expired code says so rather than "wrong code"', (
+      tester,
+    ) async {
+      // Different remedy: ask for a new one, not retype this one.
+      install([
+        _challenge,
+        _json({'error': 'expired', 'state': 'expired'}, 400),
+      ]);
+      await pumpSignIn(tester);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, '123456');
+      await tester.tap(find.text('Sign in'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('expired'), findsOneWidget);
+    });
+
+    testWidgets('can go back to a different address', (tester) async {
+      // A typo in the address is otherwise unrecoverable without leaving the
+      // screen.
+      install([_challenge]);
+      await pumpSignIn(tester);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Use a different address'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Six-digit code'), findsNothing);
+      expect(find.text('Continue'), findsOneWidget);
+    });
+  });
+
+  testWidgets('providers are stated as coming, not shown disabled', (
+    tester,
+  ) async {
+    // A greyed-out "Sign in with Apple" reads as broken; a sentence reads as
+    // not-yet.
+    install([_challenge]);
+    await pumpSignIn(tester);
+
+    expect(find.textContaining('Apple, Google or Microsoft'), findsOneWidget);
+  });
+}

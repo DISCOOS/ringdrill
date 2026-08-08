@@ -1802,6 +1802,126 @@ abstract class AppLocalizations {
   /// **'Catalog'**
   String get libraryCatalog;
 
+  /// Drawer entry that opens the sign-in screen. Plain and unadorned — DESIGN-015 §5.1 forbids a badge or a 'complete your setup' nudge, because no account is the normal state rather than a step on the way to one.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get signInEntry;
+
+  /// No description provided for @signInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to RingDrill'**
+  String get signInTitle;
+
+  /// Shown on the sign-in screen itself (DESIGN-015 §5.1). Signing in *is* getting an account, so the UI must never present them as two decisions — but it must say that this is what happens. A thing created silently on your behalf is worse than a thing you were told about.
+  ///
+  /// In en, this message translates to:
+  /// **'We create a personal account for you. It owns the plans you publish.'**
+  String get signInWhatYouGet;
+
+  /// Reassurance on the sign-in screen. Someone reaching this screen by accident should be able to leave without believing they broke something.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not need an account to use RingDrill. Plans, briefs and the catalog all work signed out.'**
+  String get signInOptional;
+
+  /// No description provided for @signInEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address'**
+  String get signInEmailLabel;
+
+  /// No description provided for @signInEmailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an email address'**
+  String get signInEmailInvalid;
+
+  /// No description provided for @signInSendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get signInSendCode;
+
+  /// After a challenge is started. Both redemptions are the same challenge (DESIGN-015 §3.3), so the wording must not imply picking one rules out the other.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a link and a six-digit code to {email}. Either one works.'**
+  String signInCodeSent(String email);
+
+  /// No description provided for @signInCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Six-digit code'**
+  String get signInCodeLabel;
+
+  /// No description provided for @signInVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get signInVerify;
+
+  /// No description provided for @signInUseAnotherEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a different address'**
+  String get signInUseAnotherEmail;
+
+  /// No description provided for @signInFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That did not work. Check the code and try again.'**
+  String get signInFailed;
+
+  /// No description provided for @signInCodeExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'That code has expired. Ask for a new one.'**
+  String get signInCodeExpired;
+
+  /// No description provided for @signInTooManyAttempts.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts. Ask for a new code.'**
+  String get signInTooManyAttempts;
+
+  /// No description provided for @signInNetworkError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach RingDrill. Check your connection and try again.'**
+  String get signInNetworkError;
+
+  /// Placeholder while only the email path is implemented. Stated plainly rather than showing disabled provider buttons, which read as broken.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing in with Apple, Google or Microsoft is coming.'**
+  String get signInProvidersComingSoon;
+
+  /// No description provided for @signOutAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get signOutAction;
+
+  /// No description provided for @signOutConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out?'**
+  String get signOutConfirmTitle;
+
+  /// DESIGN-015 §5.1 separates sign-out from account deletion. Signing out must never look like losing work, so the confirm says exactly what stays.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plans stay on this device and your account is not deleted. You can sign in again at any time.'**
+  String get signOutConfirmBody;
+
+  /// No description provided for @accountSignedInAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as {name}'**
+  String accountSignedInAs(String name);
+
   /// Fourth tab of the Open... library (DESIGN-015 §5.7) — the plans the signed-in account owns, drafts included.
   ///
   /// In en, this message translates to:
