@@ -1,4 +1,4 @@
-import { getDrillsStore, getSlugIndexStoreStrong } from "./shared.js";
+import { getDrillsStore, getDrillsStoreStrong, getSlugIndexStoreStrong } from "./shared.js";
 import { ANON_NAMESPACE, catalogKeysFor, newEntryId, slugIndexKey, storedNamespaceFor } from "./catalog.js";
 
 /**
@@ -45,7 +45,12 @@ async function legacyRecords(idx) {
 export async function migrateCatalogKeys({
     dryRun = true,
     idx = getSlugIndexStoreStrong(),
-    drills = getDrillsStore(),
+    // **Strong.** Every read here feeds a write somewhere else, which is
+    // exactly the case lib/shared.js documents for readBinaryStrong: an
+    // eventually consistent read of a recently uploaded version answers null,
+    // and this would record "source_vanished" for a blob that is right there —
+    // then the cleanup phase would delete the original it failed to copy.
+    drills = getDrillsStoreStrong(),
     now = () => new Date().toISOString(),
     makeEntryId = newEntryId,
 } = {}) {
@@ -127,7 +132,8 @@ export async function migrateCatalogKeys({
 export async function cleanupCatalogKeys({
     dryRun = true,
     idx = getSlugIndexStoreStrong(),
-    drills = getDrillsStore(),
+    // Strong for the same reason: this decides deletions.
+    drills = getDrillsStoreStrong(),
 } = {}) {
     const report = { phase: "cleanup", dryRun, removedBlobs: [], removedKeys: [], skipped: [] };
 
