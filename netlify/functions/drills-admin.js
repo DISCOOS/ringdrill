@@ -34,6 +34,28 @@ export default async function (request) {
         let version = (url.searchParams.get("version") ?? "").trim();
 
         switch (action) {
+            // ---------- ONE-OFF MIGRATION (ADR-0074) ----------
+            //
+            // Run here rather than from a local script: inside the Netlify
+            // runtime blob access just works, where a script would need a site
+            // id and an API token plumbed into getStore({ siteID, token }) —
+            // credential handling for no gain. It also reuses this endpoint's
+            // existing ADMIN_TOKEN gate.
+            //
+            // Both default to a dry run. Pass dryRun=false to act.
+            case "migrate-catalog-keys": {
+                const { migrateCatalogKeys } = await import("./lib/migrate-catalog.js");
+                const dryRun = (url.searchParams.get("dryRun") ?? "true").toLowerCase() !== "false";
+                const report = await migrateCatalogKeys({ dryRun });
+                return json(report);
+            }
+            case "migrate-catalog-keys-cleanup": {
+                const { cleanupCatalogKeys } = await import("./lib/migrate-catalog.js");
+                const dryRun = (url.searchParams.get("dryRun") ?? "true").toLowerCase() !== "false";
+                const report = await cleanupCatalogKeys({ dryRun });
+                return json(report);
+            }
+
             // ---------- READ-ONLY ADMIN ----------
             case "listall": {
                 const limit  = clampInt(url.searchParams.get("limit"), 1, 200, 50);
