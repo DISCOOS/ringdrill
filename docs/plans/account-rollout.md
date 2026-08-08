@@ -102,6 +102,43 @@ splitting the feature.
 
 Ordered by dependency, not by risk. Everything below ships together.
 
+### Status — 2026-08-08
+
+Built on `feat/accounts-backend`. Backend and client are both in; three things
+are deliberately not, and only the first blocks the release.
+
+| | State |
+|---|---|
+| Auth endpoints, accounts, members, invitations, policy, account plans | **Done** |
+| Catalog re-key (ADR-0074) and its migration | **Done, not yet run** — see [`catalog-rekey-migration.md`](./catalog-rekey-migration.md) |
+| `AuthService`, sign-in screen, account/members screen, invite page | **Done** |
+| Library account tab, Online→Public, publish dialog sharing | **Done** |
+| Apple / Google / Microsoft sign-in | **Not built** — blocks the release |
+| CLI device grant | Deferred by design (§ CLI below) |
+| `ADMIN_TOKEN` removal | Deferred — no user-facing effect |
+
+**The provider gap is the one that matters.** Only the email path exists, on
+both sides: `auth.js`'s `callback` redeems an email challenge and nothing else,
+and the sign-in screen states that providers are coming rather than showing
+disabled buttons. Shipping like this would mean an Apple-device user has no
+Apple sign-in, which is a worse first impression than no accounts at all — and
+[ADR-0024](../adrs/0024-account-and-identity-model.md)'s App Store 4.8 reasoning
+assumes email is *an* option, not the only one.
+
+Closing it needs two things this work could not produce:
+
+1. **Server-side ID-token verification** in `callback` — fetch each provider's
+   JWKS, verify the signature, and take `sub`, `email` and `email_verified`
+   from the verified claims rather than from the request body. The
+   `resolveIdentity` call it feeds is already provider-agnostic, so this is
+   additive.
+2. **OAuth client IDs and native configuration** — Apple Service ID and key,
+   Google client IDs per platform, Microsoft app registration, plus the
+   entitlements and URL schemes each needs. These are account-level
+   credentials, not code.
+
+### Backend
+
 ### Backend
 
 * Add `accounts`, `users`, `identities`, `members`, `email-index` and
@@ -431,3 +468,16 @@ Two consequences for this release:
 * Whether an `owner` should be distinguishable from an *admin* who manages
   people but cannot delete the account (DESIGN-015 §11). Fits the model
   without a change; nobody to be it at current scale.
+* **Where the `shared` grantee list gets its account ids.** The publish flow
+  asks for them as raw ids, which is honest but unhelpful — nobody knows
+  another account's id. A handle-based picker is the obvious answer, and it
+  needs a lookup endpoint that does not become an account-enumeration oracle.
+  Ids are stored either way ([ADR-0074](../adrs/0074-catalog-entry-as-distinct-object.md)):
+  handles change, ids do not.
+* **The sessions list (§4.3) is not built.** `GET /api/auth/me` already returns
+  `devices`, and `AuthDevice` parses them, so what is missing is the screen and
+  a per-session revoke. It is the answer to "my phone was stolen", so it should
+  not stay missing long.
+* **Account deletion (§5.1) is not built** on either side. When it is, it must
+  not sweep blobs by account prefix — after ADR-0074 there is no account in the
+  blob path, which is the point of its §4.
