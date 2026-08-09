@@ -151,18 +151,47 @@ five-minute lifetime. There is nothing further to configure — and note what th
 design buys here: a key that must be *signed with* cannot be lifted out of a
 build and replayed, because what it produces expires.
 
-### The one build-time change
+### The native iOS sheet — not yet, and the order matters
 
-Sign in with Apple stays **native on iOS**: the Face ID sheet rather than a
-browser. It needs the *Sign in with Apple* capability added in Xcode
-(`ios/Runner`), which writes an entitlement. That entitlement and the bundle id
-are the only provider-related things in any build — and neither is security
-information.
+**Apple works today through the same browser flow as Google and Microsoft.**
+Nothing below is required for it to function; this section is about replacing
+that browser sheet with the native Face ID one on iOS.
 
-The reason is App Store guideline 4.8 and plain user expectation: an iPhone user
-offered a browser sheet where every other app shows the native one notices, and
-review notices too. On web and Android, Apple goes through the same server-side
-flow as everyone else.
+> **Do not add the entitlement before step 1 of the portal section above.**
+> An entitlement has to be present in the *provisioning profile*, and the
+> profile can only carry `com.apple.developer.applesignin` once the App ID has
+> the capability. Add the key first and **every iOS build fails** to code-sign,
+> with `Provisioning profile ... doesn't include the
+> com.apple.developer.applesignin entitlement`. The entitlement is also inert
+> until the app makes a native Apple call, so on its own it is a build break in
+> exchange for nothing.
+
+Correct order:
+
+1. Enable **Sign in with Apple** on the App ID `app.ringdrill` (portal step 1).
+2. Let Xcode regenerate the provisioning profile — open the project once, or
+   `flutter build ios` with automatic signing.
+3. *Then* add the entitlement and the native code path, together. The
+   entitlement is two lines in the existing `ios/Runner/Runner.entitlements`:
+
+```xml
+<key>com.apple.developer.applesignin</key>
+<array><string>Default</string></array>
+```
+
+4. Add the `sign_in_with_apple` package and branch on iOS, handing the
+   resulting `identityToken` to `POST /api/auth/callback`. **The server is
+   already ready for this** — `OAUTH_APPLE_AUDIENCES` exists so the bundle id
+   is accepted alongside the Services ID, and the verifier already handles
+   Apple sending `email_verified` as the string `"true"` rather than a boolean.
+
+**Why bother at all**, given the browser flow works: App Store guideline 4.8
+scrutiny is lowest when the native sheet is used, and an iPhone user offered a
+browser where every other app shows Face ID notices. It is polish, not a
+blocker — the web flow is a supported, documented Apple flow, which is what
+Services IDs exist for.
+
+On web and Android, Apple goes through the server-side flow regardless.
 
 ---
 
