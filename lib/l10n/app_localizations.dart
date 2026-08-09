@@ -2282,6 +2282,24 @@ abstract class AppLocalizations {
   /// **'You do not need an account to use RingDrill. Plans, briefs and the catalog all work signed out.'**
   String get signInOptional;
 
+  /// Third-party sign-in button. Opens the provider's own login page in a system browser — the user authenticates on their domain, not ours.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with {provider}'**
+  String signInWithProvider(String provider);
+
+  /// Separates the provider buttons from the email field. Lower case and unemphatic: email is not the fallback, it is one option among several.
+  ///
+  /// In en, this message translates to:
+  /// **'or continue with email'**
+  String get signInOrEmail;
+
+  /// No description provided for @signInProviderFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That sign-in did not complete. Try again, or use email.'**
+  String get signInProviderFailed;
+
   /// No description provided for @signInEmailLabel.
   ///
   /// In en, this message translates to:
@@ -2347,12 +2365,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not reach RingDrill. Check your connection and try again.'**
   String get signInNetworkError;
-
-  /// Placeholder while only the email path is implemented. Stated plainly rather than showing disabled provider buttons, which read as broken.
-  ///
-  /// In en, this message translates to:
-  /// **'Signing in with Apple, Google or Microsoft is coming.'**
-  String get signInProvidersComingSoon;
 
   /// No description provided for @signOutAction.
   ///

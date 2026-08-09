@@ -1366,6 +1366,18 @@ class AppLocalizationsNb extends AppLocalizations {
       'Du trenger ingen konto for å bruke RingDrill. Planer, briefer og katalogen virker uten innlogging.';
 
   @override
+  String signInWithProvider(String provider) {
+    return 'Fortsett med $provider';
+  }
+
+  @override
+  String get signInOrEmail => 'eller fortsett med e-post';
+
+  @override
+  String get signInProviderFailed =>
+      'Innloggingen ble ikke fullført. Prøv igjen, eller bruk e-post.';
+
+  @override
   String get signInEmailLabel => 'E-postadresse';
 
   @override
@@ -1400,10 +1412,6 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get signInNetworkError =>
       'Fikk ikke kontakt med RingDrill. Sjekk nettverket og prøv igjen.';
-
-  @override
-  String get signInProvidersComingSoon =>
-      'Innlogging med Apple, Google eller Microsoft kommer.';
 
   @override
   String get signOutAction => 'Logg ut';

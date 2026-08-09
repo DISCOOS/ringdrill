@@ -198,6 +198,30 @@ class AuthTokens {
   }
 }
 
+/// A third-party sign-in button, as the server describes it.
+///
+/// [authorizeUrl] is built server-side and already carries the client id, the
+/// PKCE challenge, the nonce and a single-use `state`. The app holds none of
+/// those — it opens the URL and waits.
+@immutable
+class AuthProvider {
+  final String id;
+  final String label;
+  final String authorizeUrl;
+
+  const AuthProvider({
+    required this.id,
+    required this.label,
+    required this.authorizeUrl,
+  });
+
+  factory AuthProvider.fromJson(Map<String, dynamic> j) => AuthProvider(
+    id: j['id'] as String,
+    label: j['label'] as String,
+    authorizeUrl: j['authorizeUrl'] as String,
+  );
+}
+
 /// What a challenge started — the code path and the link path are the same
 /// challenge, redeemable either way (DESIGN-015 §3.3).
 @immutable
@@ -396,6 +420,37 @@ class AuthClient {
       ),
       devCode: j['code'] as String?,
     );
+  }
+
+  /// Which providers this deployment offers, and the URL to open for each.
+  ///
+  /// Asked at runtime rather than compiled in, which is the whole point: a
+  /// client id belongs to a deployment, not to a build, so adding or rotating
+  /// a provider never needs an app release. An empty list is the normal answer
+  /// for a deployment with none configured — not an error.
+  ///
+  /// Each call mints fresh single-use `state` values server-side, so the
+  /// result must not be cached across sign-in attempts.
+  Future<List<AuthProvider>> providers() async {
+    final j = await _get('auth/providers');
+    return ((j['providers'] as List?) ?? const [])
+        .map((e) => AuthProvider.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Exchange the handoff code the browser returned for a session.
+  ///
+  /// The tokens never travelled in a URL — this is the round trip that fetches
+  /// them, over TLS. Single-use and valid for a minute.
+  Future<AuthTokens> redeemHandoff(
+    String handoff, {
+    String? deviceLabel,
+  }) async {
+    final j = await _post('auth/callback', {
+      'handoff': handoff,
+      'deviceLabel': ?deviceLabel,
+    });
+    return AuthTokens.fromJson(j, now: _now());
   }
 
   /// The signed-in user with their accounts *named*.

@@ -193,6 +193,27 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!--
+        Catches the `ringdrill://auth/callback` redirect that ends a provider
+        sign-in (ADR-0024). flutter_web_auth_2 supplies this activity; without
+        the intent filter the Custom Tab has nowhere to hand the callback back
+        to and the sign-in hangs until the user gives up.
+
+        The scheme is our own and is already registered on iOS
+        (`ios/Runner/Info.plist`). Nothing here is a secret — no client id, no
+        redirect URI, which is the point of exchanging the code server-side.
+        -->
+        <activity
+            android:name="com.linusu.flutter_web_auth_2.CallbackActivity"
+            android:exported="true">
+            <intent-filter android:label="flutter_web_auth_2">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="ringdrill"/>
+            </intent-filter>
+        </activity>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

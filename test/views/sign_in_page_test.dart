@@ -18,13 +18,38 @@ import 'package:ringdrill/views/sign_in_page.dart';
 class FakeTransport extends http.BaseClient {
   final List<http.BaseRequest> requests = [];
   final List<http.Response> _script;
+  final List<AuthProvider> providers;
   int _i = 0;
 
-  FakeTransport(this._script);
+  FakeTransport(this._script, {this.providers = const []});
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     requests.add(request);
+
+    // Discovery is answered by path rather than from the script: the screen
+    // asks for it on open, and threading it through every email test's script
+    // would make each one carry a response it does not care about.
+    if (request.url.path.endsWith('/auth/providers')) {
+      return http.StreamedResponse(
+        Stream.value(
+          utf8.encode(
+            jsonEncode({
+              'providers': [
+                for (final p in providers)
+                  {
+                    'id': p.id,
+                    'label': p.label,
+                    'authorizeUrl': p.authorizeUrl,
+                  },
+              ],
+            }),
+          ),
+        ),
+        200,
+      );
+    }
+
     final res = _i < _script.length ? _script[_i++] : _script.last;
     return http.StreamedResponse(
       Stream.value(utf8.encode(res.body)),
@@ -63,12 +88,17 @@ final _me = _json({
   'devices': [],
 });
 
-FakeTransport install(List<http.Response> script) {
-  final fake = FakeTransport(script);
+FakeTransport install(
+  List<http.Response> script, {
+  List<AuthProvider> providers = const [],
+  WebAuthLauncher? launcher,
+}) {
+  final fake = FakeTransport(script, providers: providers);
   AuthService.install(
     AuthService(
       client: AuthClient(baseUrl: 'https://api.test', httpClient: fake),
       store: InMemoryAuthTokenStore(),
+      launcher: launcher,
     ),
   );
   return fake;
@@ -139,7 +169,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Enter an email address'), findsOneWidget);
-      expect(fake.requests, isEmpty, reason: 'no round trip for a typo');
+      // Discovery fires when the screen opens, so the assertion is about the
+      // *sign-in* round trip specifically.
+      expect(
+        fake.requests.where((r) => r.url.path.endsWith('/auth/start-email')),
+        isEmpty,
+        reason: 'no round trip for a typo',
+      );
     });
 
     testWidgets('moves to the code step and names the address', (tester) async {
@@ -245,14 +281,109 @@ void main() {
     });
   });
 
-  testWidgets('providers are stated as coming, not shown disabled', (
-    tester,
-  ) async {
-    // A greyed-out "Sign in with Apple" reads as broken; a sentence reads as
-    // not-yet.
-    install([_challenge]);
-    await pumpSignIn(tester);
+  group('provider sign-in', () {
+    const google = AuthProvider(
+      id: 'google',
+      label: 'Google',
+      authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth?state=s1',
+    );
 
-    expect(find.textContaining('Apple, Google or Microsoft'), findsOneWidget);
+    testWidgets('a discovered provider gets a button', (tester) async {
+      install([_challenge], providers: [google]);
+      await pumpSignIn(tester);
+
+      expect(find.text('Continue with Google'), findsOneWidget);
+      // Email stays available, and is not labelled as a fallback.
+      expect(find.text('or continue with email'), findsOneWidget);
+      expect(find.text('Email address'), findsOneWidget);
+    });
+
+    testWidgets(
+      'no configured provider renders nothing, not an empty section',
+      (tester) async {
+        install([_challenge]);
+        await pumpSignIn(tester);
+
+        expect(find.textContaining('Continue with'), findsNothing);
+        expect(find.text('or continue with email'), findsNothing);
+      },
+    );
+
+    testWidgets('tapping opens the server-built URL and signs in', (
+      tester,
+    ) async {
+      // The app holds no client id — it opens what discovery handed it.
+      String? opened;
+      install(
+        [_session, _me],
+        providers: [google],
+        launcher: ({required url, required callbackUrlScheme}) async {
+          opened = url;
+          return 'ringdrill://auth/callback?handoff=h1';
+        },
+      );
+      await pumpSignIn(tester);
+
+      await tester.tap(find.text('Continue with Google'));
+      await tester.pumpAndSettle();
+
+      expect(opened, google.authorizeUrl);
+      expect(AuthService.instance.isSignedIn, isTrue);
+    });
+
+    testWidgets('cancelling is silent, not an error', (tester) async {
+      // Closing the browser is an ordinary thing to do. An error message would
+      // tell somebody they failed at deciding not to.
+      install(
+        [_challenge],
+        providers: [google],
+        launcher: ({required url, required callbackUrlScheme}) async =>
+            'ringdrill://auth/callback?error=access_denied',
+      );
+      await pumpSignIn(tester);
+
+      await tester.tap(find.text('Continue with Google'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('did not complete'), findsNothing);
+      expect(AuthService.instance.isSignedIn, isFalse);
+    });
+
+    testWidgets('a real failure says so and leaves email usable', (
+      tester,
+    ) async {
+      install(
+        [_challenge],
+        providers: [google],
+        launcher: ({required url, required callbackUrlScheme}) async =>
+            'ringdrill://auth/callback?error=code_exchange_failed',
+      );
+      await pumpSignIn(tester);
+
+      await tester.tap(find.text('Continue with Google'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('did not complete'), findsOneWidget);
+      expect(find.text('Email address'), findsOneWidget);
+    });
+
+    testWidgets('a discovery failure does not take the email path down', (
+      tester,
+    ) async {
+      // Providers are an addition to sign-in, not a precondition for it.
+      AuthService.install(
+        AuthService(
+          client: AuthClient(
+            baseUrl: 'https://api.test',
+            httpClient: FakeTransport([http.Response('boom', 500)]),
+          ),
+          store: InMemoryAuthTokenStore(),
+        ),
+      );
+      await pumpSignIn(tester);
+
+      expect(find.text('Email address'), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
+    });
   });
 }

@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:ringdrill/data/auth_client.dart';
 
 /// Where the session is kept between launches.
@@ -63,6 +65,40 @@ class InMemoryAuthTokenStore implements AuthTokenStore {
   @override
   Future<void> clear() async => _value = null;
 }
+
+/// Opens [url] in a system browser and returns the callback URL it lands on.
+///
+/// A typedef rather than a direct call so a test can drive the whole sign-in
+/// without a platform channel — and so the one place that reaches a native API
+/// is a single injectable line.
+typedef WebAuthLauncher =
+    Future<String> Function({
+      required String url,
+      required String callbackUrlScheme,
+    });
+
+/// The scheme the server bounces back to. Already registered on iOS
+/// (`ios/Runner/Info.plist`), so provider sign-in needs no new one.
+const kAuthCallbackScheme = 'ringdrill';
+
+/// Raised when the person closed the browser without finishing.
+///
+/// Distinct from a failure because it is not one: cancelling a sign-in is an
+/// ordinary thing to do, and the screen should go quiet rather than show an
+/// error.
+class SignInCancelled implements Exception {
+  const SignInCancelled();
+}
+
+/// The default launcher: `ASWebAuthenticationSession` on iOS, Custom Tabs on
+/// Android, `window.open` on web.
+Future<String> _launchWebAuth({
+  required String url,
+  required String callbackUrlScheme,
+}) => FlutterWebAuth2.authenticate(
+  url: url,
+  callbackUrlScheme: callbackUrlScheme,
+);
 
 /// Signed in, or not. There is no third state the UI needs to distinguish, and
 /// inventing one ("signing in", "expired") would put a spinner in front of
@@ -128,13 +164,17 @@ class AuthService extends ChangeNotifier {
   /// requirement, not an optimisation.
   Future<String?>? _refreshing;
 
+  final WebAuthLauncher _launch;
+
   AuthService({
     required AuthClient client,
     AuthTokenStore? store,
     DateTime Function()? now,
+    WebAuthLauncher? launcher,
   }) : _client = client,
        _store = store ?? const SecureAuthTokenStore(),
-       _now = now ?? (() => DateTime.now().toUtc());
+       _now = now ?? (() => DateTime.now().toUtc()),
+       _launch = launcher ?? _launchWebAuth;
 
   static AuthService? _instance;
 
@@ -202,6 +242,51 @@ class AuthService extends ChangeNotifier {
     String email, {
     String locale = 'en',
   }) => _client.startEmail(email, locale: locale);
+
+  /// Which third-party providers this deployment offers.
+  ///
+  /// Never cached: each call mints fresh single-use `state` values server-side,
+  /// so a reused response would send two attempts at the same one.
+  Future<List<AuthProvider>> providers() => _client.providers();
+
+  /// Sign in through a provider.
+  ///
+  /// Opens the server-built authorize URL in a system browser — the person
+  /// signs in on the provider's own page, on the provider's own domain — and
+  /// exchanges the single-use handoff code the browser comes back with. The
+  /// tokens themselves never travel in a URL.
+  ///
+  /// Throws [SignInCancelled] when the browser was dismissed, which is not an
+  /// error and should not be shown as one.
+  Future<void> signInWithProvider(AuthProvider provider) async {
+    final String callback;
+    try {
+      callback = await _launch(
+        url: provider.authorizeUrl,
+        callbackUrlScheme: kAuthCallbackScheme,
+      );
+    } on PlatformException {
+      // What flutter_web_auth_2 raises when the sheet is dismissed. Retrying
+      // or reporting a failure here would both be wrong.
+      throw const SignInCancelled();
+    }
+
+    final params = Uri.parse(callback).queryParameters;
+    // The server bounces back with `error` for everything from a cancelled
+    // consent to a failed exchange, so the reason survives to the UI instead
+    // of becoming a generic failure.
+    final error = params['error'];
+    if (error != null) {
+      if (error == 'access_denied') throw const SignInCancelled();
+      throw AuthApiException(error, reason: error);
+    }
+
+    final handoff = params['handoff'];
+    if (handoff == null) throw AuthApiException('no_handoff');
+
+    await _adopt(await _client.redeemHandoff(handoff));
+    await _hydrate();
+  }
 
   /// Redeem an email code, an emailed link, or a provider result.
   Future<void> completeSignIn({

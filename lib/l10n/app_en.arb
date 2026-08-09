@@ -1439,6 +1439,16 @@
   "@signInOptional": {
     "description": "Reassurance on the sign-in screen. Someone reaching this screen by accident should be able to leave without believing they broke something."
   },
+  "signInWithProvider": "Continue with {provider}",
+  "@signInWithProvider": {
+    "description": "Third-party sign-in button. Opens the provider's own login page in a system browser — the user authenticates on their domain, not ours.",
+    "placeholders": { "provider": { "type": "String" } }
+  },
+  "signInOrEmail": "or continue with email",
+  "@signInOrEmail": {
+    "description": "Separates the provider buttons from the email field. Lower case and unemphatic: email is not the fallback, it is one option among several."
+  },
+  "signInProviderFailed": "That sign-in did not complete. Try again, or use email.",
   "signInEmailLabel": "Email address",
   "signInEmailInvalid": "Enter an email address",
   "signInSendCode": "Continue",
@@ -1454,10 +1464,6 @@
   "signInCodeExpired": "That code has expired. Ask for a new one.",
   "signInTooManyAttempts": "Too many attempts. Ask for a new code.",
   "signInNetworkError": "Could not reach RingDrill. Check your connection and try again.",
-  "signInProvidersComingSoon": "Signing in with Apple, Google or Microsoft is coming.",
-  "@signInProvidersComingSoon": {
-    "description": "Placeholder while only the email path is implemented. Stated plainly rather than showing disabled provider buttons, which read as broken."
-  },
   "signOutAction": "Sign out",
   "signOutConfirmTitle": "Sign out?",
   "signOutConfirmBody": "Your plans stay on this device and your account is not deleted. You can sign in again at any time.",

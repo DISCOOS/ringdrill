@@ -65,6 +65,13 @@ dependencies:
   # wrong home for them. Rotation with replay detection is the other half of
   # the defence, but rotation cannot help a token read straight off disk.
   flutter_secure_storage: ^11.0.0
+  # Opens a provider's login page in the *system* browser and hands the
+  # callback URL back — ASWebAuthenticationSession on iOS, Custom Tabs on
+  # Android, window.open on web. Chosen over flutter_appauth because that one
+  # wants the issuer and client id in the app and performs the token exchange
+  # on-device, which is exactly what the server-side flow exists to avoid (and
+  # it has no web support). See docs/identity-provider-setup.md.
+  flutter_web_auth_2: ^5.0.3
   shorebird_code_push: ^2.0.7
   flutter_local_notifications: ^21.0.0
 

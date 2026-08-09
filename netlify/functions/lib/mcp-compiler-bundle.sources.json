@@ -65,6 +65,6 @@
     "lib/utils/station_scenario_tokens.dart": "b71a800a7b537f730bfaf4a9e9ca2c28b9c768aa757f4657662603277f2a9e9e",
     "lib/utils/variable_values.dart": "d5da31321a650fcf16220ed8476aad7ee5180f0a9900b5bbcc242edec9752e7d",
     "tools/mcp_js_entry.dart": "dc7c456bba4076d15d90dcaacc6a3a09c74a494c5085d79aec1151105847f96f",
-    "pubspec.lock": "4621eb6d755afb642333e1aa23e45130bc838d03568d7fcf87388307b6d0b7ad"
+    "pubspec.lock": "6c2702df93085b85ac0e8abbbcaf8a3d1cd374cd49709308f2a883edd9a02482"
   }
 }

@@ -46,6 +46,16 @@ class _SignInPageState extends State<SignInPage> {
   bool _busy = false;
   String? _error;
 
+  /// Discovered once when the screen opens. An empty list is the normal
+  /// answer for a deployment with no providers configured, and renders as
+  /// nothing at all — not as an empty section with a heading.
+  late final Future<List<AuthProvider>> _providers = AuthService.isInstalled
+      ? AuthService.instance.providers().catchError(
+          // A discovery failure must not take the email path down with it.
+          (_) => <AuthProvider>[],
+        )
+      : Future.value(const <AuthProvider>[]);
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -111,6 +121,35 @@ class _SignInPageState extends State<SignInPage> {
     }, l);
   }
 
+  Future<void> _signInWith(AuthProvider provider, AppLocalizations l) async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await AuthService.instance.signInWithProvider(provider);
+      if (!mounted) return;
+      widget.onSignedIn?.call();
+      Navigator.of(context).maybePop();
+    } on SignInCancelled {
+      // Closing the browser is an ordinary thing to do. Showing an error for
+      // it would tell somebody they failed at deciding not to.
+    } catch (e) {
+      if (mounted) {
+        // A reason means the *server* refused and said why — the callback
+        // bounced back with it. No reason means we never got that far, which
+        // is a network problem and a different thing to tell somebody.
+        setState(
+          () => _error = e is AuthApiException && e.reason != null
+              ? l.signInProviderFailed
+              : l.signInNetworkError,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _verify(AppLocalizations l) {
     final challenge = _challenge;
     if (challenge == null) return Future.value();
@@ -148,6 +187,44 @@ class _SignInPageState extends State<SignInPage> {
               ),
             ),
             const SizedBox(height: 24),
+
+            // Providers first, email below: for most people the button they
+            // recognise is the fast path, and DESIGN-015 §3.2 caps the list at
+            // four so it stays a choice rather than a wall.
+            FutureBuilder<List<AuthProvider>>(
+              future: _providers,
+              builder: (context, snapshot) {
+                final providers = snapshot.data ?? const <AuthProvider>[];
+                if (providers.isEmpty) return const SizedBox.shrink();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final provider in providers)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: OutlinedButton(
+                          onPressed: _busy
+                              ? null
+                              : () => _signInWith(provider, l),
+                          child: Text(l.signInWithProvider(provider.label)),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    // Unemphatic on purpose: email is one option among
+                    // several, not the fallback for people who failed at the
+                    // real ones.
+                    Text(
+                      l.signInOrEmail,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              },
+            ),
 
             TextField(
               controller: _emailController,
@@ -216,17 +293,6 @@ class _SignInPageState extends State<SignInPage> {
                       }),
                 child: Text(l.signInUseAnotherEmail),
               ),
-
-            const SizedBox(height: 32),
-            // Stated rather than shown as disabled buttons. A greyed-out
-            // "Sign in with Apple" reads as broken; a sentence reads as
-            // not-yet.
-            Text(
-              l.signInProvidersComingSoon,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
           ],
         ),
       ),

@@ -213,6 +213,30 @@ provider's. It only stops new sign-ins through that button, and somebody whose
 only identity was that provider will need another way in. Worth checking
 `identities/` before removing one in anger.
 
+## Why `flutter_web_auth_2` and not the alternatives
+
+The app needs exactly one capability: open a URL in a system browser and get
+the callback back. The code exchange is ours, so anything bigger is a library
+fighting the architecture.
+
+| | Why not |
+|---|---|
+| **`flutter_appauth`** | The AppAuth SDK — excellent, and by the author of `flutter_local_notifications` which we already use. But it is built to *own* the flow: issuer and client id in the app, PKCE and the token exchange on-device. That is what the server exists to avoid. It also has no web support (`android, ios, macos`), and RingDrill ships web from the same codebase |
+| **`oauth2_client`** | Same category — a client-side OAuth library for a problem we moved server-side |
+| **`app_links` + `url_launcher`** | The real alternative, and worse in a specific way. `ASWebAuthenticationSession` is the only iOS API that both returns the callback URL *and* dismisses itself. `url_launcher`'s `externalApplication` leaves the app for Safari; its `inAppBrowserView` (SFSafariViewController) cannot return a custom-scheme callback or self-close. Either way you add `app_links`, hand-roll cancellation, and still have no answer for web |
+| **`webview_flutter`** | Disqualified outright: Google blocks OAuth in embedded webviews, precisely so an app cannot present a fake login form |
+
+`flutter_web_auth_2` covers `android, ios, linux, macos, web, windows`, and its
+whole API is `authenticate(url:, callbackUrlScheme:)`. It also exposes
+`preferEphemeral` — whether the session shares Safari cookies, which is the
+difference between one-tap for an already-signed-in user and no cookie bleed
+between accounts.
+
+The costs, stated plainly: it is a community package rather than first-party,
+and it is a native plugin across six platforms. Android needs the callback
+activity in `AndroidManifest.xml` — build-time, but not secret, and it names
+only our own `ringdrill://` scheme.
+
 ## A deliberate omission
 
 **Android's native Google account picker** — the Play Services bottom sheet

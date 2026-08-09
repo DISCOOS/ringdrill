@@ -1371,6 +1371,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'You do not need an account to use RingDrill. Plans, briefs and the catalog all work signed out.';
 
   @override
+  String signInWithProvider(String provider) {
+    return 'Continue with $provider';
+  }
+
+  @override
+  String get signInOrEmail => 'or continue with email';
+
+  @override
+  String get signInProviderFailed =>
+      'That sign-in did not complete. Try again, or use email.';
+
+  @override
   String get signInEmailLabel => 'Email address';
 
   @override
@@ -1405,10 +1417,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get signInNetworkError =>
       'Could not reach RingDrill. Check your connection and try again.';
-
-  @override
-  String get signInProvidersComingSoon =>
-      'Signing in with Apple, Google or Microsoft is coming.';
 
   @override
   String get signOutAction => 'Sign out';
