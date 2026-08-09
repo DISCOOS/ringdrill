@@ -374,7 +374,11 @@ export async function soleOwnerships(userId, stores = defaultStores) {
  *   none — that is the whole point of ADR-0074 §4, and a deletion that swept
  *   by prefix is exactly the temptation it was designed out of.
  */
-export async function deleteAccount(accountId, { deleteUser = null } = {}, stores = defaultStores) {
+export async function deleteAccount(
+    accountId,
+    { deleteUser = null, inviteStore = null } = {},
+    stores = defaultStores,
+) {
     const account = await getAccount(accountId, stores);
     if (!account) return { ok: false, reason: "no_such_account" };
 
@@ -394,7 +398,7 @@ export async function deleteAccount(accountId, { deleteUser = null } = {}, store
     await stores.accounts().delete(accountId);
 
     if (deleteUser) {
-        await deleteUserRecords(deleteUser, stores);
+        await deleteUserRecords(deleteUser, { inviteStore }, stores);
     }
     return { ok: true, account };
 }
@@ -408,12 +412,33 @@ export async function deleteAccount(accountId, { deleteUser = null } = {}, store
  * that is free; if it ever is not, the answer is a reverse index rather than a
  * cheaper scan.
  */
-async function deleteUserRecords(userId, stores) {
-    for (const [store, matches] of [
+async function deleteUserRecords(userId, { inviteStore = null } = {}, stores = defaultStores) {
+    // Read the address before the user record goes: it is the only link to
+    // the records keyed by email rather than by id.
+    const user = await getUser(userId, stores);
+    const address = normalizeEmail(user?.primaryEmail);
+
+    const sweeps = [
         [stores.identities(), (rec) => rec?.userId === userId],
         [stores.emailIndex(), (rec) => rec?.userId === userId],
         [stores.sessions(), (rec) => rec?.userId === userId],
-    ]) {
+        // **Invitations, both directions.** One sent *by* this user names them
+        // as `invitedBy`; one sent *to* them holds their address. Neither is
+        // reachable from the account being deleted, so both outlived it until
+        // this swept them.
+        ...(inviteStore
+            ? [[inviteStore, (rec) => rec?.invitedBy === userId
+                || (address && normalizeEmail(rec?.email) === address)]]
+            : []),
+        // A pending row in somebody *else's* account, for an invitation this
+        // user never accepted. Keyed by address, so deleting their account
+        // never touched it.
+        ...(address
+            ? [[stores.members(), (rec) => !rec?.userId && normalizeEmail(rec?.email) === address]]
+            : []),
+    ];
+
+    for (const [store, matches] of sweeps) {
         let cursor;
         do {
             const page = await store.list({ cursor });
@@ -425,6 +450,37 @@ async function deleteUserRecords(userId, stores) {
         } while (cursor);
     }
     await stores.users().delete(userId);
+}
+
+/**
+ * Drop records whose `expiresAt` has passed.
+ *
+ * Sign-in challenges and invitations both hold an email address and both were
+ * only ever removed when somebody *used* them. An address typed by a person
+ * who then closed the tab — including one who never had an account at all —
+ * stayed indefinitely, with no basis for keeping it once the record expired.
+ *
+ * Called opportunistically from the write paths rather than from a scheduler:
+ * at this scale a scan per sign-in is free, and a sweep that runs whenever the
+ * store is used cannot silently stop running the way a cron can.
+ */
+export async function sweepExpired(store, { now = Date.now, limit = 200 } = {}) {
+    if (!store) return 0;
+    let cursor;
+    let removed = 0;
+    do {
+        const page = await store.list({ cursor });
+        cursor = page?.cursor;
+        for (const blob of page?.blobs ?? []) {
+            if (removed >= limit) return removed;
+            const rec = await store.get(blob.key, { type: "json" });
+            if (typeof rec?.expiresAt === "number" && rec.expiresAt <= now()) {
+                await store.delete(blob.key);
+                removed += 1;
+            }
+        }
+    } while (cursor);
+    return removed;
 }
 
 export function acceptedOwners(members) {

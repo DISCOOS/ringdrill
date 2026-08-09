@@ -8,7 +8,7 @@ import { authenticate } from "./lib/auth/index.js";
 import {
     acceptedOwners, claimHandle, defaultStores, deleteAccount, getAccount, getUser, membersOf,
     membershipsOf, newId, normalizeEmail, putMember, removeMember, resolveHandle,
-    soleOwnerships, upgradeToOrganisation, validateHandle,
+    soleOwnerships, sweepExpired, upgradeToOrganisation, validateHandle,
 } from "./lib/identity.js";
 import { dropAccountOwnership, keysForEntry } from "./lib/catalog.js";
 import { createMailer, sendTemplate } from "./lib/mail/index.js";
@@ -321,7 +321,13 @@ export function createHandler({
 
         const res = await deleteAccount(
             accountId,
-            { deleteUser: personal ? principal.userId : null },
+            {
+                deleteUser: personal ? principal.userId : null,
+                // Invitations live in their own store, unreachable from the
+                // account — both the ones this user sent and the ones sent to
+                // their address outlived deletion until this was passed.
+                inviteStore: inviteStore(),
+            },
             stores,
         );
         if (!res.ok) return json({ error: res.reason }, 400);
@@ -340,6 +346,11 @@ export function createHandler({
 
         const account = await getAccount(accountId, stores);
         if (!account) return json({ error: "no_such_account" }, 404);
+
+        // Expired invitations hold an address with nothing left to justify
+        // keeping it. Swept here rather than on a schedule: a sweep that runs
+        // whenever invitations are used cannot silently stop running.
+        await sweepExpired(inviteStore(), { now });
 
         // The invitation is addressed to the *email*, because inviting someone
         // with no account is the normal case (DESIGN-015 §6.4). The Member

@@ -206,6 +206,10 @@ fetch something they have never seen; the handle is the name already in their
 plan links. A retired handle still resolves and reports the current one, so the
 UI can say which account it actually found.
 
+What deletion removes, keeps and expires is enumerated in
+[`data-retention.md`](./data-retention.md), which is the document to check
+against a GDPR question rather than this one.
+
 **Deletion keeps three things**, and each would be a mistake to remove:
 
 * **Published plans.** Other people have installed them, so the entry stays and

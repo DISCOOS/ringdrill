@@ -3,7 +3,7 @@ import { authenticate, AUDIENCE, ISSUER, signJwt, resolveMode, AUTH_MODES } from
 import {
     ACCESS_TTL_S, createSession, endSessionOwnedBy, redeemChallenge, rotateSession, sessionsOf, startChallenge,
 } from "./lib/auth/session.js";
-import { defaultStores, getUser, membershipsOf, normalizeEmail, resolveIdentity } from "./lib/identity.js";
+import { defaultStores, getUser, membershipsOf, normalizeEmail, resolveIdentity, sweepExpired } from "./lib/identity.js";
 import { createMailer, sendTemplate } from "./lib/mail/index.js";
 import { getStore } from "@netlify/blobs";
 
@@ -101,6 +101,11 @@ export function createHandler({
         // validating shape here only rejects unusual-but-valid addresses.
         if (!email || !email.includes("@")) return json({ error: "invalid_email" }, 400);
         const locale = body.locale === "nb" ? "nb" : "en";
+
+        // An abandoned challenge holds the address of somebody who may never
+        // have had an account at all, and was only ever removed if a later
+        // caller happened to try it. Swept on every start.
+        await sweepExpired(challengeStore(), { now });
 
         const { challengeId, code, expiresInMs } = await startChallenge(challengeStore(), { email, locale, now });
 

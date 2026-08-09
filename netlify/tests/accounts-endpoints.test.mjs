@@ -574,3 +574,68 @@ test("a handle whose account is gone does not resolve", async () => {
         as: token("u_1", { a_bergen: "owner" }),
     })).status, 404);
 });
+
+// ---------- retention after deletion ----------
+
+test("deleting a user removes invitations they sent and were sent", async () => {
+    // Invitations live in their own store, unreachable from the account being
+    // deleted — so both directions outlived it. An invitation holds an email
+    // address, which is exactly what deletion is supposed to remove.
+    const h = harness();
+    await h.stores.accounts().set("a_kari", JSON.stringify({ id: "a_kari", displayName: "Kari", type: "personal" }));
+    await h.stores.users().set("u_1", JSON.stringify({ id: "u_1", displayName: "Kari", primaryEmail: "kari@example.com" }));
+    await putMember("a_kari", "u_1", "owner", { acceptedAt: "2026-08-01" }, h.stores);
+
+    await h.raw.invites.set("inv_sent", JSON.stringify({
+        token: "inv_sent", accountId: "a_kari", email: "ola@example.com", invitedBy: "u_1",
+    }));
+    await h.raw.invites.set("inv_received", JSON.stringify({
+        token: "inv_received", accountId: "a_other", email: "Kari@Example.com", invitedBy: "u_9",
+    }));
+    await h.raw.invites.set("inv_unrelated", JSON.stringify({
+        token: "inv_unrelated", accountId: "a_other", email: "someone@example.com", invitedBy: "u_9",
+    }));
+
+    assert.equal((await call(h, "DELETE", "/a_kari", { as: token("u_1", { a_kari: "owner" }) })).status, 200);
+
+    assert.equal(await h.raw.invites.get("inv_sent", { type: "json" }), null, "sent by them");
+    // Matched case-insensitively: the address is normalised everywhere else.
+    assert.equal(await h.raw.invites.get("inv_received", { type: "json" }), null, "sent to them");
+    assert.ok(await h.raw.invites.get("inv_unrelated", { type: "json" }), "and nobody else's");
+});
+
+test("deleting a user removes pending rows in other accounts", async () => {
+    // A row for an invitation they never accepted is keyed by address, in
+    // somebody else's account — deleting their own account never reached it.
+    const h = harness();
+    await h.stores.accounts().set("a_kari", JSON.stringify({ id: "a_kari", displayName: "Kari", type: "personal" }));
+    await h.stores.users().set("u_1", JSON.stringify({ id: "u_1", displayName: "Kari", primaryEmail: "kari@example.com" }));
+    await putMember("a_kari", "u_1", "owner", { acceptedAt: "2026-08-01" }, h.stores);
+    await h.stores.members().set("a_bergen/pending:kari@example.com", JSON.stringify({
+        accountId: "a_bergen", userId: null, email: "kari@example.com", role: "member",
+    }));
+    await h.stores.members().set("a_bergen/pending:ola@example.com", JSON.stringify({
+        accountId: "a_bergen", userId: null, email: "ola@example.com", role: "member",
+    }));
+
+    await call(h, "DELETE", "/a_kari", { as: token("u_1", { a_kari: "owner" }) });
+
+    assert.equal(await h.stores.members().get("a_bergen/pending:kari@example.com", { type: "json" }), null);
+    assert.ok(await h.stores.members().get("a_bergen/pending:ola@example.com", { type: "json" }));
+});
+
+test("expired invitations are swept when a new one is sent", async () => {
+    // An expired invitation holds an address with nothing left to justify
+    // keeping it, and nothing was removing it.
+    const h = harness();
+    await orgWith(h, { u_1: "owner" });
+    await h.raw.invites.set("inv_old", JSON.stringify({
+        token: "inv_old", accountId: "a_bergen", email: "stale@example.com", expiresAt: 1,
+    }));
+
+    await call(h, "POST", "/a_bergen/members", {
+        as: token("u_1", { a_bergen: "owner" }), body: { email: "ny@example.com", role: "member" },
+    });
+
+    assert.equal(await h.raw.invites.get("inv_old", { type: "json" }), null);
+});
