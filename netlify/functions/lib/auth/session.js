@@ -160,6 +160,52 @@ export async function endSession(store, sessionId) {
     if (sessionId) await store.delete(sessionId);
 }
 
+/**
+ * End a session, but only for somebody entitled to end it.
+ *
+ * [endSession] takes an id and destroys it, which is right for an internal
+ * caller that has already decided and wrong for anything reachable from the
+ * network. Ownership is proved one of two ways, and both are needed:
+ *
+ * * **`userId`** — the authenticated principal owns the session. This is what
+ *   the sessions list uses to revoke *another* device ("my phone was stolen",
+ *   DESIGN-015 §4.3).
+ * * **`refreshToken`** — the caller holds the session's own refresh token.
+ *   This is what ordinary sign-out uses, and it is here because the access
+ *   token may well have expired by the time somebody signs out. Requiring a
+ *   live access token would mean a stale client could not revoke its own
+ *   session, leaving it alive for the full 60-day refresh window.
+ *
+ * Returns whether anything was ended. Callers should **not** pass that to the
+ * client: which session ids exist is free reconnaissance, and the answer is
+ * useless to the legitimate caller, who already knows.
+ */
+export async function endSessionOwnedBy(store, { sessionId, userId = null, refreshToken = null }) {
+    if (!sessionId) return false;
+    const rec = await store.get(sessionId, { type: "json" });
+    if (!rec) return false;
+
+    const byOwner = userId != null && rec.userId === userId;
+    // timingSafeEqual over two fixed-length hex digests: the comparison is on
+    // hashes rather than tokens, but a short-circuiting `===` here still leaks
+    // a prefix-match oracle for the stored hash.
+    const byToken =
+        refreshToken != null &&
+        rec.refreshHash != null &&
+        safeEqual(hash(refreshToken), rec.refreshHash);
+
+    if (!byOwner && !byToken) return false;
+    await store.delete(sessionId);
+    return true;
+}
+
+function safeEqual(a, b) {
+    const left = Buffer.from(String(a));
+    const right = Buffer.from(String(b));
+    if (left.length !== right.length) return false;
+    return crypto.timingSafeEqual(left, right);
+}
+
 /** Every open session for a user — the Devices list in DESIGN-015 §4.3. */
 export async function sessionsOf(store, userId) {
     const out = [];

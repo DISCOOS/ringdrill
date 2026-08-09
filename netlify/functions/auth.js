@@ -1,7 +1,7 @@
 import { corsPreflight, withCors } from "./lib/shared.js";
 import { authenticate, AUDIENCE, ISSUER, signJwt, resolveMode, AUTH_MODES } from "./lib/auth/index.js";
 import {
-    ACCESS_TTL_S, createSession, endSession, redeemChallenge, rotateSession, sessionsOf, startChallenge,
+    ACCESS_TTL_S, createSession, endSessionOwnedBy, redeemChallenge, rotateSession, sessionsOf, startChallenge,
 } from "./lib/auth/session.js";
 import { defaultStores, getUser, membershipsOf, normalizeEmail, resolveIdentity } from "./lib/identity.js";
 import { createMailer, sendTemplate } from "./lib/mail/index.js";
@@ -84,6 +84,7 @@ export function createHandler({
                 case "POST callback": return withCors(request, await callback(request));
                 case "POST refresh": return withCors(request, await refresh(request));
                 case "POST logout": return withCors(request, await logout(request));
+                case "POST sessions/revoke": return withCors(request, await revokeSession(request));
                 case "GET me": return withCors(request, await me(request));
                 default: return withCors(request, json({ error: "not_found" }, 404));
             }
@@ -181,12 +182,55 @@ export function createHandler({
         });
     }
 
+    /**
+     * Sign out — end the caller's own session.
+     *
+     * **Ownership is proved, not assumed.** This used to end whatever
+     * `sessionId` arrived in the body, unauthenticated: a 144-bit id is not
+     * guessable, but an endpoint that destroys server state on an
+     * attacker-supplied identifier should not be relying on that alone. An id
+     * that leaked through a screenshot, a log line or a support ticket was a
+     * forced-logout capability for anyone who saw it.
+     *
+     * The refresh token counts as proof alongside the access token, because by
+     * the time somebody signs out their access token may well have expired —
+     * and a stale client that could not revoke its own session would leave it
+     * alive for the full 60-day refresh window.
+     */
     async function logout(request) {
         const body = await request.json().catch(() => ({}));
-        await endSession(sessionStore(), body.sessionId);
-        // 204 whether or not the session existed: telling a caller which
-        // session ids are real is free reconnaissance, and there is nothing
-        // useful they could do with the distinction.
+        const principal = await authenticate(request, { env, now });
+        await endSessionOwnedBy(sessionStore(), {
+            sessionId: body.sessionId,
+            userId: principal.ok && !principal.anonymous ? principal.userId : null,
+            refreshToken: body.refreshToken ?? null,
+        });
+        // 204 whether or not anything was ended, and deliberately not a
+        // boolean: telling a caller which session ids are real is free
+        // reconnaissance, and the legitimate caller already knows.
+        return new Response(null, { status: 204 });
+    }
+
+    /**
+     * End *another* of the caller's sessions — the sessions list's
+     * "log out this device" (DESIGN-015 §4.3).
+     *
+     * Separate from `logout` because the intent differs: this one always
+     * requires a live authenticated principal, since revoking a device you are
+     * not holding is an administrative act rather than a sign-out. A refresh
+     * token is not accepted here — presenting one would mean holding the very
+     * device you claim to be revoking.
+     */
+    async function revokeSession(request) {
+        const principal = await authenticate(request, { env, now });
+        if (!principal.ok) return json({ error: principal.reason }, principal.status);
+        if (principal.anonymous) return json({ error: "authentication_required" }, 401);
+
+        const body = await request.json().catch(() => ({}));
+        await endSessionOwnedBy(sessionStore(), {
+            sessionId: body.sessionId,
+            userId: principal.userId,
+        });
         return new Response(null, { status: 204 });
     }
 

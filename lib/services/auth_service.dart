@@ -250,6 +250,10 @@ class AuthService extends ChangeNotifier {
       try {
         await _client.logout(
           sessionId: tokens.sessionId,
+          // Both, because the access token may already have expired — and
+          // without proof of ownership the server now (correctly) refuses to
+          // end the session, which would leave it alive for 60 days.
+          refreshToken: tokens.refreshToken,
           accessToken: tokens.accessToken,
         );
       } catch (_) {

@@ -414,9 +414,32 @@ class AuthClient {
     return AuthTokens.fromJson(j, now: _now());
   }
 
-  Future<void> logout({required String sessionId, String? accessToken}) async {
-    await _post('auth/logout', {'sessionId': sessionId}, token: accessToken);
+  /// Sign out, ending this session server-side.
+  ///
+  /// [refreshToken] is sent alongside the access token because by the time
+  /// somebody signs out the access token may well have expired — and the
+  /// server needs *some* proof of ownership, or a leaked session id would be a
+  /// forced-logout capability for anyone holding it. Without it a stale client
+  /// cannot revoke its own session, which then lives for the full 60-day
+  /// refresh window.
+  Future<void> logout({
+    required String sessionId,
+    String? refreshToken,
+    String? accessToken,
+  }) async {
+    await _post('auth/logout', {
+      'sessionId': sessionId,
+      'refreshToken': ?refreshToken,
+    }, token: accessToken);
   }
+
+  /// End *another* of this user's sessions — the sessions list's "log out this
+  /// device" (DESIGN-015 §4.3). Always needs a live access token: revoking a
+  /// device you are not holding is administration, not a sign-out.
+  Future<void> revokeSession({
+    required String sessionId,
+    required String token,
+  }) => _post('auth/sessions/revoke', {'sessionId': sessionId}, token: token);
 
   // ---------------- accounts ----------------
 

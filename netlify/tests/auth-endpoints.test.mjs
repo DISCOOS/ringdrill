@@ -175,9 +175,107 @@ test("REPLAY: reusing a rotated refresh token is 401 and the session is gone", a
 test("logout is 204 whether or not the session existed", async () => {
     const h = harness();
     const { session } = await signIn(h);
-    assert.equal((await h.handler(post("logout", { sessionId: session.sessionId }))).status, 204);
+    assert.equal((await h.handler(post("logout", {
+        sessionId: session.sessionId, refreshToken: session.refreshToken,
+    }))).status, 204);
     // Telling a caller which session ids are real is free reconnaissance.
     assert.equal((await h.handler(post("logout", { sessionId: "never-existed" }))).status, 204);
+});
+
+test("a bare session id does not end anybody's session", async () => {
+    // This used to work. A 144-bit id is not guessable, but an endpoint that
+    // destroys server state on an attacker-supplied identifier should not rest
+    // on that alone — an id leaked through a screenshot, a log line or a
+    // support ticket was a forced-logout capability for whoever saw it.
+    const h = harness();
+    const { session } = await signIn(h);
+
+    const res = await h.handler(post("logout", { sessionId: session.sessionId }));
+
+    // Still 204: the refusal must not be distinguishable from success, or the
+    // endpoint becomes an oracle for which ids are real.
+    assert.equal(res.status, 204);
+    assert.equal(h.raw.sessions.data.size, 1, "the session must survive");
+});
+
+test("the refresh token proves ownership, so a stale client can still sign out", async () => {
+    // By the time somebody signs out their access token may well have expired.
+    // Requiring a live one would leave the session alive for the full 60-day
+    // refresh window.
+    const h = harness();
+    const { session } = await signIn(h);
+
+    await h.handler(post("logout", {
+        sessionId: session.sessionId, refreshToken: session.refreshToken,
+    }));
+    assert.equal(h.raw.sessions.data.size, 0);
+});
+
+test("a wrong refresh token does not end the session", async () => {
+    const h = harness();
+    const { session } = await signIn(h);
+
+    await h.handler(post("logout", {
+        sessionId: session.sessionId, refreshToken: "not-the-token",
+    }));
+    assert.equal(h.raw.sessions.data.size, 1);
+});
+
+test("an access token proves ownership too", async () => {
+    const h = harness();
+    const { session } = await signIn(h);
+
+    await h.handler(post("logout", { sessionId: session.sessionId }, {
+        authorization: `Bearer ${session.accessToken}`,
+    }));
+    assert.equal(h.raw.sessions.data.size, 0);
+});
+
+// ---------- sessions/revoke ----------
+
+test("revoke ends another of my own devices", async () => {
+    // The answer to "my phone was stolen" (DESIGN-015 §4.3).
+    const h = harness();
+    const first = await signIn(h);
+    const second = await signIn(h);
+    assert.equal(h.raw.sessions.data.size, 2);
+
+    const res = await h.handler(post("sessions/revoke", {
+        sessionId: second.session.sessionId,
+    }, { authorization: `Bearer ${first.session.accessToken}` }));
+
+    assert.equal(res.status, 204);
+    assert.equal(h.raw.sessions.data.size, 1);
+    assert.ok(h.raw.sessions.data.has(first.session.sessionId), "mine survives");
+});
+
+test("revoke will not touch somebody else's session", async () => {
+    // The whole point of the ownership check: a session list is per-user, and
+    // an id from one user must be inert against another's token.
+    const h = harness();
+    const mine = await signIn(h, "kari@example.com");
+    const theirs = await signIn(h, "ola@example.com");
+
+    const res = await h.handler(post("sessions/revoke", {
+        sessionId: theirs.session.sessionId,
+    }, { authorization: `Bearer ${mine.session.accessToken}` }));
+
+    assert.equal(res.status, 204, "and not a 403 — that would confirm it exists");
+    assert.ok(h.raw.sessions.data.has(theirs.session.sessionId), "theirs survives");
+});
+
+test("revoke requires a live session, not just a refresh token", async () => {
+    // Presenting the refresh token would mean holding the very device being
+    // revoked, which is not what this endpoint is for.
+    const h = harness();
+    const { session } = await signIn(h);
+
+    const res = await h.handler(post("sessions/revoke", {
+        sessionId: session.sessionId, refreshToken: session.refreshToken,
+    }));
+
+    assert.equal(res.status, 401);
+    assert.equal(h.raw.sessions.data.size, 1);
 });
 
 // ---------- me ----------
