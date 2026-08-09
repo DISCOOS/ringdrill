@@ -141,6 +141,26 @@ class _AccountPageState extends State<AccountPage> {
               // account" page. Every user has one (ADR-0024 creates it at
               // first sign-in), so this is never nowhere.
               if (!widget.account.isOrganisation) _DevicesSection(),
+              // Owner-only, and last: it is the one action here with no undo,
+              // so it does not sit next to the everyday ones.
+              if (_isOwner) ...[
+                const Divider(height: 32),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: OutlinedButton.icon(
+                    onPressed: _confirmDelete,
+                    icon: const Icon(Icons.delete_outline),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                    label: Text(
+                      widget.account.isOrganisation
+                          ? l.accountDeleteOrgAction
+                          : l.accountDeleteAction,
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 80),
             ],
           );
@@ -197,6 +217,47 @@ class _AccountPageState extends State<AccountPage> {
             )
           : null,
     );
+  }
+
+  /// Confirm, then delete.
+  ///
+  /// The confirm's job is to correct one specific wrong expectation: "delete
+  /// my account" reasonably sounds like it should unpublish, and it does not
+  /// (DESIGN-015 §5.1). Saying so after the fact would be too late, so the
+  /// dialog says what stays as plainly as what goes.
+  Future<void> _confirmDelete() async {
+    final l = AppLocalizations.of(context)!;
+    final confirmed = await showAdaptiveDialog<bool>(
+      context: context,
+      builder: (context) => _DeleteAccountDialog(account: widget.account),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      final token = await AuthService.instance.accessToken();
+      if (token == null) return;
+      await _client.deleteAccount(widget.account.accountId, token: token);
+
+      // Deleting the personal account destroyed the user behind this session,
+      // so the local one has to go too — otherwise the app keeps a token for
+      // somebody who no longer exists.
+      if (!widget.account.isOrganisation) {
+        await AuthService.instance.signOut();
+      } else {
+        await AuthService.instance.refreshAccounts();
+      }
+      messenger.showSnackBar(SnackBar(content: Text(l.accountDeleted)));
+      navigator.maybePop();
+    } on AuthApiException catch (e) {
+      final organisations = e.reason == 'sole_owner_of_organisation'
+          ? l.accountDeleteSoleOwner(e.detail ?? '')
+          : l.accountActionFailed;
+      messenger.showSnackBar(SnackBar(content: Text(organisations)));
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l.accountActionFailed)));
+    }
   }
 
   Future<void> _invite() async {
@@ -359,6 +420,95 @@ class _DevicesSectionState extends State<_DevicesSection> {
               tooltip: l.accountDeviceSignOutThis,
               onPressed: () => _revoke(device),
             ),
+    );
+  }
+}
+
+/// A typed confirmation, not a second button.
+///
+/// This is the only action in the app with no undo, so a misplaced tap must
+/// not be able to reach it.
+class _DeleteAccountDialog extends StatefulWidget {
+  const _DeleteAccountDialog({required this.account});
+
+  final AccountMembership account;
+
+  @override
+  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final word = l.accountDeleteConfirmWord;
+    final armed = _controller.text.trim().toUpperCase() == word;
+
+    return AlertDialog.adaptive(
+      title: Text(l.accountDeleteTitle(widget.account.displayName)),
+      content: SizedBox(
+        width: 420,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.account.isOrganisation
+                    ? l.accountDeleteOrgBody
+                    : l.accountDeleteBody,
+              ),
+              const SizedBox(height: 12),
+              // People fear losing their work more than losing the account.
+              Text(
+                l.accountDeleteKeepsLocal,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _controller,
+                autofocus: true,
+                autocorrect: false,
+                enableSuggestions: false,
+                decoration: InputDecoration(
+                  labelText: l.accountDeleteConfirmLabel(word),
+                  border: const OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text(l.cancel),
+        ),
+        FilledButton(
+          onPressed: armed ? () => Navigator.pop(context, true) : null,
+          style: FilledButton.styleFrom(
+            backgroundColor: theme.colorScheme.error,
+            foregroundColor: theme.colorScheme.onError,
+          ),
+          child: Text(
+            widget.account.isOrganisation
+                ? l.accountDeleteOrgAction
+                : l.accountDeleteAction,
+          ),
+        ),
+      ],
     );
   }
 }

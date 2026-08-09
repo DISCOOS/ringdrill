@@ -12,7 +12,7 @@ import { createHandler } from "../functions/accounts.js";
 import { createMockAdapter } from "../functions/lib/mail/index.js";
 import { mintTestToken } from "../functions/lib/auth/mock.js";
 import { AUDIENCE, ISSUER } from "../functions/lib/auth/index.js";
-import { putMember } from "../functions/lib/identity.js";
+import { membersOf, putMember } from "../functions/lib/identity.js";
 
 function fakeStore() {
     const data = new Map();
@@ -34,13 +34,22 @@ function fakeStore() {
     };
 }
 
-/** A store whose values are already objects, matching the catalog stores. */
+/**
+ * A catalog store, holding decoded objects.
+ *
+ * Writers in this codebase are split: some hand the blob store a JSON string,
+ * some hand it an object. A fake that stored whichever it was given would let
+ * a test read back a string and quietly compare `undefined` against the value
+ * it expected — which is exactly how the deletion tests first "passed" the
+ * write and failed the assertion. Normalising on write keeps reads honest.
+ */
 function jsonStore(seed = {}) {
     const data = new Map(Object.entries(seed));
+    const decode = (v) => (typeof v === "string" ? JSON.parse(v) : v);
     return {
         data,
         async get(key) { return data.get(key) ?? null; },
-        async set(key, value) { data.set(key, value); return { modified: true }; },
+        async set(key, value) { data.set(key, decode(value)); return { modified: true }; },
         async delete(key) { data.delete(key); },
         async list({ prefix = "", cursor } = {}) {
             if (cursor) return { blobs: [], cursor: undefined };
@@ -66,6 +75,11 @@ function harness({ index = {}, drills = {} } = {}) {
         stores, inviteStore: () => raw.invites, mailer,
         getSlugIndexStore: () => raw.index,
         getDrillsStore: () => raw.drills,
+        // The fake drills store holds objects rather than JSON text, so the
+        // json helpers are matched to it instead of stringifying on the way in
+        // and leaving the assertions reading a string.
+        readJson: async (key, dflt = null) => raw.drills.data.get(key) ?? dflt,
+        writeJson: async (key, obj) => { raw.drills.data.set(key, obj); return { modified: true }; },
     });
     return { handler, stores, raw, mailer };
 }
@@ -364,4 +378,125 @@ test("POST to the plans route is not a route", async () => {
     const h = harness(catalog());
     await orgWith(h, { u_1: "owner" });
     assert.equal((await call(h, "POST", "/a_bergen/plans", { as: token("u_1", { a_bergen: "owner" }), body: {} })).status, 404);
+});
+
+// ---------- deletion (DESIGN-015 §5.1) ----------
+
+/// An organisation with a handle and one published plan in its namespace.
+async function orgWithPlan(h) {
+    await orgWith(h, { u_1: 'owner' });
+    await h.stores.accounts().set("a_bergen", JSON.stringify({
+        id: "a_bergen", displayName: "Red Cross Bergen", type: "organization", handle: "redcross-bergen",
+    }));
+    await h.stores.handles().set("redcross-bergen", JSON.stringify({ accountId: "a_bergen" }));
+    await h.raw.index.set("a_bergen/vinter", { entryId: "e_1", planId: "p_1", ownerAccountId: "a_bergen" });
+    await h.raw.drills.set("catalog/e_1/meta.json", {
+        programId: "p_1", slug: "vinter", name: "Vinter", published: true,
+        ownerId: "a_bergen", accessPolicy: "shared", sharedAccountIds: ["a_fjell"],
+        versions: [{ v: "1", etag: '"e1"', size: 9 }],
+    });
+}
+
+test("only an owner may delete an account", async () => {
+    const h = harness();
+    await orgWithPlan(h);
+    const res = await call(h, "DELETE", "/a_bergen", { as: token("u_2", { a_bergen: "member" }) });
+    assert.equal(res.status, 403);
+    assert.ok(await h.stores.accounts().get("a_bergen", { type: "json" }));
+});
+
+test("deleting an organisation removes it and its member rows", async () => {
+    const h = harness();
+    await orgWithPlan(h);
+    await putMember("a_bergen", "u_2", "member", { acceptedAt: "2026-08-01" }, h.stores);
+
+    const res = await call(h, "DELETE", "/a_bergen", { as: token("u_1", { a_bergen: "owner" }) });
+    assert.equal(res.status, 200);
+
+    assert.equal(await h.stores.accounts().get("a_bergen", { type: "json" }), null);
+    assert.deepEqual(await membersOf("a_bergen", h.stores), []);
+});
+
+test("published plans survive, losing only their owner", async () => {
+    // "Delete my account" reasonably sounds like it should unpublish, and it
+    // must not: other people have installed these plans.
+    const h = harness();
+    await orgWithPlan(h);
+
+    const body = await (await call(h, "DELETE", "/a_bergen", { as: token("u_1", { a_bergen: "owner" }) })).json();
+    assert.equal(body.plansReleased, 1);
+
+    const meta = await h.raw.drills.get("catalog/e_1/meta.json");
+    assert.equal(meta.published, true, "still published");
+    assert.equal(meta.ownerId, "anon", "but unowned");
+    // A grantee list names accounts granted access by an owner who no longer
+    // exists — keeping it would leave a dangling grant.
+    assert.equal(meta.accessPolicy, "public");
+    assert.deepEqual(meta.sharedAccountIds, []);
+});
+
+test("the plan keeps its URL — the index key is not rewritten", async () => {
+    // Moving the entry into `anon/` would change /d/<handle>/<slug> and break
+    // every link already shared.
+    const h = harness();
+    await orgWithPlan(h);
+
+    await call(h, "DELETE", "/a_bergen", { as: token("u_1", { a_bergen: "owner" }) });
+
+    assert.ok(h.raw.index.data.has("a_bergen/vinter"), "the key is untouched");
+    assert.equal((await h.raw.index.get("a_bergen/vinter")).ownerAccountId, null);
+});
+
+test("the handle is retired, not released", async () => {
+    // Releasing it would point somebody's already-shared link at a stranger's
+    // plan (ADR-0074).
+    const h = harness();
+    await orgWithPlan(h);
+
+    await call(h, "DELETE", "/a_bergen", { as: token("u_1", { a_bergen: "owner" }) });
+
+    const handle = await h.stores.handles().get("redcross-bergen", { type: "json" });
+    assert.equal(handle.tombstone, true, "the handle must not be re-registrable");
+});
+
+test("deleting a personal account removes the user and their sessions", async () => {
+    const h = harness();
+    await h.stores.accounts().set("a_kari", JSON.stringify({ id: "a_kari", displayName: "Kari", type: "personal" }));
+    await h.stores.users().set("u_1", JSON.stringify({ id: "u_1", displayName: "Kari", primaryEmail: "kari@example.com" }));
+    await h.stores.identities().set("email/kari@example.com", JSON.stringify({ userId: "u_1", provider: "email" }));
+    await h.stores.emailIndex().set("kari@example.com", JSON.stringify({ userId: "u_1" }));
+    await h.stores.sessions().set("s_1", JSON.stringify({ sessionId: "s_1", userId: "u_1" }));
+    await putMember("a_kari", "u_1", "owner", { acceptedAt: "2026-08-01" }, h.stores);
+
+    assert.equal((await call(h, "DELETE", "/a_kari", { as: token("u_1", { a_kari: "owner" }) })).status, 200);
+
+    assert.equal(await h.stores.users().get("u_1", { type: "json" }), null);
+    assert.equal(await h.stores.identities().get("email/kari@example.com", { type: "json" }), null);
+    assert.equal(await h.stores.emailIndex().get("kari@example.com", { type: "json" }), null);
+    assert.equal(await h.stores.sessions().get("s_1", { type: "json" }), null, "no live session outlives the user");
+});
+
+test("deleting a personal account is refused while it is an organisation's only owner", async () => {
+    // Otherwise a button reaches the unrecoverable state DESIGN-015 §4.4
+    // exists to prevent.
+    const h = harness();
+    await orgWithPlan(h);
+    await h.stores.accounts().set("a_kari", JSON.stringify({ id: "a_kari", displayName: "Kari", type: "personal" }));
+    await putMember("a_kari", "u_1", "owner", { acceptedAt: "2026-08-01" }, h.stores);
+
+    const res = await call(h, "DELETE", "/a_kari", {
+        as: token("u_1", { a_kari: "owner", a_bergen: "owner" }),
+    });
+    assert.equal(res.status, 409);
+    const body = await res.json();
+    assert.equal(body.error, "sole_owner_of_organisation");
+    // Named, so the user knows what to hand over first.
+    assert.deepEqual(body.organisations, ["Red Cross Bergen"]);
+    assert.ok(await h.stores.users().get("u_1", { type: "json" }), "nothing was deleted");
+});
+
+test("deleting an unknown account is 404", async () => {
+    const h = harness();
+    await orgWith(h, { u_1: "owner" });
+    assert.equal((await call(h, "DELETE", "/a_nope", { as: token("u_1", { a_nope: "owner" }) })).status, 404);
 });

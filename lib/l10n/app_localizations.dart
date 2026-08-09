@@ -1826,6 +1826,66 @@ abstract class AppLocalizations {
   /// **'Could not update sharing. The plan is published to your account only.'**
   String get publishSharingFailed;
 
+  /// No description provided for @accountDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get accountDeleteAction;
+
+  /// No description provided for @accountDeleteOrgAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete organisation'**
+  String get accountDeleteOrgAction;
+
+  /// No description provided for @accountDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String accountDeleteTitle(String name);
+
+  /// DESIGN-015 §5.1 requires the confirm to say exactly this: "delete my account" reasonably sounds like it should unpublish, and it does not. Saying so afterwards is too late.
+  ///
+  /// In en, this message translates to:
+  /// **'Your sign-in, your memberships and this account are removed. Plans you have already published stay in the catalog — other people have installed them — but they stop belonging to you and anyone can then change them.'**
+  String get accountDeleteBody;
+
+  /// No description provided for @accountDeleteOrgBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The organisation, its members and its invitations are removed. Plans it has published stay in the catalog — other people have installed them — but they stop belonging to the organisation and anyone can then change them.'**
+  String get accountDeleteOrgBody;
+
+  /// No description provided for @accountDeleteKeepsLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Plans on this device are not touched.'**
+  String get accountDeleteKeepsLocal;
+
+  /// A typed confirmation rather than a second button. This is the one action in the app with no undo, and a misplaced tap should not be able to reach it.
+  ///
+  /// In en, this message translates to:
+  /// **'Type {word} to confirm'**
+  String accountDeleteConfirmLabel(String word);
+
+  /// No description provided for @accountDeleteConfirmWord.
+  ///
+  /// In en, this message translates to:
+  /// **'DELETE'**
+  String get accountDeleteConfirmWord;
+
+  /// DESIGN-015 §4.4: an organisation with no owner is unrecoverable. The refusal names the organisations so the user knows what to hand over.
+  ///
+  /// In en, this message translates to:
+  /// **'You are the only owner of {organisations}. Make somebody else an owner there first, or delete the organisation.'**
+  String accountDeleteSoleOwner(String organisations);
+
+  /// No description provided for @accountDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deleted.'**
+  String get accountDeleted;
+
   /// DESIGN-015 §4.3. This is the answer to "I lost the device that was signed in" and to "my phone was stolen" — not a recovery flow, a list you can end sessions from.
   ///
   /// In en, this message translates to:

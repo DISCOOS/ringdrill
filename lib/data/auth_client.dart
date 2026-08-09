@@ -22,7 +22,13 @@ class AuthApiException implements Exception {
   /// which is for logs.
   final String? reason;
 
-  AuthApiException(this.message, {this.status, this.reason});
+  /// Extra detail the server attached to the refusal, already joined for
+  /// display — today the organisations that would be stranded by deleting an
+  /// account. Carried because naming them is what makes the refusal
+  /// actionable; without it the user is told no and not what to fix.
+  final String? detail;
+
+  AuthApiException(this.message, {this.status, this.reason, this.detail});
 
   @override
   String toString() =>
@@ -535,6 +541,14 @@ class AuthClient {
     });
   }
 
+  /// Delete an account (DESIGN-015 §5.1).
+  ///
+  /// Throws with `reason: 'sole_owner_of_organisation'` when the caller is the
+  /// only owner of an organisation — deleting then would strand it, and the
+  /// error carries the names so the UI can say which.
+  Future<void> deleteAccount(String accountId, {required String token}) =>
+      _send('DELETE', 'accounts/$accountId', token: token);
+
   // ---------------- invitations ----------------
 
   /// Anonymous on purpose: the landing page has to say who to sign in as
@@ -603,12 +617,16 @@ class AuthClient {
     }
 
     if (res.statusCode >= 400) {
+      final organisations = parsed['organisations'];
       throw AuthApiException(
         (parsed['error'] as String?) ?? 'request_failed',
         status: res.statusCode,
         // `state` carries the invitation's outcome; `error` carries
         // everything else. Both are the machine-readable branch.
         reason: (parsed['state'] as String?) ?? (parsed['error'] as String?),
+        detail: organisations is List
+            ? organisations.map((e) => e.toString()).join(', ')
+            : null,
       );
     }
     return parsed;

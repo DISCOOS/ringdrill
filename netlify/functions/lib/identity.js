@@ -334,6 +334,99 @@ export async function membersOf(accountId, stores = defaultStores) {
     return out;
 }
 
+/**
+ * Every accepted membership this user holds, roles included — including the
+ * ones where they are the *only* owner.
+ *
+ * [membershipsOf] answers "what may this token do" and is therefore about the
+ * user. This answers "what would break if this user vanished", which is a
+ * different question and the one deletion has to ask.
+ */
+export async function soleOwnerships(userId, stores = defaultStores) {
+    const { accounts } = await membershipsOf(userId, stores);
+    const stranded = [];
+    for (const accountId of accounts) {
+        const account = await getAccount(accountId, stores);
+        // A personal account has nobody else to strand — deleting it is the
+        // point of the operation, not a side effect of it.
+        if (!account || account.type !== "organization") continue;
+        const owners = acceptedOwners(await membersOf(accountId, stores));
+        if (owners.length === 1 && owners[0].userId === userId) {
+            stranded.push({ accountId, displayName: account.displayName });
+        }
+    }
+    return stranded;
+}
+
+/**
+ * Delete an account, and — for a personal one — the user behind it.
+ *
+ * Three things deliberately survive, and each would be a mistake to remove:
+ *
+ * * **Published plans.** Other people have installed them. The catalog entry
+ *   stays where it is and loses its owner reference (DESIGN-015 §5.1); the
+ *   caller does that part, because it is catalog knowledge, not identity's.
+ * * **The handle**, as a tombstone. Releasing it for reuse would point
+ *   somebody's already-shared `/d/<handle>/<slug>` link at a stranger's plan.
+ *   A deleted account's handle is retired for the same reason a renamed one is
+ *   (ADR-0074).
+ * * **Nothing keyed by account prefix in the blob store**, because there is
+ *   none — that is the whole point of ADR-0074 §4, and a deletion that swept
+ *   by prefix is exactly the temptation it was designed out of.
+ */
+export async function deleteAccount(accountId, { deleteUser = null } = {}, stores = defaultStores) {
+    const account = await getAccount(accountId, stores);
+    if (!account) return { ok: false, reason: "no_such_account" };
+
+    // Member rows first: a half-deleted account with live memberships would
+    // still grant access through a token minted before the rest went.
+    const members = await membersOf(accountId, stores);
+    for (const member of members) {
+        await stores.members().delete(`${accountId}/${member.userId ?? `pending:${member.email}`}`);
+    }
+
+    if (account.handle) {
+        await putJson(stores.handles(), account.handle, {
+            accountId, tombstone: true, redirectsTo: null,
+            retiredAt: new Date().toISOString(),
+        });
+    }
+    await stores.accounts().delete(accountId);
+
+    if (deleteUser) {
+        await deleteUserRecords(deleteUser, stores);
+    }
+    return { ok: true, account };
+}
+
+/**
+ * The identity half: the user, every provider identity pointing at them, their
+ * verified-address index entries, and their sessions.
+ *
+ * Identities and email-index entries are found by scanning, because both are
+ * keyed by what they resolve *from* rather than by the user. At three users
+ * that is free; if it ever is not, the answer is a reverse index rather than a
+ * cheaper scan.
+ */
+async function deleteUserRecords(userId, stores) {
+    for (const [store, matches] of [
+        [stores.identities(), (rec) => rec?.userId === userId],
+        [stores.emailIndex(), (rec) => rec?.userId === userId],
+        [stores.sessions(), (rec) => rec?.userId === userId],
+    ]) {
+        let cursor;
+        do {
+            const page = await store.list({ cursor });
+            cursor = page?.cursor;
+            for (const blob of page?.blobs ?? []) {
+                const rec = await store.get(blob.key, { type: "json" });
+                if (matches(rec)) await store.delete(blob.key);
+            }
+        } while (cursor);
+    }
+    await stores.users().delete(userId);
+}
+
 export function acceptedOwners(members) {
     return members.filter((m) => m.role === "owner" && m.acceptedAt);
 }

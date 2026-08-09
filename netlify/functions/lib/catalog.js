@@ -229,3 +229,57 @@ export async function findUploadTarget({ principal, slug }, opts = {}) {
 
     return { existing: null, namespace, foundIn: null };
 }
+
+/**
+ * Drop an account's ownership of its catalog entries, leaving the plans in
+ * place (DESIGN-015 §5.1).
+ *
+ * "Delete my account" reasonably sounds like it should unpublish, and it does
+ * not: other people have installed these plans. So the entry keeps its keys,
+ * its slug and its URL, and only stops being *owned* — which makes it behave
+ * exactly like an anonymous plan, writable by anyone, because there is no
+ * longer an account to protect it for.
+ *
+ * **The index key is not rewritten.** It contains the account id, so moving
+ * the entry into `anon/` would change `/d/<handle>/<slug>` and break every
+ * link already shared. The handle is tombstoned instead of released (see
+ * `deleteAccount`), which is what keeps those links resolving.
+ */
+export async function dropAccountOwnership(accountId, { indexStore, readJson, writeJson }) {
+    if (!accountId) return { entries: 0 };
+    const prefix = `${accountId}/`;
+    let cursor;
+    let entries = 0;
+
+    do {
+        // Strong: this read decides a write, which is the case lib/shared.js
+        // documents at length — an eventually consistent read of a
+        // recently-written record answers null and the entry keeps its owner.
+        const page = await indexStore.list({ prefix, cursor });
+        cursor = page?.cursor;
+        for (const blob of page?.blobs ?? []) {
+            const rec = await indexStore.get(String(blob.key), { type: "json" });
+            if (!rec) continue;
+
+            await indexStore.set(String(blob.key), JSON.stringify({
+                ...rec, ownerAccountId: null, ownerDeletedAt: new Date().toISOString(),
+            }));
+
+            const { meta } = keysForEntry(rec);
+            const m = await readJson(meta, null);
+            if (!m) continue;
+            await writeJson(meta, {
+                ...m,
+                ownerId: ANON_NAMESPACE,
+                // No owner means nobody to keep it for. `shared` in particular
+                // must not survive: its grantee list names accounts that were
+                // granted access *by* an owner who no longer exists.
+                accessPolicy: "public",
+                sharedAccountIds: [],
+            });
+            entries += 1;
+        }
+    } while (cursor);
+
+    return { entries };
+}

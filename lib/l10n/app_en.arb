@@ -1260,6 +1260,30 @@
   "@publishSharingFailed": {
     "description": "Says where the plan actually ended up, because a failed sharing step leaves it *less* open than asked for and the user needs to know which."
   },
+  "accountDeleteAction": "Delete account",
+  "accountDeleteOrgAction": "Delete organisation",
+  "accountDeleteTitle": "Delete {name}?",
+  "@accountDeleteTitle": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "accountDeleteBody": "Your sign-in, your memberships and this account are removed. Plans you have already published stay in the catalog — other people have installed them — but they stop belonging to you and anyone can then change them.",
+  "@accountDeleteBody": {
+    "description": "DESIGN-015 §5.1 requires the confirm to say exactly this: \"delete my account\" reasonably sounds like it should unpublish, and it does not. Saying so afterwards is too late."
+  },
+  "accountDeleteOrgBody": "The organisation, its members and its invitations are removed. Plans it has published stay in the catalog — other people have installed them — but they stop belonging to the organisation and anyone can then change them.",
+  "accountDeleteKeepsLocal": "Plans on this device are not touched.",
+  "accountDeleteConfirmLabel": "Type {word} to confirm",
+  "@accountDeleteConfirmLabel": {
+    "description": "A typed confirmation rather than a second button. This is the one action in the app with no undo, and a misplaced tap should not be able to reach it.",
+    "placeholders": { "word": { "type": "String" } }
+  },
+  "accountDeleteConfirmWord": "DELETE",
+  "accountDeleteSoleOwner": "You are the only owner of {organisations}. Make somebody else an owner there first, or delete the organisation.",
+  "@accountDeleteSoleOwner": {
+    "description": "DESIGN-015 §4.4: an organisation with no owner is unrecoverable. The refusal names the organisations so the user knows what to hand over.",
+    "placeholders": { "organisations": { "type": "String" } }
+  },
+  "accountDeleted": "Account deleted.",
   "accountDevicesTitle": "Signed-in devices",
   "@accountDevicesTitle": {
     "description": "DESIGN-015 §4.3. This is the answer to \"I lost the device that was signed in\" and to \"my phone was stolen\" — not a recovery flow, a list you can end sessions from."

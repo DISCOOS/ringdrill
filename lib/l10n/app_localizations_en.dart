@@ -1102,6 +1102,44 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not update sharing. The plan is published to your account only.';
 
   @override
+  String get accountDeleteAction => 'Delete account';
+
+  @override
+  String get accountDeleteOrgAction => 'Delete organisation';
+
+  @override
+  String accountDeleteTitle(String name) {
+    return 'Delete $name?';
+  }
+
+  @override
+  String get accountDeleteBody =>
+      'Your sign-in, your memberships and this account are removed. Plans you have already published stay in the catalog — other people have installed them — but they stop belonging to you and anyone can then change them.';
+
+  @override
+  String get accountDeleteOrgBody =>
+      'The organisation, its members and its invitations are removed. Plans it has published stay in the catalog — other people have installed them — but they stop belonging to the organisation and anyone can then change them.';
+
+  @override
+  String get accountDeleteKeepsLocal => 'Plans on this device are not touched.';
+
+  @override
+  String accountDeleteConfirmLabel(String word) {
+    return 'Type $word to confirm';
+  }
+
+  @override
+  String get accountDeleteConfirmWord => 'DELETE';
+
+  @override
+  String accountDeleteSoleOwner(String organisations) {
+    return 'You are the only owner of $organisations. Make somebody else an owner there first, or delete the organisation.';
+  }
+
+  @override
+  String get accountDeleted => 'Account deleted.';
+
+  @override
   String get accountDevicesTitle => 'Signed-in devices';
 
   @override

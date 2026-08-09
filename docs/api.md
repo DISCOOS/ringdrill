@@ -154,7 +154,8 @@ which is the one part where a mistake is a security bug rather than a 500.
 | `POST` | `/api/auth/start-email` | Begin email sign-in — sends a magic link and a code |
 | `POST` | `/api/auth/callback` | Exchange a provider result or an email code for tokens |
 | `POST` | `/api/auth/refresh` | Refresh the access token |
-| `POST` | `/api/auth/logout` | Revoke the session |
+| `POST` | `/api/auth/logout` | End this session. Proves ownership with the access token **or** the session's refresh token |
+| `POST` | `/api/auth/sessions/revoke` | End another of this user's sessions — the sessions list's "log out this device" |
 | `GET` | `/api/auth/me` | The current principal, its accounts and roles |
 
 `acts` and `roles` are read from stored memberships **every time a token is
@@ -178,6 +179,7 @@ only what the active mode can verify.
 | `PATCH` | `/api/accounts/{id}/members/{userId}` | Change a role — owner only |
 | `DELETE` | `/api/accounts/{id}/members/{userId}` | Remove a member, or leave |
 | `GET` | `/api/accounts/{id}/plans` | The account's plans — the Library's fourth tab |
+| `DELETE` | `/api/accounts/{id}` | Delete an organisation, or the caller's own account |
 
 Three rules are enforced here rather than assumed by callers:
 
@@ -188,6 +190,23 @@ Three rules are enforced here rather than assumed by callers:
   last one is refused, not offered and then failed.
 * **Invited is a state, not a role.** The role is chosen at invite time and
   confers nothing until the invitation is accepted.
+
+**Deletion keeps three things**, and each would be a mistake to remove:
+
+* **Published plans.** Other people have installed them, so the entry stays and
+  only loses its owner — it then behaves like an anonymous plan. `shared` does
+  not survive: its grantee list names accounts granted access by an owner who
+  no longer exists.
+* **The URL.** The index key holds the account id, so the entry is *not* moved
+  into `anon/`; that would change `/d/<handle>/<slug>` and break every link
+  already shared.
+* **The handle**, as a tombstone. Releasing it for reuse would point somebody's
+  shared link at a stranger's plan.
+
+Deleting a personal account is refused with `409 sole_owner_of_organisation`
+while its user is the only owner of an organisation — the refusal names them.
+Allowing it would reach [DESIGN-015](./design/015-accounts-and-iam.md) §4.4's
+unrecoverable state through a button.
 
 `GET .../plans` lists **unpublished plans too** — an account library showing
 only what had been published would omit exactly the drafts the tab exists for —

@@ -1098,6 +1098,44 @@ class AppLocalizationsNb extends AppLocalizations {
       'Klarte ikke å oppdatere deling. Planen er publisert bare til kontoen din.';
 
   @override
+  String get accountDeleteAction => 'Slett konto';
+
+  @override
+  String get accountDeleteOrgAction => 'Slett organisasjon';
+
+  @override
+  String accountDeleteTitle(String name) {
+    return 'Slette $name?';
+  }
+
+  @override
+  String get accountDeleteBody =>
+      'Innloggingen din, medlemskapene dine og denne kontoen fjernes. Planer du allerede har publisert blir liggende i katalogen — andre har installert dem — men de slutter å tilhøre deg, og hvem som helst kan da endre dem.';
+
+  @override
+  String get accountDeleteOrgBody =>
+      'Organisasjonen, medlemmene og invitasjonene fjernes. Planer den har publisert blir liggende i katalogen — andre har installert dem — men de slutter å tilhøre organisasjonen, og hvem som helst kan da endre dem.';
+
+  @override
+  String get accountDeleteKeepsLocal => 'Planer på denne enheten røres ikke.';
+
+  @override
+  String accountDeleteConfirmLabel(String word) {
+    return 'Skriv $word for å bekrefte';
+  }
+
+  @override
+  String get accountDeleteConfirmWord => 'SLETT';
+
+  @override
+  String accountDeleteSoleOwner(String organisations) {
+    return 'Du er eneste eier av $organisations. Gjør noen andre til eier der først, eller slett organisasjonen.';
+  }
+
+  @override
+  String get accountDeleted => 'Kontoen er slettet.';
+
+  @override
   String get accountDevicesTitle => 'Innloggede enheter';
 
   @override

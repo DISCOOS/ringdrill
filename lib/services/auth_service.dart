@@ -252,6 +252,13 @@ class AuthService extends ChangeNotifier {
     await _client.revokeSession(sessionId: sessionId, token: token);
   }
 
+  /// Re-read the user's accounts from the server.
+  ///
+  /// Needed after anything that changes membership from this device — deleting
+  /// an organisation, accepting an invitation — because the account list came
+  /// from the token's claims and those are only refreshed on rotation.
+  Future<void> refreshAccounts() => _hydrate();
+
   /// Which account a publish lands in. Persisted with the session, because a
   /// person who works in one organisation should not re-pick it every launch.
   Future<void> setActiveAccount(String? accountId) async {

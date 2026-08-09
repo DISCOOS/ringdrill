@@ -2,13 +2,15 @@ import { getStore } from "@netlify/blobs";
 import {
     corsPreflight, withCors, metaToFeedItem,
     getDrillsStore as _getDrillsStore, getSlugIndexStore as _getSlugIndexStore,
+    readJson as _readJson, writeJsonConditional as _writeJsonConditional,
 } from "./lib/shared.js";
 import { authenticate } from "./lib/auth/index.js";
 import {
-    acceptedOwners, claimHandle, defaultStores, getAccount, getUser, membersOf, membershipsOf,
-    newId, normalizeEmail, putMember, removeMember, upgradeToOrganisation, validateHandle,
+    acceptedOwners, claimHandle, defaultStores, deleteAccount, getAccount, getUser, membersOf,
+    membershipsOf, newId, normalizeEmail, putMember, removeMember, soleOwnerships,
+    upgradeToOrganisation, validateHandle,
 } from "./lib/identity.js";
-import { keysForEntry } from "./lib/catalog.js";
+import { dropAccountOwnership, keysForEntry } from "./lib/catalog.js";
 import { createMailer, sendTemplate } from "./lib/mail/index.js";
 
 /**
@@ -40,6 +42,8 @@ export function createHandler({
     inviteStore = () => getStore("invitations", strong),
     getDrillsStore = _getDrillsStore,
     getSlugIndexStore = _getSlugIndexStore,
+    readJson = _readJson,
+    writeJson = _writeJsonConditional,
     mailer = null,
 } = {}) {
     return async function (request) {
@@ -78,6 +82,12 @@ export function createHandler({
             // (DESIGN-015 §5.7).
             if (section === "plans" && !memberUserId && request.method === "GET") {
                 return withCors(request, await listPlans(request, accountId, principal));
+            }
+
+            // DELETE /api/accounts/:id — delete an organisation, or the
+            // caller's own account (DESIGN-015 §5.1).
+            if (!section && request.method === "DELETE") {
+                return withCors(request, await destroy(accountId, principal));
             }
 
             return withCors(request, json({ error: "not_found" }, 404));
@@ -218,6 +228,56 @@ export function createHandler({
 
         items.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
         return json(nextCursor ? { items, nextCursor } : { items });
+    }
+
+    /**
+     * Delete an account.
+     *
+     * Owner-only, and it refuses one case outright: a personal account whose
+     * user is the **sole owner of an organisation**. Allowing it would strand
+     * an organisation nobody can administer — the exact unrecoverable state
+     * DESIGN-015 §4.4 exists to prevent, arrived at through a button rather
+     * than through somebody becoming unavailable. The refusal names the
+     * organisations so the user knows what to hand over first.
+     *
+     * What survives is as important as what goes, and is spelled out in
+     * `deleteAccount` and `dropAccountOwnership`: published plans stay,
+     * losing only their owner; the handle is retired rather than released.
+     */
+    async function destroy(accountId, principal) {
+        if (!isOwner(principal, accountId)) return json({ error: "owner_role_required" }, 403);
+
+        const account = await getAccount(accountId, stores);
+        if (!account) return json({ error: "no_such_account" }, 404);
+
+        const personal = account.type !== "organization";
+        if (personal) {
+            const stranded = await soleOwnerships(principal.userId, stores);
+            if (stranded.length > 0) {
+                return json({
+                    error: "sole_owner_of_organisation",
+                    organisations: stranded.map((o) => o.displayName),
+                }, 409);
+            }
+        }
+
+        // Ownership is dropped *before* the account goes. The other order
+        // leaves a window where the entries name an account that no longer
+        // exists, and a crash in that window strands them there permanently.
+        const dropped = await dropAccountOwnership(accountId, {
+            indexStore: getSlugIndexStore(),
+            readJson,
+            writeJson,
+        });
+
+        const res = await deleteAccount(
+            accountId,
+            { deleteUser: personal ? principal.userId : null },
+            stores,
+        );
+        if (!res.ok) return json({ error: res.reason }, 400);
+
+        return json({ deleted: true, plansUnpublished: false, plansReleased: dropped.entries });
     }
 
     async function invite(request, accountId, principal) {
