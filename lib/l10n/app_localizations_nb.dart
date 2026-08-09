@@ -1084,11 +1084,25 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryCatalog => 'Katalog';
 
   @override
-  String get publishSharedAccountsLabel => 'Konto-ID-er';
+  String get publishSharedHandleLabel => 'Kontonavn';
 
   @override
-  String get publishSharedAccountsHelper =>
-      'Skill flere med komma. Spør eieren av den andre kontoen om ID-en.';
+  String get publishSharedHandleHelper =>
+      'Navnet i planlenkene deres, f.eks. redcross-bergen.';
+
+  @override
+  String get publishSharedAdd => 'Legg til';
+
+  @override
+  String get publishSharedNotFound => 'Ingen konto med det navnet.';
+
+  @override
+  String publishSharedRenamed(String handle) {
+    return 'Den kontoen heter nå $handle.';
+  }
+
+  @override
+  String get publishSharedNone => 'Ingen kontoer lagt til ennå.';
 
   @override
   String get publishSharingApplied => 'Deling oppdatert';

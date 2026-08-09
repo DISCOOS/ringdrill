@@ -1250,11 +1250,19 @@
   "library": "Library",
   "libraryMyPlans": "My plans",
   "libraryCatalog": "Catalog",
-  "publishSharedAccountsLabel": "Account IDs",
-  "@publishSharedAccountsLabel": {
-    "description": "Field for the accounts a `shared` plan is shared with. Ids rather than handles, because a handle can be changed and an id cannot (ADR-0074)."
+  "publishSharedHandleLabel": "Account handle",
+  "@publishSharedHandleLabel": {
+    "description": "Replaces asking for a raw account id, which nobody knows. The handle is the name already in that account's plan URLs, so it is something a person can actually be told over the phone."
   },
-  "publishSharedAccountsHelper": "Separate several with commas. Ask the other account's owner for their ID.",
+  "publishSharedHandleHelper": "The name in their plan links, e.g. redcross-bergen.",
+  "publishSharedAdd": "Add",
+  "publishSharedNotFound": "No account with that handle.",
+  "publishSharedRenamed": "That account is now called {handle}.",
+  "@publishSharedRenamed": {
+    "description": "Shown when a retired handle was used. Accepting it silently would leave the user sharing with something they cannot find again under the name they typed.",
+    "placeholders": { "handle": { "type": "String" } }
+  },
+  "publishSharedNone": "No accounts added yet.",
   "publishSharingApplied": "Sharing updated",
   "publishSharingFailed": "Could not update sharing. The plan is published to your account only.",
   "@publishSharingFailed": {

@@ -1088,11 +1088,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryCatalog => 'Catalog';
 
   @override
-  String get publishSharedAccountsLabel => 'Account IDs';
+  String get publishSharedHandleLabel => 'Account handle';
 
   @override
-  String get publishSharedAccountsHelper =>
-      'Separate several with commas. Ask the other account\'s owner for their ID.';
+  String get publishSharedHandleHelper =>
+      'The name in their plan links, e.g. redcross-bergen.';
+
+  @override
+  String get publishSharedAdd => 'Add';
+
+  @override
+  String get publishSharedNotFound => 'No account with that handle.';
+
+  @override
+  String publishSharedRenamed(String handle) {
+    return 'That account is now called $handle.';
+  }
+
+  @override
+  String get publishSharedNone => 'No accounts added yet.';
 
   @override
   String get publishSharingApplied => 'Sharing updated';

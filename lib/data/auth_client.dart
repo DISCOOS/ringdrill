@@ -541,6 +541,32 @@ class AuthClient {
     });
   }
 
+  /// Resolve an account handle to the id a shared plan stores.
+  ///
+  /// Handles change and ids do not (ADR-0074), so the id is what gets written
+  /// — but a handle is the name already in that account's plan URLs, which is
+  /// something a person can be told over the phone. Returns null when no such
+  /// handle exists.
+  Future<AccountMembership?> lookupHandle(
+    String handle, {
+    required String token,
+  }) async {
+    try {
+      final j = await _get(
+        'accounts/lookup?handle=${Uri.encodeQueryComponent(handle)}',
+        token: token,
+      );
+      return AccountMembership.fromJson({
+        ...j,
+        'role': 'guest',
+        'type': 'organization',
+      });
+    } on AuthApiException catch (e) {
+      if (e.status == 404) return null;
+      rethrow;
+    }
+  }
+
   /// Delete an account (DESIGN-015 §5.1).
   ///
   /// Throws with `reason: 'sole_owner_of_organisation'` when the caller is the

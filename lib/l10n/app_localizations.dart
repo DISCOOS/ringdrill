@@ -1802,17 +1802,41 @@ abstract class AppLocalizations {
   /// **'Catalog'**
   String get libraryCatalog;
 
-  /// Field for the accounts a `shared` plan is shared with. Ids rather than handles, because a handle can be changed and an id cannot (ADR-0074).
+  /// Replaces asking for a raw account id, which nobody knows. The handle is the name already in that account's plan URLs, so it is something a person can actually be told over the phone.
   ///
   /// In en, this message translates to:
-  /// **'Account IDs'**
-  String get publishSharedAccountsLabel;
+  /// **'Account handle'**
+  String get publishSharedHandleLabel;
 
-  /// No description provided for @publishSharedAccountsHelper.
+  /// No description provided for @publishSharedHandleHelper.
   ///
   /// In en, this message translates to:
-  /// **'Separate several with commas. Ask the other account\'s owner for their ID.'**
-  String get publishSharedAccountsHelper;
+  /// **'The name in their plan links, e.g. redcross-bergen.'**
+  String get publishSharedHandleHelper;
+
+  /// No description provided for @publishSharedAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get publishSharedAdd;
+
+  /// No description provided for @publishSharedNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No account with that handle.'**
+  String get publishSharedNotFound;
+
+  /// Shown when a retired handle was used. Accepting it silently would leave the user sharing with something they cannot find again under the name they typed.
+  ///
+  /// In en, this message translates to:
+  /// **'That account is now called {handle}.'**
+  String publishSharedRenamed(String handle);
+
+  /// No description provided for @publishSharedNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No accounts added yet.'**
+  String get publishSharedNone;
 
   /// No description provided for @publishSharingApplied.
   ///

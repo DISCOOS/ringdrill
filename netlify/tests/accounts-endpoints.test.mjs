@@ -500,3 +500,77 @@ test("deleting an unknown account is 404", async () => {
     await orgWith(h, { u_1: "owner" });
     assert.equal((await call(h, "DELETE", "/a_nope", { as: token("u_1", { a_nope: "owner" }) })).status, 404);
 });
+
+// ---------- handle lookup ----------
+
+test("lookup resolves a handle to the id that gets stored", async () => {
+    // Ids are what a shared plan stores, because handles change and ids do
+    // not (ADR-0074). Asking a person for an opaque id is asking them to fetch
+    // something they have never seen.
+    const h = harness();
+    await orgWith(h, { u_1: "owner" });
+    await h.stores.accounts().set("a_bergen", JSON.stringify({
+        id: "a_bergen", displayName: "Red Cross Bergen", type: "organization", handle: "redcross-bergen",
+    }));
+    await h.stores.handles().set("redcross-bergen", JSON.stringify({ accountId: "a_bergen" }));
+
+    const res = await call(h, "GET", "/lookup?handle=redcross-bergen", { as: token("u_1", { a_bergen: "owner" }) });
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), {
+        accountId: "a_bergen",
+        displayName: "Red Cross Bergen",
+        handle: "redcross-bergen",
+        renamed: false,
+    });
+});
+
+test("lookup requires signing in", async () => {
+    // Handles are public — they are in every /d/<handle>/<slug> link — so this
+    // is about keeping the endpoint away from drive-by scanning, not about the
+    // handle being secret.
+    const h = harness();
+    assert.equal((await call(h, "GET", "/lookup?handle=redcross-bergen")).status, 401);
+});
+
+test("lookup tells you when a retired name was used", async () => {
+    // Silently accepting a name that no longer exists would leave the user
+    // sharing with something they cannot see under the name they typed.
+    const h = harness();
+    await orgWith(h, { u_1: "owner" });
+    await h.stores.accounts().set("a_bergen", JSON.stringify({
+        id: "a_bergen", displayName: "Red Cross Bergen", type: "organization", handle: "rk-bergen",
+    }));
+    await h.stores.handles().set("redcross-bergen", JSON.stringify({
+        accountId: "a_bergen", tombstone: true, redirectsTo: "rk-bergen",
+    }));
+
+    const body = await (await call(h, "GET", "/lookup?handle=redcross-bergen", {
+        as: token("u_1", { a_bergen: "owner" }),
+    })).json();
+    assert.equal(body.renamed, true);
+    assert.equal(body.handle, "rk-bergen", "and names the current one");
+});
+
+test("lookup is exact — a prefix is not a search", async () => {
+    // A prefix or fuzzy endpoint would be a tool for listing which
+    // organisations exist. This deliberately is not one.
+    const h = harness();
+    await orgWith(h, { u_1: "owner" });
+    await h.stores.handles().set("redcross-bergen", JSON.stringify({ accountId: "a_bergen" }));
+
+    assert.equal((await call(h, "GET", "/lookup?handle=redcross", {
+        as: token("u_1", { a_bergen: "owner" }),
+    })).status, 404);
+});
+
+test("a handle whose account is gone does not resolve", async () => {
+    // The tombstone still redirects existing links, but there is nothing left
+    // to share with.
+    const h = harness();
+    await orgWith(h, { u_1: "owner" });
+    await h.stores.handles().set("gone", JSON.stringify({ accountId: "a_deleted", tombstone: true }));
+
+    assert.equal((await call(h, "GET", "/lookup?handle=gone", {
+        as: token("u_1", { a_bergen: "owner" }),
+    })).status, 404);
+});

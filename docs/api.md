@@ -174,6 +174,7 @@ only what the active mode can verify.
 | Method | Path | Purpose |
 |--------|------|---------|
 | `POST` | `/api/accounts` | Create an organisation, or upgrade a personal account (`upgradeAccountId`) |
+| `GET` | `/api/accounts/lookup?handle={handle}` | Resolve a handle to the account id a shared plan stores |
 | `GET` | `/api/accounts/{id}/members` | The roster, with each row's state |
 | `POST` | `/api/accounts/{id}/members` | Invite by email — owner only |
 | `PATCH` | `/api/accounts/{id}/members/{userId}` | Change a role — owner only |
@@ -190,6 +191,20 @@ Three rules are enforced here rather than assumed by callers:
   last one is refused, not offered and then failed.
 * **Invited is a state, not a role.** The role is chosen at invite time and
   confers nothing until the invitation is accepted.
+
+**`lookup` is exact-match and requires signing in.** That is the whole of the
+enumeration answer: a handle is already public — it appears in
+`/d/<handle>/<slug>` on every shared link — so resolving one reveals nothing
+that trying the URL would not. A prefix or fuzzy *search* endpoint would be a
+different thing entirely, a tool for listing which organisations exist, and is
+deliberately not offered. Only the id and display name come back.
+
+It exists because sharing a plan has to name another account and **ids are what
+gets stored** ([ADR-0074](./adrs/0074-catalog-entry-as-distinct-object.md) —
+handles change, ids do not). Asking a person for an opaque id is asking them to
+fetch something they have never seen; the handle is the name already in their
+plan links. A retired handle still resolves and reports the current one, so the
+UI can say which account it actually found.
 
 **Deletion keeps three things**, and each would be a mistake to remove:
 

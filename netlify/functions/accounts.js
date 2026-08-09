@@ -7,8 +7,8 @@ import {
 import { authenticate } from "./lib/auth/index.js";
 import {
     acceptedOwners, claimHandle, defaultStores, deleteAccount, getAccount, getUser, membersOf,
-    membershipsOf, newId, normalizeEmail, putMember, removeMember, soleOwnerships,
-    upgradeToOrganisation, validateHandle,
+    membershipsOf, newId, normalizeEmail, putMember, removeMember, resolveHandle,
+    soleOwnerships, upgradeToOrganisation, validateHandle,
 } from "./lib/identity.js";
 import { dropAccountOwnership, keysForEntry } from "./lib/catalog.js";
 import { createMailer, sendTemplate } from "./lib/mail/index.js";
@@ -68,6 +68,13 @@ export function createHandler({
                 return withCors(request, await createOrganisation(request, principal));
             }
 
+            // GET /api/accounts/lookup?handle=… — resolve a handle to the id
+            // that gets stored. Matched before the `:id` routes below, since
+            // `lookup` is not an account id.
+            if (parts.length === 1 && parts[0] === "lookup" && request.method === "GET") {
+                return withCors(request, await lookup(request));
+            }
+
             const [accountId, section, memberUserId] = parts;
             if (!accountId) return withCors(request, json({ error: "not_found" }, 404));
 
@@ -102,6 +109,48 @@ export function createHandler({
     }
     function isOwner(principal, accountId) {
         return isMember(principal, accountId) && principal.roles?.[accountId] === "owner";
+    }
+
+    /**
+     * Resolve a handle to the account id behind it.
+     *
+     * Exists because sharing a plan with another account has to name that
+     * account, and **ids are what gets stored** — handles are (semi-)
+     * changeable, ids are not (ADR-0074). Asking a person for an opaque id is
+     * asking them to fetch something they have never seen; asking for a handle
+     * is asking for the name already in their plan URLs.
+     *
+     * **Exact match only, and no search.** That is the whole of the
+     * enumeration answer: a handle is already public — it appears in
+     * `/d/<handle>/<slug>` on every shared link — so resolving one reveals
+     * nothing that trying the URL would not. A prefix or fuzzy *search*
+     * endpoint would be a different thing entirely: a tool for listing which
+     * organisations exist. This is deliberately not that, and authentication
+     * on top keeps it away from drive-by scanning.
+     *
+     * Only the id and the display name come back. Membership, size and
+     * addresses are none of a prospective grantee's business.
+     */
+    async function lookup(request) {
+        const handle = new URL(request.url).searchParams.get("handle") ?? "";
+        const resolved = await resolveHandle(handle, stores);
+        if (!resolved) return json({ error: "not_found" }, 404);
+
+        const account = await getAccount(resolved.accountId, stores);
+        // A handle whose account is gone is a tombstone from a deletion. It
+        // still resolves for existing links, but there is nothing left to
+        // share *with*.
+        if (!account) return json({ error: "not_found" }, 404);
+
+        return json({
+            accountId: account.id,
+            displayName: account.displayName,
+            handle: account.handle ?? null,
+            // True when the caller used a retired name. The current one is in
+            // `handle`, so the UI can say which it actually resolved to rather
+            // than silently accepting a name that no longer exists.
+            renamed: resolved.tombstone === true,
+        });
     }
 
     async function createOrganisation(request, principal) {
