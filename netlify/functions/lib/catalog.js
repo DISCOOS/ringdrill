@@ -231,25 +231,45 @@ export async function findUploadTarget({ principal, slug }, opts = {}) {
 }
 
 /**
- * Drop an account's ownership of its catalog entries, leaving the plans in
- * place (DESIGN-015 §5.1).
+ * Wind up an account's catalog entries when the account is deleted.
  *
- * "Delete my account" reasonably sounds like it should unpublish, and it does
- * not: other people have installed these plans. So the entry keeps its keys,
- * its slug and its URL, and only stops being *owned* — which makes it behave
- * exactly like an anonymous plan, writable by anyone, because there is no
- * longer an account to protect it for.
+ * **Not everything is kept.** The reason for keeping a plan at all is that
+ * somebody else is relying on it, and that is true of exactly two kinds:
  *
- * **The index key is not rewritten.** It contains the account id, so moving
- * the entry into `anon/` would change `/d/<handle>/<slug>` and break every
- * link already shared. The handle is tombstoned instead of released (see
- * `deleteAccount`), which is what keeps those links resolving.
+ * * **Published** — it is in the public feed and people have installed it.
+ *   DESIGN-015 §5.1 is explicit that deleting an account does not unpublish,
+ *   and the confirm dialog says so before the user commits.
+ * * **Shared with named accounts** — a granted account may be co-editing it
+ *   right now, and deleting it would take their work with it.
+ *
+ * Anything else — an unpublished draft nobody was granted — has no such
+ * reliance, and keeping it would be retaining somebody's data after they asked
+ * for it to be gone. Those are deleted, unless the user chose [releaseDrafts],
+ * in which case they are published to the public catalog instead: an explicit
+ * "leave my work to the community" that must never be the default, because
+ * publishing is an act with consequences the user is not around to reverse.
+ *
+ * For the entries that stay:
+ *
+ * **The index key is not rewritten.** It contains the account id, so moving an
+ * entry into `anon/` would change `/d/<handle>/<slug>` and break every link
+ * already shared. The handle is retired rather than released for the same
+ * reason — see `deleteAccount`, and note that it is only retired when
+ * something is actually left under it.
+ *
+ * Returns what happened, because the handle decision depends on it: a
+ * namespace with nothing left in it has nothing to keep resolving for.
  */
-export async function dropAccountOwnership(accountId, { indexStore, readJson, writeJson }) {
-    if (!accountId) return { entries: 0 };
+export async function dropAccountOwnership(
+    accountId,
+    { indexStore, readJson, writeJson, drillsStore = null, releaseDrafts = false },
+) {
+    if (!accountId) return { retained: 0, deleted: 0, released: 0 };
     const prefix = `${accountId}/`;
     let cursor;
-    let entries = 0;
+    let retained = 0;
+    let deleted = 0;
+    let released = 0;
 
     do {
         // Strong: this read decides a write, which is the case lib/shared.js
@@ -258,28 +278,61 @@ export async function dropAccountOwnership(accountId, { indexStore, readJson, wr
         const page = await indexStore.list({ prefix, cursor });
         cursor = page?.cursor;
         for (const blob of page?.blobs ?? []) {
-            const rec = await indexStore.get(String(blob.key), { type: "json" });
+            const key = String(blob.key);
+            const rec = await indexStore.get(key, { type: "json" });
             if (!rec) continue;
 
-            await indexStore.set(String(blob.key), JSON.stringify({
+            const keys = keysForEntry(rec);
+            const meta = await readJson(keys.meta, null);
+
+            const published = meta?.published === true;
+            const hasGrantees = Array.isArray(meta?.sharedAccountIds)
+                && meta.sharedAccountIds.length > 0;
+            const reliedOn = published || hasGrantees;
+
+            if (!reliedOn && !releaseDrafts) {
+                await deleteEntry({ indexStore, drillsStore, key, keys });
+                deleted += 1;
+                continue;
+            }
+
+            await indexStore.set(key, JSON.stringify({
                 ...rec, ownerAccountId: null, ownerDeletedAt: new Date().toISOString(),
             }));
+            if (!meta) continue;
 
-            const { meta } = keysForEntry(rec);
-            const m = await readJson(meta, null);
-            if (!m) continue;
-            await writeJson(meta, {
-                ...m,
+            await writeJson(keys.meta, {
+                ...meta,
                 ownerId: ANON_NAMESPACE,
                 // No owner means nobody to keep it for. `shared` in particular
                 // must not survive: its grantee list names accounts that were
                 // granted access *by* an owner who no longer exists.
                 accessPolicy: "public",
                 sharedAccountIds: [],
+                // A draft the user chose to leave behind becomes visible; one
+                // that was already published stays as it was.
+                published: published || releaseDrafts,
             });
-            entries += 1;
+            if (reliedOn) retained += 1; else released += 1;
         }
     } while (cursor);
 
-    return { entries };
+    return { retained, deleted, released };
+}
+
+/** Remove an entry's index record and every blob under its prefix. */
+async function deleteEntry({ indexStore, drillsStore, key, keys }) {
+    if (drillsStore) {
+        let cursor;
+        do {
+            const page = await drillsStore.list({ prefix: keys.prefix, cursor });
+            cursor = page?.cursor;
+            for (const blob of page?.blobs ?? []) {
+                await drillsStore.delete(String(blob.key));
+            }
+        } while (cursor);
+    }
+    // The index key last: while it exists the blobs are reachable, and the
+    // other order would leave a record pointing at bytes that are gone.
+    await indexStore.delete(key);
 }

@@ -1280,6 +1280,16 @@
   },
   "accountDeleteOrgBody": "The organisation, its members and its invitations are removed. Plans it has published stay in the catalog — other people have installed them — but they stop belonging to the organisation and anyone can then change them.",
   "accountDeleteKeepsLocal": "Plans on this device are not touched.",
+  "accountDeleteDraftsTitle": "Plans you have not published",
+  "@accountDeleteDraftsTitle": {
+    "description": "Heading for the one choice in the delete flow. Published plans are not a choice — they stay, because other people have installed them."
+  },
+  "accountDeleteDraftsDelete": "Delete them",
+  "accountDeleteDraftsPublish": "Publish them to the public catalog",
+  "accountDeleteDraftsPublishHint": "Anyone will be able to find and change them. You will not be able to undo this.",
+  "@accountDeleteDraftsPublishHint": {
+    "description": "Publishing on deletion is an act with consequences the user will not be around to reverse, so the consequence is stated next to the option rather than after it."
+  },
   "accountDeleteConfirmLabel": "Type {word} to confirm",
   "@accountDeleteConfirmLabel": {
     "description": "A typed confirmation rather than a second button. This is the one action in the app with no undo, and a misplaced tap should not be able to reach it.",

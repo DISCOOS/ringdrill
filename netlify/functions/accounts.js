@@ -94,7 +94,7 @@ export function createHandler({
             // DELETE /api/accounts/:id — delete an organisation, or the
             // caller's own account (DESIGN-015 §5.1).
             if (!section && request.method === "DELETE") {
-                return withCors(request, await destroy(accountId, principal));
+                return withCors(request, await destroy(request, accountId, principal));
             }
 
             return withCors(request, json({ error: "not_found" }, 404));
@@ -293,7 +293,7 @@ export function createHandler({
      * `deleteAccount` and `dropAccountOwnership`: published plans stay,
      * losing only their owner; the handle is retired rather than released.
      */
-    async function destroy(accountId, principal) {
+    async function destroy(request, accountId, principal) {
         if (!isOwner(principal, accountId)) return json({ error: "owner_role_required" }, 403);
 
         const account = await getAccount(accountId, stores);
@@ -310,13 +310,23 @@ export function createHandler({
             }
         }
 
+        // What happens to plans nobody else relies on. Deleting them is the
+        // default because retaining somebody's data after they asked for it to
+        // be gone needs a reason, and "they might have wanted it public" is
+        // not one — publishing is an act with consequences they will not be
+        // around to reverse.
+        const body = await request.json().catch(() => ({}));
+        const releaseDrafts = body.unpublishedPlans === "publish";
+
         // Ownership is dropped *before* the account goes. The other order
         // leaves a window where the entries name an account that no longer
         // exists, and a crash in that window strands them there permanently.
-        const dropped = await dropAccountOwnership(accountId, {
+        const plans = await dropAccountOwnership(accountId, {
             indexStore: getSlugIndexStore(),
+            drillsStore: getDrillsStore(),
             readJson,
             writeJson,
+            releaseDrafts,
         });
 
         const res = await deleteAccount(
@@ -327,12 +337,20 @@ export function createHandler({
                 // account — both the ones this user sent and the ones sent to
                 // their address outlived deletion until this was passed.
                 inviteStore: inviteStore(),
+                // The handle is only worth retiring if a link still resolves
+                // through it.
+                retainedEntries: plans.retained + plans.released,
             },
             stores,
         );
         if (!res.ok) return json({ error: res.reason }, 400);
 
-        return json({ deleted: true, plansUnpublished: false, plansReleased: dropped.entries });
+        return json({
+            deleted: true,
+            plansKept: plans.retained,
+            plansDeleted: plans.deleted,
+            plansPublished: plans.released,
+        });
     }
 
     async function invite(request, accountId, principal) {

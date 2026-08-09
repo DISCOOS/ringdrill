@@ -1134,6 +1134,20 @@ class AppLocalizationsNb extends AppLocalizations {
   String get accountDeleteKeepsLocal => 'Planer på denne enheten røres ikke.';
 
   @override
+  String get accountDeleteDraftsTitle => 'Planer du ikke har publisert';
+
+  @override
+  String get accountDeleteDraftsDelete => 'Slett dem';
+
+  @override
+  String get accountDeleteDraftsPublish =>
+      'Publiser dem i den offentlige katalogen';
+
+  @override
+  String get accountDeleteDraftsPublishHint =>
+      'Hvem som helst vil kunne finne og endre dem. Dette kan ikke angres.';
+
+  @override
   String accountDeleteConfirmLabel(String word) {
     return 'Skriv $word for å bekrefte';
   }

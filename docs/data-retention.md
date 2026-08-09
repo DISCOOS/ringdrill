@@ -10,7 +10,8 @@ roster may travel) and [DESIGN-015 §5.1](./design/015-accounts-and-iam.md)
 (what "delete account" promises). Local, on-device storage is
 [ADR-0076](./adrs/0076-local-plan-storage-at-rest.md).
 
-Accurate as of 2026-08-09. `DELETE /api/accounts/:id`.
+Accurate as of 2026-08-09. `DELETE /api/accounts/:id`, body
+`{ "unpublishedPlans": "delete" | "publish" }` (default `delete`).
 
 ## Removed on deletion
 
@@ -21,41 +22,65 @@ Accurate as of 2026-08-09. `DELETE /api/accounts/:id`.
 | Verified-address index | `email-index/<email>` | The address itself |
 | Sessions | `sessions/<sessionId>` | Device label, timestamps |
 | Memberships in the deleted account | `members/<accountId>/*` | Role, invite state |
+| Plans nobody else relies on | `catalog/<entryId>/*`, `slug-index/<accountId>/<slug>` | Plan content and version history |
+| The handle, when no plans remain | `handles/<handle>` | The organisation's chosen name |
 | Pending rows **in other accounts** | `members/*/pending:<email>` | The address |
 | Invitations sent **by** them | `invitations/<token>` | Recipient address |
 | Invitations sent **to** them | `invitations/<token>` | Their address |
 | The account record | `accounts/<accountId>` | Display name, handle |
 
-The last three were retained by oversight until 2026-08-09 — invitations live
-in their own store and pending rows are keyed by address, so neither was
-reachable from the account being deleted. Both are now swept.
+The invitation and pending-row entries were retained by oversight until
+2026-08-09: invitations live in their own store and pending rows are keyed by
+address, so neither was reachable from the account being deleted. Plans nobody
+relies on, and the handle when nothing is left under it, were retained by an
+over-broad reading of "deleting an account does not unpublish" — corrected the
+same day.
 
 ## Retained deliberately
 
 Each of these is a decision, not an omission.
 
-### The handle, as a tombstone
+### Plans somebody else relies on — and only those
 
-`handles/<handle>` survives as `{accountId, tombstone: true, retiredAt}`, and
-the handle string itself is kept.
+Two kinds are kept, both with `ownerId` set to `anon` and `accessPolicy` forced
+to `public`:
 
-**Why:** a handle appears in every shared link — `/d/<handle>/<slug>`. Releasing
-it would let somebody else claim it and silently point an already-shared link at
-a stranger's plan, which is the same reasoning that tombstones a *renamed*
-handle ([ADR-0074](./adrs/0074-catalog-entry-as-distinct-object.md)).
+* **Published plans.** Other people have installed them. DESIGN-015 §5.1 is
+  explicit that deleting an account does not unpublish, and the confirm dialog
+  says so before the user commits — "delete my account" reasonably sounds like
+  it should unpublish, so saying it afterwards would be too late.
+* **Plans shared with named accounts.** A granted account may be co-editing one
+  right now, and deleting it would take their work with it.
 
-**Personal-data note:** for an organisation a handle is a group name. For a
-**personal** account a user may have chosen something identifying, and that
-string is then retained indefinitely. Two things bound the exposure: a personal
-account has no handle unless the user set one, and the tombstone no longer
-resolves for sharing — `GET /api/accounts/lookup` returns 404 once the account
-is gone. **Open question:** whether a personal account's handle should be
-replaced with an opaque token on deletion, keeping the redirect without keeping
-the name. It would work; nobody has asked for it yet.
+**Everything else is deleted** — index record and blobs. An unpublished draft
+nobody was granted has no third party relying on it, so keeping it would be
+retaining somebody's data after they asked for it to be gone. Until 2026-08-09
+every entry was kept and made public regardless, which was wrong on both counts.
 
-### The account id in catalog index keys
+The user may instead choose to **publish** those plans on the way out, as an
+explicit "leave my work to the community". Never the default: publishing has
+consequences they will not be around to reverse.
 
-A published plan stays at `slug-index/<accountId>/<slug>` with
+A grantee list does not survive its granter — `sharedAccountIds` is cleared,
+because it names accounts granted access by an owner who no longer exists.
+
+**They contain no staff roster.** `stripPiiFolders` removes `staff/` and
+`actors/` from the archive at the catalog door, unconditionally, before anything
+is stored (ADR-0072). Only `staff/` is written by the app today — `actors/` is
+the pre-DESIGN-011 name, kept in the strip list because the **server never runs
+the migration ladder**: a `.drill` exported to disk years ago still carries
+`actors/`, and those files travel by USB and email, so one can be uploaded at
+any point in the future. What a published plan *can* still contain is whatever
+somebody typed into a free-text markdown field — a name in `director_notes`, a
+phone number in a station description. Nothing strips those, and nothing can
+without breaking the format. That is a content risk the authoring guidance
+addresses ("never put a real person in any field", "declare an operational value
+as a plan variable"), not a deletion one.
+
+
+### The account id in catalog index keys, for the plans that stay
+
+A retained plan stays at `slug-index/<accountId>/<slug>` with
 `ownerAccountId: null` and an `ownerDeletedAt` timestamp.
 
 **Why:** the key is the URL. Rewriting it into `anon/` would change
@@ -63,23 +88,27 @@ A published plan stays at `slug-index/<accountId>/<slug>` with
 pseudonymous identifier with nothing left to resolve it to — the account record
 is gone.
 
-### Published plans and their version history
+### The handle — only while something is published under it
 
-Kept, with `ownerId` set to `anon` and `accessPolicy` forced to `public`.
+`handles/<handle>` survives as `{accountId, tombstone: true, retiredAt}` **when
+the account leaves plans behind**. When it leaves none, the handle is deleted
+and the name returns to the pool.
 
-**Why:** other people have installed them. DESIGN-015 §5.1 is explicit that
-deleting an account does not unpublish, and the confirm dialog says so before
-the user commits — "delete my account" reasonably sounds like it should
-unpublish, so saying it afterwards would be too late.
+**Why the tombstone:** a handle appears in every shared link. Releasing it while
+plans are still served through it would let somebody else claim the name and
+silently point an already-shared link at a stranger's plan — the same reasoning
+that tombstones a *renamed* handle
+([ADR-0074](./adrs/0074-catalog-entry-as-distinct-object.md)).
 
-**They contain no staff roster.** `stripPiiFolders` removes `staff/` and
-`actors/` from the archive at the catalog door, unconditionally, before anything
-is stored (ADR-0072). What a published plan *can* still contain is whatever
-somebody typed into a free-text markdown field — a name in `director_notes`, a
-phone number in a station description. Nothing strips those, and nothing can
-without breaking the format. That is a content risk the authoring guidance
-addresses ("never put a real person in any field", "declare an operational value
-as a plan variable"), not a deletion one.
+**Why the release:** with nothing left under the namespace, every such link was
+going to 404 anyway, so reserving the name reserves it for nobody. This is the
+domain-lease behaviour: the name is held only as long as something depends on
+it.
+
+**Not personal data in practice.** Only organisations have handles — a personal
+account is created with `handle: null` and `claimHandle` is reachable only from
+organisation creation. An earlier version of this document raised a personal-
+handle concern that cannot occur.
 
 ## Retained outside the application
 

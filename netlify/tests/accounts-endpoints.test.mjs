@@ -45,7 +45,15 @@ function fakeStore() {
  */
 function jsonStore(seed = {}) {
     const data = new Map(Object.entries(seed));
-    const decode = (v) => (typeof v === "string" ? JSON.parse(v) : v);
+    // Only JSON text is decoded. Blob values are not all JSON — a `.drill`
+    // body is bytes — so anything that is not an object or array literal is
+    // stored as given.
+    const decode = (v) => {
+        if (typeof v !== "string") return v;
+        const t = v.trimStart();
+        if (!t.startsWith("{") && !t.startsWith("[")) return v;
+        try { return JSON.parse(v); } catch { return v; }
+    };
     return {
         data,
         async get(key) { return data.get(key) ?? null; },
@@ -424,7 +432,7 @@ test("published plans survive, losing only their owner", async () => {
     await orgWithPlan(h);
 
     const body = await (await call(h, "DELETE", "/a_bergen", { as: token("u_1", { a_bergen: "owner" }) })).json();
-    assert.equal(body.plansReleased, 1);
+    assert.equal(body.plansKept, 1);
 
     const meta = await h.raw.drills.get("catalog/e_1/meta.json");
     assert.equal(meta.published, true, "still published");
@@ -638,4 +646,101 @@ test("expired invitations are swept when a new one is sent", async () => {
     });
 
     assert.equal(await h.raw.invites.get("inv_old", { type: "json" }), null);
+});
+
+// ---------- what survives deletion, and what must not ----------
+
+/// An account with one published plan and one unpublished draft.
+async function orgWithDraft(h) {
+    await orgWithPlan(h);
+    await h.raw.index.set("a_bergen/utkast", { entryId: "e_2", planId: "p_2", ownerAccountId: "a_bergen" });
+    await h.raw.drills.set("catalog/e_2/meta.json", {
+        programId: "p_2", slug: "utkast", name: "Utkast", published: false,
+        ownerId: "a_bergen", accessPolicy: "account", sharedAccountIds: [],
+    });
+    await h.raw.drills.set("catalog/e_2/latest.drill", "PK");
+}
+
+test("an unpublished draft is deleted — nobody was relying on it", async () => {
+    // Retaining it would keep somebody's data after they asked for it to be
+    // gone, with no third party to justify it. The published one stays because
+    // people have installed it.
+    const h = harness();
+    await orgWithDraft(h);
+
+    const body = await (await call(h, "DELETE", "/a_bergen", {
+        as: token("u_1", { a_bergen: "owner" }),
+    })).json();
+
+    assert.equal(body.plansKept, 1);
+    assert.equal(body.plansDeleted, 1);
+    assert.ok(h.raw.index.data.has("a_bergen/vinter"), "the published one stays");
+    assert.equal(h.raw.index.data.has("a_bergen/utkast"), false, "the draft goes");
+    // Its bytes too, not just the index record.
+    assert.equal(h.raw.drills.data.has("catalog/e_2/meta.json"), false);
+    assert.equal(h.raw.drills.data.has("catalog/e_2/latest.drill"), false);
+});
+
+test("a draft shared with another account is kept — a grantee may be editing it", async () => {
+    // Deleting it would take a granted account's work with it.
+    const h = harness();
+    await orgWithPlan(h);
+    await h.raw.index.set("a_bergen/felles", { entryId: "e_3", planId: "p_3", ownerAccountId: "a_bergen" });
+    await h.raw.drills.set("catalog/e_3/meta.json", {
+        programId: "p_3", slug: "felles", name: "Felles", published: false,
+        ownerId: "a_bergen", accessPolicy: "shared", sharedAccountIds: ["a_fjell"],
+    });
+
+    await call(h, "DELETE", "/a_bergen", { as: token("u_1", { a_bergen: "owner" }) });
+
+    assert.ok(h.raw.index.data.has("a_bergen/felles"));
+    // But the grant itself cannot survive its granter.
+    assert.deepEqual((await h.raw.drills.get("catalog/e_3/meta.json")).sharedAccountIds, []);
+});
+
+test("the user may choose to publish their drafts instead of deleting them", async () => {
+    // An explicit "leave my work to the community". Never the default:
+    // publishing has consequences the user will not be around to reverse.
+    const h = harness();
+    await orgWithDraft(h);
+
+    const body = await (await call(h, "DELETE", "/a_bergen", {
+        as: token("u_1", { a_bergen: "owner" }),
+        body: { unpublishedPlans: "publish" },
+    })).json();
+
+    assert.equal(body.plansDeleted, 0);
+    assert.equal(body.plansPublished, 1);
+    assert.equal((await h.raw.drills.get("catalog/e_2/meta.json")).published, true);
+});
+
+test("the handle is released when nothing is left under it", async () => {
+    // Retiring a name forever protects already-shared links. With no plans
+    // left, every such link was going to 404 anyway — so reserving the name
+    // reserves it for nobody.
+    const h = harness();
+    await orgWithPlan(h);
+    // Make the only plan a draft, so deletion leaves the namespace empty.
+    await h.raw.drills.set("catalog/e_1/meta.json", {
+        programId: "p_1", slug: "vinter", name: "Vinter", published: false,
+        ownerId: "a_bergen", accessPolicy: "account", sharedAccountIds: [],
+    });
+
+    await call(h, "DELETE", "/a_bergen", { as: token("u_1", { a_bergen: "owner" }) });
+
+    assert.equal(
+        await h.stores.handles().get("redcross-bergen", { type: "json" }),
+        null,
+        "the name goes back in the pool",
+    );
+});
+
+test("the handle is retired while a published plan still resolves through it", async () => {
+    const h = harness();
+    await orgWithPlan(h);
+
+    await call(h, "DELETE", "/a_bergen", { as: token("u_1", { a_bergen: "owner" }) });
+
+    const handle = await h.stores.handles().get("redcross-bergen", { type: "json" });
+    assert.equal(handle.tombstone, true, "/d/redcross-bergen/vinter must keep working");
 });

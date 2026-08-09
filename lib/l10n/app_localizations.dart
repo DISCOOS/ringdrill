@@ -1886,6 +1886,30 @@ abstract class AppLocalizations {
   /// **'Plans on this device are not touched.'**
   String get accountDeleteKeepsLocal;
 
+  /// Heading for the one choice in the delete flow. Published plans are not a choice — they stay, because other people have installed them.
+  ///
+  /// In en, this message translates to:
+  /// **'Plans you have not published'**
+  String get accountDeleteDraftsTitle;
+
+  /// No description provided for @accountDeleteDraftsDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete them'**
+  String get accountDeleteDraftsDelete;
+
+  /// No description provided for @accountDeleteDraftsPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish them to the public catalog'**
+  String get accountDeleteDraftsPublish;
+
+  /// Publishing on deletion is an act with consequences the user will not be around to reverse, so the consequence is stated next to the option rather than after it.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone will be able to find and change them. You will not be able to undo this.'**
+  String get accountDeleteDraftsPublishHint;
+
   /// A typed confirmation rather than a second button. This is the one action in the app with no undo, and a misplaced tap should not be able to reach it.
   ///
   /// In en, this message translates to:

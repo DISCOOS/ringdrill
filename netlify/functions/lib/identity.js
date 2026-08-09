@@ -366,17 +366,20 @@ export async function soleOwnerships(userId, stores = defaultStores) {
  * * **Published plans.** Other people have installed them. The catalog entry
  *   stays where it is and loses its owner reference (DESIGN-015 §5.1); the
  *   caller does that part, because it is catalog knowledge, not identity's.
- * * **The handle**, as a tombstone. Releasing it for reuse would point
- *   somebody's already-shared `/d/<handle>/<slug>` link at a stranger's plan.
- *   A deleted account's handle is retired for the same reason a renamed one is
- *   (ADR-0074).
+ * * **The handle — but only while something is still published under it.**
+ *   Retiring it protects already-shared `/d/<handle>/<slug>` links from later
+ *   pointing at a stranger's plan, which is why a *renamed* handle is
+ *   tombstoned permanently (ADR-0074). When the account leaves nothing behind
+ *   there is no such link to protect: every one of them was going to 404
+ *   anyway, so the name goes back in the pool rather than being reserved
+ *   forever for nobody. Pass `retainedEntries: 0` for that.
  * * **Nothing keyed by account prefix in the blob store**, because there is
  *   none — that is the whole point of ADR-0074 §4, and a deletion that swept
  *   by prefix is exactly the temptation it was designed out of.
  */
 export async function deleteAccount(
     accountId,
-    { deleteUser = null, inviteStore = null } = {},
+    { deleteUser = null, inviteStore = null, retainedEntries = 0 } = {},
     stores = defaultStores,
 ) {
     const account = await getAccount(accountId, stores);
@@ -390,10 +393,17 @@ export async function deleteAccount(
     }
 
     if (account.handle) {
-        await putJson(stores.handles(), account.handle, {
-            accountId, tombstone: true, redirectsTo: null,
-            retiredAt: new Date().toISOString(),
-        });
+        if (retainedEntries > 0) {
+            await putJson(stores.handles(), account.handle, {
+                accountId, tombstone: true, redirectsTo: null,
+                retiredAt: new Date().toISOString(),
+            });
+        } else {
+            // Nothing is published under this namespace, so no shared link
+            // resolves through it. Reserving the name forever would protect
+            // links that do not exist.
+            await stores.handles().delete(account.handle);
+        }
     }
     await stores.accounts().delete(accountId);
 

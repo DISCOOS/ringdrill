@@ -572,8 +572,20 @@ class AuthClient {
   /// Throws with `reason: 'sole_owner_of_organisation'` when the caller is the
   /// only owner of an organisation — deleting then would strand it, and the
   /// error carries the names so the UI can say which.
-  Future<void> deleteAccount(String accountId, {required String token}) =>
-      _send('DELETE', 'accounts/$accountId', token: token);
+  /// [publishUnpublished] leaves plans nobody else relies on in the public
+  /// catalog instead of deleting them — an explicit "leave my work to the
+  /// community". Published plans are not affected either way: they stay,
+  /// because other people have installed them.
+  Future<void> deleteAccount(
+    String accountId, {
+    required String token,
+    bool publishUnpublished = false,
+  }) => _send(
+    'DELETE',
+    'accounts/$accountId',
+    body: {'unpublishedPlans': publishUnpublished ? 'publish' : 'delete'},
+    token: token,
+  );
 
   // ---------------- invitations ----------------
 

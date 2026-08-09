@@ -227,18 +227,22 @@ class _AccountPageState extends State<AccountPage> {
   /// dialog says what stays as plainly as what goes.
   Future<void> _confirmDelete() async {
     final l = AppLocalizations.of(context)!;
-    final confirmed = await showAdaptiveDialog<bool>(
+    final choice = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => _DeleteAccountDialog(account: widget.account),
     );
-    if (confirmed != true || !mounted) return;
+    if (choice == null || !mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     try {
       final token = await AuthService.instance.accessToken();
       if (token == null) return;
-      await _client.deleteAccount(widget.account.accountId, token: token);
+      await _client.deleteAccount(
+        widget.account.accountId,
+        token: token,
+        publishUnpublished: choice,
+      );
 
       // Deleting the personal account destroyed the user behind this session,
       // so the local one has to go too — otherwise the app keeps a token for
@@ -440,6 +444,11 @@ class _DeleteAccountDialog extends StatefulWidget {
 class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
   final _controller = TextEditingController();
 
+  /// What happens to plans nobody else relies on. Deleting is the default,
+  /// because publishing is an act with consequences the user will not be
+  /// around to reverse.
+  bool _publishDrafts = false;
+
   @override
   void dispose() {
     _controller.dispose();
@@ -475,6 +484,37 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              const SizedBox(height: 20),
+              // The one choice here. Published plans are not offered as a
+              // choice: they stay, because other people have installed them.
+              Text(
+                l.accountDeleteDraftsTitle,
+                style: theme.textTheme.labelLarge,
+              ),
+              RadioListTile<bool>(
+                value: false,
+                // ignore: deprecated_member_use
+                groupValue: _publishDrafts,
+                // ignore: deprecated_member_use
+                onChanged: (v) => setState(() => _publishDrafts = v ?? false),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: Text(l.accountDeleteDraftsDelete),
+              ),
+              RadioListTile<bool>(
+                value: true,
+                // ignore: deprecated_member_use
+                groupValue: _publishDrafts,
+                // ignore: deprecated_member_use
+                onChanged: (v) => setState(() => _publishDrafts = v ?? false),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: Text(l.accountDeleteDraftsPublish),
+                subtitle: Text(
+                  l.accountDeleteDraftsPublishHint,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
               const SizedBox(height: 16),
               TextField(
                 controller: _controller,
@@ -493,11 +533,15 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context, false),
+          // null, not false: false now means "delete the drafts", so cancel
+          // needs a value of its own or it would silently confirm.
+          onPressed: () => Navigator.pop(context),
           child: Text(l.cancel),
         ),
         FilledButton(
-          onPressed: armed ? () => Navigator.pop(context, true) : null,
+          onPressed: armed
+              ? () => Navigator.pop(context, _publishDrafts)
+              : null,
           style: FilledButton.styleFrom(
             backgroundColor: theme.colorScheme.error,
             foregroundColor: theme.colorScheme.onError,

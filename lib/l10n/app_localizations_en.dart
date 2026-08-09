@@ -1138,6 +1138,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountDeleteKeepsLocal => 'Plans on this device are not touched.';
 
   @override
+  String get accountDeleteDraftsTitle => 'Plans you have not published';
+
+  @override
+  String get accountDeleteDraftsDelete => 'Delete them';
+
+  @override
+  String get accountDeleteDraftsPublish => 'Publish them to the public catalog';
+
+  @override
+  String get accountDeleteDraftsPublishHint =>
+      'Anyone will be able to find and change them. You will not be able to undo this.';
+
+  @override
   String accountDeleteConfirmLabel(String word) {
     return 'Type $word to confirm';
   }
