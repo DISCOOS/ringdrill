@@ -1250,11 +1250,260 @@
   "library": "Library",
   "libraryMyPlans": "My plans",
   "libraryCatalog": "Catalog",
-  "libraryOnlineTab": "Online",
+  "publishSharedHandleLabel": "Account handle",
+  "@publishSharedHandleLabel": {
+    "description": "Replaces asking for a raw account id, which nobody knows. The handle is the name already in that account's plan URLs, so it is something a person can actually be told over the phone."
+  },
+  "publishSharedHandleHelper": "The name in their plan links, e.g. redcross-bergen.",
+  "publishSharedAdd": "Add",
+  "publishSharedNotFound": "No account with that handle.",
+  "publishSharedRenamed": "That account is now called {handle}.",
+  "@publishSharedRenamed": {
+    "description": "Shown when a retired handle was used. Accepting it silently would leave the user sharing with something they cannot find again under the name they typed.",
+    "placeholders": { "handle": { "type": "String" } }
+  },
+  "publishSharedNone": "No accounts added yet.",
+  "publishSharingApplied": "Sharing updated",
+  "publishSharingFailed": "Could not update sharing. The plan is published to your account only.",
+  "@publishSharingFailed": {
+    "description": "Says where the plan actually ended up, because a failed sharing step leaves it *less* open than asked for and the user needs to know which."
+  },
+  "accountDeleteAction": "Delete account",
+  "accountDeleteOrgAction": "Delete organisation",
+  "accountDeleteTitle": "Delete {name}?",
+  "@accountDeleteTitle": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "accountDeleteBody": "Your sign-in, your memberships and this account are removed. Plans you have already published stay in the catalog — other people have installed them — but they stop belonging to you and anyone can then change them.",
+  "@accountDeleteBody": {
+    "description": "DESIGN-015 §5.1 requires the confirm to say exactly this: \"delete my account\" reasonably sounds like it should unpublish, and it does not. Saying so afterwards is too late."
+  },
+  "accountDeleteOrgBody": "The organisation, its members and its invitations are removed. Plans it has published stay in the catalog — other people have installed them — but they stop belonging to the organisation and anyone can then change them.",
+  "accountDeleteKeepsLocal": "Plans on this device are not touched.",
+  "accountDeleteDraftsTitle": "Plans you have not published",
+  "@accountDeleteDraftsTitle": {
+    "description": "Heading for the one choice in the delete flow. Published plans are not a choice — they stay, because other people have installed them."
+  },
+  "accountDeleteDraftsDelete": "Delete them",
+  "accountDeleteDraftsPublish": "Publish them to the public catalog",
+  "accountDeleteDraftsPublishHint": "Anyone will be able to find and change them. You will not be able to undo this.",
+  "@accountDeleteDraftsPublishHint": {
+    "description": "Publishing on deletion is an act with consequences the user will not be around to reverse, so the consequence is stated next to the option rather than after it."
+  },
+  "accountDeleteConfirmLabel": "Type {word} to confirm",
+  "@accountDeleteConfirmLabel": {
+    "description": "A typed confirmation rather than a second button. This is the one action in the app with no undo, and a misplaced tap should not be able to reach it.",
+    "placeholders": { "word": { "type": "String" } }
+  },
+  "accountDeleteConfirmWord": "DELETE",
+  "accountDeleteSoleOwner": "You are the only owner of {organisations}. Make somebody else an owner there first, or delete the organisation.",
+  "@accountDeleteSoleOwner": {
+    "description": "DESIGN-015 §4.4: an organisation with no owner is unrecoverable. The refusal names the organisations so the user knows what to hand over.",
+    "placeholders": { "organisations": { "type": "String" } }
+  },
+  "accountDeleted": "Account deleted.",
+  "accountDevicesTitle": "Signed-in devices",
+  "@accountDevicesTitle": {
+    "description": "DESIGN-015 §4.3. This is the answer to \"I lost the device that was signed in\" and to \"my phone was stolen\" — not a recovery flow, a list you can end sessions from."
+  },
+  "accountDeviceThis": "This device",
+  "accountDeviceUnknown": "Unknown device",
+  "accountDeviceLastUsed": "Last used {when}",
+  "@accountDeviceLastUsed": {
+    "placeholders": { "when": { "type": "String" } }
+  },
+  "accountDeviceEndedReplay": "Ended automatically. This device's sign-in token was used twice, which usually means it was copied — so the session was closed. Sign in again on that device if it was you.",
+  "@accountDeviceEndedReplay": {
+    "description": "The one place refresh-token rotation becomes visible (DESIGN-015 §4.3). A session ended by replay detection is kept as a tombstone precisely so this can be said; it explains what happened in plain terms and does not accuse the user of anything."
+  },
+  "accountDeviceEnded": "Ended",
+  "accountDeviceSignOutThis": "Log out this device",
+  "accountDeviceSignedOut": "That device is signed out.",
+  "accountDevicesEmpty": "No other devices are signed in.",
+  "accountTitle": "Account",
+  "accountMembersTitle": "Members",
+  "accountRoleOwner": "Owner",
+  "accountRoleMember": "Member",
+  "accountRoleGuest": "Guest",
+  "accountRoleOwnerHint": "Manages members and access, plus everything a member can do.",
+  "accountRoleMemberHint": "Reads and publishes the plans, and sees the staff roster.",
+  "accountRoleGuestHint": "Reads and publishes the plans, but does not see the roster.",
+  "accountRolePickerLead": "Everyone you add can work on the plans. The difference is whether they see the staff roster — your people's names and phone numbers.",
+  "@accountRolePickerLead": {
+    "description": "Sits above the role options (DESIGN-015 §6.1). Without it the picker reads as a permission ladder, which it is not: every role publishes, and the role decides administration and whether the roster is visible."
+  },
+  "accountStateInvited": "Invited",
+  "accountStateFailed": "Delivery failed",
+  "@accountStateFailed": {
+    "description": "A bounced or expired invitation is surfaced on the row rather than hidden in a log (DESIGN-015 §6.2)."
+  },
+  "accountInviteAction": "Invite",
+  "accountInviteEmailLabel": "Email address",
+  "accountInviteSent": "Invitation sent to {email}",
+  "@accountInviteSent": {
+    "placeholders": { "email": { "type": "String" } }
+  },
+  "accountWithdrawAction": "Withdraw",
+  "accountRemoveAction": "Remove",
+  "accountLeaveAction": "Leave",
+  "accountChangeRoleAction": "Change role",
+  "accountSingleOwnerAdvisory": "This organisation has one owner. Add another, so access is not lost if someone becomes unavailable.",
+  "@accountSingleOwnerAdvisory": {
+    "description": "DESIGN-015 §4.4. The design answer to an unrecoverable organisation is prevention, and it belongs on this screen rather than in a recovery flow. Low-key and never blocking: not a modal, not a warning colour."
+  },
+  "accountLastOwnerRefused": "An organisation must keep at least one owner.",
+  "accountOwnerOnly": "Only an owner can do this.",
+  "accountActionFailed": "That did not work. Try again.",
+  "inviteTitle": "Invitation",
+  "inviteJoinPrompt": "{inviter} invited you to join {organisation} as {role}.",
+  "@inviteJoinPrompt": {
+    "placeholders": {
+      "inviter": { "type": "String" },
+      "organisation": { "type": "String" },
+      "role": { "type": "String" }
+    }
+  },
+  "inviteSignInToAccept": "Sign in as {email} to accept.",
+  "@inviteSignInToAccept": {
+    "description": "The link identifies the invitation but grants nothing; accepting needs an identity (DESIGN-015 §6.4). Naming the address is what makes the instruction actionable.",
+    "placeholders": { "email": { "type": "String" } }
+  },
+  "inviteAcceptAction": "Accept",
+  "inviteAccepted": "You have joined {organisation}.",
+  "@inviteAccepted": {
+    "placeholders": { "organisation": { "type": "String" } }
+  },
+  "inviteStateAccepted": "This invitation has already been accepted.",
+  "inviteStateWithdrawn": "This invitation was withdrawn.",
+  "inviteStateExpired": "This invitation has expired. Ask for a new one.",
+  "inviteStateOrganisationDeleted": "That organisation no longer exists.",
+  "inviteStateNotFound": "We could not find that invitation.",
+  "inviteWrongIdentity": "This invitation was sent to {email}, and you are signed in as someone else. Sign in with that address, or ask an owner of {organisation} to invite the address you use.",
+  "@inviteWrongIdentity": {
+    "description": "Both remedies, because the invitee can act on either and neither is obvious (DESIGN-015 §6.4). Binding to whoever opens the link would turn a forwarded email into account access, so this is a refusal that has to explain itself.",
+    "placeholders": {
+      "email": { "type": "String" },
+      "organisation": { "type": "String" }
+    }
+  },
+  "publishPublishesTo": "Publishes to",
+  "@publishPublishesTo": {
+    "description": "Label above the account a publish will land in (DESIGN-015 §5.8 decision 2). Someone who publishes to the wrong account otherwise finds out afterwards."
+  },
+  "publishSwitchAccount": "Switch",
+  "publishSharingLabel": "Sharing",
+  "@publishSharingLabel": {
+    "description": "Heading for the access-policy choice. Deliberately NOT 'Access' — DESIGN-015 §7 reserves that word for a person's standing in an account, and using it here too would put a plan's write policy and a member's role under one word. This dialog is choosing how the *plan* is shared."
+  },
+  "publishSharingAccountOnly": "Only my account",
+  "publishSharingOrgOnly": "{organisation} only",
+  "@publishSharingOrgOnly": {
+    "placeholders": { "organisation": { "type": "String" } }
+  },
+  "publishSharingShared": "Shared with other accounts",
+  "publishSharingPublic": "Open to everyone",
+  "@publishSharingPublic": {
+    "description": "The `public` policy, phrased as its consequence rather than its policy name — as are all four options (DESIGN-015 §5.8 decision 3)."
+  },
+  "publishSharingSharedHint": "Choose which accounts after publishing.",
+  "@publishSharingSharedHint": {
+    "description": "Shown under the 'Shared with other accounts' option. The grantee list is set afterwards through the plan's sharing screen, because the server refuses `shared` with no accounts named."
+  },
+  "publishAnonymousExplanation": "You are not signed in, so open to everyone is the only option. Signing in would let you keep this plan to your account.",
+  "@publishAnonymousExplanation": {
+    "description": "One plain line, no warning colour and no lock icon (DESIGN-015 §5.8 decision 1). Anonymous publishing is a supported workflow, not a degraded one, so this must not read as a paywall."
+  },
+  "publishSignInFirst": "Sign in first",
+  "@publishSignInFirst": {
+    "description": "The alternative action below Publish when signed out. Publish stays the primary action — this is an offer, not a gate."
+  },
+  "publishStaffNeverPublished": "Staff details are never published.",
+  "@publishStaffNeverPublished": {
+    "description": "Belongs on this screen and nowhere else (DESIGN-015 §5.8). The publish dialog is the exact moment someone wonders whether the phone numbers they typed are about to become public, and the only screen where answering costs nothing."
+  },
+  "publishRosterStaysInside": "The roster stays inside {organisation}. A shared account gets the plan, not the people.",
+  "@publishRosterStaysInside": {
+    "description": "The organisation half of the PII promise, which is the part people get wrong (ADR-0072).",
+    "placeholders": { "organisation": { "type": "String" } }
+  },
+  "signInEntry": "Sign in",
+  "@signInEntry": {
+    "description": "Drawer entry that opens the sign-in screen. Plain and unadorned — DESIGN-015 §5.1 forbids a badge or a 'complete your setup' nudge, because no account is the normal state rather than a step on the way to one."
+  },
+  "signInTitle": "Sign in to RingDrill",
+  "signInWhatYouGet": "We create a personal account for you. It owns the plans you publish.",
+  "@signInWhatYouGet": {
+    "description": "Shown on the sign-in screen itself (DESIGN-015 §5.1). Signing in *is* getting an account, so the UI must never present them as two decisions — but it must say that this is what happens. A thing created silently on your behalf is worse than a thing you were told about."
+  },
+  "signInOptional": "You do not need an account to use RingDrill. Plans, briefs and the catalog all work signed out.",
+  "@signInOptional": {
+    "description": "Reassurance on the sign-in screen. Someone reaching this screen by accident should be able to leave without believing they broke something."
+  },
+  "signInWithProvider": "Continue with {provider}",
+  "@signInWithProvider": {
+    "description": "Third-party sign-in button. Opens the provider's own login page in a system browser — the user authenticates on their domain, not ours.",
+    "placeholders": { "provider": { "type": "String" } }
+  },
+  "signInOrEmail": "or continue with email",
+  "@signInOrEmail": {
+    "description": "Separates the provider buttons from the email field. Lower case and unemphatic: email is not the fallback, it is one option among several."
+  },
+  "signInProviderFailed": "That sign-in did not complete. Try again, or use email.",
+  "signInEmailLabel": "Email address",
+  "signInEmailInvalid": "Enter an email address",
+  "signInSendCode": "Continue",
+  "signInCodeSent": "We sent a link and a six-digit code to {email}. Either one works.",
+  "@signInCodeSent": {
+    "description": "After a challenge is started. Both redemptions are the same challenge (DESIGN-015 §3.3), so the wording must not imply picking one rules out the other.",
+    "placeholders": { "email": { "type": "String" } }
+  },
+  "signInCodeLabel": "Six-digit code",
+  "signInVerify": "Sign in",
+  "signInUseAnotherEmail": "Use a different address",
+  "signInFailed": "That did not work. Check the code and try again.",
+  "signInCodeExpired": "That code has expired. Ask for a new one.",
+  "signInTooManyAttempts": "Too many attempts. Ask for a new code.",
+  "signInNetworkError": "Could not reach RingDrill. Check your connection and try again.",
+  "signOutAction": "Sign out",
+  "signOutConfirmTitle": "Sign out?",
+  "signOutConfirmBody": "Your plans stay on this device and your account is not deleted. You can sign in again at any time.",
+  "@signOutConfirmBody": {
+    "description": "DESIGN-015 §5.1 separates sign-out from account deletion. Signing out must never look like losing work, so the confirm says exactly what stays."
+  },
+  "accountSignedInAs": "Signed in as {name}",
+  "@accountSignedInAs": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "libraryAccountTab": "Account",
+  "@libraryAccountTab": {
+    "description": "Fourth tab of the Open... library (DESIGN-015 §5.7) — the plans the signed-in account owns, drafts included."
+  },
+  "libraryAccountSubtitle": "Plans owned by {account}",
+  "@libraryAccountSubtitle": {
+    "description": "Footer under the account tab's list. Names which account is shown, because a user can belong to several.",
+    "placeholders": { "account": { "type": "String" } }
+  },
+  "libraryAccountSignedOut": "Sign in to see plans your organisation owns. You do not need an account to use RingDrill.",
+  "@libraryAccountSignedOut": {
+    "description": "Account tab with nobody signed in. Says plainly that an account is optional (DESIGN-015 §5.1), so an empty tab does not read as a setup step the user skipped."
+  },
+  "libraryAccountEmpty": "This account has no plans yet",
+  "@libraryAccountEmpty": {
+    "description": "Empty state for the account tab when the account owns no plans."
+  },
+  "libraryAccountDraft": "Draft",
+  "@libraryAccountDraft": {
+    "description": "Chip on an unpublished account plan. The account tab lists drafts where the public tab cannot, so each row has to say which it is."
+  },
+  "libraryAccountPicker": "Switch account",
+  "@libraryAccountPicker": {
+    "description": "Tooltip on the account tab's account switcher. Only shown when the user belongs to more than one account."
+  },
+  "libraryOnlineTab": "Public",
   "libraryMyPlansSubtitle": "Pick a saved plan to continue",
-  "libraryOnlineSubtitle": "Get a plan from the shared online library",
+  "libraryOnlineSubtitle": "Get a plan from the public catalog",
   "libraryFromFileSubtitle": "Import a .drill file or a bundled .zip with multiple plans",
-  "libraryEmptyMyPlans": "You have no saved plans. Browse 'Online' or 'New from file' to get started.",
+  "libraryEmptyMyPlans": "You have no saved plans. Browse 'Public' or 'New from file' to get started.",
   "libraryFromFilePickAction": "Choose file",
   "libraryFromFileHint": "Pick a .drill file or an exported .zip with multiple plans",
   "libraryExportAll": "Download all plans",
@@ -1315,7 +1564,7 @@
   "libraryPublish": "Publish",
   "libraryPublishAs": "Publish as…",
   "libraryDelete": "Delete",
-  "libraryEmptyCatalog": "Nothing online yet",
+  "libraryEmptyCatalog": "Nothing published yet",
   "libraryErrorLoad": "Could not load online plans",
   "installedFromLink": "Plan installed from share link",
   "libraryRetry": "Retry",

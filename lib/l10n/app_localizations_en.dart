@@ -1088,14 +1088,380 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryCatalog => 'Catalog';
 
   @override
-  String get libraryOnlineTab => 'Online';
+  String get publishSharedHandleLabel => 'Account handle';
+
+  @override
+  String get publishSharedHandleHelper =>
+      'The name in their plan links, e.g. redcross-bergen.';
+
+  @override
+  String get publishSharedAdd => 'Add';
+
+  @override
+  String get publishSharedNotFound => 'No account with that handle.';
+
+  @override
+  String publishSharedRenamed(String handle) {
+    return 'That account is now called $handle.';
+  }
+
+  @override
+  String get publishSharedNone => 'No accounts added yet.';
+
+  @override
+  String get publishSharingApplied => 'Sharing updated';
+
+  @override
+  String get publishSharingFailed =>
+      'Could not update sharing. The plan is published to your account only.';
+
+  @override
+  String get accountDeleteAction => 'Delete account';
+
+  @override
+  String get accountDeleteOrgAction => 'Delete organisation';
+
+  @override
+  String accountDeleteTitle(String name) {
+    return 'Delete $name?';
+  }
+
+  @override
+  String get accountDeleteBody =>
+      'Your sign-in, your memberships and this account are removed. Plans you have already published stay in the catalog — other people have installed them — but they stop belonging to you and anyone can then change them.';
+
+  @override
+  String get accountDeleteOrgBody =>
+      'The organisation, its members and its invitations are removed. Plans it has published stay in the catalog — other people have installed them — but they stop belonging to the organisation and anyone can then change them.';
+
+  @override
+  String get accountDeleteKeepsLocal => 'Plans on this device are not touched.';
+
+  @override
+  String get accountDeleteDraftsTitle => 'Plans you have not published';
+
+  @override
+  String get accountDeleteDraftsDelete => 'Delete them';
+
+  @override
+  String get accountDeleteDraftsPublish => 'Publish them to the public catalog';
+
+  @override
+  String get accountDeleteDraftsPublishHint =>
+      'Anyone will be able to find and change them. You will not be able to undo this.';
+
+  @override
+  String accountDeleteConfirmLabel(String word) {
+    return 'Type $word to confirm';
+  }
+
+  @override
+  String get accountDeleteConfirmWord => 'DELETE';
+
+  @override
+  String accountDeleteSoleOwner(String organisations) {
+    return 'You are the only owner of $organisations. Make somebody else an owner there first, or delete the organisation.';
+  }
+
+  @override
+  String get accountDeleted => 'Account deleted.';
+
+  @override
+  String get accountDevicesTitle => 'Signed-in devices';
+
+  @override
+  String get accountDeviceThis => 'This device';
+
+  @override
+  String get accountDeviceUnknown => 'Unknown device';
+
+  @override
+  String accountDeviceLastUsed(String when) {
+    return 'Last used $when';
+  }
+
+  @override
+  String get accountDeviceEndedReplay =>
+      'Ended automatically. This device\'s sign-in token was used twice, which usually means it was copied — so the session was closed. Sign in again on that device if it was you.';
+
+  @override
+  String get accountDeviceEnded => 'Ended';
+
+  @override
+  String get accountDeviceSignOutThis => 'Log out this device';
+
+  @override
+  String get accountDeviceSignedOut => 'That device is signed out.';
+
+  @override
+  String get accountDevicesEmpty => 'No other devices are signed in.';
+
+  @override
+  String get accountTitle => 'Account';
+
+  @override
+  String get accountMembersTitle => 'Members';
+
+  @override
+  String get accountRoleOwner => 'Owner';
+
+  @override
+  String get accountRoleMember => 'Member';
+
+  @override
+  String get accountRoleGuest => 'Guest';
+
+  @override
+  String get accountRoleOwnerHint =>
+      'Manages members and access, plus everything a member can do.';
+
+  @override
+  String get accountRoleMemberHint =>
+      'Reads and publishes the plans, and sees the staff roster.';
+
+  @override
+  String get accountRoleGuestHint =>
+      'Reads and publishes the plans, but does not see the roster.';
+
+  @override
+  String get accountRolePickerLead =>
+      'Everyone you add can work on the plans. The difference is whether they see the staff roster — your people\'s names and phone numbers.';
+
+  @override
+  String get accountStateInvited => 'Invited';
+
+  @override
+  String get accountStateFailed => 'Delivery failed';
+
+  @override
+  String get accountInviteAction => 'Invite';
+
+  @override
+  String get accountInviteEmailLabel => 'Email address';
+
+  @override
+  String accountInviteSent(String email) {
+    return 'Invitation sent to $email';
+  }
+
+  @override
+  String get accountWithdrawAction => 'Withdraw';
+
+  @override
+  String get accountRemoveAction => 'Remove';
+
+  @override
+  String get accountLeaveAction => 'Leave';
+
+  @override
+  String get accountChangeRoleAction => 'Change role';
+
+  @override
+  String get accountSingleOwnerAdvisory =>
+      'This organisation has one owner. Add another, so access is not lost if someone becomes unavailable.';
+
+  @override
+  String get accountLastOwnerRefused =>
+      'An organisation must keep at least one owner.';
+
+  @override
+  String get accountOwnerOnly => 'Only an owner can do this.';
+
+  @override
+  String get accountActionFailed => 'That did not work. Try again.';
+
+  @override
+  String get inviteTitle => 'Invitation';
+
+  @override
+  String inviteJoinPrompt(String inviter, String organisation, String role) {
+    return '$inviter invited you to join $organisation as $role.';
+  }
+
+  @override
+  String inviteSignInToAccept(String email) {
+    return 'Sign in as $email to accept.';
+  }
+
+  @override
+  String get inviteAcceptAction => 'Accept';
+
+  @override
+  String inviteAccepted(String organisation) {
+    return 'You have joined $organisation.';
+  }
+
+  @override
+  String get inviteStateAccepted =>
+      'This invitation has already been accepted.';
+
+  @override
+  String get inviteStateWithdrawn => 'This invitation was withdrawn.';
+
+  @override
+  String get inviteStateExpired =>
+      'This invitation has expired. Ask for a new one.';
+
+  @override
+  String get inviteStateOrganisationDeleted =>
+      'That organisation no longer exists.';
+
+  @override
+  String get inviteStateNotFound => 'We could not find that invitation.';
+
+  @override
+  String inviteWrongIdentity(String email, String organisation) {
+    return 'This invitation was sent to $email, and you are signed in as someone else. Sign in with that address, or ask an owner of $organisation to invite the address you use.';
+  }
+
+  @override
+  String get publishPublishesTo => 'Publishes to';
+
+  @override
+  String get publishSwitchAccount => 'Switch';
+
+  @override
+  String get publishSharingLabel => 'Sharing';
+
+  @override
+  String get publishSharingAccountOnly => 'Only my account';
+
+  @override
+  String publishSharingOrgOnly(String organisation) {
+    return '$organisation only';
+  }
+
+  @override
+  String get publishSharingShared => 'Shared with other accounts';
+
+  @override
+  String get publishSharingPublic => 'Open to everyone';
+
+  @override
+  String get publishSharingSharedHint =>
+      'Choose which accounts after publishing.';
+
+  @override
+  String get publishAnonymousExplanation =>
+      'You are not signed in, so open to everyone is the only option. Signing in would let you keep this plan to your account.';
+
+  @override
+  String get publishSignInFirst => 'Sign in first';
+
+  @override
+  String get publishStaffNeverPublished => 'Staff details are never published.';
+
+  @override
+  String publishRosterStaysInside(String organisation) {
+    return 'The roster stays inside $organisation. A shared account gets the plan, not the people.';
+  }
+
+  @override
+  String get signInEntry => 'Sign in';
+
+  @override
+  String get signInTitle => 'Sign in to RingDrill';
+
+  @override
+  String get signInWhatYouGet =>
+      'We create a personal account for you. It owns the plans you publish.';
+
+  @override
+  String get signInOptional =>
+      'You do not need an account to use RingDrill. Plans, briefs and the catalog all work signed out.';
+
+  @override
+  String signInWithProvider(String provider) {
+    return 'Continue with $provider';
+  }
+
+  @override
+  String get signInOrEmail => 'or continue with email';
+
+  @override
+  String get signInProviderFailed =>
+      'That sign-in did not complete. Try again, or use email.';
+
+  @override
+  String get signInEmailLabel => 'Email address';
+
+  @override
+  String get signInEmailInvalid => 'Enter an email address';
+
+  @override
+  String get signInSendCode => 'Continue';
+
+  @override
+  String signInCodeSent(String email) {
+    return 'We sent a link and a six-digit code to $email. Either one works.';
+  }
+
+  @override
+  String get signInCodeLabel => 'Six-digit code';
+
+  @override
+  String get signInVerify => 'Sign in';
+
+  @override
+  String get signInUseAnotherEmail => 'Use a different address';
+
+  @override
+  String get signInFailed => 'That did not work. Check the code and try again.';
+
+  @override
+  String get signInCodeExpired => 'That code has expired. Ask for a new one.';
+
+  @override
+  String get signInTooManyAttempts => 'Too many attempts. Ask for a new code.';
+
+  @override
+  String get signInNetworkError =>
+      'Could not reach RingDrill. Check your connection and try again.';
+
+  @override
+  String get signOutAction => 'Sign out';
+
+  @override
+  String get signOutConfirmTitle => 'Sign out?';
+
+  @override
+  String get signOutConfirmBody =>
+      'Your plans stay on this device and your account is not deleted. You can sign in again at any time.';
+
+  @override
+  String accountSignedInAs(String name) {
+    return 'Signed in as $name';
+  }
+
+  @override
+  String get libraryAccountTab => 'Account';
+
+  @override
+  String libraryAccountSubtitle(String account) {
+    return 'Plans owned by $account';
+  }
+
+  @override
+  String get libraryAccountSignedOut =>
+      'Sign in to see plans your organisation owns. You do not need an account to use RingDrill.';
+
+  @override
+  String get libraryAccountEmpty => 'This account has no plans yet';
+
+  @override
+  String get libraryAccountDraft => 'Draft';
+
+  @override
+  String get libraryAccountPicker => 'Switch account';
+
+  @override
+  String get libraryOnlineTab => 'Public';
 
   @override
   String get libraryMyPlansSubtitle => 'Pick a saved plan to continue';
 
   @override
-  String get libraryOnlineSubtitle =>
-      'Get a plan from the shared online library';
+  String get libraryOnlineSubtitle => 'Get a plan from the public catalog';
 
   @override
   String get libraryFromFileSubtitle =>
@@ -1103,7 +1469,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get libraryEmptyMyPlans =>
-      'You have no saved plans. Browse \'Online\' or \'New from file\' to get started.';
+      'You have no saved plans. Browse \'Public\' or \'New from file\' to get started.';
 
   @override
   String get libraryFromFilePickAction => 'Choose file';
@@ -1221,7 +1587,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryDelete => 'Delete';
 
   @override
-  String get libraryEmptyCatalog => 'Nothing online yet';
+  String get libraryEmptyCatalog => 'Nothing published yet';
 
   @override
   String get libraryErrorLoad => 'Could not load online plans';

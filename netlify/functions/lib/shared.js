@@ -253,16 +253,11 @@ export function latestVersionEntry(versions) {
 // missing/malformed languageCode → null, per ADR-0007's languageCode
 // addendum).
 //
-// `accessPolicy` is DESCRIPTIVE, not a security property, and stays that way
-// until phase 3 of docs/plans/account-rollout.md. Nothing authenticates a
-// write yet: `ownerId` is a caller-supplied query parameter on
-// drills-upload, and this projection publishes it as `author` — so a value of
-// "account" here says "this plan names an owner", not "only that owner can
-// write to it". Anyone can read the owner off this feed and pass it back.
-// That is the pre-accounts wiki model working as designed (ADR-0008); the
-// hazard is only that the word "policy" reads like a guarantee. Delete this
-// paragraph when drills-upload starts enforcing the ADR-0025 matrix.
-export function metaToFeedItem(meta, { origin }) {
+// `accessPolicy` is enforced as of the account release: drills-upload applies
+// ADR-0025's matrix before OCC, and `ownerId` is taken from the verified
+// principal rather than a query parameter. The value here is therefore a real
+// property of the plan, not a label.
+export function metaToFeedItem(meta, { origin, namespace = null }) {
     const latest = latestVersionEntry(meta.versions);
     return {
         // planId is the Plan-rename name; programId stays too until every
@@ -290,7 +285,11 @@ export function metaToFeedItem(meta, { origin }) {
         place: (typeof meta.place === "string" && meta.place) ? meta.place : null,
         languageCode: typeof meta.languageCode === "string" ? meta.languageCode : null,
         tags: Array.isArray(meta.tags) ? meta.tags : [],
-        latestUrl: `${origin}/d/${meta.slug}`,
+        // The namespace an entry lives in (ADR-0074 §2). `anon` is omitted from
+        // the path, so every link published before namespaces existed keeps
+        // exactly the shape it had.
+        namespace: namespace && namespace !== "anon" ? namespace : null,
+        latestUrl: `${origin}/d/${namespace && namespace !== "anon" ? `${namespace}/` : ""}${meta.slug}`,
         updatedAt: latest?.updatedAt || null,
     };
 }

@@ -43,6 +43,7 @@ test("metaToFeedItem: a full modern blob projects every field", () => {
         place: "Bergen, Norway",
         languageCode: "nb",
         tags: ["a", "b"],
+        namespace: null,
         latestUrl: "https://api.ringdrill.app/d/sprint-1",
         updatedAt: "2026-02-01T00:00:00.000Z",
     });
@@ -195,4 +196,25 @@ test("latestVersionEntry: picks the numerically highest version", () => {
 test("latestVersionEntry: empty/missing versions → null", () => {
     assert.equal(latestVersionEntry([]), null);
     assert.equal(latestVersionEntry(undefined), null);
+});
+
+// ---------- namespace (ADR-0074 §2) ----------
+
+test("metaToFeedItem: anon is omitted, so a pre-namespace link keeps its shape", () => {
+    const meta = { programId: "p", slug: "lsor", name: "L", ownerId: "anon", versions: [] };
+    const item = metaToFeedItem(meta, { origin: ORIGIN, namespace: "anon" });
+    assert.equal(item.namespace, null);
+    assert.equal(item.latestUrl, "https://api.ringdrill.app/d/lsor");
+});
+
+test("metaToFeedItem: an account namespace appears in both the field and the URL", () => {
+    const meta = { programId: "p", slug: "lsor", name: "L", ownerId: "a_bergen", versions: [] };
+    const item = metaToFeedItem(meta, { origin: ORIGIN, namespace: "a_bergen" });
+    assert.equal(item.namespace, "a_bergen");
+    assert.equal(item.latestUrl, "https://api.ringdrill.app/d/a_bergen/lsor");
+});
+
+test("metaToFeedItem: no namespace given behaves as anon, so old callers are unaffected", () => {
+    const meta = { programId: "p", slug: "lsor", name: "L", ownerId: "anon", versions: [] };
+    assert.equal(metaToFeedItem(meta, { origin: ORIGIN }).latestUrl, "https://api.ringdrill.app/d/lsor");
 });

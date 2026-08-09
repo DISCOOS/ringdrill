@@ -2,11 +2,11 @@
 import {
     MIME_DRILL,
     readBinary, readJson,
-    getSlugRecord, keysFor,
     sha256Hex, toStrongEtag,
     latestVersionEntry,
     corsPreflight, withCors
 } from "./lib/shared.js";
+import { findEntry, keysForEntry, parseCatalogPath, resolveNamespace } from "./lib/catalog.js";
 
 export default async function (request) {
     const preflight = corsPreflight(request);
@@ -48,15 +48,18 @@ export default async function (request) {
             .replace(/(@[^/]+)\.drill$/i, "$1")
             .replace(/\.drill@/i, "@");
 
-        // Parse "<slug>" or "<slug>@<version>"
-        const m = tail.match(/^([^@/]+)(?:@([^/]+))?$/);
-        if (!m) return withCors(request, new Response("Not found", { status: 404 }));
-        const slug = m[1];
-        const version = (m[2] || "").trim() || null;
+        // Parse "<slug>", "<slug>@<version>", or the namespaced two-segment
+        // forms (ADR-0074 §2). Segment count disambiguates on its own — a slug
+        // can never contain "/" — so no sigil is needed, which is just as well
+        // since "@" was already the version separator here.
+        const parsed = parseCatalogPath(tail);
+        if (!parsed) return withCors(request, new Response("Not found", { status: 404 }));
+        const { slug, version, explicitNamespace } = parsed;
+        const nsSegment = explicitNamespace ? parsed.namespace : null;
 
         // ---------- /o/ behavior ----------
         if (isOpenMode) {
-            const canonical = `/d/${slug}${version ? `@${version}` : ""}.drill`;
+            const canonical = `/d/${nsSegment ? `${nsSegment}/` : ""}${slug}${version ? `@${version}` : ""}.drill`;
             const u = new URL(request.url);
             u.pathname = canonical;
             u.search = "";
@@ -68,21 +71,26 @@ export default async function (request) {
         // dev), serve the file directly. Otherwise produce a 301 to the
         // canonical `/d/<slug>.drill` form, which is the public-facing URL.
         if (!hasDrillExt && !isViaFunctionPath) {
-            const canonical = `/d/${slug}${version ? `@${version}` : ""}.drill`;
+            const canonical = `/d/${nsSegment ? `${nsSegment}/` : ""}${slug}${version ? `@${version}` : ""}.drill`;
             const u = new URL(request.url);
             u.pathname = canonical;
             u.search = ""; // ensure no query params
             return withCors(request, new Response(null, { status: 301, headers: { Location: u.toString() } }));
         }
 
-        const rec = await getSlugRecord(slug);
+        // Dual-read (ADR-0074 §4): the namespaced key first, then the
+        // pre-migration flat one. This is what lets the migration run with the
+        // site live — an entry that has not been moved yet still resolves, and
+        // keysForEntry hands back the old layout for it.
+        const resolvedNs = await resolveNamespace(nsSegment, {});
+        const rec = await findEntry({ namespace: resolvedNs.namespace, slug });
         if (!rec) return withCors(request, new Response("Unknown slug", { status: 404 }));
 
-        const { meta, versioned, latest } = keysFor({
-            ownerId: rec.ownerId,
-            programId: rec.programId,
-            version: version || "latest",
-        });
+        // keysForEntry, never keysFor: it returns the new catalog/<entryId>/
+        // layout for a migrated record and the old owner-scoped one for a
+        // record still awaiting migration. Branching on the layout at each
+        // call site is how one read path gets migrated and another does not.
+        const { meta, versioned, latest } = keysForEntry(rec, version || "latest");
 
         const metaDoc = await readJson(meta, null);
         let vinfo = null;

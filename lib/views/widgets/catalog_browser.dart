@@ -46,6 +46,8 @@ class CatalogBrowser extends StatefulWidget {
     this.itemFilter,
     this.showActiveRadio = false,
     this.activeSlug,
+    this.loader,
+    this.emptyText,
   });
 
   /// Invoked when the user taps a catalog tile.
@@ -80,6 +82,18 @@ class CatalogBrowser extends StatefulWidget {
   /// Slug of the item that matches the currently active plan, if any.
   /// Only consulted when [showActiveRadio] is true.
   final String? activeSlug;
+
+  /// Where the list comes from. Defaults to the public catalog feed.
+  ///
+  /// The account tab (DESIGN-015 §5.7) passes its own loader so it reuses
+  /// every affordance this widget already has — install button, busy state,
+  /// empty and error states — instead of growing a near-copy that would drift
+  /// from this one the first time either changed.
+  final Future<MarketFeedPageResponse> Function()? loader;
+
+  /// Shown when the list comes back empty. Defaults to the public catalog's
+  /// wording, which is wrong for any other source.
+  final String? emptyText;
 
   @override
   State<CatalogBrowser> createState() => _CatalogBrowserState();
@@ -133,7 +147,7 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
   }
 
   Future<MarketFeedPageResponse> _loadFeed() =>
-      active_actions.probeCatalogService(context);
+      widget.loader?.call() ?? active_actions.probeCatalogService(context);
 
   void _reload() {
     setState(() {
@@ -203,7 +217,9 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
                         const SizedBox(height: 80),
                         EmptyState(
                           icon: Icons.cloud_outlined,
-                          text: localizations.libraryEmptyCatalog,
+                          text:
+                              widget.emptyText ??
+                              localizations.libraryEmptyCatalog,
                         ),
                       ],
                     );

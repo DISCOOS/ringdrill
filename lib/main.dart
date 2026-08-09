@@ -6,7 +6,9 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart' show GoRouter;
 import 'package:intl/intl_browser.dart'
     if (dart.library.io) 'package:intl/intl_standalone.dart';
+import 'package:ringdrill/data/auth_client.dart';
 import 'package:ringdrill/services/app_user_role.dart';
+import 'package:ringdrill/services/auth_service.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart'
     show onResolveFieldError;
 import 'package:ringdrill/services/exercise_service.dart';
@@ -101,6 +103,26 @@ Future<void> main() async {
     // Initialize services
     await PlanService().init();
     await MapSettings.instance.load();
+
+    // The session (ADR-0024). Installed before the first frame so a
+    // signed-in user sees their account rather than a flash of signed-out —
+    // but `restore()` never touches the network, because most people are not
+    // signing in and none of them should wait for an auth round trip
+    // (DESIGN-015 §5.1: no account is the normal state).
+    final authBaseUrl = AppConfig.catalogBaseUrl(
+      isWeb: kIsWeb,
+      isRelease: kReleaseMode,
+      isDebug: kDebugMode,
+    );
+    AuthService.install(
+      AuthService(
+        client: AuthClient(
+          baseUrl: authBaseUrl,
+          functionsBasePath: AppConfig.functionsBasePathFor(authBaseUrl),
+        ),
+      ),
+    );
+    await AuthService.instance.restore();
 
     if (isFirstLaunch) {
       // Set default "analyticsConsent" to false (opt-out by default)

@@ -99,9 +99,45 @@
 # The direct `/.netlify/functions/<name>` path always works too — it is
 # served natively by Netlify and does not require an entry here. The
 # old cached PWA on apex still uses it, and continues to.
+
+# Organisations and members (ADR-0024, DESIGN-015 §6).
+[[redirects]]
+    from = "/api/accounts/*"
+    to = "/.netlify/functions/accounts/:splat"
+    status = 200
+    force = true
+
+[[redirects]]
+    from = "/api/accounts"
+    to = "/.netlify/functions/accounts"
+    status = 200
+    force = true
+
+# Answering an invitation (DESIGN-015 §6.4). Separate from /api/accounts/*
+# because the describe step must work signed out — the landing page has to
+# say "sign in as ola@example.com" before anyone has signed in.
+[[redirects]]
+    from = "/api/invitations/*"
+    to = "/.netlify/functions/invitations/:splat"
+    status = 200
+    force = true
+
+# The auth surface (ADR-0024). One function, five routes — see
+# netlify/functions/auth.js for why they are not five functions.
+[[redirects]]
+    from = "/api/auth/*"
+    to = "/.netlify/functions/auth/:splat"
+    status = 200
+    force = true
+
 [[redirects]]
     from = "/api/drills-upload"
     to = "/.netlify/functions/drills-upload"
+    status = 200
+
+[[redirects]]
+    from = "/api/drills-policy"
+    to = "/.netlify/functions/drills-policy"
     status = 200
 
 # The hosted MCP endpoint (ADR-0060). `/mcp` is the conventional path a client
@@ -165,6 +201,14 @@
 [[redirects]]
     from = "/api/drills/head/*"
     to = "/.netlify/functions/drills-head/:splat"
+    status = 200
+
+# Per-plan access policy (ADR-0025). Its own endpoint rather than a
+# parameter on upload, so an ordinary publish can never widen access as a
+# side effect — and so the owner-only check has one place to live.
+[[redirects]]
+    from = "/api/drills/policy"
+    to = "/.netlify/functions/drills-policy"
     status = 200
 
 [[redirects]]

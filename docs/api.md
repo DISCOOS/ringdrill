@@ -74,20 +74,223 @@ Require `Authorization: Bearer <ADMIN_TOKEN>`. The operation is chosen by the
 |--------|------|---------|
 | `POST` | `/api/drills-upload?slug={slug}&published=true` | Upload a `.drill` (request body is the zip). `name`, `description` and `tags` are read from `program.json` in the archive (ADR-0043) |
 
-**Unauthenticated, deliberately.** Upload is listed separately from Admin
-because it takes no bearer token: the catalog is a wiki-model corpus where
-any holder of a `.drill` file may publish to the slug it claims
-([ADR-0008](./adrs/0008-persistent-program-library-and-catalog.md),
-[ADR-0014](./adrs/0014-server-assigned-drill-version.md)). `ownerId` is a
-query parameter the caller picks, and the feed republishes it as `author`,
-so the `accessPolicy` value a feed item carries describes whether the plan
-names an owner — it does not restrict who may write. Concurrency is guarded
-by `If-Match` (OCC), not by identity.
+**Authorisation** follows [ADR-0025](./adrs/0025-authorization-and-publish-policy.md)'s
+matrix, applied before OCC:
 
-[ADR-0025](./adrs/0025-authorization-and-publish-policy.md) makes
-`accessPolicy` enforceable; that lands in phase 3 of
-[`plans/account-rollout.md`](./plans/account-rollout.md), and this note comes
-out with it.
+| Plan | Who may publish |
+|---|---|
+| New slug, anonymous | Anyone. Lands as `anon`-owned with `accessPolicy: public` |
+| New slug, authenticated | Claimed for the active account at `accessPolicy: account` |
+| `public` | Anyone, signed in or not — the wiki model, kept as a first-class option |
+| `account` | Any member of the owning account, at any role |
+| `shared` | Any member of the owning account or of a granted account |
+
+**Anonymous publishing keeps working**, deliberately: signing in buys
+protection, it is not the price of publishing. `ownerId` is taken from the
+verified principal, and the legacy `?ownerId=` parameter is ignored — it is
+accepted as a no-op for one release so older clients are not broken.
+
+**A signed-in user may still publish openly.** Two ways, both intact:
+
+* *Overwrite an existing public plan* — a `public` plan stays writable by
+  anyone, signed in or not. The upload looks for the slug in the caller's own
+  namespace first and then in `anon`, so signing in never costs you write
+  access to a plan you have been co-editing.
+* *Publish a new plan openly* — pass `?accessPolicy=public`. It is owned by
+  your account but writable by anyone. Without the parameter a new plan
+  defaults to `account`, which is the protective choice; `shared` is refused
+  here, since it names specific grantee accounts and is set afterwards through
+  `/api/drills/policy`.
+
+A requested policy applies to a **new** plan only. An existing plan keeps the
+policy it has, so an ordinary update can never widen access as a side effect.
+
+Concurrency is still guarded by `If-Match` (OCC), which runs after
+authorisation.
+
+### Access policy
+
+| Method | Path | Returns |
+|--------|------|---------|
+| `POST` | `/api/drills/policy?slug={slug}` | Changes a plan's access policy. Body: `{ "accessPolicy": "account"\|"shared"\|"public", "sharedAccountIds": [...] }` |
+
+**Owner-only** — the one operation where `MemberRole` rank matters. Every member
+of an owning account may publish; only an owner may re-decide who can see the
+result.
+
+It is a separate endpoint rather than a parameter on upload, deliberately:
+publishing a new version and changing who may read a plan are different
+decisions, and folding them together is exactly how an ordinary update ends up
+silently widening access.
+
+* `shared` **requires** a non-empty `sharedAccountIds`. Storing it empty would
+  read as "shared" in the UI while behaving as `account`, so it is a `400`.
+* Moving *away* from `shared` clears the grantee list, so a stale entry cannot
+  keep granting access the UI no longer shows.
+* An `anon`-owned plan has no owner to check, so its policy cannot be changed
+  (`403`). There is no path from anonymous to owned.
+* A concurrent change answers `412` rather than overwriting — re-read and retry.
+
+```bash
+curl -X POST "https://ringdrill.app/api/drills/policy?slug=lsor-eidene-2026" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"accessPolicy":"shared","sharedAccountIds":["a_redcross_fjell"]}'
+```
+
+## Accounts and identity
+
+New in the accounts work ([ADR-0024](./adrs/0024-account-and-identity-model.md),
+[DESIGN-015](./design/015-accounts-and-iam.md)). **An account is optional** — the
+app works fully without one, and that stays the default.
+
+### Auth
+
+One function, five routes, because they share the token minting and the
+membership lookup; splitting them would mean five copies of the claim assembly,
+which is the one part where a mistake is a security bug rather than a 500.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/api/auth/start-email` | Begin email sign-in — sends a magic link and a code |
+| `POST` | `/api/auth/callback` | Exchange a provider result or an email code for tokens |
+| `POST` | `/api/auth/refresh` | Refresh the access token |
+| `POST` | `/api/auth/logout` | End this session. Proves ownership with the access token **or** the session's refresh token |
+| `POST` | `/api/auth/sessions/revoke` | End another of this user's sessions — the sessions list's "log out this device" |
+| `GET` | `/api/auth/me` | The current principal, its accounts and roles |
+| `GET` | `/api/auth/providers` | Which third-party providers are configured, and the authorize URL to open for each |
+| `GET`, `POST` | `/api/auth/callback/{provider}` | Where a provider redirects the browser. Redirects into the app with a single-use handoff code |
+
+`acts` and `roles` are read from stored memberships **every time a token is
+minted**, so a role change takes effect on the next refresh rather than needing
+a sign-out. That is why the token carries the map rather than the server looking
+it up per request.
+
+**Third-party sign-in runs entirely server-side.** The app holds no client id,
+no client secret and no provider SDK: it asks `/api/auth/providers` at runtime,
+opens the returned URL in a *system browser*, and later exchanges a one-minute
+single-use handoff code for its session. The user still authenticates on the
+provider's own page, on the provider's own domain — "server-side" describes
+where the authorization code is exchanged, not where the human signs in.
+
+Because the exchange happens on our server these are **confidential** OAuth
+clients; an app using a native SDK could only ever be a public one. Setup is in
+[`identity-provider-setup.md`](./identity-provider-setup.md).
+
+Behaviour depends on `AUTH_MODE`
+([ADR-0073](./adrs/0073-auth-mode-and-adapters.md)) — `live`, `mock` or `off`.
+It is a deployment mode, not a feature flag: `mock` accepts `test.`-prefixed
+tokens so the backend can be exercised without a live IAM instance, and mints
+only what the active mode can verify.
+
+### Accounts and members
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/api/accounts` | Create an organisation, or upgrade a personal account (`upgradeAccountId`) |
+| `GET` | `/api/accounts/lookup?handle={handle}` | Resolve a handle to the account id a shared plan stores |
+| `GET` | `/api/accounts/{id}/members` | The roster, with each row's state |
+| `POST` | `/api/accounts/{id}/members` | Invite by email — owner only |
+| `PATCH` | `/api/accounts/{id}/members/{userId}` | Change a role — owner only |
+| `DELETE` | `/api/accounts/{id}/members/{userId}` | Remove a member, or leave |
+| `GET` | `/api/accounts/{id}/plans` | The account's plans — the Library's fourth tab |
+| `DELETE` | `/api/accounts/{id}` | Delete an organisation, or the caller's own account |
+
+Three rules are enforced here rather than assumed by callers:
+
+* **Only an owner administers.** Publishing follows from membership — every
+  member publishes, guests included — so `owner` does not mean "can do more with
+  plans", it means "can decide who else is here".
+* **An organisation always keeps one accepted owner.** Demoting or removing the
+  last one is refused, not offered and then failed.
+* **Invited is a state, not a role.** The role is chosen at invite time and
+  confers nothing until the invitation is accepted.
+
+**`lookup` is exact-match and requires signing in.** That is the whole of the
+enumeration answer: a handle is already public — it appears in
+`/d/<handle>/<slug>` on every shared link — so resolving one reveals nothing
+that trying the URL would not. A prefix or fuzzy *search* endpoint would be a
+different thing entirely, a tool for listing which organisations exist, and is
+deliberately not offered. Only the id and display name come back.
+
+It exists because sharing a plan has to name another account and **ids are what
+gets stored** ([ADR-0074](./adrs/0074-catalog-entry-as-distinct-object.md) —
+handles change, ids do not). Asking a person for an opaque id is asking them to
+fetch something they have never seen; the handle is the name already in their
+plan links. A retired handle still resolves and reports the current one, so the
+UI can say which account it actually found.
+
+What deletion removes, keeps and expires is enumerated in
+[`data-retention.md`](./data-retention.md), which is the document to check
+against a GDPR question rather than this one.
+
+**Deletion keeps three things**, and each would be a mistake to remove:
+
+* **Published plans.** Other people have installed them, so the entry stays and
+  only loses its owner — it then behaves like an anonymous plan. `shared` does
+  not survive: its grantee list names accounts granted access by an owner who
+  no longer exists.
+* **The URL.** The index key holds the account id, so the entry is *not* moved
+  into `anon/`; that would change `/d/<handle>/<slug>` and break every link
+  already shared.
+* **The handle**, as a tombstone. Releasing it for reuse would point somebody's
+  shared link at a stranger's plan.
+
+Deleting a personal account is refused with `409 sole_owner_of_organisation`
+while its user is the only owner of an organisation — the refusal names them.
+Allowing it would reach [DESIGN-015](./design/015-accounts-and-iam.md) §4.4's
+unrecoverable state through a button.
+
+`GET .../plans` lists **unpublished plans too** — an account library showing
+only what had been published would omit exactly the drafts the tab exists for —
+and each item says which it is. Guests see the list: guest is a *personal-data*
+tier, so what a guest does not get is the roster inside a plan, enforced on the
+download path ([ADR-0072](./adrs/0072-staff-pii-and-account-sync.md)), not by
+hiding the plan.
+
+### Answering an invitation
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/api/invitations/{token}` | What this invitation is, and what state it is in. **Works signed out** |
+| `POST` | `/api/invitations/{token}/accept` | Accept it. Requires signing in |
+| `DELETE` | `/api/accounts/{id}/members/pending:{email}` | Withdraw an unanswered invitation — owner only |
+
+Two properties, both security properties rather than conveniences:
+
+* **The link is not a credential.** `ringdrill.app/invite/<token>` identifies
+  *which* invitation is being answered and grants nothing on its own. That is
+  what reconciles an emailed link with DESIGN-015 §2.1's rejection of
+  unauthenticated bearer URLs for sharing plans: a forwarded plan link hands
+  over content, a forwarded invite link gets the holder a sign-in prompt they
+  cannot satisfy.
+* **The invited address is what binds.** Accepting requires the signed-in user
+  to hold a *verified* identity for the address the invitation was sent to.
+  Someone invited at `ola@example.com` who signs in as somebody else gets a
+  `403` naming both remedies — sign in with the invited address, or ask the
+  owner to re-invite the one they actually use.
+
+The describe route is deliberately anonymous: the landing page has to say "sign
+in as ola@example.com to accept" *before* anyone has signed in, which it cannot
+do if reading the invitation already requires being the right person.
+
+`state` is one of `pending`, `accepted`, `withdrawn`, `expired` or
+`organisation_deleted`, and accept adds `wrong_identity`. Each is reported by
+name because the page renders a different message for each. Accepting is
+single-use, but the token is *marked* rather than deleted — the same link is
+routinely opened twice on two devices, and the second visit should say "already
+accepted", not "no such invitation".
+
+### Two role vocabularies
+
+Never conflate these. `MemberRole` is the account/administration axis;
+`StaffRole` is the roster and device-edit gate
+([ADR-0057](./adrs/0057-role-gated-editing.md)). Somebody can be an account `guest` and
+a drill `director` at the same time.
+
+| | Values | Governs |
+|---|---|---|
+| `MemberRole` | `owner`, `member`, `guest` | Who administers the account, and who sees its people |
+| `StaffRole` | `director`, `instructor`, `actor`, `other` | What somebody does in a drill |
 
 ## Status codes
 
@@ -115,7 +318,7 @@ curl "https://ringdrill.app/api/drills-admin?action=listall&limit=50" \
 curl -X POST "https://ringdrill.app/api/drills-admin?action=publish&slug=lsor-eidene-2026" \
   -H "Authorization: Bearer $RINGDRILL_ADMIN_TOKEN"
 
-# Upload / replace a drill (no token — see "Upload" above)
+# Upload / replace a drill (anonymous — lands as a public, anon-owned plan)
 curl -X POST "https://ringdrill.app/api/drills-upload?slug=lsor-eidene-2026&published=true" \
   -H "Content-Type: application/vnd.ringdrill+zip" \
   --data-binary @lsor-eidene-2026.drill

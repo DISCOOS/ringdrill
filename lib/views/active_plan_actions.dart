@@ -5,16 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nanoid/nanoid.dart';
+import 'package:ringdrill/data/auth_client.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/drill_library.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/plan.dart';
+import 'package:ringdrill/services/auth_service.dart';
 import 'package:ringdrill/services/catalog_refresh_indicator_registry.dart';
 import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/views/account_page.dart';
 import 'package:ringdrill/views/add_exercises_dialog.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
@@ -448,7 +451,16 @@ Future<void> publishActivePlan(BuildContext context) async {
     planUuid: plan.uuid,
     slug: input.slug,
     client: _buildPublishClient(),
+    accessPolicy: input.sharing.wireValue,
   );
+  // `shared` names specific grantee accounts, which the upload endpoint
+  // refuses — so the plan lands as `account` (the protective half of what was
+  // asked for) and the grantees follow here, through the owner-only policy
+  // endpoint. Doing it the other way round would leave a window where the
+  // plan is more open than intended.
+  if (input.needsGrantees && context.mounted) {
+    await _promptForSharedAccounts(context, slug: input.slug);
+  }
 }
 
 Future<void> publishAsActivePlan(BuildContext context) async {
@@ -470,7 +482,212 @@ Future<void> publishAsActivePlan(BuildContext context) async {
     planUuid: plan.uuid,
     slug: input.slug,
     client: _buildPublishClient(),
+    accessPolicy: input.sharing.wireValue,
   );
+  if (input.needsGrantees && context.mounted) {
+    await _promptForSharedAccounts(context, slug: input.slug);
+  }
+}
+
+/// Ask which accounts a `shared` plan is shared with, then apply it.
+///
+/// Deliberately a follow-up rather than a field in the publish dialog: the
+/// grantee list is the one part of the decision that needs somebody else's
+/// account, and blocking the publish on tracking one down would make "shared"
+/// the hardest option to choose rather than the middle one.
+///
+/// Accounts are named by **handle**, and stored by **id**. Handles change and
+/// ids do not (ADR-0074), so the id is what has to be written — but asking a
+/// person for an opaque id is asking them to fetch something they have never
+/// seen, whereas the handle is already in that account's plan links.
+Future<void> _promptForSharedAccounts(
+  BuildContext context, {
+  required String slug,
+}) async {
+  final localizations = AppLocalizations.of(context)!;
+  final ids = await showAdaptiveDialog<List<String>>(
+    context: context,
+    builder: (context) => const _SharedAccountsDialog(),
+  );
+  // Cancelling leaves the plan at `account`, which is the safe outcome — it is
+  // less open than asked for, never more.
+  if (ids == null || ids.isEmpty) return;
+
+  try {
+    await _buildPublishClient().setAccessPolicy(
+      slug,
+      accessPolicy: 'shared',
+      sharedAccountIds: ids,
+    );
+    if (context.mounted) {
+      _showSnackBar(context, localizations.publishSharingApplied);
+    }
+  } catch (e, stackTrace) {
+    debugPrint('[publishSharedAccounts] failed: $e');
+    if (context.mounted) {
+      _showSnackBar(context, localizations.publishSharingFailed);
+    }
+    unawaited(Sentry.captureException(e, stackTrace: stackTrace));
+  }
+}
+
+/// Resolve handles to accounts one at a time, showing each as it lands.
+///
+/// Resolving before adding is what makes this safe to type into: a handle that
+/// does not exist says so immediately, and a retired one reports the name the
+/// account actually goes by now — sharing with something you cannot find again
+/// under the name you typed is worse than a refusal.
+class _SharedAccountsDialog extends StatefulWidget {
+  const _SharedAccountsDialog();
+
+  @override
+  State<_SharedAccountsDialog> createState() => _SharedAccountsDialogState();
+}
+
+class _SharedAccountsDialogState extends State<_SharedAccountsDialog> {
+  final _controller = TextEditingController();
+  final _added = <AccountMembership>[];
+
+  bool _busy = false;
+  String? _error;
+  String? _note;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _add() async {
+    final l = AppLocalizations.of(context)!;
+    final handle = _controller.text.trim();
+    if (handle.isEmpty) return;
+
+    setState(() {
+      _busy = true;
+      _error = null;
+      _note = null;
+    });
+    try {
+      final token = AuthService.isInstalled
+          ? await AuthService.instance.accessToken()
+          : null;
+      if (token == null) return;
+      final account = await buildAuthClient().lookupHandle(
+        handle,
+        token: token,
+      );
+      if (!mounted) return;
+      setState(() {
+        if (account == null) {
+          _error = l.publishSharedNotFound;
+          return;
+        }
+        // Adding the same account twice would send a duplicate id, which the
+        // server would store as written.
+        if (!_added.any((a) => a.accountId == account.accountId)) {
+          _added.add(account);
+        }
+        if (account.handle != null &&
+            account.handle!.toLowerCase() != handle.toLowerCase()) {
+          _note = l.publishSharedRenamed(account.handle!);
+        }
+        _controller.clear();
+      });
+    } catch (_) {
+      if (mounted) setState(() => _error = l.publishSharedNotFound);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    return AlertDialog.adaptive(
+      title: Text(l.publishSharingShared),
+      content: SizedBox(
+        width: 420,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      autofocus: true,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      decoration: InputDecoration(
+                        labelText: l.publishSharedHandleLabel,
+                        helperText: l.publishSharedHandleHelper,
+                        errorText: _error,
+                        border: const OutlineInputBorder(),
+                      ),
+                      onSubmitted: (_) => _busy ? null : _add(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: FilledButton(
+                      onPressed: _busy ? null : _add,
+                      child: Text(l.publishSharedAdd),
+                    ),
+                  ),
+                ],
+              ),
+              if (_note != null) ...[
+                const SizedBox(height: 8),
+                Text(_note!, style: theme.textTheme.bodySmall),
+              ],
+              const SizedBox(height: 12),
+              if (_added.isEmpty)
+                Text(
+                  l.publishSharedNone,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                )
+              else
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final account in _added)
+                      InputChip(
+                        label: Text(account.displayName),
+                        onDeleted: () => setState(() => _added.remove(account)),
+                      ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l.cancel),
+        ),
+        FilledButton(
+          onPressed: _added.isEmpty
+              ? null
+              : () => Navigator.pop(
+                  context,
+                  _added.map((a) => a.accountId).toList(),
+                ),
+          child: Text(l.save),
+        ),
+      ],
+    );
+  }
 }
 
 /// Builds a [DrillClient] pointed at the catalog endpoint. When the base URL
@@ -489,6 +706,12 @@ DrillClient buildCatalogClient() {
     baseUrl: baseUrl,
     functionsBasePath: AppConfig.functionsBasePathFor(baseUrl),
     deepLinkBasePath: AppConfig.deepLinkBasePathFor(baseUrl),
+    // Null when no session has been installed — every widget test, and every
+    // signed-out run. Both are supported states: the catalog reads publicly
+    // and an anonymous publish is a first-class path (ADR-0025).
+    accessToken: AuthService.isInstalled
+        ? () => AuthService.instance.accessToken()
+        : null,
   );
 }
 

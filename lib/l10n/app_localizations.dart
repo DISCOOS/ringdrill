@@ -1802,10 +1802,634 @@ abstract class AppLocalizations {
   /// **'Catalog'**
   String get libraryCatalog;
 
+  /// Replaces asking for a raw account id, which nobody knows. The handle is the name already in that account's plan URLs, so it is something a person can actually be told over the phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Account handle'**
+  String get publishSharedHandleLabel;
+
+  /// No description provided for @publishSharedHandleHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'The name in their plan links, e.g. redcross-bergen.'**
+  String get publishSharedHandleHelper;
+
+  /// No description provided for @publishSharedAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get publishSharedAdd;
+
+  /// No description provided for @publishSharedNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No account with that handle.'**
+  String get publishSharedNotFound;
+
+  /// Shown when a retired handle was used. Accepting it silently would leave the user sharing with something they cannot find again under the name they typed.
+  ///
+  /// In en, this message translates to:
+  /// **'That account is now called {handle}.'**
+  String publishSharedRenamed(String handle);
+
+  /// No description provided for @publishSharedNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No accounts added yet.'**
+  String get publishSharedNone;
+
+  /// No description provided for @publishSharingApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing updated'**
+  String get publishSharingApplied;
+
+  /// Says where the plan actually ended up, because a failed sharing step leaves it *less* open than asked for and the user needs to know which.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update sharing. The plan is published to your account only.'**
+  String get publishSharingFailed;
+
+  /// No description provided for @accountDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get accountDeleteAction;
+
+  /// No description provided for @accountDeleteOrgAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete organisation'**
+  String get accountDeleteOrgAction;
+
+  /// No description provided for @accountDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String accountDeleteTitle(String name);
+
+  /// DESIGN-015 §5.1 requires the confirm to say exactly this: "delete my account" reasonably sounds like it should unpublish, and it does not. Saying so afterwards is too late.
+  ///
+  /// In en, this message translates to:
+  /// **'Your sign-in, your memberships and this account are removed. Plans you have already published stay in the catalog — other people have installed them — but they stop belonging to you and anyone can then change them.'**
+  String get accountDeleteBody;
+
+  /// No description provided for @accountDeleteOrgBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The organisation, its members and its invitations are removed. Plans it has published stay in the catalog — other people have installed them — but they stop belonging to the organisation and anyone can then change them.'**
+  String get accountDeleteOrgBody;
+
+  /// No description provided for @accountDeleteKeepsLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Plans on this device are not touched.'**
+  String get accountDeleteKeepsLocal;
+
+  /// Heading for the one choice in the delete flow. Published plans are not a choice — they stay, because other people have installed them.
+  ///
+  /// In en, this message translates to:
+  /// **'Plans you have not published'**
+  String get accountDeleteDraftsTitle;
+
+  /// No description provided for @accountDeleteDraftsDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete them'**
+  String get accountDeleteDraftsDelete;
+
+  /// No description provided for @accountDeleteDraftsPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish them to the public catalog'**
+  String get accountDeleteDraftsPublish;
+
+  /// Publishing on deletion is an act with consequences the user will not be around to reverse, so the consequence is stated next to the option rather than after it.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone will be able to find and change them. You will not be able to undo this.'**
+  String get accountDeleteDraftsPublishHint;
+
+  /// A typed confirmation rather than a second button. This is the one action in the app with no undo, and a misplaced tap should not be able to reach it.
+  ///
+  /// In en, this message translates to:
+  /// **'Type {word} to confirm'**
+  String accountDeleteConfirmLabel(String word);
+
+  /// No description provided for @accountDeleteConfirmWord.
+  ///
+  /// In en, this message translates to:
+  /// **'DELETE'**
+  String get accountDeleteConfirmWord;
+
+  /// DESIGN-015 §4.4: an organisation with no owner is unrecoverable. The refusal names the organisations so the user knows what to hand over.
+  ///
+  /// In en, this message translates to:
+  /// **'You are the only owner of {organisations}. Make somebody else an owner there first, or delete the organisation.'**
+  String accountDeleteSoleOwner(String organisations);
+
+  /// No description provided for @accountDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deleted.'**
+  String get accountDeleted;
+
+  /// DESIGN-015 §4.3. This is the answer to "I lost the device that was signed in" and to "my phone was stolen" — not a recovery flow, a list you can end sessions from.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed-in devices'**
+  String get accountDevicesTitle;
+
+  /// No description provided for @accountDeviceThis.
+  ///
+  /// In en, this message translates to:
+  /// **'This device'**
+  String get accountDeviceThis;
+
+  /// No description provided for @accountDeviceUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown device'**
+  String get accountDeviceUnknown;
+
+  /// No description provided for @accountDeviceLastUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Last used {when}'**
+  String accountDeviceLastUsed(String when);
+
+  /// The one place refresh-token rotation becomes visible (DESIGN-015 §4.3). A session ended by replay detection is kept as a tombstone precisely so this can be said; it explains what happened in plain terms and does not accuse the user of anything.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended automatically. This device\'s sign-in token was used twice, which usually means it was copied — so the session was closed. Sign in again on that device if it was you.'**
+  String get accountDeviceEndedReplay;
+
+  /// No description provided for @accountDeviceEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended'**
+  String get accountDeviceEnded;
+
+  /// No description provided for @accountDeviceSignOutThis.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out this device'**
+  String get accountDeviceSignOutThis;
+
+  /// No description provided for @accountDeviceSignedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'That device is signed out.'**
+  String get accountDeviceSignedOut;
+
+  /// No description provided for @accountDevicesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No other devices are signed in.'**
+  String get accountDevicesEmpty;
+
+  /// No description provided for @accountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountTitle;
+
+  /// No description provided for @accountMembersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get accountMembersTitle;
+
+  /// No description provided for @accountRoleOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get accountRoleOwner;
+
+  /// No description provided for @accountRoleMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Member'**
+  String get accountRoleMember;
+
+  /// No description provided for @accountRoleGuest.
+  ///
+  /// In en, this message translates to:
+  /// **'Guest'**
+  String get accountRoleGuest;
+
+  /// No description provided for @accountRoleOwnerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Manages members and access, plus everything a member can do.'**
+  String get accountRoleOwnerHint;
+
+  /// No description provided for @accountRoleMemberHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads and publishes the plans, and sees the staff roster.'**
+  String get accountRoleMemberHint;
+
+  /// No description provided for @accountRoleGuestHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads and publishes the plans, but does not see the roster.'**
+  String get accountRoleGuestHint;
+
+  /// Sits above the role options (DESIGN-015 §6.1). Without it the picker reads as a permission ladder, which it is not: every role publishes, and the role decides administration and whether the roster is visible.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone you add can work on the plans. The difference is whether they see the staff roster — your people\'s names and phone numbers.'**
+  String get accountRolePickerLead;
+
+  /// No description provided for @accountStateInvited.
+  ///
+  /// In en, this message translates to:
+  /// **'Invited'**
+  String get accountStateInvited;
+
+  /// A bounced or expired invitation is surfaced on the row rather than hidden in a log (DESIGN-015 §6.2).
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery failed'**
+  String get accountStateFailed;
+
+  /// No description provided for @accountInviteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite'**
+  String get accountInviteAction;
+
+  /// No description provided for @accountInviteEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address'**
+  String get accountInviteEmailLabel;
+
+  /// No description provided for @accountInviteSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation sent to {email}'**
+  String accountInviteSent(String email);
+
+  /// No description provided for @accountWithdrawAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw'**
+  String get accountWithdrawAction;
+
+  /// No description provided for @accountRemoveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get accountRemoveAction;
+
+  /// No description provided for @accountLeaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get accountLeaveAction;
+
+  /// No description provided for @accountChangeRoleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Change role'**
+  String get accountChangeRoleAction;
+
+  /// DESIGN-015 §4.4. The design answer to an unrecoverable organisation is prevention, and it belongs on this screen rather than in a recovery flow. Low-key and never blocking: not a modal, not a warning colour.
+  ///
+  /// In en, this message translates to:
+  /// **'This organisation has one owner. Add another, so access is not lost if someone becomes unavailable.'**
+  String get accountSingleOwnerAdvisory;
+
+  /// No description provided for @accountLastOwnerRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'An organisation must keep at least one owner.'**
+  String get accountLastOwnerRefused;
+
+  /// No description provided for @accountOwnerOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only an owner can do this.'**
+  String get accountOwnerOnly;
+
+  /// No description provided for @accountActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That did not work. Try again.'**
+  String get accountActionFailed;
+
+  /// No description provided for @inviteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation'**
+  String get inviteTitle;
+
+  /// No description provided for @inviteJoinPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'{inviter} invited you to join {organisation} as {role}.'**
+  String inviteJoinPrompt(String inviter, String organisation, String role);
+
+  /// The link identifies the invitation but grants nothing; accepting needs an identity (DESIGN-015 §6.4). Naming the address is what makes the instruction actionable.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in as {email} to accept.'**
+  String inviteSignInToAccept(String email);
+
+  /// No description provided for @inviteAcceptAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get inviteAcceptAction;
+
+  /// No description provided for @inviteAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'You have joined {organisation}.'**
+  String inviteAccepted(String organisation);
+
+  /// No description provided for @inviteStateAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'This invitation has already been accepted.'**
+  String get inviteStateAccepted;
+
+  /// No description provided for @inviteStateWithdrawn.
+  ///
+  /// In en, this message translates to:
+  /// **'This invitation was withdrawn.'**
+  String get inviteStateWithdrawn;
+
+  /// No description provided for @inviteStateExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This invitation has expired. Ask for a new one.'**
+  String get inviteStateExpired;
+
+  /// No description provided for @inviteStateOrganisationDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'That organisation no longer exists.'**
+  String get inviteStateOrganisationDeleted;
+
+  /// No description provided for @inviteStateNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not find that invitation.'**
+  String get inviteStateNotFound;
+
+  /// Both remedies, because the invitee can act on either and neither is obvious (DESIGN-015 §6.4). Binding to whoever opens the link would turn a forwarded email into account access, so this is a refusal that has to explain itself.
+  ///
+  /// In en, this message translates to:
+  /// **'This invitation was sent to {email}, and you are signed in as someone else. Sign in with that address, or ask an owner of {organisation} to invite the address you use.'**
+  String inviteWrongIdentity(String email, String organisation);
+
+  /// Label above the account a publish will land in (DESIGN-015 §5.8 decision 2). Someone who publishes to the wrong account otherwise finds out afterwards.
+  ///
+  /// In en, this message translates to:
+  /// **'Publishes to'**
+  String get publishPublishesTo;
+
+  /// No description provided for @publishSwitchAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch'**
+  String get publishSwitchAccount;
+
+  /// Heading for the access-policy choice. Deliberately NOT 'Access' — DESIGN-015 §7 reserves that word for a person's standing in an account, and using it here too would put a plan's write policy and a member's role under one word. This dialog is choosing how the *plan* is shared.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing'**
+  String get publishSharingLabel;
+
+  /// No description provided for @publishSharingAccountOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only my account'**
+  String get publishSharingAccountOnly;
+
+  /// No description provided for @publishSharingOrgOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'{organisation} only'**
+  String publishSharingOrgOnly(String organisation);
+
+  /// No description provided for @publishSharingShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with other accounts'**
+  String get publishSharingShared;
+
+  /// The `public` policy, phrased as its consequence rather than its policy name — as are all four options (DESIGN-015 §5.8 decision 3).
+  ///
+  /// In en, this message translates to:
+  /// **'Open to everyone'**
+  String get publishSharingPublic;
+
+  /// Shown under the 'Shared with other accounts' option. The grantee list is set afterwards through the plan's sharing screen, because the server refuses `shared` with no accounts named.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which accounts after publishing.'**
+  String get publishSharingSharedHint;
+
+  /// One plain line, no warning colour and no lock icon (DESIGN-015 §5.8 decision 1). Anonymous publishing is a supported workflow, not a degraded one, so this must not read as a paywall.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not signed in, so open to everyone is the only option. Signing in would let you keep this plan to your account.'**
+  String get publishAnonymousExplanation;
+
+  /// The alternative action below Publish when signed out. Publish stays the primary action — this is an offer, not a gate.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in first'**
+  String get publishSignInFirst;
+
+  /// Belongs on this screen and nowhere else (DESIGN-015 §5.8). The publish dialog is the exact moment someone wonders whether the phone numbers they typed are about to become public, and the only screen where answering costs nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff details are never published.'**
+  String get publishStaffNeverPublished;
+
+  /// The organisation half of the PII promise, which is the part people get wrong (ADR-0072).
+  ///
+  /// In en, this message translates to:
+  /// **'The roster stays inside {organisation}. A shared account gets the plan, not the people.'**
+  String publishRosterStaysInside(String organisation);
+
+  /// Drawer entry that opens the sign-in screen. Plain and unadorned — DESIGN-015 §5.1 forbids a badge or a 'complete your setup' nudge, because no account is the normal state rather than a step on the way to one.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get signInEntry;
+
+  /// No description provided for @signInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to RingDrill'**
+  String get signInTitle;
+
+  /// Shown on the sign-in screen itself (DESIGN-015 §5.1). Signing in *is* getting an account, so the UI must never present them as two decisions — but it must say that this is what happens. A thing created silently on your behalf is worse than a thing you were told about.
+  ///
+  /// In en, this message translates to:
+  /// **'We create a personal account for you. It owns the plans you publish.'**
+  String get signInWhatYouGet;
+
+  /// Reassurance on the sign-in screen. Someone reaching this screen by accident should be able to leave without believing they broke something.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not need an account to use RingDrill. Plans, briefs and the catalog all work signed out.'**
+  String get signInOptional;
+
+  /// Third-party sign-in button. Opens the provider's own login page in a system browser — the user authenticates on their domain, not ours.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with {provider}'**
+  String signInWithProvider(String provider);
+
+  /// Separates the provider buttons from the email field. Lower case and unemphatic: email is not the fallback, it is one option among several.
+  ///
+  /// In en, this message translates to:
+  /// **'or continue with email'**
+  String get signInOrEmail;
+
+  /// No description provided for @signInProviderFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That sign-in did not complete. Try again, or use email.'**
+  String get signInProviderFailed;
+
+  /// No description provided for @signInEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address'**
+  String get signInEmailLabel;
+
+  /// No description provided for @signInEmailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an email address'**
+  String get signInEmailInvalid;
+
+  /// No description provided for @signInSendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get signInSendCode;
+
+  /// After a challenge is started. Both redemptions are the same challenge (DESIGN-015 §3.3), so the wording must not imply picking one rules out the other.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a link and a six-digit code to {email}. Either one works.'**
+  String signInCodeSent(String email);
+
+  /// No description provided for @signInCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Six-digit code'**
+  String get signInCodeLabel;
+
+  /// No description provided for @signInVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get signInVerify;
+
+  /// No description provided for @signInUseAnotherEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a different address'**
+  String get signInUseAnotherEmail;
+
+  /// No description provided for @signInFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That did not work. Check the code and try again.'**
+  String get signInFailed;
+
+  /// No description provided for @signInCodeExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'That code has expired. Ask for a new one.'**
+  String get signInCodeExpired;
+
+  /// No description provided for @signInTooManyAttempts.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts. Ask for a new code.'**
+  String get signInTooManyAttempts;
+
+  /// No description provided for @signInNetworkError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach RingDrill. Check your connection and try again.'**
+  String get signInNetworkError;
+
+  /// No description provided for @signOutAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get signOutAction;
+
+  /// No description provided for @signOutConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out?'**
+  String get signOutConfirmTitle;
+
+  /// DESIGN-015 §5.1 separates sign-out from account deletion. Signing out must never look like losing work, so the confirm says exactly what stays.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plans stay on this device and your account is not deleted. You can sign in again at any time.'**
+  String get signOutConfirmBody;
+
+  /// No description provided for @accountSignedInAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as {name}'**
+  String accountSignedInAs(String name);
+
+  /// Fourth tab of the Open... library (DESIGN-015 §5.7) — the plans the signed-in account owns, drafts included.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get libraryAccountTab;
+
+  /// Footer under the account tab's list. Names which account is shown, because a user can belong to several.
+  ///
+  /// In en, this message translates to:
+  /// **'Plans owned by {account}'**
+  String libraryAccountSubtitle(String account);
+
+  /// Account tab with nobody signed in. Says plainly that an account is optional (DESIGN-015 §5.1), so an empty tab does not read as a setup step the user skipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to see plans your organisation owns. You do not need an account to use RingDrill.'**
+  String get libraryAccountSignedOut;
+
+  /// Empty state for the account tab when the account owns no plans.
+  ///
+  /// In en, this message translates to:
+  /// **'This account has no plans yet'**
+  String get libraryAccountEmpty;
+
+  /// Chip on an unpublished account plan. The account tab lists drafts where the public tab cannot, so each row has to say which it is.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get libraryAccountDraft;
+
+  /// Tooltip on the account tab's account switcher. Only shown when the user belongs to more than one account.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch account'**
+  String get libraryAccountPicker;
+
   /// No description provided for @libraryOnlineTab.
   ///
   /// In en, this message translates to:
-  /// **'Online'**
+  /// **'Public'**
   String get libraryOnlineTab;
 
   /// No description provided for @libraryMyPlansSubtitle.
@@ -1817,7 +2441,7 @@ abstract class AppLocalizations {
   /// No description provided for @libraryOnlineSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Get a plan from the shared online library'**
+  /// **'Get a plan from the public catalog'**
   String get libraryOnlineSubtitle;
 
   /// No description provided for @libraryFromFileSubtitle.
@@ -1829,7 +2453,7 @@ abstract class AppLocalizations {
   /// No description provided for @libraryEmptyMyPlans.
   ///
   /// In en, this message translates to:
-  /// **'You have no saved plans. Browse \'Online\' or \'New from file\' to get started.'**
+  /// **'You have no saved plans. Browse \'Public\' or \'New from file\' to get started.'**
   String get libraryEmptyMyPlans;
 
   /// No description provided for @libraryFromFilePickAction.
@@ -2015,7 +2639,7 @@ abstract class AppLocalizations {
   /// No description provided for @libraryEmptyCatalog.
   ///
   /// In en, this message translates to:
-  /// **'Nothing online yet'**
+  /// **'Nothing published yet'**
   String get libraryEmptyCatalog;
 
   /// No description provided for @libraryErrorLoad.

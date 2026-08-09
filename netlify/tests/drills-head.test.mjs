@@ -31,7 +31,16 @@ const META_STORE = {
 
 function makeHandler(slugRecords = SLUG_RECORDS, metaStore = META_STORE) {
     return createHandler({
-        getSlugRecord: async (slug) => slugRecords[slug] ?? null,
+        // findEntry, not getSlugRecord: the handler resolves through the
+        // dual-read so a pre-migration entry (a record with no entryId, read
+        // from the old blob layout) and a migrated one both work. These
+        // fixtures are pre-migration, which is the state the migration starts
+        // from.
+        findEntry: async ({ slug }) => {
+            const rec = slugRecords[slug];
+            return rec ? { ...rec, slug, legacy: !rec.entryId } : null;
+        },
+        resolveNamespace: async (ns) => ({ namespace: ns ?? "anon", canonical: ns ?? "anon" }),
         readJson: async (key, fallback = null) => metaStore[key] ?? fallback,
     });
 }

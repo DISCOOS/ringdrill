@@ -37,7 +37,14 @@ const META_STORE = {
 
 function makeHandler(slugRecords = SLUG_RECORDS, metaStore = META_STORE) {
     return createHandler({
-        getSlugRecord: async (slug) => slugRecords[slug] ?? null,
+        // The handler resolves through the dual-read (ADR-0074 §4), so both a
+        // pre-migration record and a migrated one work. These fixtures are
+        // pre-migration.
+        findEntry: async ({ slug }) => {
+            const rec = slugRecords[slug];
+            return rec ? { ...rec, slug, legacy: !rec.entryId } : null;
+        },
+        resolveNamespace: async (ns) => ({ namespace: ns ?? "anon", canonical: ns ?? "anon" }),
         readJson: async (key, fallback = null) => metaStore[key] ?? fallback,
     });
 }

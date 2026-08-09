@@ -1,14 +1,15 @@
 import {
     MIME_DRILL,
-    getSlugRecord as _getSlugRecord,
-    keysFor,
     readJson as _readJson,
     latestVersionEntry,
     corsPreflight,
     withCors,
 } from "./lib/shared.js";
+import {
+    findEntry as _findEntry, keysForEntry, parseCatalogPath, resolveNamespace as _resolveNamespace,
+} from "./lib/catalog.js";
 
-export function createHandler({ getSlugRecord = _getSlugRecord, readJson = _readJson } = {}) {
+export function createHandler({ findEntry = _findEntry, resolveNamespace = _resolveNamespace, readJson = _readJson } = {}) {
     return async function (request) {
         const preflight = corsPreflight(request);
         if (preflight) return preflight;
@@ -28,12 +29,20 @@ export function createHandler({ getSlugRecord = _getSlugRecord, readJson = _read
                 .replace(/^.*\/api\/drills\/head\//, "");
 
             if (!tail) return withCors(request, new Response("Missing slug", { status: 404 }));
-            const [slug, verMaybe] = tail.split("@");
 
-            const rec = await getSlugRecord(slug);
+            // Optional namespace segment (ADR-0074 §2), then dual-read: a
+            // pre-migration entry still resolves from the flat key and the old
+            // blob layout, which is what lets the migration run with the site
+            // live. keysForEntry hides which layout a record is in.
+            const parsed = parseCatalogPath(tail);
+            if (!parsed) return withCors(request, new Response("Not found", { status: 404 }));
+            const { slug, version: verMaybe } = parsed;
+
+            const ns = await resolveNamespace(parsed.explicitNamespace ? parsed.namespace : null, {});
+            const rec = await findEntry({ namespace: ns.namespace, slug });
             if (!rec) return withCors(request, new Response("Unknown slug", { status: 404 }));
 
-            const { meta } = keysFor({ ownerId: rec.ownerId, programId: rec.programId, version: "latest" });
+            const { meta } = keysForEntry(rec, "latest");
             const m = await readJson(meta, null);
             if (!m) return withCors(request, new Response("Not found", { status: 404 }));
 

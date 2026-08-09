@@ -158,17 +158,28 @@ class MarketFeedItem {
   /// ADR-0024 resolves this to an account display name.
   final String? author;
 
-  /// One of `account | shared | public` (ADR-0025). Parsed but not yet
-  /// surfaced in the UI — lights up with ADR-0024/0025.
+  /// One of `account | shared | public` (ADR-0025).
   ///
-  /// **Descriptive, not enforced.** Nothing authenticates a catalog write
-  /// yet: `ownerId` is a query parameter the caller chooses, and the feed
-  /// republishes it as [author], so `"account"` means "this plan names an
-  /// owner", not "only that owner can publish to it". Do not render this as a
-  /// lock, a shield, or anything else a reader would take as a guarantee
-  /// until phase 3 of `docs/plans/account-rollout.md` makes the server
-  /// enforce it. A globe on a `public` plan is fine — that one is true.
+  /// **Enforced server-side.** `drills-upload` applies the
+  /// authorisation matrix before OCC, and ownership comes from the verified
+  /// principal rather than from a request parameter, so `"account"` really does
+  /// mean only that account's members can publish. Safe to render as a lock.
   final String? accessPolicy;
+
+  /// Whether the plan is listed in the public feed.
+  ///
+  /// Null from `/api/market-feed`, which by construction only ever returns
+  /// published plans — a `true` there would be noise. Set by
+  /// [DrillClient.accountPlans], where the tab deliberately includes drafts
+  /// and has to say which is which.
+  ///
+  /// It is a *listing* flag, not access control: `/d/<slug>` serves any
+  /// uploaded slug either way. Rendering it as a lock would be a lie.
+  final bool? published;
+
+  /// The account namespace the plan lives in (ADR-0074 §2), or null for an
+  /// anonymous plan — whose URL has no namespace segment and never will.
+  final String? namespace;
   final List<String> tags;
   final Uri latestUrl;
   final DateTime? updatedAt;
@@ -180,6 +191,8 @@ class MarketFeedItem {
     this.exerciseCount,
     this.author,
     this.accessPolicy,
+    this.published,
+    this.namespace,
     required this.tags,
     required this.latestUrl,
     this.updatedAt,
@@ -193,6 +206,8 @@ class MarketFeedItem {
     exerciseCount: (j['exerciseCount'] as num?)?.toInt(),
     author: j['author'] as String?,
     accessPolicy: j['accessPolicy'] as String?,
+    published: j['published'] as bool?,
+    namespace: j['namespace'] as String?,
     tags: (j['tags'] as List<dynamic>? ?? const <dynamic>[])
         .map((e) => e.toString())
         .toList(),
@@ -329,12 +344,36 @@ class DrillClient {
 
   final http.Client _http;
 
+  /// Supplies a bearer token for authenticated calls, or null when signed out.
+  ///
+  /// A callback rather than a reference to the auth service, deliberately.
+  /// This file is in the CLI's import closure, which must stay free of
+  /// `package:flutter/*` — and the service that owns the session cannot be
+  /// (it reads the platform keychain). A function is the widest seam that
+  /// crosses that line.
+  ///
+  /// **Anonymous is a supported state, not a failure.** Every catalog read and
+  /// an anonymous publish must keep working with no token at all
+  /// (ADR-0025): signing in buys protection, it is not the price of using the
+  /// catalog.
+  final Future<String?> Function()? accessToken;
+
   DrillClient({
     required this.baseUrl,
     this.functionsBasePath = '/api',
     this.deepLinkBasePath = '/d',
+    this.accessToken,
     http.Client? httpClient,
   }) : _http = httpClient ?? http.Client();
+
+  /// `{'authorization': 'Bearer …'}`, or empty when signed out.
+  ///
+  /// Callers spread this into their header map. It is never an error for it to
+  /// be empty — see [accessToken].
+  Future<Map<String, String>> _authHeader() async {
+    final token = await accessToken?.call();
+    return token == null ? const {} : {'authorization': 'Bearer $token'};
+  }
 
   Future<bool> exists(String slug, {int? version}) async {
     final h = await head(slug, version: version);
@@ -358,22 +397,74 @@ class DrillClient {
     String? ifMatchEtag,
     String ownerId = 'anon',
     bool published = false,
+    String? accessPolicy,
   }) => _uploadOnce(
     file,
     ownerId: ownerId,
     published: published,
     ifMatchEtag: ifMatchEtag,
+    accessPolicy: accessPolicy,
   );
+
+  // -------------------------------
+  // Access policy (drills-policy) — POST
+  // -------------------------------
+  /// Change who can see a published plan (ADR-0025). Owner-only, and separate
+  /// from [upload] on purpose: publishing a new version and re-deciding who
+  /// may read a plan are different decisions, and folding them together is how
+  /// an ordinary update silently widens access.
+  ///
+  /// [sharedAccountIds] is required and non-empty when [accessPolicy] is
+  /// `shared`; the server refuses an empty list rather than storing something
+  /// that reads as "shared" and behaves as "account".
+  Future<void> setAccessPolicy(
+    String slug, {
+    required String accessPolicy,
+    List<String> sharedAccountIds = const [],
+  }) async {
+    final uri = _buildFnUri('drills-policy', query: {'slug': slug});
+    final res = await _http.post(
+      uri,
+      headers: {'content-type': 'application/json', ...await _authHeader()},
+      body: jsonEncode({
+        'accessPolicy': accessPolicy,
+        if (sharedAccountIds.isNotEmpty) 'sharedAccountIds': sharedAccountIds,
+      }),
+    );
+    if (res.statusCode >= 400) {
+      String? reason;
+      try {
+        reason =
+            (jsonDecode(res.body) as Map<String, dynamic>)['error'] as String?;
+      } on FormatException {
+        reason = null;
+      }
+      throw DrillApiException(
+        reason ?? 'policy_change_failed',
+        status: res.statusCode,
+        body: res.body,
+      );
+    }
+  }
 
   Future<DrillUploadResponse> _uploadOnce(
     DrillFile file, {
     String? ifMatchEtag,
     String ownerId = 'anon',
     bool published = false,
+    String? accessPolicy,
   }) async {
     final plan = file.plan();
     final qs = <String, String>{
+      // Ignored by the server since ADR-0025 — the owner comes from the
+      // verified token, because a caller-supplied owner is a caller-supplied
+      // claim of ownership. Still sent for one release so an older backend
+      // does not see it vanish.
       'ownerId': ownerId,
+      // Applies to a *new* plan only, so an ordinary update can never widen
+      // access as a side effect. `shared` is not accepted here: it names
+      // grantee accounts and is set afterwards via [setAccessPolicy].
+      'accessPolicy': ?accessPolicy,
       // planId is the current name (ADR-0055); the server also accepts the
       // legacy programId, but this client always sends the new one.
       'planId': plan.uuid,
@@ -394,6 +485,9 @@ class DrillClient {
         // Server accepts raw binary or base64. We send raw.
         'content-type': 'application/octet-stream',
         'if-match': ?ifMatchEtag,
+        // The only place ownership is decided. Absent when signed out, which
+        // is a supported publish, not a failure.
+        ...await _authHeader(),
       },
       body: file.content,
     );
@@ -583,6 +677,55 @@ class DrillClient {
         body: res.body,
       ),
     };
+  }
+
+  // -------------------------------
+  // An account's plans — GET
+  // -------------------------------
+  /// The plans owned by [accountId], for the Library's account tab
+  /// (DESIGN-015 §5.7).
+  ///
+  /// Same item shape as [marketFeed] on purpose, so the browser that renders
+  /// the public catalog renders this too. Two things differ, and both follow
+  /// from it being an account's own library rather than a public feed:
+  ///
+  /// * It **includes unpublished plans**, flagged per item via
+  ///   [MarketFeedItem.published]. A tab that hid drafts would hide what the
+  ///   tab is for.
+  /// * It requires a token and is never cached — the answer depends on who is
+  ///   asking, so a shared cache entry would be wrong for everyone but the
+  ///   first caller.
+  Future<MarketFeedPageResponse> accountPlans(
+    String accountId, {
+    int limit = 50,
+    String? cursor,
+  }) async {
+    final uri = _buildFnUri(
+      'accounts/$accountId/plans',
+      query: {'limit': limit.toString(), 'cursor': ?cursor},
+    );
+    final res = await _http.get(
+      uri,
+      headers: {'accept': 'application/json', ...await _authHeader()},
+    );
+    if (res.statusCode != 200) {
+      throw DrillApiException(
+        'Account plans failed',
+        status: res.statusCode,
+        body: res.body,
+      );
+    }
+    try {
+      return MarketFeedPageResponse.fromJson(
+        jsonDecode(res.body) as Map<String, dynamic>,
+      );
+    } on FormatException catch (e) {
+      throw DrillApiException(
+        'Account plans returned invalid JSON: ${e.message}',
+        status: res.statusCode,
+        body: res.body,
+      );
+    }
   }
 
   // --------------------------------------------

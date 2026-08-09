@@ -1,14 +1,42 @@
 // netlify/functions/drills-admin.js
 import {
-    getSlugRecord, getSlugRecordStrong, deleteSlugRecord, getSlugIndexStore,
-    keysFor, readJson, readJsonStrong, readBinary, readBinaryStrong,
-    writeJsonConditional, writeBinaryConditional, getBlobEtag,
+    getSlugIndexStore as _getSlugIndexStore,
+    getDrillsStore as _getDrillsStore,
+    readJson as _readJson, readJsonStrong as _readJsonStrong,
+    readBinary as _readBinary, readBinaryStrong as _readBinaryStrong,
+    writeJsonConditional as _writeJsonConditional,
+    writeBinaryConditional as _writeBinaryConditional,
+    getBlobEtag as _getBlobEtag,
     nowIso,
     corsPreflight, withCors
 } from "./lib/shared.js";
-import { getDrillsStore } from "./lib/shared.js";
+import {
+    findEntry as _findEntry, keysForEntry, parseCatalogPath,
+    resolveNamespace as _resolveNamespace, slugIndexKey,
+} from "./lib/catalog.js";
 
-export default async function (request) {
+/**
+ * `createHandler({ deps })`, matching every other function in this directory.
+ *
+ * It was the one without a seam, and that is exactly why `deleteall` — the most
+ * destructive action in the codebase — had no handler test until the catalog
+ * re-key made it obviously dangerous.
+ */
+export function createHandler({
+    env = process.env,
+    getSlugIndexStore = _getSlugIndexStore,
+    getDrillsStore = _getDrillsStore,
+    findEntry = _findEntry,
+    resolveNamespace = _resolveNamespace,
+    readJson = _readJson,
+    readJsonStrong = _readJsonStrong,
+    readBinary = _readBinary,
+    readBinaryStrong = _readBinaryStrong,
+    writeJsonConditional = _writeJsonConditional,
+    writeBinaryConditional = _writeBinaryConditional,
+    getBlobEtag = _getBlobEtag,
+} = {}) {
+    return async function (request) {
     const preflight = corsPreflight(request);
     if (preflight) return preflight;
 
@@ -21,7 +49,7 @@ export default async function (request) {
 
     try {
         // ---- Auth (Bearer ADMIN_TOKEN) ----
-        const token = (process.env.ADMIN_TOKEN || "").trim();
+        const token = (env.ADMIN_TOKEN || "").trim();
         const auth  = request.headers.get("authorization") || "";
         const ok = token && auth.toLowerCase().startsWith("bearer ") && auth.slice(7).trim() === token;
         if (!ok) return json({ error: "Unauthorized" }, 401);
@@ -33,7 +61,51 @@ export default async function (request) {
         let slug = (url.searchParams.get("slug") ?? "").trim();
         let version = (url.searchParams.get("version") ?? "").trim();
 
+        // Removes the index key the record actually came from. A migrated
+        // entry lives at <namespace>/<slug>; a pre-migration one at the bare
+        // slug. Deleting only the bare key would leave a migrated entry
+        // resolvable after "delete all".
+        const deleteEntryRecord = async (found) => {
+            if (!found) return;
+            const idx = getSlugIndexStore();
+            await idx.delete(found.rec.entryId ? slugIndexKey(found.namespace, found.slug) : found.slug);
+        };
+
+        // Every action resolves through this, so none of them can drift onto
+        // one layout while the others move (ADR-0074 §4). It returns the
+        // record and its keys together, because using one without the other is
+        // how a delete ends up scanning the wrong prefix.
+        const resolve = async (name, { strong = false } = {}) => {
+            const parsed = parseCatalogPath(name);
+            if (!parsed) return null;
+            const ns = await resolveNamespace(parsed.explicitNamespace ? parsed.namespace : null, {});
+            const rec = await findEntry({ namespace: ns.namespace, slug: parsed.slug }, { strong });
+            return rec ? { rec, slug: parsed.slug, namespace: ns.namespace } : null;
+        };
+
         switch (action) {
+            // ---------- ONE-OFF MIGRATION (ADR-0074) ----------
+            //
+            // Run here rather than from a local script: inside the Netlify
+            // runtime blob access just works, where a script would need a site
+            // id and an API token plumbed into getStore({ siteID, token }) —
+            // credential handling for no gain. It also reuses this endpoint's
+            // existing ADMIN_TOKEN gate.
+            //
+            // Both default to a dry run. Pass dryRun=false to act.
+            case "migrate-catalog-keys": {
+                const { migrateCatalogKeys } = await import("./lib/migrate-catalog.js");
+                const dryRun = (url.searchParams.get("dryRun") ?? "true").toLowerCase() !== "false";
+                const report = await migrateCatalogKeys({ dryRun });
+                return json(report);
+            }
+            case "migrate-catalog-keys-cleanup": {
+                const { cleanupCatalogKeys } = await import("./lib/migrate-catalog.js");
+                const dryRun = (url.searchParams.get("dryRun") ?? "true").toLowerCase() !== "false";
+                const report = await cleanupCatalogKeys({ dryRun });
+                return json(report);
+            }
+
             // ---------- READ-ONLY ADMIN ----------
             case "listall": {
                 const limit  = clampInt(url.searchParams.get("limit"), 1, 200, 50);
@@ -52,7 +124,7 @@ export default async function (request) {
                         const rec = await idx.get(s, { type: "json" });
                         if (!rec) continue;
 
-                        const { meta } = keysFor({ ownerId: rec.ownerId, programId: rec.programId, version: "latest" });
+                        const { meta } = keysForEntry(rec, "latest");
                         const m = await readJson(meta, null);
 
                         let latest = null, versionCount = 0, published = false, name, tags;
@@ -90,11 +162,12 @@ export default async function (request) {
             case "versions": {
                 if (!slug) return json({ error: "Missing slug for action: versions" }, 400);
 
-                const rec = await getSlugRecord(slug);
+                const found = await resolve(slug);
+                const rec = found?.rec ?? null;
                 if (!rec) return json({ error: "Unknown slug: " + slug }, 404);
 
                 const { ownerId, programId } = rec;
-                const { meta } = keysFor({ ownerId, programId, version: "latest" });
+                const { meta } = keysForEntry(rec, "latest");
                 const m = await readJson(meta, null);
                 if (!m) return json({ slug, ownerId, programId, planId: programId, versions: [], published: false });
 
@@ -121,11 +194,12 @@ export default async function (request) {
                 // Strong: this mapping decides which blobs the mutation below
                 // touches. An eventually consistent read can miss a just-claimed slug
                 // (a spurious 404) or hand back a stale owner/program pair.
-                const rec = await getSlugRecordStrong(slug);
+                const found = await resolve(slug, { strong: true });
+                const rec = found?.rec ?? null;
                 if (!rec) return json({ error: "Unknown slug: " + slug }, 404);
 
                 const { ownerId, programId } = rec;
-                const { meta } = keysFor({ ownerId, programId, version: "latest" });
+                const { meta } = keysForEntry(rec, "latest");
                 // ETag first, then the value it guards, and both strong: this reads
                 // `meta` in order to write it back, so an eventually consistent read
                 // either fails the conditional write for no reason (a 412 the admin
@@ -150,11 +224,12 @@ export default async function (request) {
                 // Strong: this mapping decides which blobs the mutation below
                 // touches. An eventually consistent read can miss a just-claimed slug
                 // (a spurious 404) or hand back a stale owner/program pair.
-                const rec = await getSlugRecordStrong(slug);
+                const found = await resolve(slug, { strong: true });
+                const rec = found?.rec ?? null;
                 if (!rec) return json({ error: "Unknown slug: " + slug }, 404);
 
                 const { ownerId, programId } = rec;
-                const { latest, meta } = keysFor({ ownerId, programId, version: "latest" });
+                const { latest, meta } = keysForEntry(rec, "latest");
                 // Strong: the version list read here is filtered and written back.
                 const m = await readJsonStrong(meta, null);
                 if (!m?.versions?.length) return json({ error: "No versions to delete" }, 404);
@@ -168,7 +243,7 @@ export default async function (request) {
                 // interruption leaves bytes nobody references. An orphan costs storage
                 // and is greppable; a dangling reference is a broken download.
                 const remaining = m.versions.filter(v => v.v !== version);
-                const { versioned } = keysFor({ ownerId, programId, version });
+                const { versioned } = keysForEntry(rec, version);
                 const dropBytes = async () => {
                     // Reported rather than thrown. By this point every reference is
                     // gone, so the catalog is already correct and the caller's request
@@ -189,7 +264,10 @@ export default async function (request) {
                     const latestEtag = await getBlobEtag(latest);
                     try { if (latestEtag) await getDrillsStore().delete(latest); } catch {}
                     try { await getDrillsStore().delete(meta); } catch {}
-                    try { await deleteSlugRecord(slug); } catch {}
+                    // Delete the index key the record actually came from: a
+                // migrated entry is at <namespace>/<slug>, a pre-migration one
+                // at the bare slug.
+                try { await deleteEntryRecord(found); } catch {}
                     const bytesDeleted = await dropBytes();
                     return json({
                         ok: true, slug, deletedVersion: version,
@@ -199,7 +277,7 @@ export default async function (request) {
 
                 // Recompute latest
                 const newLatest = remaining.slice().sort((a,b)=>a.v.localeCompare(b.v, undefined, {numeric:true})).pop();
-                const { versioned: newLatestKey } = keysFor({ ownerId, programId, version: newLatest.v });
+                const { versioned: newLatestKey } = keysForEntry(rec, newLatest.v);
                 // Strong: these bytes are read in order to be written to `latest`, and
                 // an eventually consistent miss reports them as absent.
                 const buf = await readBinaryStrong(newLatestKey);
@@ -250,11 +328,16 @@ export default async function (request) {
                 // Strong: this mapping decides which blobs the mutation below
                 // touches. An eventually consistent read can miss a just-claimed slug
                 // (a spurious 404) or hand back a stale owner/program pair.
-                const rec = await getSlugRecordStrong(slug);
+                const found = await resolve(slug, { strong: true });
+                const rec = found?.rec ?? null;
                 if (!rec) return json({ error: "Unknown slug: " + slug }, 404);
                 const { ownerId, programId } = rec;
 
-                const prefix = `drills/${ownerId}/${programId}/`;
+                // **The prefix comes from the record, not from ownerId.** A
+                // migrated entry lives at catalog/<entryId>/, so deriving the
+                // old owner-scoped prefix here would delete nothing and report
+                // success — the plan would look gone and still be served.
+                const { prefix } = keysForEntry(rec);
                 const s = getDrillsStore();
                 let cursor, deleted = 0;
                 do {
@@ -265,7 +348,10 @@ export default async function (request) {
                     deleted += keys.length;
                 } while (cursor);
 
-                try { await deleteSlugRecord(slug); } catch {}
+                // Delete the index key the record actually came from: a
+                // migrated entry is at <namespace>/<slug>, a pre-migration one
+                // at the bare slug.
+                try { await deleteEntryRecord(found); } catch {}
                 return json({ ok: true, slug, deletedKeys: deleted });
             }
 
@@ -279,6 +365,7 @@ export default async function (request) {
     } catch (e) {
         return json({ error: String(e?.message || e) }, 500);
     }
+    };
 }
 
 function clampInt(v, min, max, dflt) {
@@ -286,3 +373,5 @@ function clampInt(v, min, max, dflt) {
     if (Number.isNaN(n)) return dflt;
     return Math.min(max, Math.max(min, n));
 }
+
+export default createHandler();

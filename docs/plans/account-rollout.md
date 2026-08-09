@@ -102,6 +102,42 @@ splitting the feature.
 
 Ordered by dependency, not by risk. Everything below ships together.
 
+### Status — 2026-08-08
+
+Built on `feat/accounts-backend`. Backend and client are both in; three things
+are deliberately not, and only the first blocks the release.
+
+| | State |
+|---|---|
+| Auth endpoints, accounts, members, invitations, policy, account plans | **Done** |
+| Catalog re-key (ADR-0074) and its migration | **Done, not yet run** — see [`catalog-rekey-migration.md`](./catalog-rekey-migration.md) |
+| `AuthService`, sign-in screen, account/members screen, invite page | **Done** |
+| Library account tab, Online→Public, publish dialog sharing | **Done** |
+| Sessions list, account deletion, handle-based sharing | **Done** |
+| Apple / Google / Microsoft sign-in — **server** | **Done** — verification, code exchange, discovery |
+| Apple / Google / Microsoft sign-in — **client + credentials** | **Not built** — blocks the release |
+| CLI device grant | Deferred by design (§ CLI below) |
+| `ADMIN_TOKEN` removal | Deferred — no user-facing effect |
+
+**The provider gap is now half closed.** The server side is built: JWKS
+verification, the authorization-code exchange with PKCE, and runtime discovery
+via `GET /api/auth/providers`. It runs **entirely server-side**, so no client
+id, client secret or provider SDK enters any build — and because the exchange
+happens on our server these are confidential OAuth clients, which a native SDK
+could never be.
+
+Two things remain, and only the first blocks a release:
+
+1. **The credentials.** Apple Service ID + `.p8` key, Google web client, and a
+   Microsoft app registration. These are account-level credentials that only
+   the project owner can create. Step-by-step in
+   [`identity-provider-setup.md`](../identity-provider-setup.md).
+2. **The client half.** Open the discovered authorize URL in a system browser,
+   handle the `ringdrill://auth/callback?handoff=…` return, and exchange the
+   handoff code. Plus the *Sign in with Apple* entitlement in Xcode, which is
+   the only provider-related thing in any build — and is not security
+   information.
+
 ### Backend
 
 * Add `accounts`, `users`, `identities`, `members`, `email-index` and
@@ -431,3 +467,11 @@ Two consequences for this release:
 * Whether an `owner` should be distinguishable from an *admin* who manages
   people but cannot delete the account (DESIGN-015 §11). Fits the model
   without a change; nobody to be it at current scale.
+* **Local plan storage** — decided in
+  [ADR-0076](../adrs/0076-local-plan-storage-at-rest.md) (accepted): a folder
+  per plan, laid out like the archive, with an iOS protection class and a
+  deliberate backup policy. Reads stay synchronous. Not built yet, and not a
+  release blocker — it is independent of accounts.
+* **Whether `POST /api/accounts` should ever create a *second* personal
+  account.** It cannot today, and nothing needs it to; noted because the
+  endpoint's shape does not say so.

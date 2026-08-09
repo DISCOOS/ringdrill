@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/services/auth_service.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/views/about_page.dart';
+import 'package:ringdrill/views/account_page.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/feedback.dart';
 import 'package:ringdrill/views/migration_page.dart';
 import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/sign_in_page.dart';
 import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
 import 'package:ringdrill/web/install_actions.dart'
     if (dart.library.io) 'package:ringdrill/views/install_actions_io.dart';
@@ -236,6 +239,62 @@ class MainDrawer extends StatelessWidget {
         // Close the install/migrate action group with a divider (only when
         // at least one of the two entries is present).
         if (canShowInstallEntry || isLegacyHost()) const Divider(),
+        // Sign in / sign out. Plain, and never decorated: DESIGN-015 §5.1
+        // rules out a badge or a "complete your setup" nudge, because no
+        // account is the normal state of an install rather than a step on the
+        // way to a real one.
+        if (AuthService.isInstalled)
+          ListenableBuilder(
+            listenable: AuthService.instance,
+            builder: (context, _) {
+              final user = AuthService.instance.state.user;
+              if (user == null) {
+                return _DrawerTile(
+                  icon: Icons.login,
+                  title: localizations.signInEntry,
+                  onTap: () {
+                    Navigator.pop(context);
+                    openFormSurface<void>(
+                      context,
+                      builder: (_) => const SignInPage(),
+                    );
+                  },
+                );
+              }
+              final account = AuthService.instance.state.activeAccount;
+              return ListTile(
+                leading: const Icon(Icons.account_circle),
+                title: Text(localizations.accountSignedInAs(user.displayName)),
+                subtitle: Text(
+                  account?.displayName ?? localizations.accountTitle,
+                ),
+                // Tapping opens the account; signing out is the trailing
+                // action rather than the whole row's job. Making the row
+                // itself sign out would put a destructive-feeling action
+                // where people expect navigation.
+                onTap: account == null
+                    ? null
+                    : () {
+                        Navigator.pop(context);
+                        openFormSurface<void>(
+                          context,
+                          builder: (_) => AccountPage(account: account),
+                        );
+                      },
+                trailing: IconButton(
+                  icon: const Icon(Icons.logout),
+                  tooltip: localizations.signOutAction,
+                  onPressed: () async {
+                    final navigator = Navigator.of(context);
+                    if (await confirmSignOut(context)) {
+                      await AuthService.instance.signOut();
+                    }
+                    navigator.maybePop();
+                  },
+                ),
+              );
+            },
+          ),
         _DrawerTile(
           icon: Icons.settings,
           title: localizations.settings,

@@ -1,16 +1,20 @@
 import { unzipSync, strFromU8, zipSync } from "fflate";
 import {
-    keysFor, readJson, readJsonStrong, sanitizeSlug,
-    getSlugRecord, getSlugRecordStrong, claimSlug, sha256Hex,
-    toStrongEtag, nowIso, originFromRequest, readDrillBytes,
+    readJson, readJsonStrong, sanitizeSlug, sha256Hex,
+    toStrongEtag, nowIso, originFromRequest,
     writeBinaryConditional, writeJsonConditional,
     corsPreflight, withCors, reportLegacyProgramIdUsage
 } from "./lib/shared.js";
 // The PII strip and the schema gate live in their own module so their tests can
 // import the real code rather than a copy — see lib/drill-pii.js.
 import {
-    KNOWN_SCHEMA_MAX, isSchemaTooNew, stripPiiFolders
+    KNOWN_SCHEMA_MAX, isSchemaTooNew, stripPiiFolders, readCatalogArchive
 } from "./lib/drill-pii.js";
+// Authorisation is a pure decision in its own module so it can be tested
+// exhaustively without blob storage — see lib/authorize.js and ADR-0025.
+import { authenticate } from "./lib/auth/index.js";
+import { authorizeCatalogWrite, readAccessPolicy } from "./lib/authorize.js";
+import { ANON_NAMESPACE, claimEntry, findUploadTarget, keysForEntry } from "./lib/catalog.js";
 
 
 // Parse every top-level exercises/<uuid>.json entry once, returning both the
@@ -288,31 +292,81 @@ export default async function (request) {
         // mapping, so a stale answer picks the wrong branch. The claim path recovers on
         // its own (see below), but an incorrect record here is a 409 for a legitimate
         // re-upload.
-        const existing = await getSlugRecordStrong(slug);
-
-        // Use provided IDs if present; otherwise reuse existing; otherwise defaults.
         // planId is the Plan-rename name (ADR-0055); programId is accepted as a
         // fallback for callers that haven't upgraded yet, and its use is
         // reported to Sentry so we know when it's safe to remove.
-        const ownerIdParam = qs.get("ownerId");
         const { programId: programIdParam, usedLegacyName } = resolvePlanIdParam(qs);
         if (usedLegacyName) {
             await reportLegacyProgramIdUsage({ function: "drills-upload", slug });
         }
 
-        const ownerId = ownerIdParam ?? existing?.ownerId ?? "anon";
+        const slugTakenResponse = () => withCors(request, new Response(
+            `Slug '${slug}' already in use`,
+            { status: 409, headers: { "x-conflict-kind": "slug" } }
+        ));
+
+        // ---- Authorisation (ADR-0025), before OCC and before any write ----
+        const principal = await authenticate(request);
+
+        // Lookup falls back to anon, claiming does not — see findUploadTarget
+        // for why, and which two ADRs it reconciles.
+        const target = await findUploadTarget({ principal, slug }, { strong: true });
+        const existing = target.existing;
+
+        // The existing plan's meta decides which matrix row applies, so it is
+        // read before the decision rather than after. keysForEntry, never
+        // keysFor: a pre-migration entry still lives in the old layout.
+        const existingMeta = existing ? await readJson(keysForEntry(existing).meta, null) : null;
+        const decision = authorizeCatalogWrite({
+            principal, existing, meta: existingMeta,
+            // Honoured for a new plan only. Changing an existing plan's policy
+            // is POST /api/drills/policy, so that an ordinary update can never
+            // widen access as a side effect.
+            requestedAccessPolicy: qs.get("accessPolicy"),
+        });
+        if (!decision.ok) {
+            return withCors(request, new Response(
+                JSON.stringify({ error: decision.reason }),
+                { status: decision.status, headers: { "content-type": "application/json" } },
+            ));
+        }
+
+        // **Ownership comes from the decision, never from the caller.** The
+        // legacy ?ownerId= parameter is ignored: it used to *be* ownership,
+        // which meant anyone could read an owner off the public feed — it is
+        // published there as `author` — and hand it straight back to write to
+        // that slug. Accepted as a no-op for one release (ADR-0025) so old
+        // clients that still send it are not broken by its removal.
+        const ownerId = decision.ownerId;
         const programId = programIdParam ?? existing?.programId
             ?? (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2) + Date.now().toString(36));
+
+        // Claim a new entry, or keep serving the one we found. The record
+        // carries the layout, so every key below comes from keysForEntry and
+        // no call site branches on old-versus-new.
+        let entry = existing;
+        if (!entry) {
+            const claimed = await claimEntry({
+                namespace: target.namespace, slug, planId: programId,
+                ownerAccountId: ownerId === ANON_NAMESPACE ? null : ownerId,
+            });
+            if (!claimed.ok) return slugTakenResponse();
+            entry = { ...claimed.record, namespace: target.namespace, slug, legacy: false };
+        }
 
         const explicitVersion = qs.get("version");
         const published = (qs.get("published") || "false").toLowerCase() === "true";
 
-        const rawBytes = await readDrillBytes(request);
+        // The PII strip happens at the read, not at a call site further down
+        // (ADR-0072). readCatalogArchive is the only sanctioned way for a
+        // catalog-bound handler to obtain uploaded bytes, so unstripped ones
+        // are not something this function could get hold of by accident.
+        // stripActorsAndValidate below strips again — stripPiiFolders is
+        // idempotent — because belt and braces cost nothing here and the
+        // failure mode of neither is silent.
+        const { bytes: rawBytes } = await readCatalogArchive(request);
 
-        // ---- Strip actors/ and validate schema ----
-        // actors/ contains PII (phone, real name) and must never reach the
-        // catalog. The strip is server-side only; peer-to-peer .drill files
-        // legitimately carry actors/.
+        // ---- Validate schema (and strip again, harmlessly) ----
         const { strippedBytes, program, error: archiveError } = stripActorsAndValidate(request, rawBytes);
         if (archiveError) return archiveError;
         const bytes = strippedBytes;
@@ -321,33 +375,20 @@ export default async function (request) {
         // The query string carries only operation params (ADR-0043).
         const { name, description, tags } = resolveCatalogFields({ program, slug });
 
-        // ---- Slug claim / ownership check ----
-        const slugTakenResponse = () => withCors(request, new Response(
-            `Slug '${slug}' already in use`,
-            { status: 409, headers: { "x-conflict-kind": "slug" } }
-        ));
-        if (!existing) {
-            // Atomic create (onlyIfNew)
-            const claimed = await claimSlug(slug, { ownerId, programId, createdAt: nowIso() });
-            if (!claimed) {
-                // someone else created between our read and write → verify ownership
-                // Strong: `claimSlug` is atomic whatever the read consistency
-                // (`onlyIfNew` reads nothing), but this re-read decides whether the
-                // winner was us. Eventually consistent, it can answer `null` or a
-                // pre-claim record and turn a legitimate re-upload into a 409.
-                const now = await getSlugRecordStrong(slug);
-                if (!now || now.ownerId !== ownerId || now.programId !== programId) {
-                    return slugTakenResponse();
-                }
-            }
-        } else {
-            // Slug exists — enforce same mapping unless caller explicitly changed it
-            if (existing.ownerId !== ownerId || existing.programId !== programId) {
-                return slugTakenResponse();
-            }
+        // ---- Plan-id consistency ----
+        // The claim itself happened above, atomically via claimEntry. What is
+        // left is the case an existing entry is being re-uploaded under a
+        // different planId, which is a different plan wearing the same name.
+        //
+        // Ownership is no longer re-checked here: it was decided by the
+        // authorisation matrix, and re-deriving it from a request parameter is
+        // exactly the hole that let anyone read an owner off the feed and hand
+        // it back.
+        if (existing && existing.programId && existing.programId !== programId) {
+            return slugTakenResponse();
         }
 
-        const { latest, meta } = keysFor({ ownerId, programId, version: "_" });
+        const { latest, meta } = keysForEntry(entry, "_");
         // Strong, because this object is mutated and written back at the end of the
         // handler: the version entry for this upload is appended to
         // `currentMeta.versions`. An eventually consistent read here means a second
@@ -424,7 +465,7 @@ export default async function (request) {
               }, 0) + 1;
         for (let attempt = 0; ; attempt++) {
             version = explicitVersion ?? String(attemptVersion);
-            versioned = keysFor({ ownerId, programId, version }).versioned;
+            versioned = keysForEntry(entry, version).versioned;
             vRes = await writeBinaryConditional(versioned, bytes, { onlyIfNew: true });
             if (vRes.modified) break;
             if (explicitVersion || attempt >= maxVersionRetries) {
@@ -473,9 +514,13 @@ export default async function (request) {
         currentMeta.mapBounds = program.mapBounds;
         currentMeta.place = place;
         currentMeta.languageCode = program.languageCode;
-        const { author, accessPolicy } = resolvePublishPolicy({ ownerId });
+        // A publish must not change who may publish. An existing plan keeps the
+        // policy it already had — flipping it is what POST /api/drills/policy is
+        // for, and doing it here would let any authorised writer silently widen
+        // or narrow access as a side effect of an ordinary update.
+        const { author } = resolvePublishPolicy({ ownerId });
         currentMeta.author = author;
-        currentMeta.accessPolicy = accessPolicy;
+        currentMeta.accessPolicy = existing ? readAccessPolicy(existingMeta) : decision.accessPolicy;
         const without = (currentMeta.versions || []).filter(v => v.v !== version);
         currentMeta.versions = [
             ...without,

@@ -1084,13 +1084,380 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryCatalog => 'Katalog';
 
   @override
-  String get libraryOnlineTab => 'På nett';
+  String get publishSharedHandleLabel => 'Kontonavn';
+
+  @override
+  String get publishSharedHandleHelper =>
+      'Navnet i planlenkene deres, f.eks. redcross-bergen.';
+
+  @override
+  String get publishSharedAdd => 'Legg til';
+
+  @override
+  String get publishSharedNotFound => 'Ingen konto med det navnet.';
+
+  @override
+  String publishSharedRenamed(String handle) {
+    return 'Den kontoen heter nå $handle.';
+  }
+
+  @override
+  String get publishSharedNone => 'Ingen kontoer lagt til ennå.';
+
+  @override
+  String get publishSharingApplied => 'Deling oppdatert';
+
+  @override
+  String get publishSharingFailed =>
+      'Klarte ikke å oppdatere deling. Planen er publisert bare til kontoen din.';
+
+  @override
+  String get accountDeleteAction => 'Slett konto';
+
+  @override
+  String get accountDeleteOrgAction => 'Slett organisasjon';
+
+  @override
+  String accountDeleteTitle(String name) {
+    return 'Slette $name?';
+  }
+
+  @override
+  String get accountDeleteBody =>
+      'Innloggingen din, medlemskapene dine og denne kontoen fjernes. Planer du allerede har publisert blir liggende i katalogen — andre har installert dem — men de slutter å tilhøre deg, og hvem som helst kan da endre dem.';
+
+  @override
+  String get accountDeleteOrgBody =>
+      'Organisasjonen, medlemmene og invitasjonene fjernes. Planer den har publisert blir liggende i katalogen — andre har installert dem — men de slutter å tilhøre organisasjonen, og hvem som helst kan da endre dem.';
+
+  @override
+  String get accountDeleteKeepsLocal => 'Planer på denne enheten røres ikke.';
+
+  @override
+  String get accountDeleteDraftsTitle => 'Planer du ikke har publisert';
+
+  @override
+  String get accountDeleteDraftsDelete => 'Slett dem';
+
+  @override
+  String get accountDeleteDraftsPublish =>
+      'Publiser dem i den offentlige katalogen';
+
+  @override
+  String get accountDeleteDraftsPublishHint =>
+      'Hvem som helst vil kunne finne og endre dem. Dette kan ikke angres.';
+
+  @override
+  String accountDeleteConfirmLabel(String word) {
+    return 'Skriv $word for å bekrefte';
+  }
+
+  @override
+  String get accountDeleteConfirmWord => 'SLETT';
+
+  @override
+  String accountDeleteSoleOwner(String organisations) {
+    return 'Du er eneste eier av $organisations. Gjør noen andre til eier der først, eller slett organisasjonen.';
+  }
+
+  @override
+  String get accountDeleted => 'Kontoen er slettet.';
+
+  @override
+  String get accountDevicesTitle => 'Innloggede enheter';
+
+  @override
+  String get accountDeviceThis => 'Denne enheten';
+
+  @override
+  String get accountDeviceUnknown => 'Ukjent enhet';
+
+  @override
+  String accountDeviceLastUsed(String when) {
+    return 'Sist brukt $when';
+  }
+
+  @override
+  String get accountDeviceEndedReplay =>
+      'Avsluttet automatisk. Innloggingsnøkkelen for denne enheten ble brukt to ganger, noe som vanligvis betyr at den er kopiert — så økten ble lukket. Logg inn på nytt på den enheten om det var deg.';
+
+  @override
+  String get accountDeviceEnded => 'Avsluttet';
+
+  @override
+  String get accountDeviceSignOutThis => 'Logg ut denne enheten';
+
+  @override
+  String get accountDeviceSignedOut => 'Enheten er logget ut.';
+
+  @override
+  String get accountDevicesEmpty => 'Ingen andre enheter er innlogget.';
+
+  @override
+  String get accountTitle => 'Konto';
+
+  @override
+  String get accountMembersTitle => 'Medlemmer';
+
+  @override
+  String get accountRoleOwner => 'Eier';
+
+  @override
+  String get accountRoleMember => 'Medlem';
+
+  @override
+  String get accountRoleGuest => 'Gjest';
+
+  @override
+  String get accountRoleOwnerHint =>
+      'Styrer medlemmer og tilgang, i tillegg til alt et medlem kan.';
+
+  @override
+  String get accountRoleMemberHint =>
+      'Leser og publiserer planene, og ser stablista.';
+
+  @override
+  String get accountRoleGuestHint =>
+      'Leser og publiserer planene, men ser ikke stablista.';
+
+  @override
+  String get accountRolePickerLead =>
+      'Alle du legger til kan jobbe med planene. Forskjellen er om de ser stablista — navnene og telefonnumrene til folkene deres.';
+
+  @override
+  String get accountStateInvited => 'Invitert';
+
+  @override
+  String get accountStateFailed => 'Levering feilet';
+
+  @override
+  String get accountInviteAction => 'Inviter';
+
+  @override
+  String get accountInviteEmailLabel => 'E-postadresse';
+
+  @override
+  String accountInviteSent(String email) {
+    return 'Invitasjon sendt til $email';
+  }
+
+  @override
+  String get accountWithdrawAction => 'Trekk tilbake';
+
+  @override
+  String get accountRemoveAction => 'Fjern';
+
+  @override
+  String get accountLeaveAction => 'Forlat';
+
+  @override
+  String get accountChangeRoleAction => 'Endre rolle';
+
+  @override
+  String get accountSingleOwnerAdvisory =>
+      'Denne organisasjonen har én eier. Legg til én til, så tilgangen ikke går tapt om noen blir utilgjengelig.';
+
+  @override
+  String get accountLastOwnerRefused => 'En organisasjon må ha minst én eier.';
+
+  @override
+  String get accountOwnerOnly => 'Bare en eier kan gjøre dette.';
+
+  @override
+  String get accountActionFailed => 'Det virket ikke. Prøv igjen.';
+
+  @override
+  String get inviteTitle => 'Invitasjon';
+
+  @override
+  String inviteJoinPrompt(String inviter, String organisation, String role) {
+    return '$inviter inviterte deg til å bli med i $organisation som $role.';
+  }
+
+  @override
+  String inviteSignInToAccept(String email) {
+    return 'Logg inn som $email for å godta.';
+  }
+
+  @override
+  String get inviteAcceptAction => 'Godta';
+
+  @override
+  String inviteAccepted(String organisation) {
+    return 'Du er nå med i $organisation.';
+  }
+
+  @override
+  String get inviteStateAccepted => 'Denne invitasjonen er allerede godtatt.';
+
+  @override
+  String get inviteStateWithdrawn => 'Denne invitasjonen ble trukket tilbake.';
+
+  @override
+  String get inviteStateExpired => 'Denne invitasjonen er utløpt. Be om en ny.';
+
+  @override
+  String get inviteStateOrganisationDeleted =>
+      'Den organisasjonen finnes ikke lenger.';
+
+  @override
+  String get inviteStateNotFound => 'Vi fant ikke den invitasjonen.';
+
+  @override
+  String inviteWrongIdentity(String email, String organisation) {
+    return 'Denne invitasjonen ble sendt til $email, og du er logget inn som en annen. Logg inn med den adressen, eller be en eier i $organisation invitere adressen du bruker.';
+  }
+
+  @override
+  String get publishPublishesTo => 'Publiseres til';
+
+  @override
+  String get publishSwitchAccount => 'Bytt';
+
+  @override
+  String get publishSharingLabel => 'Deling';
+
+  @override
+  String get publishSharingAccountOnly => 'Bare min konto';
+
+  @override
+  String publishSharingOrgOnly(String organisation) {
+    return 'Bare $organisation';
+  }
+
+  @override
+  String get publishSharingShared => 'Delt med andre kontoer';
+
+  @override
+  String get publishSharingPublic => 'Åpen for alle';
+
+  @override
+  String get publishSharingSharedHint =>
+      'Velg hvilke kontoer etter publisering.';
+
+  @override
+  String get publishAnonymousExplanation =>
+      'Du er ikke logget inn, så åpen for alle er det eneste alternativet. Logger du inn, kan du beholde planen på din egen konto.';
+
+  @override
+  String get publishSignInFirst => 'Logg inn først';
+
+  @override
+  String get publishStaffNeverPublished =>
+      'Opplysninger om stab publiseres aldri.';
+
+  @override
+  String publishRosterStaysInside(String organisation) {
+    return 'Staben blir liggende i $organisation. En delt konto får planen, ikke personene.';
+  }
+
+  @override
+  String get signInEntry => 'Logg inn';
+
+  @override
+  String get signInTitle => 'Logg inn i RingDrill';
+
+  @override
+  String get signInWhatYouGet =>
+      'Vi oppretter en personlig konto for deg. Den eier planene du publiserer.';
+
+  @override
+  String get signInOptional =>
+      'Du trenger ingen konto for å bruke RingDrill. Planer, briefer og katalogen virker uten innlogging.';
+
+  @override
+  String signInWithProvider(String provider) {
+    return 'Fortsett med $provider';
+  }
+
+  @override
+  String get signInOrEmail => 'eller fortsett med e-post';
+
+  @override
+  String get signInProviderFailed =>
+      'Innloggingen ble ikke fullført. Prøv igjen, eller bruk e-post.';
+
+  @override
+  String get signInEmailLabel => 'E-postadresse';
+
+  @override
+  String get signInEmailInvalid => 'Skriv inn en e-postadresse';
+
+  @override
+  String get signInSendCode => 'Fortsett';
+
+  @override
+  String signInCodeSent(String email) {
+    return 'Vi sendte en lenke og en sekssifret kode til $email. Begge virker.';
+  }
+
+  @override
+  String get signInCodeLabel => 'Sekssifret kode';
+
+  @override
+  String get signInVerify => 'Logg inn';
+
+  @override
+  String get signInUseAnotherEmail => 'Bruk en annen adresse';
+
+  @override
+  String get signInFailed => 'Det virket ikke. Sjekk koden og prøv igjen.';
+
+  @override
+  String get signInCodeExpired => 'Koden er utløpt. Be om en ny.';
+
+  @override
+  String get signInTooManyAttempts => 'For mange forsøk. Be om en ny kode.';
+
+  @override
+  String get signInNetworkError =>
+      'Fikk ikke kontakt med RingDrill. Sjekk nettverket og prøv igjen.';
+
+  @override
+  String get signOutAction => 'Logg ut';
+
+  @override
+  String get signOutConfirmTitle => 'Logge ut?';
+
+  @override
+  String get signOutConfirmBody =>
+      'Planene dine blir liggende på denne enheten, og kontoen din slettes ikke. Du kan logge inn igjen når som helst.';
+
+  @override
+  String accountSignedInAs(String name) {
+    return 'Logget inn som $name';
+  }
+
+  @override
+  String get libraryAccountTab => 'Konto';
+
+  @override
+  String libraryAccountSubtitle(String account) {
+    return 'Planer som eies av $account';
+  }
+
+  @override
+  String get libraryAccountSignedOut =>
+      'Logg inn for å se planer organisasjonen din eier. Du trenger ingen konto for å bruke RingDrill.';
+
+  @override
+  String get libraryAccountEmpty => 'Denne kontoen har ingen planer ennå';
+
+  @override
+  String get libraryAccountDraft => 'Utkast';
+
+  @override
+  String get libraryAccountPicker => 'Bytt konto';
+
+  @override
+  String get libraryOnlineTab => 'Offentlig';
 
   @override
   String get libraryMyPlansSubtitle => 'Velg en lagret plan for å fortsette';
 
   @override
-  String get libraryOnlineSubtitle => 'Hent en plan fra bibliotek på nett';
+  String get libraryOnlineSubtitle =>
+      'Hent en plan fra den offentlige katalogen';
 
   @override
   String get libraryFromFileSubtitle =>
@@ -1098,7 +1465,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get libraryEmptyMyPlans =>
-      'Du har ingen lagrede planer. Bla i «På nett» eller «Ny fra fil» for å komme i gang.';
+      'Du har ingen lagrede planer. Bla i «Offentlig» eller «Ny fra fil» for å komme i gang.';
 
   @override
   String get libraryFromFilePickAction => 'Velg fil';
@@ -1217,7 +1584,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryDelete => 'Slett';
 
   @override
-  String get libraryEmptyCatalog => 'Ingen planer på nett ennå';
+  String get libraryEmptyCatalog => 'Ingen publiserte planer ennå';
 
   @override
   String get libraryErrorLoad => 'Kunne ikke laste planer fra nett';

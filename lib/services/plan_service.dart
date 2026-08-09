@@ -943,6 +943,12 @@ class PlanService {
     String planUuid, {
     required String slug,
     required DrillClient client,
+
+    /// How the plan should be shared, for a **new** plan only (ADR-0025).
+    /// The server keeps an existing plan's policy, so an update can never
+    /// widen access as a side effect — passing this on a re-publish is a
+    /// harmless no-op rather than a silent change.
+    String? accessPolicy,
   }) async {
     final local = _repo.loadPlan(planUuid);
     if (local == null) {
@@ -978,6 +984,7 @@ class PlanService {
       file,
       ifMatchEtag: ifMatch,
       published: true,
+      accessPolicy: accessPolicy,
     );
     debugPrint(
       '[publishPlan] upload version=${upload.version} '
@@ -1022,6 +1029,12 @@ class PlanService {
     String planUuid, {
     required String slug,
     required DrillClient client,
+
+    /// How the plan should be shared, for a **new** plan only (ADR-0025).
+    /// The server keeps an existing plan's policy, so an update can never
+    /// widen access as a side effect — passing this on a re-publish is a
+    /// harmless no-op rather than a silent change.
+    String? accessPolicy,
   }) async {
     final local = _repo.loadPlan(planUuid);
     if (local == null) {
@@ -1038,7 +1051,12 @@ class PlanService {
     );
     if (currentSlug == null || currentSlug == cleanSlug) {
       // First-time publish, or update in place under the same slug. No fork.
-      return publishPlan(planUuid, slug: cleanSlug, client: client);
+      return publishPlan(
+        planUuid,
+        slug: cleanSlug,
+        client: client,
+        accessPolicy: accessPolicy,
+      );
     }
 
     // Fork: clone the plan locally with a fresh uuid and a local source,
@@ -1054,7 +1072,12 @@ class PlanService {
     await _repo.savePlan(fork);
     _controller.add(PlanEvent(PlanEventType.planCreated, fork));
 
-    return publishPlan(fork.uuid, slug: cleanSlug, client: client);
+    return publishPlan(
+      fork.uuid,
+      slug: cleanSlug,
+      client: client,
+      accessPolicy: accessPolicy,
+    );
   }
 
   List<Team> loadTeams() {

@@ -36,13 +36,15 @@
 // true` retains nothing and is the supported way to say so.
 import {
     getDrillsStore as _getDrillsStore,
-    getSlugRecord as _getSlugRecord,
-    keysFor,
+    getSlugIndexStore as _getSlugIndexStore,
     latestVersionEntry,
     metaToFeedItem,
     readBinary as _readBinary,
     readJson as _readJson,
 } from "./shared.js";
+import {
+    findEntry as _findEntry, keysForEntry, parseCatalogPath, resolveNamespace as _resolveNamespace,
+} from "./catalog.js";
 import {
     ARTIFACT_CACHE_NS,
     ARTIFACT_TTL_MS,
@@ -97,7 +99,9 @@ export function documentHash(document) {
 export function createCompilerBackend({
     invoke = _invoke,
     getDrillsStore = _getDrillsStore,
-    getSlugRecord = _getSlugRecord,
+    getSlugIndexStore = _getSlugIndexStore,
+    findEntry = _findEntry,
+    resolveNamespace = _resolveNamespace,
     readBinary = _readBinary,
     readJson = _readJson,
     origin = "https://api.ringdrill.app",
@@ -335,28 +339,44 @@ export function createCompilerBackend({
         searchCatalog: async ({ limit, cursor }) => {
             const pageSize = Math.min(100, Math.max(1, Number(limit) || 50));
             const drills = getDrillsStore();
+            // Enumerate the index rather than scanning blobs, for the same
+            // reason market-feed does (ADR-0074 §4): post-migration meta.json
+            // lives at catalog/<entryId>/ and carries no namespace, and a
+            // catalog item needs one to be addressable.
+            const idx = getSlugIndexStore();
             const items = [];
+            const seen = new Set();
             let next = cursor || undefined;
             let nextCursor;
 
             while (items.length < pageSize) {
-                const page = await drills.list({
-                    prefix: "drills/",
-                    cursor: next,
-                    limit: 100,
-                });
+                const page = await idx.list({ cursor: next, limit: 100 });
                 next = page.cursor;
 
-                const metaKeys = (page.blobs || [])
-                    .map((b) => b.key)
-                    .filter((k) => k.endsWith("/meta.json"));
-                const metas = await Promise.all(
-                    metaKeys.map((k) => drills.get(k, { type: "json" })),
+                const records = await Promise.all(
+                    (page.blobs || []).map(async (b) => {
+                        const key = String(b.key);
+                        const rec = await idx.get(key, { type: "json" });
+                        if (!rec) return null;
+                        const namespaced = key.includes("/");
+                        const [ns, slug] = namespaced ? key.split("/") : ["anon", key];
+                        return { rec, namespace: ns, slug, namespaced };
+                    }),
                 );
+                // Namespaced first, so a flat twin left by the copy phase loses
+                // and a migrating plan is not listed twice.
+                records.sort((a, b) => (b?.namespaced === true) - (a?.namespaced === true));
 
-                for (const m of metas) {
+                for (const entry of records) {
+                    if (!entry) continue;
+                    const dedupeKey = `${entry.namespace}/${entry.slug}`;
+                    if (seen.has(dedupeKey)) continue;
+
+                    const m = await drills.get(keysForEntry(entry.rec).meta, { type: "json" });
                     if (!m || !m.published) continue;
-                    items.push(metaToFeedItem(m, { origin }));
+
+                    seen.add(dedupeKey);
+                    items.push(metaToFeedItem(m, { origin, namespace: entry.namespace }));
                     if (items.length >= pageSize) break;
                 }
 
@@ -379,20 +399,24 @@ export function createCompilerBackend({
         /// one call rather than two.
         getPlan: async ({ slug, version }) => {
             if (!slug) throw new Error("a slug is required");
-            const record = await getSlugRecord(slug);
+            // A slug may carry a namespace segment (ADR-0074 §2), and the
+            // dual-read resolves either layout — so an MCP client keeps working
+            // through the migration without knowing it happened.
+            const parsed = parseCatalogPath(slug);
+            const ns = await resolveNamespace(parsed?.explicitNamespace ? parsed.namespace : null, {});
+            const record = await findEntry({ namespace: ns.namespace, slug: parsed?.slug ?? slug });
             if (!record) throw new Error(`no published plan with slug "${slug}"`);
 
-            const { ownerId, programId } = record;
-            let wanted = version ? String(version) : "latest";
+            let wanted = version ? String(version) : (parsed?.version ?? "latest");
             if (wanted === "latest") {
                 // Resolve to the concrete version so the answer names what it read,
                 // rather than "whatever latest was at the time".
-                const { meta } = keysFor({ ownerId, programId, version: "latest" });
+                const { meta } = keysForEntry(record, "latest");
                 const m = await readJson(meta);
                 wanted = latestVersionEntry(m?.versions)?.v ?? "latest";
             }
 
-            const keys = keysFor({ ownerId, programId, version: wanted });
+            const keys = keysForEntry(record, wanted);
             const bytes =
                 (await readBinary(keys.versioned)) ??
                 (await readBinary(keys.latest));
