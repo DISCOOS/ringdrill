@@ -140,8 +140,6 @@ Closing it needs two things this work could not produce:
 
 ### Backend
 
-### Backend
-
 * Add `accounts`, `users`, `identities`, `members`, `email-index` and
   `sessions` stores in `netlify/functions/lib/shared.js`.
 * Implement `POST /api/auth/start-email`, `POST /api/auth/callback`,
