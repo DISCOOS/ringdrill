@@ -222,6 +222,36 @@ class AuthService extends ChangeNotifier {
     await _hydrate();
   }
 
+  /// The session this app is running on, or null when signed out.
+  ///
+  /// The sessions list needs it to mark one row as "this device" — comparing
+  /// by label instead would mark both of somebody's two identical phones.
+  String? get currentSessionId => _tokens?.sessionId;
+
+  /// This user's devices, live and recently-ended (DESIGN-015 §4.3).
+  ///
+  /// Fetched rather than cached: the list's whole purpose is answering "what
+  /// is signed in *right now*", and a stale answer to that is worse than a
+  /// slow one.
+  Future<List<AuthDevice>> devices() async {
+    final token = await accessToken();
+    if (token == null) return const [];
+    return (await _client.me(token: token)).devices;
+  }
+
+  /// End one of this user's other sessions.
+  ///
+  /// Revoking the *current* session is sign-out with extra steps, so it is
+  /// routed there — otherwise the app would keep running on a session the
+  /// server has just destroyed, and every later request would 401 with no
+  /// explanation.
+  Future<void> revokeSession(String sessionId) async {
+    if (sessionId == currentSessionId) return signOut();
+    final token = await accessToken();
+    if (token == null) return;
+    await _client.revokeSession(sessionId: sessionId, token: token);
+  }
+
   /// Which account a publish lands in. Persisted with the session, because a
   /// person who works in one organisation should not re-pick it every launch.
   Future<void> setActiveAccount(String? accountId) async {

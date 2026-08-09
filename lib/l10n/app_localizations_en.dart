@@ -1102,6 +1102,36 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not update sharing. The plan is published to your account only.';
 
   @override
+  String get accountDevicesTitle => 'Signed-in devices';
+
+  @override
+  String get accountDeviceThis => 'This device';
+
+  @override
+  String get accountDeviceUnknown => 'Unknown device';
+
+  @override
+  String accountDeviceLastUsed(String when) {
+    return 'Last used $when';
+  }
+
+  @override
+  String get accountDeviceEndedReplay =>
+      'Ended automatically. This device\'s sign-in token was used twice, which usually means it was copied — so the session was closed. Sign in again on that device if it was you.';
+
+  @override
+  String get accountDeviceEnded => 'Ended';
+
+  @override
+  String get accountDeviceSignOutThis => 'Log out this device';
+
+  @override
+  String get accountDeviceSignedOut => 'That device is signed out.';
+
+  @override
+  String get accountDevicesEmpty => 'No other devices are signed in.';
+
+  @override
   String get accountTitle => 'Account';
 
   @override

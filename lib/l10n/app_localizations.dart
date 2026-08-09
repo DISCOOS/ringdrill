@@ -1826,6 +1826,60 @@ abstract class AppLocalizations {
   /// **'Could not update sharing. The plan is published to your account only.'**
   String get publishSharingFailed;
 
+  /// DESIGN-015 §4.3. This is the answer to "I lost the device that was signed in" and to "my phone was stolen" — not a recovery flow, a list you can end sessions from.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed-in devices'**
+  String get accountDevicesTitle;
+
+  /// No description provided for @accountDeviceThis.
+  ///
+  /// In en, this message translates to:
+  /// **'This device'**
+  String get accountDeviceThis;
+
+  /// No description provided for @accountDeviceUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown device'**
+  String get accountDeviceUnknown;
+
+  /// No description provided for @accountDeviceLastUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Last used {when}'**
+  String accountDeviceLastUsed(String when);
+
+  /// The one place refresh-token rotation becomes visible (DESIGN-015 §4.3). A session ended by replay detection is kept as a tombstone precisely so this can be said; it explains what happened in plain terms and does not accuse the user of anything.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended automatically. This device\'s sign-in token was used twice, which usually means it was copied — so the session was closed. Sign in again on that device if it was you.'**
+  String get accountDeviceEndedReplay;
+
+  /// No description provided for @accountDeviceEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended'**
+  String get accountDeviceEnded;
+
+  /// No description provided for @accountDeviceSignOutThis.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out this device'**
+  String get accountDeviceSignOutThis;
+
+  /// No description provided for @accountDeviceSignedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'That device is signed out.'**
+  String get accountDeviceSignedOut;
+
+  /// No description provided for @accountDevicesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No other devices are signed in.'**
+  String get accountDevicesEmpty;
+
   /// No description provided for @accountTitle.
   ///
   /// In en, this message translates to:

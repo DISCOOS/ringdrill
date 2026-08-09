@@ -136,6 +136,11 @@ class _AccountPageState extends State<AccountPage> {
                 ),
               ),
               ...roster.members.map((m) => _memberTile(context, l, m)),
+              // Devices belong to the *user*, not to an account, so they
+              // appear once — on the personal account, which is the "your
+              // account" page. Every user has one (ADR-0024 creates it at
+              // first sign-in), so this is never nowhere.
+              if (!widget.account.isOrganisation) _DevicesSection(),
               const SizedBox(height: 80),
             ],
           );
@@ -243,6 +248,119 @@ class _AccountPageState extends State<AccountPage> {
       token: token,
     ),
   );
+}
+
+/// The signed-in devices, and the way to end one (DESIGN-015 §4.3).
+///
+/// This is the design's answer to "I lost the device that was signed in" and
+/// to "my phone was stolen" — not a recovery flow, a list you can act on. It
+/// is also the one place refresh-token rotation becomes visible: a session
+/// ended by replay detection is kept server-side as a tombstone so it can be
+/// shown as *ended, and why*, rather than silently disappearing.
+class _DevicesSection extends StatefulWidget {
+  @override
+  State<_DevicesSection> createState() => _DevicesSectionState();
+}
+
+class _DevicesSectionState extends State<_DevicesSection> {
+  late Future<List<AuthDevice>> _devices = AuthService.instance.devices();
+
+  Future<void> _revoke(AuthDevice device) async {
+    final l = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await AuthService.instance.revokeSession(device.sessionId);
+      messenger.showSnackBar(SnackBar(content: Text(l.accountDeviceSignedOut)));
+      if (mounted) {
+        setState(() => _devices = AuthService.instance.devices());
+      }
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l.accountActionFailed)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final current = AuthService.instance.currentSessionId;
+
+    return FutureBuilder<List<AuthDevice>>(
+      future: _devices,
+      builder: (context, snapshot) {
+        // No spinner and no error row: this section is supplementary, and a
+        // failure to load it must not make the members list above look broken.
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        final devices = snapshot.data!;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Divider(height: 32),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(
+                l.accountDevicesTitle,
+                style: theme.textTheme.titleMedium,
+              ),
+            ),
+            for (final device in devices)
+              _deviceTile(context, l, theme, device, current),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _deviceTile(
+    BuildContext context,
+    AppLocalizations l,
+    ThemeData theme,
+    AuthDevice device,
+    String? current,
+  ) {
+    final isCurrent = device.isCurrent(current);
+    return ListTile(
+      leading: Icon(
+        device.isEnded
+            ? Icons.gpp_maybe_outlined
+            : (isCurrent ? Icons.phone_iphone : Icons.devices_other),
+      ),
+      title: Text(
+        [
+          device.label ?? l.accountDeviceUnknown,
+          if (isCurrent) '· ${l.accountDeviceThis}',
+        ].join(' '),
+      ),
+      subtitle: device.isEnded
+          // Said in full rather than as a status word. "Ended" alone invites
+          // the reading that RingDrill logged you out for no reason.
+          ? Text(
+              device.endedReason == 'replayed'
+                  ? l.accountDeviceEndedReplay
+                  : l.accountDeviceEnded,
+              style: theme.textTheme.bodySmall,
+            )
+          : (device.lastUsedAt == null
+                ? null
+                : Text(
+                    l.accountDeviceLastUsed(
+                      MaterialLocalizations.of(
+                        context,
+                      ).formatShortDate(device.lastUsedAt!.toLocal()),
+                    ),
+                  )),
+      // An ended session has nothing left to end.
+      trailing: device.isEnded
+          ? null
+          : IconButton(
+              icon: const Icon(Icons.logout),
+              tooltip: l.accountDeviceSignOutThis,
+              onPressed: () => _revoke(device),
+            ),
+    );
+  }
 }
 
 /// The role's label. Kept as a function rather than an extension so the invite

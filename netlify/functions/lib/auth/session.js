@@ -135,6 +135,12 @@ export async function rotateSession(store, { sessionId, refreshToken, now = Date
     const rec = await store.get(sessionId, { type: "json" });
     if (!rec) return { ok: false, reason: "unknown_session" };
 
+    // An ended session is a record with no credential in it. Checked before
+    // the hash compare rather than relying on the compare to fail, because
+    // `refreshHash` is absent on a tombstone and Buffer.from(undefined) throws
+    // — a second replay would answer 500 instead of 401.
+    if (rec.endedAt) return { ok: false, reason: "unknown_session" };
+
     if (rec.expiresAt <= now()) {
         await store.delete(sessionId);
         return { ok: false, reason: "expired" };
@@ -143,7 +149,20 @@ export async function rotateSession(store, { sessionId, refreshToken, now = Date
     const provided = Buffer.from(hash(refreshToken), "hex");
     const expected = Buffer.from(rec.refreshHash, "hex");
     if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
-        await store.delete(sessionId);
+        // **Tombstoned, not deleted.** A replayed token means somebody had a
+        // copy of this session's refresh token, which is the one event a user
+        // most needs told about — and a session that simply disappears from
+        // the device list tells them nothing (DESIGN-015 §4.3).
+        //
+        // The credential goes; only the fact remains. `expiresAt` is kept
+        // untouched, so the tombstone ages out on the same clock the live
+        // session would have and `sessionsOf` stops reporting it then.
+        const { refreshHash, ...rest } = rec;
+        await store.set(sessionId, JSON.stringify({
+            ...rest,
+            endedAt: new Date(now()).toISOString(),
+            endedReason: "replayed",
+        }));
         return { ok: false, reason: "replayed", sessionEnded: true, userId: rec.userId };
     }
 
@@ -207,7 +226,15 @@ function safeEqual(a, b) {
 }
 
 /** Every open session for a user — the Devices list in DESIGN-015 §4.3. */
-export async function sessionsOf(store, userId) {
+/**
+ * This user's sessions, live ones and recently-ended tombstones alike.
+ *
+ * A tombstone (`endedAt` set) is included on purpose: it is how a replayed
+ * refresh token becomes visible to the person it happened to. Once it passes
+ * `expiresAt` it stops being reported — the live session would have expired by
+ * then too, so there is nothing left to explain.
+ */
+export async function sessionsOf(store, userId, { now = Date.now } = {}) {
     const out = [];
     let cursor;
     do {
@@ -216,8 +243,10 @@ export async function sessionsOf(store, userId) {
         for (const blob of page?.blobs ?? []) {
             const rec = await store.get(blob.key, { type: "json" });
             if (rec?.userId !== userId) continue;
+            if (typeof rec.expiresAt === "number" && rec.expiresAt <= now()) continue;
             // Never the hash: this is rendered in the app, and a credential
-            // derivative has no business leaving the server.
+            // derivative has no business leaving the server. A tombstone has
+            // none to begin with.
             const { refreshHash, ...safe } = rec;
             out.push(safe);
         }

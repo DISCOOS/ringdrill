@@ -296,4 +296,86 @@ void main() {
       expect(notified, greaterThan(0));
     });
   });
+
+  group('devices and revocation', () {
+    test('lists the devices /me reports, tombstones included', () async {
+      // A session ended by replay detection arrives as a tombstone rather
+      // than being absent — that is the whole point of keeping it.
+      final h = harness([
+        _json(_tokens()),
+        _json(_me),
+        _json({
+          ..._me,
+          'devices': [
+            {
+              'sessionId': 's_1',
+              'deviceLabel': 'iPhone 15',
+              'lastUsedAt': '2026-08-01T00:00:00.000Z',
+            },
+            {
+              'sessionId': 's_2',
+              'deviceLabel': 'Old laptop',
+              'endedAt': '2026-08-02T00:00:00.000Z',
+              'endedReason': 'replayed',
+            },
+          ],
+        }),
+      ]);
+      await h.service.completeSignIn(challengeId: 'c_1', code: '123456');
+
+      final devices = await h.service.devices();
+      expect(devices.map((d) => d.sessionId), ['s_1', 's_2']);
+      expect(devices.first.isEnded, isFalse);
+      expect(devices.last.isEnded, isTrue);
+      expect(devices.last.endedReason, 'replayed');
+    });
+
+    test('marks the current device by id, not by label', () async {
+      // Two identical phones report the same label; only the id distinguishes
+      // the one you are holding.
+      final h = harness([_json(_tokens()), _json(_me)]);
+      await h.service.completeSignIn(challengeId: 'c_1', code: '123456');
+
+      expect(h.service.currentSessionId, 's_1');
+      const a = AuthDevice(sessionId: 's_1', label: 'iPhone 15');
+      const b = AuthDevice(sessionId: 's_2', label: 'iPhone 15');
+      expect(a.isCurrent(h.service.currentSessionId), isTrue);
+      expect(b.isCurrent(h.service.currentSessionId), isFalse);
+    });
+
+    test('revoking another device does not sign this one out', () async {
+      final h = harness([_json(_tokens()), _json(_me), http.Response('', 204)]);
+      await h.service.completeSignIn(challengeId: 'c_1', code: '123456');
+
+      await h.service.revokeSession('s_other');
+
+      expect(h.service.isSignedIn, isTrue);
+      expect(h.fake.requests.last.url.path, endsWith('/auth/sessions/revoke'));
+    });
+
+    test('revoking the current device signs out instead', () async {
+      // Otherwise the app keeps running on a session the server has just
+      // destroyed, and every later request 401s with no explanation.
+      final h = harness([_json(_tokens()), _json(_me), http.Response('', 204)]);
+      await h.service.completeSignIn(challengeId: 'c_1', code: '123456');
+
+      await h.service.revokeSession(h.service.currentSessionId!);
+
+      expect(h.service.isSignedIn, isFalse);
+      expect(await h.store.read(), isNull);
+    });
+
+    test('signing out proves ownership with the refresh token', () async {
+      // The server refuses a bare session id now, and the access token may
+      // already have expired — without this the session lives 60 more days.
+      final h = harness([_json(_tokens()), _json(_me), http.Response('', 204)]);
+      await h.service.completeSignIn(challengeId: 'c_1', code: '123456');
+
+      await h.service.signOut();
+
+      final body = jsonDecode((h.fake.requests.last as http.Request).body);
+      expect(body['sessionId'], 's_1');
+      expect(body['refreshToken'], 'rt_1');
+    });
+  });
 }

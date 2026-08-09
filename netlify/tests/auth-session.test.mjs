@@ -141,7 +141,42 @@ test("REPLAY: presenting a rotated token ends the session entirely", async () =>
     assert.equal(replay.reason, "replayed");
     assert.equal(replay.sessionEnded, true);
     assert.equal(replay.userId, "u_1", "the caller needs this to log the signal");
-    assert.equal(store.data.size, 0, "the session is gone, not merely refused");
+
+    // Ended, but not erased. The record survives as a tombstone so the person
+    // it happened to can be *told* — a session that silently disappears from
+    // the device list explains nothing (DESIGN-015 §4.3).
+    const tomb = await store.get(sessionId, { type: "json" });
+    assert.equal(tomb.endedReason, "replayed");
+    assert.ok(tomb.endedAt, "and when");
+    // The credential is what must be gone.
+    assert.equal(tomb.refreshHash, undefined, "no credential derivative survives");
+});
+
+test("REPLAY: a tombstoned session is unusable, and replaying again does not 500", async () => {
+    // `refreshHash` is absent on a tombstone, and Buffer.from(undefined) throws
+    // — so the compare has to be skipped rather than relied upon to fail.
+    const store = fakeStore();
+    const { sessionId, refreshToken } = await createSession(store, { userId: "u_1" });
+    await rotateSession(store, { sessionId, refreshToken });
+    await rotateSession(store, { sessionId, refreshToken });
+
+    const again = await rotateSession(store, { sessionId, refreshToken });
+    assert.equal(again.ok, false);
+    assert.equal(again.reason, "unknown_session");
+});
+
+test("a tombstone stops being reported once it would have expired", async () => {
+    // By then the live session would have expired too, so there is nothing
+    // left to explain — and tombstones must not accumulate forever.
+    const store = fakeStore();
+    let t = 1_000_000;
+    const { sessionId, refreshToken } = await createSession(store, { userId: "u_1", now: () => t });
+    await rotateSession(store, { sessionId, refreshToken, now: () => t });
+    await rotateSession(store, { sessionId, refreshToken, now: () => t });
+
+    assert.equal((await sessionsOf(store, "u_1", { now: () => t })).length, 1);
+    t += 61 * 24 * 60 * 60 * 1000;
+    assert.equal((await sessionsOf(store, "u_1", { now: () => t })).length, 0);
 });
 
 test("an expired session is refused and removed", async () => {

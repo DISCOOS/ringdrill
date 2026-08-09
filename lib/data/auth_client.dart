@@ -229,23 +229,49 @@ class AuthIdentity {
   });
 }
 
-/// A signed-in device, for the sessions list. This is where refresh-token
-/// rotation becomes visible: a session ended by replay detection shows as
-/// ended rather than silently vanishing.
+/// A signed-in device, for the sessions list.
+///
+/// This is where refresh-token rotation becomes visible. A session ended by
+/// replay detection is kept server-side as a tombstone rather than deleted, so
+/// it arrives here with [endedReason] set — the user is *told* their refresh
+/// token was replayed instead of watching a device quietly disappear.
 @immutable
 class AuthDevice {
   final String sessionId;
   final String? label;
   final DateTime? lastUsedAt;
 
-  const AuthDevice({required this.sessionId, this.label, this.lastUsedAt});
+  /// When the session was ended, or null while it is live.
+  final DateTime? endedAt;
+
+  /// Why it ended — today only `replayed`. Null while live.
+  final String? endedReason;
+
+  const AuthDevice({
+    required this.sessionId,
+    this.label,
+    this.lastUsedAt,
+    this.endedAt,
+    this.endedReason,
+  });
+
+  bool get isEnded => endedAt != null;
+
+  /// Whether this is the session the app is currently running on. Compared by
+  /// id rather than by label, because two phones of the same model report the
+  /// same label.
+  bool isCurrent(String? currentSessionId) =>
+      currentSessionId != null && sessionId == currentSessionId;
+
+  static DateTime? _time(Object? v) =>
+      v is String ? DateTime.tryParse(v) : null;
 
   factory AuthDevice.fromJson(Map<String, dynamic> j) => AuthDevice(
     sessionId: (j['sessionId'] ?? j['id']) as String,
     label: j['deviceLabel'] as String? ?? j['label'] as String?,
-    lastUsedAt: j['lastUsedAt'] == null
-        ? null
-        : DateTime.tryParse(j['lastUsedAt'] as String),
+    lastUsedAt: _time(j['lastUsedAt']),
+    endedAt: _time(j['endedAt']),
+    endedReason: j['endedReason'] as String?,
   );
 }
 

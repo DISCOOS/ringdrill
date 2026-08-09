@@ -1098,6 +1098,36 @@ class AppLocalizationsNb extends AppLocalizations {
       'Klarte ikke å oppdatere deling. Planen er publisert bare til kontoen din.';
 
   @override
+  String get accountDevicesTitle => 'Innloggede enheter';
+
+  @override
+  String get accountDeviceThis => 'Denne enheten';
+
+  @override
+  String get accountDeviceUnknown => 'Ukjent enhet';
+
+  @override
+  String accountDeviceLastUsed(String when) {
+    return 'Sist brukt $when';
+  }
+
+  @override
+  String get accountDeviceEndedReplay =>
+      'Avsluttet automatisk. Innloggingsnøkkelen for denne enheten ble brukt to ganger, noe som vanligvis betyr at den er kopiert — så økten ble lukket. Logg inn på nytt på den enheten om det var deg.';
+
+  @override
+  String get accountDeviceEnded => 'Avsluttet';
+
+  @override
+  String get accountDeviceSignOutThis => 'Logg ut denne enheten';
+
+  @override
+  String get accountDeviceSignedOut => 'Enheten er logget ut.';
+
+  @override
+  String get accountDevicesEmpty => 'Ingen andre enheter er innlogget.';
+
+  @override
   String get accountTitle => 'Konto';
 
   @override

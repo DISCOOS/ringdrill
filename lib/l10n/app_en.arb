@@ -1260,6 +1260,24 @@
   "@publishSharingFailed": {
     "description": "Says where the plan actually ended up, because a failed sharing step leaves it *less* open than asked for and the user needs to know which."
   },
+  "accountDevicesTitle": "Signed-in devices",
+  "@accountDevicesTitle": {
+    "description": "DESIGN-015 §4.3. This is the answer to \"I lost the device that was signed in\" and to \"my phone was stolen\" — not a recovery flow, a list you can end sessions from."
+  },
+  "accountDeviceThis": "This device",
+  "accountDeviceUnknown": "Unknown device",
+  "accountDeviceLastUsed": "Last used {when}",
+  "@accountDeviceLastUsed": {
+    "placeholders": { "when": { "type": "String" } }
+  },
+  "accountDeviceEndedReplay": "Ended automatically. This device's sign-in token was used twice, which usually means it was copied — so the session was closed. Sign in again on that device if it was you.",
+  "@accountDeviceEndedReplay": {
+    "description": "The one place refresh-token rotation becomes visible (DESIGN-015 §4.3). A session ended by replay detection is kept as a tombstone precisely so this can be said; it explains what happened in plain terms and does not accuse the user of anything."
+  },
+  "accountDeviceEnded": "Ended",
+  "accountDeviceSignOutThis": "Log out this device",
+  "accountDeviceSignedOut": "That device is signed out.",
+  "accountDevicesEmpty": "No other devices are signed in.",
   "accountTitle": "Account",
   "accountMembersTitle": "Members",
   "accountRoleOwner": "Owner",

@@ -167,7 +167,19 @@ test("REPLAY: reusing a rotated refresh token is 401 and the session is gone", a
     const replay = await h.handler(post("refresh", { sessionId: session.sessionId, refreshToken: session.refreshToken }));
     assert.equal(replay.status, 401);
     assert.equal((await replay.json()).error, "replayed");
-    assert.equal(h.raw.sessions.data.size, 0, "the session is ended, not merely refused");
+
+    // The session is ended, not merely refused — but it is kept as a
+    // tombstone so `me` can still report it and the user learns their refresh
+    // token was replayed.
+    const rec = await h.raw.sessions.get(session.sessionId, { type: "json" });
+    assert.equal(rec.endedReason, "replayed");
+    assert.equal(rec.refreshHash, undefined);
+
+    const me = await (await h.handler(new Request("https://api.ringdrill.app/api/auth/me", {
+        headers: { authorization: `Bearer ${session.accessToken}` },
+    }))).json();
+    assert.equal(me.devices.length, 1);
+    assert.equal(me.devices[0].endedReason, "replayed");
 });
 
 // ---------- logout ----------
