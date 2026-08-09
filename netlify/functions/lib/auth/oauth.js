@@ -111,6 +111,38 @@ export async function redeemAuthorization(store, state, { now = Date.now } = {})
 }
 
 /**
+ * Apple's client secret: a short-lived JWT signed with the `.p8` key.
+ *
+ * Apple is the only one of the three that issues no static secret, and the
+ * reason is a good one — a downloadable key that must be signed with cannot be
+ * copied out of a build and replayed, because the assertion it produces expires.
+ * Minted per exchange rather than cached: it costs a signature, and a cached
+ * one is a credential sitting in memory for no gain.
+ *
+ * `aud` is Apple, `sub` is our Services ID, `iss` is the team. Five minutes is
+ * far inside Apple's six-month ceiling and long enough for any exchange.
+ */
+function appleClientSecret(provider, { now = Date.now } = {}) {
+    const { teamId, keyId, privateKey } = provider.appleKey;
+    const iat = Math.floor(now() / 1000);
+    const header = base64url(JSON.stringify({ alg: "ES256", kid: keyId }));
+    const claims = base64url(JSON.stringify({
+        iss: teamId,
+        iat,
+        exp: iat + 300,
+        aud: "https://appleid.apple.com",
+        sub: provider.clientId,
+    }));
+    const input = `${header}.${claims}`;
+    const sig = crypto.sign("sha256", Buffer.from(input), {
+        key: crypto.createPrivateKey(privateKey),
+        // JWS wants the raw r||s pair, not the DER wrapping node defaults to.
+        dsaEncoding: "ieee-p1363",
+    });
+    return `${input}.${base64url(sig)}`;
+}
+
+/**
  * Exchange an authorization code for tokens, then verify the `id_token`.
  *
  * The client secret is sent here and nowhere else. `client_secret` is omitted
@@ -132,7 +164,10 @@ export async function exchangeCode(provider, {
         client_id: provider.clientId,
         code_verifier: verifier,
     });
-    if (provider.clientSecret) body.set("client_secret", provider.clientSecret);
+    const secret = provider.appleKey
+        ? appleClientSecret(provider, { now })
+        : provider.clientSecret;
+    if (secret) body.set("client_secret", secret);
 
     const res = await fetchImpl(provider.tokenUrl, {
         method: "POST",

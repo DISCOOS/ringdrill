@@ -87,6 +87,16 @@ export function configuredProviders(env = process.env) {
             ...PROVIDERS[id],
             clientId,
             clientSecret: env[`OAUTH_${id.toUpperCase()}_CLIENT_SECRET`] ?? null,
+            // Apple issues no static secret: the token endpoint expects a
+            // short-lived JWT signed with a key you download once. Carried
+            // here so `oauth.js` can mint one per exchange.
+            appleKey: id === "apple" && env.OAUTH_APPLE_PRIVATE_KEY
+                ? {
+                    teamId: env.OAUTH_APPLE_TEAM_ID,
+                    keyId: env.OAUTH_APPLE_KEY_ID,
+                    privateKey: env.OAUTH_APPLE_PRIVATE_KEY,
+                }
+                : null,
             // Extra audiences a token may legitimately carry — a native Apple
             // sign-in presents the bundle id, not the web Service ID.
             extraAudiences: (env[`OAUTH_${id.toUpperCase()}_AUDIENCES`] ?? "")

@@ -83,7 +83,11 @@ function upstream({ token = null, tokenOk = true } = {}) {
     const state = { exchanges: [], nonce: null };
     const mint = token ?? (() => ({ id_token: idToken({ nonce: state.nonce }) }));
     state.fetch = async (url, init) => {
-        if (String(url).includes("/oauth2/v3/certs")) {
+        // Dispatch on the *token* endpoint rather than on a provider-specific
+        // JWKS path: matching only Google's `/oauth2/v3/certs` recorded
+        // Apple's key fetch as an exchange, and the assertion then read an
+        // empty body.
+        if (!String(url).endsWith("/token")) {
             return {
                 ok: true,
                 json: async () => ({
@@ -370,4 +374,64 @@ test("an unknown handoff code is 401", async () => {
         body: JSON.stringify({ handoff: "made-up" }),
     }));
     assert.equal(res.status, 401);
+});
+
+// ---------- Apple's signed client assertion ----------
+
+test("Apple is sent a signed assertion, not a static secret", async () => {
+    // Apple issues no static secret: the token endpoint expects a short-lived
+    // JWT signed with the .p8 key. A downloadable key that must be *signed
+    // with* cannot be lifted from a build and replayed, because what it
+    // produces expires.
+    const ec = crypto.generateKeyPairSync("ec", { namedCurve: "P-256" });
+    const h = harness({
+        OAUTH_GOOGLE_CLIENT_ID: "",
+        OAUTH_APPLE_CLIENT_ID: "app.ringdrill.web",
+        OAUTH_APPLE_TEAM_ID: "TEAM123",
+        OAUTH_APPLE_KEY_ID: "KEY123",
+        OAUTH_APPLE_PRIVATE_KEY: ec.privateKey.export({ type: "pkcs8", format: "pem" }),
+    });
+
+    const authorizeUrl = new URL((await discover(h))[0].authorizeUrl);
+    const up = upstream();
+    up.nonce = authorizeUrl.searchParams.get("nonce");
+    globalThis.fetch = up.fetch;
+    try {
+        await h.handler(new Request(
+            "https://api.ringdrill.app/api/auth/callback/apple?code=c&state="
+            + authorizeUrl.searchParams.get("state"),
+        ));
+    } finally { delete globalThis.fetch; }
+
+    const secret = up.exchanges.at(-1).client_secret;
+    const [header, claims] = secret.split(".").slice(0, 2)
+        .map((p) => JSON.parse(Buffer.from(p, "base64url").toString()));
+
+    assert.equal(header.alg, "ES256");
+    assert.equal(header.kid, "KEY123", "names the key Apple should verify with");
+    assert.equal(claims.iss, "TEAM123");
+    assert.equal(claims.sub, "app.ringdrill.web", "the Services ID, not the bundle id");
+    assert.equal(claims.aud, "https://appleid.apple.com");
+    assert.ok(claims.exp - claims.iat <= 300, "short-lived");
+
+    // And it actually verifies against the key, rather than merely looking
+    // like a JWT.
+    const ok = crypto.verify(
+        "sha256",
+        Buffer.from(secret.split(".").slice(0, 2).join(".")),
+        { key: ec.publicKey, dsaEncoding: "ieee-p1363" },
+        Buffer.from(secret.split(".")[2], "base64url"),
+    );
+    assert.equal(ok, true);
+});
+
+test("Apple asks for a form post, or it returns no email at all", async () => {
+    const h = harness({
+        OAUTH_GOOGLE_CLIENT_ID: "",
+        OAUTH_APPLE_CLIENT_ID: "app.ringdrill.web",
+    });
+    const url = new URL((await discover(h))[0].authorizeUrl);
+
+    assert.equal(url.searchParams.get("response_mode"), "form_post");
+    assert.equal(url.origin, "https://appleid.apple.com");
 });

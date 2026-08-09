@@ -157,11 +157,24 @@ which is the one part where a mistake is a security bug rather than a 500.
 | `POST` | `/api/auth/logout` | End this session. Proves ownership with the access token **or** the session's refresh token |
 | `POST` | `/api/auth/sessions/revoke` | End another of this user's sessions — the sessions list's "log out this device" |
 | `GET` | `/api/auth/me` | The current principal, its accounts and roles |
+| `GET` | `/api/auth/providers` | Which third-party providers are configured, and the authorize URL to open for each |
+| `GET`, `POST` | `/api/auth/callback/{provider}` | Where a provider redirects the browser. Redirects into the app with a single-use handoff code |
 
 `acts` and `roles` are read from stored memberships **every time a token is
 minted**, so a role change takes effect on the next refresh rather than needing
 a sign-out. That is why the token carries the map rather than the server looking
 it up per request.
+
+**Third-party sign-in runs entirely server-side.** The app holds no client id,
+no client secret and no provider SDK: it asks `/api/auth/providers` at runtime,
+opens the returned URL in a *system browser*, and later exchanges a one-minute
+single-use handoff code for its session. The user still authenticates on the
+provider's own page, on the provider's own domain — "server-side" describes
+where the authorization code is exchanged, not where the human signs in.
+
+Because the exchange happens on our server these are **confidential** OAuth
+clients; an app using a native SDK could only ever be a public one. Setup is in
+[`identity-provider-setup.md`](./identity-provider-setup.md).
 
 Behaviour depends on `AUTH_MODE`
 ([ADR-0073](./adrs/0073-auth-mode-and-adapters.md)) — `live`, `mock` or `off`.

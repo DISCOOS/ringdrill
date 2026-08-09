@@ -114,29 +114,29 @@ are deliberately not, and only the first blocks the release.
 | `AuthService`, sign-in screen, account/members screen, invite page | **Done** |
 | Library account tab, Online→Public, publish dialog sharing | **Done** |
 | Sessions list, account deletion, handle-based sharing | **Done** |
-| Apple / Google / Microsoft sign-in | **Not built** — blocks the release |
+| Apple / Google / Microsoft sign-in — **server** | **Done** — verification, code exchange, discovery |
+| Apple / Google / Microsoft sign-in — **client + credentials** | **Not built** — blocks the release |
 | CLI device grant | Deferred by design (§ CLI below) |
 | `ADMIN_TOKEN` removal | Deferred — no user-facing effect |
 
-**The provider gap is the one that matters.** Only the email path exists, on
-both sides: `auth.js`'s `callback` redeems an email challenge and nothing else,
-and the sign-in screen states that providers are coming rather than showing
-disabled buttons. Shipping like this would mean an Apple-device user has no
-Apple sign-in, which is a worse first impression than no accounts at all — and
-[ADR-0024](../adrs/0024-account-and-identity-model.md)'s App Store 4.8 reasoning
-assumes email is *an* option, not the only one.
+**The provider gap is now half closed.** The server side is built: JWKS
+verification, the authorization-code exchange with PKCE, and runtime discovery
+via `GET /api/auth/providers`. It runs **entirely server-side**, so no client
+id, client secret or provider SDK enters any build — and because the exchange
+happens on our server these are confidential OAuth clients, which a native SDK
+could never be.
 
-Closing it needs two things this work could not produce:
+Two things remain, and only the first blocks a release:
 
-1. **Server-side ID-token verification** in `callback` — fetch each provider's
-   JWKS, verify the signature, and take `sub`, `email` and `email_verified`
-   from the verified claims rather than from the request body. The
-   `resolveIdentity` call it feeds is already provider-agnostic, so this is
-   additive.
-2. **OAuth client IDs and native configuration** — Apple Service ID and key,
-   Google client IDs per platform, Microsoft app registration, plus the
-   entitlements and URL schemes each needs. These are account-level
-   credentials, not code.
+1. **The credentials.** Apple Service ID + `.p8` key, Google web client, and a
+   Microsoft app registration. These are account-level credentials that only
+   the project owner can create. Step-by-step in
+   [`identity-provider-setup.md`](../identity-provider-setup.md).
+2. **The client half.** Open the discovered authorize URL in a system browser,
+   handle the `ringdrill://auth/callback?handoff=…` return, and exchange the
+   handoff code. Plus the *Sign in with Apple* entitlement in Xcode, which is
+   the only provider-related thing in any build — and is not security
+   information.
 
 ### Backend
 
