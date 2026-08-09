@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-08-09
 deciders: ["Kenneth Gulbrandsøy"]
 consulted: []
@@ -32,6 +32,31 @@ But the same store also holds every plan, and that is a different question.
 into every widget that renders a plan — a change with a very large blast radius
 and no user-visible benefit. `flutter_secure_storage` is async-only, which is
 why "just move the plans there too" is not on the table.
+
+## A second motivation, found while writing this
+
+The ADR started as a privacy question. Reading the storage layer to answer it
+turned up a performance one with the same fix, and it is the stronger of the
+two.
+
+**Every ordinary save rewrites every nested record of the plan.**
+`PlanRepository._replaceNested` removes every `p*:<planUuid>:*` key and then
+writes back every exercise, team, session, roleplay, staff member and staff
+note — one `SharedPreferences` call each. Each of those calls is a
+platform-channel round trip that rewrites the *entire* backing store, for every
+plan, not just the one being edited. So the cost of one save is
+`O(entities) × O(total stored bytes)`, and both factors grow with the plan.
+
+That matches the reported symptom — lag that grows with plan size, during
+editing — better than the first hypothesis, which was that building the
+`.drill` archive before a push was to blame. Archive building happens in
+`DrillFile.fromPlan`, and its call sites are publish, export and share; an
+ordinary edit never zips. Zipping would explain lag *at publish*, not while
+typing.
+
+This is stated as a mechanism, not a measurement. It has not been profiled, and
+it should be before anything is optimised for it — but it is the first place to
+look, and it is the same code this ADR replaces.
 
 ## Decision drivers
 
@@ -78,6 +103,20 @@ all. That is the whole reason a real fix is affordable here.
 Chosen option: **C**, because it is the only option that can actually apply the
 controls the threat model calls for — and because `SharedPreferences` is
 structurally the wrong place to try.
+
+**One folder per plan, laid out like the archive.** `plans/<planUuid>/` with the
+same shape a `.drill` has inside — `program.json`, `exercises/`, `teams/`,
+`staff/` and the rest. Three things follow, and the third is why this shape
+rather than one blob per plan:
+
+1. **Export and publish become a zip of a directory**, not a serialisation pass
+   that rebuilds every entry from the model.
+2. **The layout is already the format**, so there is one structure to reason
+   about instead of a storage shape and a wire shape that drift.
+3. **A save touches only what changed.** The write amplification above exists
+   because the storage unit is a key in a store shared by everything. With a
+   file per entity under a folder per plan, editing one exercise writes one
+   file, and no other plan is touched at all.
 
 The decisive fact is that **the controls do not reach `SharedPreferences`.** On
 iOS it is `NSUserDefaults`: a plist in `Library/Preferences` that the app does
@@ -153,10 +192,13 @@ default, which is why it is written down here either way.
   old prefs keys, writes the new file, and only then clears the old, with the
   same copy-first-delete-last ordering as
   [the catalog re-key](../plans/catalog-rekey-migration.md).
-* Bad: hydration cost moves from "SharedPreferences loads the plist" to "we
-  read and parse a file". At current plan counts this is noise; at a few
-  hundred plans it would want a per-plan file rather than one blob, and the
-  design should not preclude that.
+* Good: the write path stops rewriting the world on every save — see the
+  performance section above. This is a side effect of the layout, not a
+  separate optimisation.
+* Bad: hydration reads a directory tree at startup instead of one plist. At
+  current plan counts this is noise, and it can become lazy per plan later —
+  the shell is what the library list needs, and the nested entities only matter
+  once a plan is opened.
 * Neutral: settings stay in `SharedPreferences`, where they belong. This ADR
   deliberately does not move them.
 
@@ -200,6 +242,19 @@ default, which is why it is written down here either way.
 
 * Decide the backup question above. It is the only open item that changes
   behaviour a user would notice.
+* **Profile a large plan's save before optimising anything.** The mechanism
+  above is read off the code, not measured. If it is confirmed, this ADR's
+  layout fixes it without further work; if the lag turns out to be elsewhere —
+  brief rendering, `computeContentHash`, widget rebuilds — that is worth
+  knowing before designing around the wrong cause.
+* **A delta protocol for `.drill` transfer is a separate question, and later.**
+  Sending only changed entries would help publish and refresh over a slow link,
+  and the folder layout makes the unit of change obvious. But it adds a
+  negotiation to a wire format that currently has none, and it should not be
+  built on the assumption that archive building is the bottleneck — see above.
+  Measure the publish path first; if zipping is cheap and the upload is the
+  cost, a delta protocol is the right answer, and if zipping is the cost,
+  caching the archive against the plan's `contentHash` is a far smaller change.
 * Say it in the UI once decided. If plans are excluded from backup, the app has
   to say so somewhere a person will read before they rely on it.
 * Revisit per-plan files if plan counts grow enough for hydration to be felt at
