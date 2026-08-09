@@ -52,6 +52,10 @@ const ENV = {
     PUBLIC_API_ORIGIN: "https://api.ringdrill.app",
     OAUTH_GOOGLE_CLIENT_ID: "web-client.apps.googleusercontent.com",
     OAUTH_GOOGLE_CLIENT_SECRET: "s3cret",
+    // The baseline is a *compliant* deployment: guideline 4.8 requires Sign in
+    // with Apple alongside third-party login, and `offerableProviders` refuses
+    // to advertise Google without it. Tests that want the violation opt in.
+    OAUTH_APPLE_CLIENT_ID: "app.ringdrill.web",
 };
 
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
@@ -139,14 +143,14 @@ test("providers are discovered at runtime, not baked into a build", async () => 
     const h = harness();
     const providers = await discover(h);
 
-    assert.deepEqual(providers.map((p) => p.id), ["google"]);
+    assert.deepEqual(providers.map((p) => p.id), ["google", "apple"]);
     assert.equal(providers[0].label, "Google");
 });
 
 test("an unconfigured provider is simply absent", async () => {
     // Not disabled, not broken — absent. A build must never believe in a
     // provider nobody configured.
-    const h = harness({ OAUTH_GOOGLE_CLIENT_ID: "" });
+    const h = harness({ OAUTH_GOOGLE_CLIENT_ID: "", OAUTH_APPLE_CLIENT_ID: "" });
     assert.deepEqual(await discover(h), []);
 });
 
@@ -386,7 +390,6 @@ test("Apple is sent a signed assertion, not a static secret", async () => {
     const ec = crypto.generateKeyPairSync("ec", { namedCurve: "P-256" });
     const h = harness({
         OAUTH_GOOGLE_CLIENT_ID: "",
-        OAUTH_APPLE_CLIENT_ID: "app.ringdrill.web",
         OAUTH_APPLE_TEAM_ID: "TEAM123",
         OAUTH_APPLE_KEY_ID: "KEY123",
         OAUTH_APPLE_PRIVATE_KEY: ec.privateKey.export({ type: "pkcs8", format: "pem" }),
@@ -426,12 +429,55 @@ test("Apple is sent a signed assertion, not a static secret", async () => {
 });
 
 test("Apple asks for a form post, or it returns no email at all", async () => {
-    const h = harness({
-        OAUTH_GOOGLE_CLIENT_ID: "",
-        OAUTH_APPLE_CLIENT_ID: "app.ringdrill.web",
-    });
+    const h = harness({ OAUTH_GOOGLE_CLIENT_ID: "" });
     const url = new URL((await discover(h))[0].authorizeUrl);
 
     assert.equal(url.searchParams.get("response_mode"), "form_post");
     assert.equal(url.origin, "https://appleid.apple.com");
+});
+
+// ---------- App Store guideline 4.8 ----------
+
+test("Google without Apple is not offered at all", async () => {
+    // Runtime configuration turned a 4.8 violation into a deployment mistake:
+    // set Google, forget Apple, and the app ships third-party login without
+    // the privacy-preserving alternative the guideline requires. Nothing would
+    // have surfaced it — the buttons render and review rejects later.
+    const h = harness({ OAUTH_APPLE_CLIENT_ID: "" });
+
+    assert.deepEqual(await discover(h), [], "no buttons rather than the wrong ones");
+});
+
+test("Google with Apple is offered", async () => {
+    const h = harness();
+
+    assert.deepEqual(
+        (await discover(h)).map((p) => p.id).sort(),
+        ["apple", "google"],
+    );
+});
+
+test("Apple alone is fine — it is the alternative, not the thing needing one", async () => {
+    const h = harness({
+        OAUTH_GOOGLE_CLIENT_ID: "",
+        OAUTH_APPLE_CLIENT_ID: "app.ringdrill.web",
+    });
+
+    assert.deepEqual((await discover(h)).map((p) => p.id), ["apple"]);
+});
+
+test("no providers at all is fine — 4.8 does not apply", async () => {
+    // An app offering no third-party login has nothing to pair with Apple.
+    const h = harness({ OAUTH_GOOGLE_CLIENT_ID: "", OAUTH_APPLE_CLIENT_ID: "" });
+
+    assert.deepEqual(await discover(h), []);
+});
+
+test("the rule does not apply outside a live deployment", async () => {
+    // A developer configuring Google alone to exercise the flow is not
+    // shipping anything, and a guard that blocks them is one people route
+    // around.
+    const h = harness({ AUTH_MODE: "mock", OAUTH_APPLE_CLIENT_ID: "" });
+
+    assert.deepEqual((await discover(h)).map((p) => p.id), ["google"]);
 });

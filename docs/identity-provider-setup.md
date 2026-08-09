@@ -195,6 +195,33 @@ On web and Android, Apple goes through the server-side flow regardless.
 
 ---
 
+## Apple is not optional once you offer the others
+
+App Store guideline 4.8: an app offering third-party login must also offer a
+privacy-preserving alternative. Since the 2022 revision the guideline does not
+name Sign in with Apple specifically — it asks for an option that limits
+collection to name and email, **lets the user keep their email address
+private**, and does not track for advertising. RingDrill's email magic link
+fails the middle clause, because it goes to the person's real address. Apple's
+private relay is what satisfies it.
+
+Runtime configuration turns that into a *deployment* mistake rather than a code
+one: set Google and Microsoft, forget Apple, and the app ships third-party login
+without the required alternative. Two buttons render, everything looks correct,
+and review rejects it weeks later.
+
+**So the server refuses to advertise the others when Apple is missing.**
+`GET /api/auth/providers` returns an empty list and logs the reason. The
+failure mode is deliberately the safe one — no provider buttons, email still
+works, and no combination that fails review can reach a user. Only enforced
+when `AUTH_MODE=live`; a developer configuring Google alone to exercise the
+flow is not shipping anything.
+
+If the sign-in screen shows no buttons after you configured Google, this is
+why. Check the function log.
+
+Guidelines change — verify against the current text when you submit.
+
 ## Turning it on
 
 1. Set the variables in **Netlify** → *Site configuration* → *Environment

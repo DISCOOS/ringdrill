@@ -106,6 +106,44 @@ export function configuredProviders(env = process.env) {
     return out;
 }
 
+/**
+ * The providers it is safe to *offer*, as opposed to the ones configured.
+ *
+ * **App Store guideline 4.8.** An app offering third-party login has to offer
+ * a privacy-preserving alternative, and the one that qualifies here is Sign in
+ * with Apple — our email magic link does not, because it cannot keep the
+ * address private the way Apple's relay does.
+ *
+ * Runtime configuration made that a *deployment* mistake rather than a code
+ * one: set Google and Microsoft, forget Apple, and the app ships third-party
+ * login without the required alternative. Nothing would have surfaced it — two
+ * buttons render and everything looks correct until review rejects it.
+ *
+ * So when Apple is absent, the others are not advertised either. The failure
+ * mode is deliberately the safe one: no provider buttons, email still works,
+ * and nobody can sign in through a combination that would fail review.
+ *
+ * Only enforced for a live deployment. A developer configuring Google alone to
+ * test the flow is not shipping anything, and crippling that would make the
+ * guard something people work around.
+ */
+export function offerableProviders(env = process.env, { live = true } = {}) {
+    const configured = configuredProviders(env);
+    if (!live) return configured;
+
+    const hasApple = configured.some((p) => p.id === "apple");
+    const others = configured.filter((p) => p.id !== "apple");
+    if (hasApple || others.length === 0) return configured;
+
+    console.error(
+        "[auth] refusing to offer %s: App Store guideline 4.8 requires Sign in "
+        + "with Apple alongside third-party login, and OAUTH_APPLE_CLIENT_ID is "
+        + "unset. See docs/identity-provider-setup.md.",
+        others.map((p) => p.id).join(", "),
+    );
+    return [];
+}
+
 export function providerConfig(id, env = process.env) {
     return configuredProviders(env).find((p) => p.id === id) ?? null;
 }

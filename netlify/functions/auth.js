@@ -4,7 +4,7 @@ import {
     ACCESS_TTL_S, createSession, endSessionOwnedBy, redeemChallenge, rotateSession, sessionsOf, startChallenge,
 } from "./lib/auth/session.js";
 import { defaultStores, getUser, membershipsOf, normalizeEmail, resolveIdentity, sweepExpired } from "./lib/identity.js";
-import { configuredProviders, providerConfig } from "./lib/auth/providers.js";
+import { offerableProviders, providerConfig } from "./lib/auth/providers.js";
 import {
     exchangeCode, putHandoff, redeemAuthorization, redeemHandoff, startAuthorization,
 } from "./lib/auth/oauth.js";
@@ -165,7 +165,13 @@ export function createHandler({
     async function listProviders(request) {
         const origin = env.PUBLIC_API_ORIGIN || new URL(request.url).origin;
         const providers = [];
-        for (const provider of configuredProviders(env)) {
+        // Not `configuredProviders` — see `offerableProviders` for why a
+        // deployment missing Apple offers nothing rather than offering the
+        // rest.
+        const offerable = offerableProviders(env, {
+            live: resolveMode(env) === AUTH_MODES.LIVE,
+        });
+        for (const provider of offerable) {
             const started = await startAuthorization(challengeStore(), provider, {
                 redirectUri: `${origin}/api/auth/callback/${provider.id}`,
                 now,
