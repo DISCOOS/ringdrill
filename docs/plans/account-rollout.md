@@ -113,6 +113,7 @@ are deliberately not, and only the first blocks the release.
 | Catalog re-key (ADR-0074) and its migration | **Done, not yet run** — see [`catalog-rekey-migration.md`](./catalog-rekey-migration.md) |
 | `AuthService`, sign-in screen, account/members screen, invite page | **Done** |
 | Library account tab, Online→Public, publish dialog sharing | **Done** |
+| Sessions list, account deletion, handle-based sharing | **Done** |
 | Apple / Google / Microsoft sign-in | **Not built** — blocks the release |
 | CLI device grant | Deferred by design (§ CLI below) |
 | `ADMIN_TOKEN` removal | Deferred — no user-facing effect |
@@ -468,16 +469,13 @@ Two consequences for this release:
 * Whether an `owner` should be distinguishable from an *admin* who manages
   people but cannot delete the account (DESIGN-015 §11). Fits the model
   without a change; nobody to be it at current scale.
-* **Where the `shared` grantee list gets its account ids.** The publish flow
-  asks for them as raw ids, which is honest but unhelpful — nobody knows
-  another account's id. A handle-based picker is the obvious answer, and it
-  needs a lookup endpoint that does not become an account-enumeration oracle.
-  Ids are stored either way ([ADR-0074](../adrs/0074-catalog-entry-as-distinct-object.md)):
-  handles change, ids do not.
-* **The sessions list (§4.3) is not built.** `GET /api/auth/me` already returns
-  `devices`, and `AuthDevice` parses them, so what is missing is the screen and
-  a per-session revoke. It is the answer to "my phone was stolen", so it should
-  not stay missing long.
-* **Account deletion (§5.1) is not built** on either side. When it is, it must
-  not sweep blobs by account prefix — after ADR-0074 there is no account in the
-  blob path, which is the point of its §4.
+* **Local plan storage is `shared_preferences`, PII included.** A plan's staff
+  roster — real names and phone numbers — sits in the same plaintext store as
+  the onboarding flags. Secure storage is the wrong fix: `listPlans`,
+  `loadPlan` and `activePlan` are synchronous and called from `build()`, and
+  `flutter_secure_storage` is async-only, so it would force an async refactor
+  of the whole plan read path. The proportionate answer is platform at-rest
+  protection and backup exclusion, which wants its own ADR.
+* **Whether `POST /api/accounts` should ever create a *second* personal
+  account.** It cannot today, and nothing needs it to; noted because the
+  endpoint's shape does not say so.
