@@ -4,6 +4,10 @@ import {
     ACCESS_TTL_S, createSession, endSessionOwnedBy, redeemChallenge, rotateSession, sessionsOf, startChallenge,
 } from "./lib/auth/session.js";
 import { defaultStores, getUser, membershipsOf, normalizeEmail, resolveIdentity, sweepExpired } from "./lib/identity.js";
+import { configuredProviders, providerConfig } from "./lib/auth/providers.js";
+import {
+    exchangeCode, putHandoff, redeemAuthorization, redeemHandoff, startAuthorization,
+} from "./lib/auth/oauth.js";
 import { createMailer, sendTemplate } from "./lib/mail/index.js";
 import { getStore } from "@netlify/blobs";
 
@@ -18,8 +22,11 @@ import { getStore } from "@netlify/blobs";
 const CHALLENGES_NS = "auth-challenges";
 const strong = { consistency: "strong" };
 
-const json = (body, status = 200) =>
-    new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+const json = (body, status = 200, headers = {}) =>
+    new Response(JSON.stringify(body), {
+        status,
+        headers: { "content-type": "application/json", ...headers },
+    });
 
 /**
  * Assemble the access-token claims (ADR-0025's shape).
@@ -78,6 +85,18 @@ export function createHandler({
         const { pathname } = new URL(request.url);
         const route = pathname.replace(/^.*\/(?:\.netlify\/functions\/auth|api\/auth)\/?/, "");
 
+        // `callback/<provider>` is where a provider redirects the *browser*.
+        // Matched before the switch because the provider id is part of the path.
+        const providerRedirect = route.match(/^callback\/([a-z]+)$/);
+        if (providerRedirect && (request.method === "GET" || request.method === "POST")) {
+            try {
+                return withCors(request, await providerCallback(request, providerRedirect[1]));
+            } catch (err) {
+                console.error("[auth] provider callback", err);
+                return withCors(request, bounceToApp(null, { error: "internal" }));
+            }
+        }
+
         try {
             switch (`${request.method} ${route}`) {
                 case "POST start-email": return withCors(request, await startEmail(request));
@@ -86,6 +105,7 @@ export function createHandler({
                 case "POST logout": return withCors(request, await logout(request));
                 case "POST sessions/revoke": return withCors(request, await revokeSession(request));
                 case "GET me": return withCors(request, await me(request));
+                case "GET providers": return withCors(request, await listProviders(request));
                 default: return withCors(request, json({ error: "not_found" }, 404));
             }
         } catch (err) {
@@ -130,8 +150,122 @@ export function createHandler({
         });
     }
 
+    /**
+     * Which providers are usable, and the URL to open for each.
+     *
+     * The whole reason this endpoint exists: a client id belongs to a
+     * deployment, not to a build. Asking at runtime means adding, removing or
+     * rotating a provider is a config change, and no app ships believing in a
+     * provider nobody configured.
+     *
+     * Nothing secret is in the response. The authorize URL carries the client
+     * id — which is public by construction, it travels in the redirect the
+     * browser makes anyway — and never the secret.
+     */
+    async function listProviders(request) {
+        const origin = env.PUBLIC_API_ORIGIN || new URL(request.url).origin;
+        const providers = [];
+        for (const provider of configuredProviders(env)) {
+            const started = await startAuthorization(challengeStore(), provider, {
+                redirectUri: `${origin}/api/auth/callback/${provider.id}`,
+                now,
+            });
+            providers.push({
+                id: provider.id,
+                label: provider.label,
+                authorizeUrl: started.authorizeUrl,
+            });
+        }
+        return json({ providers }, 200, { "cache-control": "no-store" });
+    }
+
+    /**
+     * Where the provider sends the browser back.
+     *
+     * Answers a **redirect**, never JSON: a human is looking at this, in a
+     * browser, and the only useful thing to do is put them back in the app.
+     * Failures bounce too, with a reason — leaving somebody on a blank error
+     * page inside a sign-in sheet gives them nothing to do.
+     */
+    async function providerCallback(request, providerId) {
+        // Apple form-posts its response; everyone else uses query parameters.
+        const url = new URL(request.url);
+        let params = url.searchParams;
+        if (request.method === "POST") {
+            params = new URLSearchParams(await request.text());
+        }
+
+        if (params.get("error")) {
+            // The person pressed cancel, most often. Not an error worth a log.
+            return bounceToApp(null, { error: params.get("error") });
+        }
+
+        const redeemed = await redeemAuthorization(challengeStore(), params.get("state"), { now });
+        if (!redeemed.ok) return bounceToApp(null, { error: redeemed.reason });
+
+        const provider = providerConfig(redeemed.pending.provider, env);
+        // The path segment is not trusted to name the provider — the parked
+        // authorization does. Otherwise a valid `state` could be redeemed
+        // against a different provider's configuration.
+        if (!provider || provider.id !== providerId) {
+            return bounceToApp(null, { error: "unknown_provider" });
+        }
+
+        const exchanged = await exchangeCode(provider, {
+            code: params.get("code"),
+            redirectUri: redeemed.pending.redirectUri,
+            verifier: redeemed.pending.verifier,
+            nonce: redeemed.pending.nonce,
+            now,
+        });
+        if (!exchanged.ok) return bounceToApp(null, { error: exchanged.reason });
+
+        const resolved = await resolveIdentity({
+            provider: exchanged.identity.provider,
+            subject: exchanged.identity.subject,
+            email: exchanged.identity.email,
+            emailVerified: exchanged.identity.emailVerified,
+            displayName: exchanged.identity.displayName,
+        }, stores);
+        if (!resolved.ok) return bounceToApp(null, { error: resolved.reason });
+
+        const issued = await issueTokens(resolved.user, {
+            deviceLabel: params.get("device_label"),
+            linked: resolved.linked,
+            created: resolved.created,
+        });
+        if (issued.status !== 200) return bounceToApp(null, { error: "issue_failed" });
+
+        // The session is parked and collected over TLS rather than travelling
+        // in the redirect URL, which would put it in browser history and in
+        // whatever the OS logs for a custom-scheme launch.
+        const handoff = await putHandoff(challengeStore(), await issued.json(), { now });
+        return bounceToApp(handoff);
+    }
+
+    /** Send the browser back into the app. */
+    function bounceToApp(handoff, { error = null } = {}) {
+        const scheme = env.APP_CALLBACK_URL || "ringdrill://auth/callback";
+        const target = new URL(scheme);
+        if (handoff) target.searchParams.set("handoff", handoff);
+        if (error) target.searchParams.set("error", error);
+        return new Response(null, {
+            status: 302,
+            headers: { location: target.toString(), "cache-control": "no-store" },
+        });
+    }
+
     async function callback(request) {
         const body = await request.json().catch(() => ({}));
+
+        // A provider sign-in that finished in the browser: the app presents
+        // the handoff code and collects the session it already earned.
+        if (body.handoff) {
+            const redeemed = await redeemHandoff(challengeStore(), body.handoff, { now });
+            if (!redeemed.ok) return json({ error: redeemed.reason }, 401);
+            return json(redeemed.payload);
+        }
+
         const redeemed = await redeemChallenge(challengeStore(), {
             challengeId: body.challengeId, code: body.code, now,
         });
