@@ -238,6 +238,72 @@ NOTE = ('\n<p class="caption" style="max-width: 760px; font-size: 12px; opacity:
         'Norwegian wording is part of the decision, DESIGN-015 quotes it inline.</p>\n')
 
 
+
+# --- platform-promoted provider order (DESIGN-015 §3.2) -----------------------
+
+signin_ios = '''
+      <div class="bar"><i class="ti ti-arrow-left"></i><span>Sign in</span></div>
+      <div class="body">
+        <h2 class="h">Protect your plans</h2>
+        <p class="p">Signing in protects the plans you publish. <b>You can use RingDrill without signing in.</b></p>
+        <div style="height: 2px;"></div>
+        <div class="btn btn-dark"><i class="ti ti-brand-apple"></i> Continue with Apple</div>
+        <div class="btn"><i class="ti ti-brand-google"></i> Continue with Google</div>
+        <div class="btn"><i class="ti ti-brand-windows"></i> Continue with Microsoft</div>
+        <div class="note note-plain"><i class="ti ti-alert-triangle"></i><span><b>Required, not preferred.</b> Apple&rsquo;s guidelines say Sign in with Apple must be at least as prominent as the other options. First position satisfies that; last would not.</span></div>
+        <div class="sect">or continue with email</div>
+        <div class="field">kari@example.com</div>
+        <div style="flex: 1;"></div>
+        <div class="link">What is stored about me?</div>
+      </div>'''
+
+signin_android = '''
+      <div class="bar"><i class="ti ti-arrow-left"></i><span>Sign in</span></div>
+      <div class="body">
+        <h2 class="h">Protect your plans</h2>
+        <p class="p">Signing in protects the plans you publish. <b>You can use RingDrill without signing in.</b></p>
+        <div style="height: 2px;"></div>
+        <div class="btn"><i class="ti ti-brand-google"></i> Continue with Google</div>
+        <div class="btn"><i class="ti ti-brand-windows"></i> Continue with Microsoft</div>
+        <div class="btn btn-dark"><i class="ti ti-brand-apple"></i> Continue with Apple</div>
+        <div class="note note-plain"><i class="ti ti-info-circle"></i><span>Google first is a <i>preference</i> — most Android devices already hold a Google account. Apple stays offered and simply moves last; an Apple ID works fine here.</span></div>
+        <div class="sect">or continue with email</div>
+        <div class="field">kari@example.com</div>
+        <div style="flex: 1;"></div>
+        <div class="link">What is stored about me?</div>
+      </div>'''
+
+signin_web = '''
+      <div class="bar"><i class="ti ti-arrow-left"></i><span>Sign in</span></div>
+      <div class="body">
+        <h2 class="h">Protect your plans</h2>
+        <p class="p">Signing in protects the plans you publish. <b>You can use RingDrill without signing in.</b></p>
+        <div style="height: 2px;"></div>
+        <div class="btn"><i class="ti ti-brand-google"></i> Continue with Google</div>
+        <div class="btn"><i class="ti ti-brand-windows"></i> Continue with Microsoft</div>
+        <div class="btn btn-dark"><i class="ti ti-brand-apple"></i> Continue with Apple</div>
+        <div class="note note-plain"><i class="ti ti-world"></i><span>No device account to bet on, so the order is the neutral one. A web build still reports a host platform — Safari says iOS — so the web case is decided <i>before</i> the platform, or a browser on a Mac would be ordered as a native Apple client.</span></div>
+        <div class="sect">or continue with email</div>
+        <div class="field">kari@example.com</div>
+        <div style="flex: 1;"></div>
+        <div class="link">What is stored about me?</div>
+      </div>'''
+
+signin_none = '''
+      <div class="bar"><i class="ti ti-arrow-left"></i><span>Sign in</span></div>
+      <div class="body">
+        <h2 class="h">Protect your plans</h2>
+        <p class="p">Signing in protects the plans you publish. <b>You can use RingDrill without signing in.</b></p>
+        <div style="height: 2px;"></div>
+        <div class="sect">Email address</div>
+        <div class="field">kari@example.com</div>
+        <div class="btn btn-primary">Continue</div>
+        <div class="note note-plain"><i class="ti ti-plug-off"></i><span>No provider configured for this deployment, so no buttons and no empty section — just the email path. The same screen renders this without a code branch, because the list simply came back empty.</span></div>
+        <div style="flex: 1;"></div>
+        <div class="link">What is stored about me?</div>
+      </div>'''
+
+
 def page(fn, title, caption, panels, wide=False):
     out = [HEAD.format(title=title)]
     out.append('\n<p class="caption">%s</p>\n' % caption)
@@ -727,6 +793,13 @@ def main():
          [("1 &middot; Choose a sign-in", signin_a),
           ("2 &middot; Waiting for the link — with a code", signin_b),
           ("3 &middot; Provider linked (once)", signin_c)])
+
+    page("auth-signin-platforms.html", "Sign-in &mdash; provider order per platform",
+         "DESIGN-015 &sect;3.2. The provider list comes from the server, but the <i>order</i> is the client&rsquo;s job, because only the client knows the platform. On iOS this is a compliance matter rather than a taste one: Apple&rsquo;s guidelines require Sign in with Apple to be at least as prominent as the alternatives. On Android, Google first is a plain preference. The fourth panel is the ordinary state today &mdash; nothing configured, so nothing shown.",
+         [("iOS &middot; Apple first (required)", signin_ios),
+          ("Android &middot; Google first (preferred)", signin_android),
+          ("Web &middot; neutral order", signin_web),
+          ("No providers configured", signin_none)])
 
     page("auth-recovery.html", "Account recovery",
          "DESIGN-015 &sect;4. Without passwords there is no &ldquo;forgot password&rdquo;. These four situations replace it, and only the last one loses data. Its answer is prevention rather than recovery, which is why the advice lives on the members screen (panel 3) and not in the recovery flow.",

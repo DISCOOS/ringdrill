@@ -171,6 +171,23 @@ Ordered by platform so the native option is first, per
 | Windows | Microsoft, Google, Apple, email |
 | Web, Linux | Google, Microsoft, Apple, email |
 
+**Implemented in `orderProvidersForPlatform`** (`lib/services/auth_service.dart`),
+not on the server: the list of *which* providers exist is a deployment fact, but
+the order is a platform fact, and the server has no business inferring the
+platform from a user agent. Mockups:
+[`auth-signin-platforms.html`](./mockups/auth-signin-platforms.html).
+
+**The iOS row is a requirement, not a preference.** Apple's guidelines say Sign
+in with Apple must be displayed at least as prominently as the alternatives —
+first position satisfies that, last does not, and getting it wrong is a review
+rejection. The other rows are judgements about which account the device is
+likely to already hold. The web row is checked *before* the platform, because a
+web build still reports a host platform (Safari says iOS) and a browser on a
+Mac must not be ordered as a native Apple client.
+
+A provider not named in a row lands at the end rather than disappearing, so
+adding one later — §3.2 reserves Feide and Vipps — is additive.
+
 Email is always present and always last, because it is the fallback that works
 when a provider account is unavailable — which is the whole of §4.
 

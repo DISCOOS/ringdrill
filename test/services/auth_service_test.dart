@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show TargetPlatform;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:ringdrill/data/auth_client.dart';
@@ -376,6 +377,123 @@ void main() {
       final body = jsonDecode((h.fake.requests.last as http.Request).body);
       expect(body['sessionId'], 's_1');
       expect(body['refreshToken'], 'rt_1');
+    });
+  });
+
+  group('provider order per platform', () {
+    const apple = AuthProvider(id: 'apple', label: 'Apple', authorizeUrl: 'a');
+    const google = AuthProvider(
+      id: 'google',
+      label: 'Google',
+      authorizeUrl: 'g',
+    );
+    const microsoft = AuthProvider(
+      id: 'microsoft',
+      label: 'Microsoft',
+      authorizeUrl: 'm',
+    );
+    const serverOrder = [google, apple, microsoft];
+
+    test('iOS puts Apple first — a requirement, not a preference', () {
+      // Apple's guidelines say Sign in with Apple must be at least as
+      // prominent as the alternatives. Last position is a rejection.
+      expect(
+        orderProvidersForPlatform(
+          serverOrder,
+          platform: TargetPlatform.iOS,
+          isWeb: false,
+        ).map((p) => p.id),
+        ['apple', 'google', 'microsoft'],
+      );
+    });
+
+    test('macOS follows iOS', () {
+      expect(
+        orderProvidersForPlatform(
+          serverOrder,
+          platform: TargetPlatform.macOS,
+          isWeb: false,
+        ).first.id,
+        'apple',
+      );
+    });
+
+    test('Android follows the design table', () {
+      expect(
+        orderProvidersForPlatform(
+          serverOrder,
+          platform: TargetPlatform.android,
+          isWeb: false,
+        ).map((p) => p.id),
+        ['google', 'microsoft', 'apple'],
+      );
+    });
+
+    test('Windows promotes Microsoft', () {
+      expect(
+        orderProvidersForPlatform(
+          serverOrder,
+          platform: TargetPlatform.windows,
+          isWeb: false,
+        ).map((p) => p.id),
+        ['microsoft', 'google', 'apple'],
+      );
+    });
+
+    test('web uses the web row whatever the host platform is', () {
+      // defaultTargetPlatform reports iOS for Safari, so without the web check
+      // first a browser on a Mac would be ordered as a native Apple client.
+      expect(
+        orderProvidersForPlatform(
+          serverOrder,
+          platform: TargetPlatform.iOS,
+          isWeb: true,
+        ).map((p) => p.id),
+        ['google', 'microsoft', 'apple'],
+      );
+    });
+
+    test('an unnamed provider lands at the end rather than vanishing', () {
+      // ADR-0024 reserves Feide and Vipps. One added later must still appear.
+      const feide = AuthProvider(
+        id: 'feide',
+        label: 'Feide',
+        authorizeUrl: 'f',
+      );
+      expect(
+        orderProvidersForPlatform(
+          const [feide, google, apple],
+          platform: TargetPlatform.iOS,
+          isWeb: false,
+        ).map((p) => p.id),
+        ['apple', 'google', 'feide'],
+      );
+    });
+
+    test('a missing provider is skipped, not left as a gap', () {
+      // A deployment without Apple cannot promote it. (It also cannot offer
+      // the others — the server refuses — but this function does not assume
+      // that.)
+      expect(
+        orderProvidersForPlatform(
+          const [google, microsoft],
+          platform: TargetPlatform.iOS,
+          isWeb: false,
+        ).map((p) => p.id),
+        ['google', 'microsoft'],
+      );
+    });
+
+    test('the caller\'s list is not mutated', () {
+      // It returns a reordered copy. A cascade-based implementation quietly
+      // reordered the input, which would corrupt a cached list.
+      final input = [google, apple, microsoft];
+      orderProvidersForPlatform(
+        input,
+        platform: TargetPlatform.iOS,
+        isWeb: false,
+      );
+      expect(input.map((p) => p.id), ['google', 'apple', 'microsoft']);
     });
   });
 }

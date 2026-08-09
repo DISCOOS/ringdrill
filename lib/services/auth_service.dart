@@ -100,6 +100,50 @@ Future<String> _launchWebAuth({
   callbackUrlScheme: callbackUrlScheme,
 );
 
+/// Order the providers the way DESIGN-015 §3.2 specifies for this platform.
+///
+/// The list comes from the server; the order is the client's job, because only
+/// the client knows the platform and the server has no business guessing it
+/// from a user agent.
+///
+/// **On Apple platforms the first position is a requirement, not a
+/// preference.** Apple's guidelines say Sign in with Apple must be displayed at
+/// least as prominently as the other options — first satisfies that, last does
+/// not, and getting it wrong is an App Store rejection rather than a design
+/// quibble. Everywhere else the order is a judgement about which account the
+/// device most likely already holds.
+///
+/// A provider not named in a row keeps its server-relative position at the end,
+/// so adding one (ADR-0024 reserves Feide and Vipps) does not silently
+/// disappear it.
+List<AuthProvider> orderProvidersForPlatform(
+  List<AuthProvider> providers, {
+  TargetPlatform? platform,
+  bool? isWeb,
+}) {
+  // The web check comes first because a web build still reports a host
+  // platform — `defaultTargetPlatform` says iOS for Safari — so without it a
+  // browser on a Mac would be ordered as a native Apple client.
+  final order = (isWeb ?? kIsWeb)
+      ? const ['google', 'microsoft', 'apple']
+      : switch (platform ?? defaultTargetPlatform) {
+          TargetPlatform.iOS ||
+          TargetPlatform.macOS => const ['apple', 'google', 'microsoft'],
+          TargetPlatform.android => const ['google', 'microsoft', 'apple'],
+          TargetPlatform.windows => const ['microsoft', 'google', 'apple'],
+          _ => const ['google', 'microsoft', 'apple'],
+        };
+
+  // A copy: reordering the caller's list would corrupt anything holding it.
+  final rest = [...providers];
+  final out = <AuthProvider>[];
+  for (final id in order) {
+    final i = rest.indexWhere((p) => p.id == id);
+    if (i >= 0) out.add(rest.removeAt(i));
+  }
+  return [...out, ...rest];
+}
+
 /// Signed in, or not. There is no third state the UI needs to distinguish, and
 /// inventing one ("signing in", "expired") would put a spinner in front of
 /// people who are not signing in — most of them, most of the time
@@ -243,11 +287,17 @@ class AuthService extends ChangeNotifier {
     String locale = 'en',
   }) => _client.startEmail(email, locale: locale);
 
-  /// Which third-party providers this deployment offers.
+  /// Which third-party providers this deployment offers, in the order they
+  /// should be shown.
   ///
   /// Never cached: each call mints fresh single-use `state` values server-side,
   /// so a reused response would send two attempts at the same one.
-  Future<List<AuthProvider>> providers() => _client.providers();
+  ///
+  /// **Ordering is the client's job**, because only the client knows the
+  /// platform — the server has no business guessing it from a user agent. See
+  /// [orderProvidersForPlatform] for why the iOS case is not a preference.
+  Future<List<AuthProvider>> providers() async =>
+      orderProvidersForPlatform(await _client.providers());
 
   /// Sign in through a provider.
   ///
