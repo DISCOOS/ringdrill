@@ -22,6 +22,7 @@ import {
     generateKeypair,
     hasRole,
     isMemberOf,
+    logAuthMode,
     resolveMode,
     signJwt,
     verifyJwt,
@@ -276,4 +277,43 @@ test("isMemberOf / hasRole: every member publishes; rank orders administration o
     assert.equal(hasRole(res, "a_bergen", "guest"), true);
     assert.equal(hasRole(res, "a_bergen", "member"), false);
     assert.equal(hasRole(res, "a_bergen", "owner"), false);
+});
+
+// ---------- the cold-start announcement ----------
+
+/**
+ * Every way of getting `AUTH_MODE` wrong looks identical from outside: sign-in
+ * fails and nothing says why. These pin the line that tells you, and the one
+ * detail in it that is worth more than the mode name — that `live` without a
+ * signing key authenticates nothing.
+ */
+test("logAuthMode announces the resolved mode on stdout", () => {
+    const lines = [];
+    const log = (m) => lines.push(m);
+
+    assert.equal(logAuthMode({ AUTH_MODE: "mock" }, { log }), AUTH_MODES.MOCK);
+    assert.match(lines.at(-1), /mode=mock/);
+    assert.match(lines.at(-1), /codes returned in the response body/);
+});
+
+test("logAuthMode names the missing signing key, not just the mode", () => {
+    // The most common local failure: AUTH_MODE unset defaults to live, which
+    // then needs a key nobody set. "mode=live" alone would not explain why
+    // nothing authenticates.
+    const lines = [];
+    const log = (m) => lines.push(m);
+
+    logAuthMode({}, { log });
+    assert.match(lines.at(-1), /mode=live/);
+    assert.match(lines.at(-1), /AUTH_SIGNING_KEY_PRIVATE is unset/);
+
+    logAuthMode({ AUTH_SIGNING_KEY_PRIVATE: "k" }, { log });
+    assert.doesNotMatch(lines.at(-1), /unset/);
+});
+
+test("logAuthMode reports off as the rollback mode it is", () => {
+    const lines = [];
+    logAuthMode({ AUTH_MODE: "off" }, { log: (m) => lines.push(m) });
+    assert.match(lines.at(-1), /mode=off/);
+    assert.match(lines.at(-1), /every request anonymous/);
 });

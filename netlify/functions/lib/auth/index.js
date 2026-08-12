@@ -31,6 +31,34 @@ export const AUTH_MODES = Object.freeze({ LIVE: "live", MOCK: "mock", OFF: "off"
  * produces a mystifying "why is nothing authenticating" hunt, which is exactly
  * the failure ADR-0073 called out when it chose a string over a boolean.
  */
+/**
+ * Announce the resolved mode on cold start, to **stdout**.
+ *
+ * The mode decides whether anything can authenticate at all, and every way of
+ * getting it wrong looks the same from the outside: sign-in fails, and nothing
+ * says why. `AUTH_MODE` unset defaults to `live`, which then needs a signing
+ * key nobody remembered to set locally — the most common version of this, and
+ * the reason the live line names the missing key rather than just the mode.
+ *
+ * stdout, not stderr: this is the state of the world at boot, not a fault.
+ * [resolveMode]'s complaint about an unrecognised value stays on stderr,
+ * because that one *is*.
+ */
+export function logAuthMode(env = process.env, { log = console.log } = {}) {
+    const mode = resolveMode(env);
+    const detail = {
+        [AUTH_MODES.MOCK]:
+            "unsigned test tokens, mail short-circuited, sign-in codes returned in the response body",
+        [AUTH_MODES.LIVE]: env.AUTH_SIGNING_KEY_PRIVATE
+            ? "signed tokens, provider sign-in and real mail"
+            : "signed tokens — but AUTH_SIGNING_KEY_PRIVATE is unset, so nothing will authenticate",
+        [AUTH_MODES.OFF]:
+            "authentication disabled, every request anonymous (ADR-0073 rollback mode)",
+    }[mode];
+    log(`[auth] mode=${mode} — ${detail}`);
+    return mode;
+}
+
 export function resolveMode(env = process.env, { warn = console.error } = {}) {
     const raw = String(env.AUTH_MODE ?? "").trim().toLowerCase();
     if (!raw) return AUTH_MODES.LIVE;

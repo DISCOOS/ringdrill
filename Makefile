@@ -390,9 +390,26 @@ patch-ios: require-clean-tree
 # --functions-base-path (LOCAL_FUNCTIONS_BASE_PATH) to point it at
 # /.netlify/functions/* directly, which does work. `ringdrill download
 # <slug>` still uses /d/<slug> and will return 404 against this mode.
+#
+# AUTH_MODE=mock (ADR-0073) so sign-in works with no mail provider and no
+# signing key: /api/auth/start-email returns the code in the response body and
+# the sign-in screen fills it in. The default is `live`, which needs both, so
+# without this local sign-in fails in a way that looks like a bug rather than a
+# missing setting. Override with LOCAL_AUTH_MODE=live to exercise the real
+# adapters against locally configured providers.
+#
+# Safe here and only here: lib/auth/mock.js refuses to load when
+# CONTEXT=production, so this cannot follow a build into a production deploy.
+# MAIL_PROVIDER=console (ADR-0075) is a separate axis and is needed too. It
+# defaults to `resend`, which refuses to boot without RESEND_API_KEY — so
+# without this, start-email and every invitation answer 500 even under
+# AUTH_MODE=mock. The console adapter prints the whole message, code and magic
+# link included, to this terminal.
+LOCAL_AUTH_MODE ?= mock
+LOCAL_MAIL_PROVIDER ?= console
 netlify-dev:
 	npm install
-	ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) npx netlify functions:serve --port 8888
+	ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) AUTH_MODE=$(LOCAL_AUTH_MODE) MAIL_PROVIDER=$(LOCAL_MAIL_PROVIDER) npx netlify functions:serve --port 8888
 
 # Local Astro dev server for the site/ project. Runs `astro dev` with HMR
 # at http://localhost:4321/. Most pages need no backend; the CTAs link to

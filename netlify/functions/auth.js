@@ -1,5 +1,5 @@
 import { corsPreflight, withCors } from "./lib/shared.js";
-import { authenticate, AUDIENCE, ISSUER, signJwt, resolveMode, AUTH_MODES } from "./lib/auth/index.js";
+import { authenticate, AUDIENCE, ISSUER, logAuthMode, signJwt, resolveMode, AUTH_MODES } from "./lib/auth/index.js";
 import {
     ACCESS_TTL_S, createSession, endSessionOwnedBy, redeemChallenge, rotateSession, sessionsOf, startChallenge,
 } from "./lib/auth/session.js";
@@ -141,10 +141,15 @@ export function createHandler({
             idempotencyKey: challengeId,
         });
 
-        // Under AUTH_MODE=mock the whole mail channel is short-circuited
-        // (ADR-0073), so the code comes back in the body and the flow runs end
-        // to end with no provider. Never in live: the response would be the
-        // credential.
+        // Under AUTH_MODE=mock the code comes back in the body, so the flow
+        // can be completed without reading the mail at all (ADR-0073). Never in
+        // live: the response would be the credential.
+        //
+        // The mail itself is still sent through whatever MAIL_PROVIDER selects
+        // — the two are separate seams, and mock does not imply a mail adapter.
+        // Locally that is MAIL_PROVIDER=console (see `make netlify-dev`), which
+        // prints the message instead of delivering it. Leaving it at the
+        // default answers 500 here, because Resend refuses to boot with no key.
         const mocked = resolveMode(env) === AUTH_MODES.MOCK;
         return json({
             challengeId,
@@ -432,5 +437,10 @@ export function createHandler({
         });
     }
 }
+
+// Module scope, so it runs once per cold start rather than per request — and
+// only for the deployed handler, not for the ones tests construct with an
+// explicit env.
+logAuthMode();
 
 export default createHandler();
