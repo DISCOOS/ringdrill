@@ -38,13 +38,14 @@ function fakeStore() {
 
 function harness() {
     const raw = {
-        accounts: fakeStore(), users: fakeStore(), identities: fakeStore(), members: fakeStore(),
-        emailIndex: fakeStore(), handles: fakeStore(), sessions: fakeStore(), challenges: fakeStore(),
+        accounts: fakeStore(), users: fakeStore(), identities: fakeStore(), members: fakeStore(), memberIndex: fakeStore(),
+        emailIndex: fakeStore(), handles: fakeStore(), sessions: fakeStore(), sessionIndex: fakeStore(), challenges: fakeStore(),
     };
     const stores = {
         accounts: () => raw.accounts, users: () => raw.users, identities: () => raw.identities,
-        members: () => raw.members, emailIndex: () => raw.emailIndex, handles: () => raw.handles,
-        sessions: () => raw.sessions,
+        members: () => raw.members, memberIndex: () => raw.memberIndex,
+        emailIndex: () => raw.emailIndex, handles: () => raw.handles,
+        sessions: () => raw.sessions, sessionIndex: () => raw.sessionIndex,
     };
     const mailer = createMockAdapter();
     const handler = createHandler({
@@ -57,6 +58,7 @@ function harness() {
         stores,
         challengeStore: () => raw.challenges,
         sessionStore: () => raw.sessions,
+            sessionIndexStore: () => raw.sessionIndex,
         mailer,
     });
     return { handler, stores, raw, mailer };
@@ -341,6 +343,7 @@ test("under AUTH_MODE=live the server signs a real JWT, verifiable with the publ
         stores: h.stores,
         challengeStore: () => h.raw.challenges,
         sessionStore: () => h.raw.sessions,
+        sessionIndexStore: () => h.raw.sessionIndex,
         mailer: h.mailer,
     });
 

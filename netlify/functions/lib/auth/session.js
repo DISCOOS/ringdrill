@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
 
+import { sessionIndexKey } from "../identity.js";
+
 /**
  * Sign-in challenges (the magic link and its code) and refresh sessions.
  *
@@ -99,8 +101,17 @@ export async function redeemChallenge(store, { challengeId, code, now = Date.now
     return { ok: true, email: rec.email, locale: rec.locale };
 }
 
-/** Open a refresh session. The token is returned once and stored only as a hash. */
-export async function createSession(store, { userId, deviceLabel = null, now = Date.now }) {
+/**
+ * Open a refresh session. The token is returned once and stored only as a hash.
+ *
+ * `index` is the `session-index` store (`<userId>/<sessionId>`), which is what
+ * makes [sessionsOf] a prefix listing rather than a walk over every session in
+ * the system. Written after the session itself: a lost index write costs the
+ * device its row in the Devices list until the next backfill, where a lost
+ * session write would have handed back a refresh token that authenticates
+ * nothing.
+ */
+export async function createSession(store, { userId, deviceLabel = null, now = Date.now, index = null }) {
     const sessionId = newToken(18);
     const refreshToken = newToken(32);
     await store.set(sessionId, JSON.stringify({
@@ -112,6 +123,7 @@ export async function createSession(store, { userId, deviceLabel = null, now = D
         lastUsedAt: new Date(now()).toISOString(),
         expiresAt: now() + REFRESH_TTL_MS,
     }));
+    if (index && userId) await index.set(sessionIndexKey(userId, sessionId), JSON.stringify({ indexed: true }));
     return { sessionId, refreshToken };
 }
 
@@ -130,7 +142,7 @@ export async function createSession(store, { userId, deviceLabel = null, now = D
  * trade: a forced re-login is an inconvenience, a live session in someone
  * else's hands is not.
  */
-export async function rotateSession(store, { sessionId, refreshToken, now = Date.now }) {
+export async function rotateSession(store, { sessionId, refreshToken, now = Date.now, index = null }) {
     if (!sessionId || !refreshToken) return { ok: false, reason: "missing_fields" };
     const rec = await store.get(sessionId, { type: "json" });
     if (!rec) return { ok: false, reason: "unknown_session" };
@@ -143,6 +155,7 @@ export async function rotateSession(store, { sessionId, refreshToken, now = Date
 
     if (rec.expiresAt <= now()) {
         await store.delete(sessionId);
+        if (index && rec.userId) await index.delete(sessionIndexKey(rec.userId, sessionId));
         return { ok: false, reason: "expired" };
     }
 
@@ -175,8 +188,13 @@ export async function rotateSession(store, { sessionId, refreshToken, now = Date
     return { ok: true, userId: rec.userId, refreshToken: next, sessionId };
 }
 
-export async function endSession(store, sessionId) {
-    if (sessionId) await store.delete(sessionId);
+export async function endSession(store, sessionId, { index = null } = {}) {
+    if (!sessionId) return;
+    // Read before delete only when there is an index to maintain: the owning
+    // user is not derivable from the session id, and the index key needs it.
+    const userId = index ? (await store.get(sessionId, { type: "json" }))?.userId : null;
+    await store.delete(sessionId);
+    if (index && userId) await index.delete(sessionIndexKey(userId, sessionId));
 }
 
 /**
@@ -199,7 +217,7 @@ export async function endSession(store, sessionId) {
  * client: which session ids exist is free reconnaissance, and the answer is
  * useless to the legitimate caller, who already knows.
  */
-export async function endSessionOwnedBy(store, { sessionId, userId = null, refreshToken = null }) {
+export async function endSessionOwnedBy(store, { sessionId, userId = null, refreshToken = null, index = null }) {
     if (!sessionId) return false;
     const rec = await store.get(sessionId, { type: "json" });
     if (!rec) return false;
@@ -215,6 +233,10 @@ export async function endSessionOwnedBy(store, { sessionId, userId = null, refre
 
     if (!byOwner && !byToken) return false;
     await store.delete(sessionId);
+    // `rec.userId` rather than the `userId` argument: sign-out proves ownership
+    // with the refresh token and passes no user id at all, and the index entry
+    // still has to go.
+    if (index && rec.userId) await index.delete(sessionIndexKey(rec.userId, sessionId));
     return true;
 }
 
@@ -234,7 +256,46 @@ function safeEqual(a, b) {
  * `expiresAt` it stops being reported — the live session would have expired by
  * then too, so there is nothing left to explain.
  */
-export async function sessionsOf(store, userId, { now = Date.now } = {}) {
+export async function sessionsOf(store, userId, { now = Date.now, index = null } = {}) {
+    if (!userId) return [];
+    const ids = index ? await indexedSessionIds(index, userId) : null;
+    // Nothing indexed for this user — either the index store is not wired, or
+    // this predates the backfill. Scan, and index what the scan finds, so the
+    // Devices list is never empty merely because a migration has not run.
+    if (!ids || ids.length === 0) return scanSessions(store, index, userId, now);
+
+    const out = [];
+    for (const sessionId of ids) {
+        const rec = await store.get(sessionId, { type: "json" });
+        if (!rec) {
+            // The session is gone; the pointer to it is derived data and has no
+            // business outliving it.
+            await index.delete(sessionIndexKey(userId, sessionId));
+            continue;
+        }
+        const safe = presentable(rec, userId, now);
+        if (safe) out.push(safe);
+    }
+    return out;
+}
+
+async function indexedSessionIds(index, userId) {
+    const prefix = `${userId}/`;
+    const out = [];
+    let cursor;
+    do {
+        const page = await index.list({ prefix, cursor });
+        cursor = page?.cursor;
+        for (const blob of page?.blobs ?? []) {
+            const sessionId = String(blob.key).slice(prefix.length);
+            if (sessionId) out.push(sessionId);
+        }
+    } while (cursor);
+    return out;
+}
+
+/** The pre-index path. See the equivalent note on identity.js scanMemberships. */
+async function scanSessions(store, index, userId, now) {
     const out = [];
     let cursor;
     do {
@@ -243,13 +304,30 @@ export async function sessionsOf(store, userId, { now = Date.now } = {}) {
         for (const blob of page?.blobs ?? []) {
             const rec = await store.get(blob.key, { type: "json" });
             if (rec?.userId !== userId) continue;
-            if (typeof rec.expiresAt === "number" && rec.expiresAt <= now()) continue;
-            // Never the hash: this is rendered in the app, and a credential
-            // derivative has no business leaving the server. A tombstone has
-            // none to begin with.
-            const { refreshHash, ...safe } = rec;
-            out.push(safe);
+            if (index) {
+                await index.set(sessionIndexKey(userId, rec.sessionId ?? String(blob.key)), JSON.stringify({ indexed: true }));
+            }
+            const safe = presentable(rec, userId, now);
+            if (safe) out.push(safe);
         }
     } while (cursor);
     return out;
+}
+
+/**
+ * The shape a session may take out of the server, or null if it should not be
+ * reported at all.
+ *
+ * Never the hash: this is rendered in the app, and a credential derivative has
+ * no business leaving the server. A tombstone has none to begin with.
+ *
+ * The `userId` re-check matters on the indexed path too. An index entry names
+ * the user in its key, but the record is the authority on who owns it, and a
+ * stale entry must not be able to show one person another's device.
+ */
+function presentable(rec, userId, now) {
+    if (!rec || rec.userId !== userId) return null;
+    if (typeof rec.expiresAt === "number" && rec.expiresAt <= now()) return null;
+    const { refreshHash, ...safe } = rec;
+    return safe;
 }

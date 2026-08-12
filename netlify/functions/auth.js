@@ -3,7 +3,7 @@ import { authenticate, AUDIENCE, ISSUER, signJwt, resolveMode, AUTH_MODES } from
 import {
     ACCESS_TTL_S, createSession, endSessionOwnedBy, redeemChallenge, rotateSession, sessionsOf, startChallenge,
 } from "./lib/auth/session.js";
-import { defaultStores, getUser, membershipsOf, normalizeEmail, resolveIdentity, sweepExpired } from "./lib/identity.js";
+import { defaultStores, getUser, membershipsOf, normalizeEmail, NS, resolveIdentity, sweepExpired } from "./lib/identity.js";
 import { offerableProviders, providerConfig } from "./lib/auth/providers.js";
 import {
     exchangeCode, putHandoff, redeemAuthorization, redeemHandoff, startAuthorization,
@@ -75,7 +75,11 @@ export function createHandler({
     now = Date.now,
     stores = defaultStores,
     challengeStore = () => getStore(CHALLENGES_NS, strong),
-    sessionStore = () => getStore("sessions", strong),
+    sessionStore = () => getStore(NS.SESSIONS, strong),
+    // The `<userId>/<sessionId>` reverse index. Every session call site passes
+    // it; without one they silently fall back to walking every session in the
+    // store, which is the O(all users) read this store layout exists to remove.
+    sessionIndexStore = () => getStore(NS.SESSION_INDEX, strong),
     mailer = null,
 } = {}) {
     return async function (request) {
@@ -300,6 +304,7 @@ export function createHandler({
         const body = await request.json().catch(() => ({}));
         const rotated = await rotateSession(sessionStore(), {
             sessionId: body.sessionId, refreshToken: body.refreshToken, now,
+            index: sessionIndexStore(),
         });
         if (!rotated.ok) {
             // A replay is a security signal, not a UX one (rollout plan's
@@ -349,6 +354,7 @@ export function createHandler({
             sessionId: body.sessionId,
             userId: principal.ok && !principal.anonymous ? principal.userId : null,
             refreshToken: body.refreshToken ?? null,
+            index: sessionIndexStore(),
         });
         // 204 whether or not anything was ended, and deliberately not a
         // boolean: telling a caller which session ids are real is free
@@ -375,6 +381,7 @@ export function createHandler({
         await endSessionOwnedBy(sessionStore(), {
             sessionId: body.sessionId,
             userId: principal.userId,
+            index: sessionIndexStore(),
         });
         return new Response(null, { status: 204 });
     }
@@ -398,7 +405,7 @@ export function createHandler({
             user: publicUser(user),
             accounts: detail,
             activeAccount: principal.accountId,
-            devices: await sessionsOf(sessionStore(), user.id),
+            devices: await sessionsOf(sessionStore(), user.id, { now, index: sessionIndexStore() }),
         });
     }
 
@@ -407,6 +414,7 @@ export function createHandler({
         if (!minted.ok) return json({ error: minted.reason }, 500);
         const session = await createSession(sessionStore(), {
             userId: user.id, deviceLabel: extra.deviceLabel, now,
+            index: sessionIndexStore(),
         });
         return json({
             accessToken: minted.accessToken,

@@ -53,13 +53,13 @@ function fakeStore() {
 function fakeStores() {
     const s = {
         accounts: fakeStore(), users: fakeStore(), identities: fakeStore(),
-        members: fakeStore(), emailIndex: fakeStore(), handles: fakeStore(), sessions: fakeStore(),
+        members: fakeStore(), memberIndex: fakeStore(), emailIndex: fakeStore(), handles: fakeStore(), sessions: fakeStore(), sessionIndex: fakeStore(),
     };
     return {
         raw: s,
         accounts: () => s.accounts, users: () => s.users, identities: () => s.identities,
-        members: () => s.members, emailIndex: () => s.emailIndex, handles: () => s.handles,
-        sessions: () => s.sessions,
+        members: () => s.members, memberIndex: () => s.memberIndex, emailIndex: () => s.emailIndex, handles: () => s.handles,
+        sessions: () => s.sessions, sessionIndex: () => s.sessionIndex,
     };
 }
 

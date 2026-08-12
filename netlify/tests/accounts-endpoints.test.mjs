@@ -68,14 +68,15 @@ function jsonStore(seed = {}) {
 
 function harness({ index = {}, drills = {} } = {}) {
     const raw = {
-        accounts: fakeStore(), users: fakeStore(), identities: fakeStore(), members: fakeStore(),
-        emailIndex: fakeStore(), handles: fakeStore(), sessions: fakeStore(), invites: fakeStore(),
+        accounts: fakeStore(), users: fakeStore(), identities: fakeStore(), members: fakeStore(), memberIndex: fakeStore(),
+        emailIndex: fakeStore(), handles: fakeStore(), sessions: fakeStore(), sessionIndex: fakeStore(), invites: fakeStore(),
         index: jsonStore(index), drills: jsonStore(drills),
     };
     const stores = {
         accounts: () => raw.accounts, users: () => raw.users, identities: () => raw.identities,
-        members: () => raw.members, emailIndex: () => raw.emailIndex, handles: () => raw.handles,
-        sessions: () => raw.sessions,
+        members: () => raw.members, memberIndex: () => raw.memberIndex,
+        emailIndex: () => raw.emailIndex, handles: () => raw.handles,
+        sessions: () => raw.sessions, sessionIndex: () => raw.sessionIndex,
     };
     const mailer = createMockAdapter();
     const handler = createHandler({

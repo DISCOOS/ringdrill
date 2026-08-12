@@ -105,6 +105,17 @@ export function createHandler({
                 const report = await cleanupCatalogKeys({ dryRun });
                 return json(report);
             }
+            // Builds the `member-index` and `session-index` reverse indexes.
+            // Additive and idempotent — it writes derived keys and deletes
+            // nothing, so unlike the catalog migration above there is no
+            // separate cleanup phase and no ordering requirement against a
+            // deploy. See lib/backfill-indexes.js.
+            case "backfill-indexes": {
+                const { backfillIndexes } = await import("./lib/backfill-indexes.js");
+                const dryRun = (url.searchParams.get("dryRun") ?? "true").toLowerCase() !== "false";
+                const report = await backfillIndexes({ dryRun });
+                return json(report);
+            }
 
             // ---------- READ-ONLY ADMIN ----------
             case "listall": {

@@ -107,13 +107,14 @@ function upstream({ token = null, tokenOk = true } = {}) {
 
 function harness(over = {}) {
     const raw = {
-        accounts: fakeStore(), users: fakeStore(), identities: fakeStore(), members: fakeStore(),
-        emailIndex: fakeStore(), handles: fakeStore(), sessions: fakeStore(), challenges: fakeStore(),
+        accounts: fakeStore(), users: fakeStore(), identities: fakeStore(), members: fakeStore(), memberIndex: fakeStore(),
+        emailIndex: fakeStore(), handles: fakeStore(), sessions: fakeStore(), sessionIndex: fakeStore(), challenges: fakeStore(),
     };
     const stores = {
         accounts: () => raw.accounts, users: () => raw.users, identities: () => raw.identities,
-        members: () => raw.members, emailIndex: () => raw.emailIndex, handles: () => raw.handles,
-        sessions: () => raw.sessions,
+        members: () => raw.members, memberIndex: () => raw.memberIndex,
+        emailIndex: () => raw.emailIndex, handles: () => raw.handles,
+        sessions: () => raw.sessions, sessionIndex: () => raw.sessionIndex,
     };
     return {
         raw,
@@ -123,6 +124,7 @@ function harness(over = {}) {
             stores,
             challengeStore: () => raw.challenges,
             sessionStore: () => raw.sessions,
+            sessionIndexStore: () => raw.sessionIndex,
             mailer: createMockAdapter(),
         }),
     };

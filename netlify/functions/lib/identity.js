@@ -23,9 +23,11 @@ export const NS = Object.freeze({
     USERS: "users",
     IDENTITIES: "identities",
     MEMBERS: "members",
+    MEMBER_INDEX: "member-index",
     EMAIL_INDEX: "email-index",
     HANDLES: "handles",
     SESSIONS: "sessions",
+    SESSION_INDEX: "session-index",
 });
 
 export const defaultStores = Object.freeze({
@@ -33,10 +35,37 @@ export const defaultStores = Object.freeze({
     users: () => getStore(NS.USERS, STRONG),
     identities: () => getStore(NS.IDENTITIES, STRONG),
     members: () => getStore(NS.MEMBERS, STRONG),
+    memberIndex: () => getStore(NS.MEMBER_INDEX, STRONG),
     emailIndex: () => getStore(NS.EMAIL_INDEX, STRONG),
     handles: () => getStore(NS.HANDLES, STRONG),
     sessions: () => getStore(NS.SESSIONS, STRONG),
+    sessionIndex: () => getStore(NS.SESSION_INDEX, STRONG),
 });
+
+/**
+ * The reverse index `<userId>/<accountId>` over the members store.
+ *
+ * **The blob holds nothing that matters.** Everything [membershipsOf] returns —
+ * the role, whether the invitation was accepted — is read from the canonical
+ * `<accountId>/<userId>` row, and only the *key* of the index blob is used. That
+ * is deliberate: a denormalised copy of `role` would cost the same to read (a
+ * `list` returns keys, not values, so either way it is one get per membership)
+ * while adding a way for a demoted owner to keep owner rights in their token
+ * because the second of two non-transactional writes failed. There is no
+ * transaction here, so the only safe design is one where drift cannot grant
+ * anything.
+ *
+ * Writes go canonical-first, index-second, which fails closed: a lost index
+ * write hides a membership until the next backfill, where a lost canonical
+ * write would have granted one that no longer exists.
+ */
+export function memberIndexKey(userId, accountId) {
+    return `${userId}/${accountId}`;
+}
+
+export function sessionIndexKey(userId, sessionId) {
+    return `${userId}/${sessionId}`;
+}
 
 /* ---------- ids, handles, emails ---------- */
 
@@ -113,8 +142,11 @@ export async function getMember(accountId, userId, stores = defaultStores) {
  *
  * Membership is stored under `<accountId>/<userId>`, which answers "who is in
  * this account" cheaply and "which accounts is this user in" only by scanning.
- * A per-user index would invert that, and is worth adding when the scan starts
- * to hurt — at the volumes ADR-0024 sizes for, it does not.
+ * The `member-index` store inverts it, so this reads one prefix listing plus one
+ * get per membership the user actually holds instead of one get per membership
+ * *in the system*. That matters because this runs on every access-token mint —
+ * hourly, per signed-in device — so the scan it replaces was O(all tenants) on
+ * the hottest path in the API.
  *
  * **Invited-but-not-accepted members are excluded.** `acceptedAt == null` is a
  * state, not a role (DESIGN-015 §6.2): the role was chosen at invite time, but
@@ -123,6 +155,67 @@ export async function getMember(accountId, userId, stores = defaultStores) {
 export async function membershipsOf(userId, stores = defaultStores) {
     if (!userId) return { accounts: [], roles: {} };
     const store = stores.members();
+    const index = stores.memberIndex?.();
+
+    const accountIds = index ? await indexedAccountIds(index, userId) : null;
+    // No index store wired, or nothing indexed for this user yet. The scan is
+    // the old behaviour and stays correct; `backfillMemberships` turns it into
+    // a one-off rather than the steady state. See scanMemberships.
+    if (!accountIds || accountIds.length === 0) {
+        return scanMemberships(store, index, userId);
+    }
+
+    const accounts = [];
+    const roles = {};
+    for (const accountId of accountIds) {
+        const member = await store.get(`${accountId}/${userId}`, { type: "json" });
+        if (!member) {
+            // The canonical row is gone, so the membership is gone. Drop the
+            // index entry rather than letting it be re-read forever: the index
+            // is derived data and a read is the only moment we know it is
+            // wrong. Never the other way round — a missing *index* entry must
+            // not delete a live membership.
+            await index.delete(memberIndexKey(userId, accountId));
+            continue;
+        }
+        if (!member.acceptedAt) continue;
+        accounts.push(accountId);
+        roles[accountId] = member.role;
+    }
+    return { accounts, roles };
+}
+
+async function indexedAccountIds(index, userId) {
+    const prefix = `${userId}/`;
+    const out = [];
+    let cursor;
+    do {
+        const page = await index.list({ prefix, cursor });
+        cursor = page?.cursor;
+        for (const blob of page?.blobs ?? []) {
+            const accountId = String(blob.key).slice(prefix.length);
+            if (accountId) out.push(accountId);
+        }
+    } while (cursor);
+    return out;
+}
+
+/**
+ * The pre-index path: walk every membership row looking for this user.
+ *
+ * Kept, and kept *correct*, because the alternative is a deploy ordering
+ * requirement — read-from-index-only would answer "no accounts" for every
+ * existing user until the backfill finished, which reads as a total loss of
+ * access rather than as a migration in progress. Anything it finds is written
+ * to the index on the way out, so a user heals on their first token mint
+ * whether or not anyone remembers to run the backfill.
+ *
+ * A user who genuinely holds no membership scans every time. That is the one
+ * case this cannot distinguish from "not indexed yet", and it is rare enough to
+ * accept: signing in creates a personal account, so the empty state belongs to
+ * someone whose only membership is an invitation they have not accepted.
+ */
+async function scanMemberships(store, index, userId) {
     const accounts = [];
     const roles = {};
     let cursor;
@@ -133,12 +226,23 @@ export async function membershipsOf(userId, stores = defaultStores) {
             const [accountId, memberUserId] = String(blob.key).split("/");
             if (memberUserId !== userId) continue;
             const member = await store.get(blob.key, { type: "json" });
-            if (!member || !member.acceptedAt) continue;
+            if (!member) continue;
+            if (index) await putIndexEntry(index, memberIndexKey(userId, accountId));
+            if (!member.acceptedAt) continue;
             accounts.push(accountId);
             roles[accountId] = member.role;
         }
     } while (cursor);
     return { accounts, roles };
+}
+
+/**
+ * The index blob's body is a marker, not data (see [memberIndexKey]). It is
+ * written rather than left empty only so a listing is never confused by a
+ * zero-length blob.
+ */
+async function putIndexEntry(index, key) {
+    await index.set(key, JSON.stringify({ indexed: true }));
 }
 
 /* ---------- writes ---------- */
@@ -269,9 +373,7 @@ export async function resolveIdentity(
 
     await putJson(stores.users(), userId, user);
     await putJson(stores.accounts(), accountId, account);
-    await putJson(stores.members(), `${accountId}/${userId}`, {
-        accountId, userId, role: "owner", invitedAt: null, acceptedAt: ts,
-    });
+    await putMember(accountId, userId, "owner", { invitedAt: null, acceptedAt: ts }, stores);
     await putJson(stores.identities(), `${provider}/${subject}`, {
         userId, provider, subject, email: addr, addedAt: ts,
     });
@@ -301,15 +403,28 @@ export async function upgradeToOrganisation(accountId, { displayName, handle }, 
     return { ok: true, account };
 }
 
-/** Add or update a membership. `acceptedAt: null` is the invited state. */
+/**
+ * Add or update a membership. `acceptedAt: null` is the invited state.
+ *
+ * The canonical row is written before the index entry, so an interrupted write
+ * hides a membership rather than inventing one (see [memberIndexKey]).
+ *
+ * A pending member has no `userId` — they are keyed by address until they
+ * accept — so there is nothing to index for them yet. Accepting the invitation
+ * comes back through here with the real id and indexes it then.
+ */
 export async function putMember(accountId, userId, role, { invitedAt = null, acceptedAt = null } = {}, stores = defaultStores) {
     await putJson(stores.members(), `${accountId}/${userId}`, {
         accountId, userId, role, invitedAt, acceptedAt,
     });
+    const index = stores.memberIndex?.();
+    if (index && userId) await putIndexEntry(index, memberIndexKey(userId, accountId));
 }
 
 export async function removeMember(accountId, userId, stores = defaultStores) {
     await stores.members().delete(`${accountId}/${userId}`);
+    const index = stores.memberIndex?.();
+    if (index && userId) await index.delete(memberIndexKey(userId, accountId));
 }
 
 /**
@@ -389,7 +504,11 @@ export async function deleteAccount(
     // still grant access through a token minted before the rest went.
     const members = await membersOf(accountId, stores);
     for (const member of members) {
-        await stores.members().delete(`${accountId}/${member.userId ?? `pending:${member.email}`}`);
+        // Two shapes: an accepted or invited member with a userId, which goes
+        // through removeMember so the reverse index goes with it, and a pending
+        // one keyed by address, which has no index entry to remove.
+        if (member.userId) await removeMember(accountId, member.userId, stores);
+        else await stores.members().delete(`${accountId}/pending:${member.email}`);
     }
 
     if (account.handle) {
@@ -428,6 +547,21 @@ async function deleteUserRecords(userId, { inviteStore = null } = {}, stores = d
     const user = await getUser(userId, stores);
     const address = normalizeEmail(user?.primaryEmail);
 
+    // **Deletion scans, on purpose.** The reverse indexes make reads cheap by
+    // being derived data, and derived data is allowed to be incomplete — a
+    // missing entry costs a read one fallback scan. Deletion cannot borrow that
+    // assumption: a session this failed to find is a live credential belonging
+    // to a user who asked to be erased, and "the index had not been backfilled
+    // yet" is not a defence. So the sweep below stays authoritative over the
+    // canonical stores, and the index is cleaned up alongside it.
+    //
+    // This is the rare path — one call per account deletion — which is exactly
+    // why it can afford to be the thorough one.
+    const sessionIndex = stores.sessionIndex?.();
+    if (sessionIndex) await dropIndexPrefix(sessionIndex, `${userId}/`);
+    const memberIndex = stores.memberIndex?.();
+    if (memberIndex) await dropIndexPrefix(memberIndex, `${userId}/`);
+
     const sweeps = [
         [stores.identities(), (rec) => rec?.userId === userId],
         [stores.emailIndex(), (rec) => rec?.userId === userId],
@@ -460,6 +594,16 @@ async function deleteUserRecords(userId, { inviteStore = null } = {}, stores = d
         } while (cursor);
     }
     await stores.users().delete(userId);
+}
+
+/** Drop every index entry under a prefix. Derived data only — see the note in deleteUserRecords. */
+async function dropIndexPrefix(index, prefix) {
+    let cursor;
+    do {
+        const page = await index.list({ prefix, cursor });
+        cursor = page?.cursor;
+        for (const blob of page?.blobs ?? []) await index.delete(String(blob.key));
+    } while (cursor);
 }
 
 /**
