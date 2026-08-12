@@ -5,11 +5,18 @@ ADR decides that a catalog entry is a distinct object identified by
 `(namespace, slug)` and keyed by an opaque entry id; this document is the
 runbook for getting the live catalog there without breaking a link.
 
-Status: **steps 1-4 done, 2026-08-12. Cleanup (5) and the dual-read removal
-(6) remain.** The catalog is in the new layout and serving from it; the old
-blobs and flat index keys are still in place, so rolling back is still just a
-redeploy of the previous functions. That stops being true the moment step 5
-runs.
+Status: **steps 1-5 done, 2026-08-12. Only the dual-read removal (6)
+remains.** The catalog is in the new layout, serving from it, and the old
+blobs and flat index keys are gone. There is no rollback from here, by design
+— see Rollback below.
+
+Cleanup removed 15 blobs (12 + 3, matching the copy exactly) and the two flat
+index keys, with nothing skipped. It was re-verified immediately afterwards by
+downloading the same versions again and comparing them byte-for-byte against
+copies taken before the cleanup: all identical, which is what proves the bytes
+now come from `catalog/<entryId>/` and not from something the dual-read had
+been quietly covering for. Feed, install pages, both origins and
+`npm run smoke:mcp` all green afterwards.
 
 The copy moved two entries — `lier-07juni` (12 blobs, 10 versions) and
 `lsor-eidene-2026` (3 blobs, 1 version) — with no errors and nothing skipped.
