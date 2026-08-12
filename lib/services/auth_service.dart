@@ -194,12 +194,27 @@ class AuthService extends ChangeNotifier {
   /// that expires in flight.
   static const _refreshMargin = Duration(minutes: 5);
 
+  /// How long the names from `/me` are allowed to go unchecked.
+  ///
+  /// Hydration used to run on every launch, which made an app open cost two
+  /// API calls — a token rotation and a `/me` — before the user had asked for
+  /// anything. On a plan the person opens four times a day that is eight calls
+  /// a day per device to keep a display name current, against a backend whose
+  /// invocation meter is a hard cap (ADR-0009). A day is far inside the window
+  /// where a renamed organisation matters, and anything that genuinely must be
+  /// current calls [refreshAccounts] instead of waiting for this.
+  static const _hydrateInterval = Duration(hours: 24);
+
   final AuthClient _client;
   final AuthTokenStore _store;
   final DateTime Function() _now;
 
   AuthTokens? _tokens;
   AuthState _state = AuthState.signedOut;
+
+  /// When `/me` last answered. Persisted with the session, because the whole
+  /// point is to survive the restart that used to trigger a fresh call.
+  DateTime? _hydratedAt;
 
   /// In-flight refresh, shared by every caller that arrives while it runs.
   /// Without this, a screen that fires five requests on open performs five
@@ -257,7 +272,9 @@ class AuthService extends ChangeNotifier {
     try {
       final raw = await _store.read();
       if (raw == null) return;
-      _tokens = AuthTokens.fromStored(jsonDecode(raw) as Map<String, dynamic>);
+      final stored = jsonDecode(raw) as Map<String, dynamic>;
+      _tokens = AuthTokens.fromStored(stored);
+      _hydratedAt = DateTime.tryParse(stored[_hydratedAtKey] as String? ?? '');
       _publish(
         AuthState(
           user: _tokens!.user,
@@ -265,8 +282,11 @@ class AuthService extends ChangeNotifier {
           activeAccountId: _state.activeAccountId,
         ),
       );
-      // Hydrate names and sessions in the background. A stale display name is
-      // not worth delaying the first frame for.
+      // Hydrate names in the background, but only if they are actually due and
+      // only on a token we already hold. The state published above came from
+      // the stored session, so the UI is complete without this — it is a
+      // freshness pass, and a freshness pass has no business spending a token
+      // rotation on a launch where the user reads an offline plan and leaves.
       unawaited(_hydrate());
     } catch (e, s) {
       // A session that cannot be decoded is a session that cannot be used.
@@ -335,7 +355,7 @@ class AuthService extends ChangeNotifier {
     if (handoff == null) throw AuthApiException('no_handoff');
 
     await _adopt(await _client.redeemHandoff(handoff));
-    await _hydrate();
+    await _hydrate(force: true);
   }
 
   /// Redeem an email code, an emailed link, or a provider result.
@@ -354,7 +374,7 @@ class AuthService extends ChangeNotifier {
       deviceLabel: deviceLabel,
     );
     await _adopt(tokens);
-    await _hydrate();
+    await _hydrate(force: true);
   }
 
   /// The session this app is running on, or null when signed out.
@@ -392,7 +412,7 @@ class AuthService extends ChangeNotifier {
   /// Needed after anything that changes membership from this device — deleting
   /// an organisation, accepting an invitation — because the account list came
   /// from the token's claims and those are only refreshed on rotation.
-  Future<void> refreshAccounts() => _hydrate();
+  Future<void> refreshAccounts() => _hydrate(force: true);
 
   /// Which account a publish lands in. Persisted with the session, because a
   /// person who works in one organisation should not re-pick it every launch.
@@ -412,6 +432,7 @@ class AuthService extends ChangeNotifier {
     final tokens = _tokens;
     _tokens = null;
     _refreshing = null;
+    _hydratedAt = null;
     await _store.clear();
     _publish(AuthState.signedOut);
 
@@ -470,9 +491,29 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// Write the session, carrying the hydration stamp alongside it.
+  ///
+  /// The stamp rides in the same record rather than a second store entry so it
+  /// cannot outlive the session it describes — a stamp left behind by a
+  /// previous account would suppress the next one's first hydration.
+  /// [AuthTokens.fromStored] reads named fields, so the extra key is inert to
+  /// it and to any older build that reads this record.
+  Future<void> _persist() async {
+    final tokens = _tokens;
+    if (tokens == null) return;
+    await _store.write(
+      jsonEncode({
+        ...tokens.toJson(),
+        if (_hydratedAt != null) _hydratedAtKey: _hydratedAt!.toIso8601String(),
+      }),
+    );
+  }
+
+  static const _hydratedAtKey = 'hydratedAt';
+
   Future<void> _adopt(AuthTokens tokens) async {
     _tokens = tokens;
-    await _store.write(jsonEncode(tokens.toJson()));
+    await _persist();
     _publish(
       AuthState(
         user: tokens.user,
@@ -483,11 +524,30 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Replace the id-only membership list from the token with the named one.
-  Future<void> _hydrate() async {
-    final token = await accessToken();
+  ///
+  /// Two things keep this off the launch path, and they are separate on
+  /// purpose:
+  ///
+  /// * **[_hydrateInterval]** — names that were checked an hour ago do not
+  ///   need checking again because the app restarted.
+  /// * **[_tokenIfStillValid]** — background freshness never rotates. Calling
+  ///   [accessToken] here is what made an idle launch cost a `/api/auth/refresh`
+  ///   as well as a `/api/auth/me`: the stored token is over an hour old on
+  ///   any launch worth the name, so hydrating always forced a rotation the
+  ///   user had not asked for.
+  ///
+  /// Pass `force: true` where the answer is the point rather than a nicety —
+  /// just after signing in, where there are no names yet, and from
+  /// [refreshAccounts], whose caller has just changed the thing being read.
+  Future<void> _hydrate({bool force = false}) async {
+    if (!force && !_hydrationDue) return;
+    // A rotation here is only ever spent deliberately.
+    final token = force ? await accessToken() : _tokenIfStillValid;
     if (token == null) return;
     try {
       final identity = await _client.me(token: token);
+      _hydratedAt = _now();
+      await _persist();
       _publish(
         AuthState(
           user: identity.user,
@@ -496,8 +556,27 @@ class AuthService extends ChangeNotifier {
         ),
       );
     } catch (_) {
-      // The session still works; only the display names are stale.
+      // The session still works; only the display names are stale. Deliberately
+      // without stamping `_hydratedAt`, so a failure is retried on the next
+      // launch rather than counting as a successful check.
     }
+  }
+
+  bool get _hydrationDue {
+    final last = _hydratedAt;
+    return last == null || !_now().isBefore(last.add(_hydrateInterval));
+  }
+
+  /// The stored access token if it is still good — never a rotation to get one.
+  ///
+  /// [accessToken] is the entry point for work that *needs* a token, and is
+  /// right to spend a refresh. Background freshness is not that kind of work.
+  String? get _tokenIfStillValid {
+    final tokens = _tokens;
+    if (tokens == null) return null;
+    return _now().add(_refreshMargin).isBefore(tokens.expiresAt)
+        ? tokens.accessToken
+        : null;
   }
 
   /// Put the service into a given state without a round trip.

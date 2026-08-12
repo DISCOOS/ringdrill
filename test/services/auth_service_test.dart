@@ -178,6 +178,154 @@ void main() {
     });
   });
 
+  /// What a launch costs the backend.
+  ///
+  /// Hydration used to run unconditionally on restore, and it went through
+  /// [AuthService.accessToken] — so an app open cost a token rotation *and* a
+  /// `/me`, before the user asked for anything. Against a hard invocation cap
+  /// (ADR-0009) that is the difference between the ceiling being "devices that
+  /// transact" and "devices that exist", so the cost is asserted directly:
+  /// these tests count requests, not state.
+  group('launch cost', () {
+    final at = DateTime.utc(2026, 1, 1, 12);
+    DateTime clock() => at;
+
+    /// A stored session whose access token was issued [ago] before now.
+    Future<void> seed(
+      InMemoryAuthTokenStore store, {
+      required Duration ago,
+      DateTime? hydratedAt,
+    }) async {
+      final tokens = AuthTokens.fromJson(_tokens(), now: at.subtract(ago));
+      await store.write(
+        jsonEncode({
+          ...tokens.toJson(),
+          if (hydratedAt != null) 'hydratedAt': hydratedAt.toIso8601String(),
+        }),
+      );
+    }
+
+    test('an idle launch on an expired token costs nothing', () async {
+      // The common case: the app was last open yesterday, so the hour-old
+      // access token is long gone. Rotating it here would be spending a call
+      // on somebody who may only want to read a plan offline.
+      final h = harness([_json(_me)], now: clock);
+      await seed(h.store, ago: const Duration(hours: 2));
+
+      await h.service.restore();
+      await pumpEventQueue();
+
+      expect(h.service.isSignedIn, isTrue, reason: 'the session still works');
+      expect(h.service.state.user!.displayName, 'Kari');
+      expect(h.fake.requests, isEmpty, reason: 'no refresh, no /me');
+    });
+
+    test('a launch inside the hydrate interval costs nothing either', () async {
+      // Even holding a perfectly good token, names checked an hour ago do not
+      // need checking again because the process restarted.
+      final h = harness([_json(_me)], now: clock);
+      await seed(
+        h.store,
+        ago: Duration.zero,
+        hydratedAt: at.subtract(const Duration(hours: 1)),
+      );
+
+      await h.service.restore();
+      await pumpEventQueue();
+
+      expect(h.fake.requests, isEmpty);
+    });
+
+    test('a due hydrate on a live token spends one call, not two', () async {
+      final h = harness([_json(_me)], now: clock);
+      await seed(
+        h.store,
+        ago: Duration.zero,
+        hydratedAt: at.subtract(const Duration(days: 2)),
+      );
+
+      await h.service.restore();
+      await pumpEventQueue();
+
+      expect(h.fake.refreshCount, 0, reason: 'freshness never rotates');
+      expect(h.fake.requests.map((r) => r.url.path), [endsWith('/auth/me')]);
+      expect(h.service.state.organisations.map((a) => a.displayName), [
+        'Red Cross Bergen',
+      ]);
+    });
+
+    test(
+      'a successful hydrate is stamped, so the next launch is free',
+      () async {
+        final h = harness([_json(_me)], now: clock);
+        await seed(h.store, ago: Duration.zero);
+
+        await h.service.restore();
+        await pumpEventQueue();
+        expect(h.fake.requests, hasLength(1));
+
+        final stored =
+            jsonDecode((await h.store.read())!) as Map<String, dynamic>;
+        expect(DateTime.parse(stored['hydratedAt'] as String), at);
+      },
+    );
+
+    test('a failed hydrate is not stamped, so it is retried', () async {
+      // Stamping on failure would trade one wasted call for a day of stale
+      // names — the wrong way round, since the call is the cheap part.
+      final h = harness([
+        _json({'error': 'boom'}, 500),
+      ], now: clock);
+      await seed(h.store, ago: Duration.zero);
+
+      await h.service.restore();
+      await pumpEventQueue();
+
+      final stored =
+          jsonDecode((await h.store.read())!) as Map<String, dynamic>;
+      expect(stored['hydratedAt'], isNull);
+    });
+
+    test(
+      'refreshAccounts ignores the interval — its caller just changed it',
+      () async {
+        final h = harness([_json(_me)], now: clock);
+        await seed(
+          h.store,
+          ago: Duration.zero,
+          hydratedAt: at.subtract(const Duration(minutes: 1)),
+        );
+        await h.service.restore();
+        await pumpEventQueue();
+        expect(h.fake.requests, isEmpty);
+
+        await h.service.refreshAccounts();
+        expect(h.fake.requests.map((r) => r.url.path), [endsWith('/auth/me')]);
+      },
+    );
+
+    test('signing out drops the stamp with the session', () async {
+      // Otherwise the next account to sign in on this device inherits a
+      // freshness claim about somebody else's names.
+      final h = harness([
+        _json(_me),
+        _json({}),
+        _json(_tokens()),
+        _json(_me),
+      ], now: clock);
+      await seed(h.store, ago: Duration.zero);
+      await h.service.restore();
+      await pumpEventQueue();
+
+      await h.service.signOut();
+      await h.service.completeSignIn(challengeId: 'c_1', code: '123456');
+
+      expect(h.service.state.organisations.map((a) => a.displayName), [
+        'Red Cross Bergen',
+      ]);
+    });
+  });
+
   group('refresh', () {
     test('a valid token is reused rather than refreshed', () async {
       final h = harness([_json(_tokens()), _json(_me)]);
