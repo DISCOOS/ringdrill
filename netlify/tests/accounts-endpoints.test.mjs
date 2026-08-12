@@ -70,6 +70,7 @@ function harness({ index = {}, drills = {} } = {}) {
     const raw = {
         accounts: fakeStore(), users: fakeStore(), identities: fakeStore(), members: fakeStore(), memberIndex: fakeStore(),
         emailIndex: fakeStore(), handles: fakeStore(), sessions: fakeStore(), sessionIndex: fakeStore(), invites: fakeStore(),
+        invitesExpiry: fakeStore(),
         index: jsonStore(index), drills: jsonStore(drills),
     };
     const stores = {
@@ -81,7 +82,8 @@ function harness({ index = {}, drills = {} } = {}) {
     const mailer = createMockAdapter();
     const handler = createHandler({
         env: { AUTH_MODE: "mock", PUBLIC_APP_ORIGIN: "https://ringdrill.app" },
-        stores, inviteStore: () => raw.invites, mailer,
+        stores, inviteStore: () => raw.invites,
+        inviteExpiryStore: () => raw.invitesExpiry, mailer,
         getSlugIndexStore: () => raw.index,
         getDrillsStore: () => raw.drills,
         // The fake drills store holds objects rather than JSON text, so the

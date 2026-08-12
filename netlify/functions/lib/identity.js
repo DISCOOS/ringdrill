@@ -67,6 +67,31 @@ export function sessionIndexKey(userId, sessionId) {
     return `${userId}/${sessionId}`;
 }
 
+/**
+ * The expiry index key for a record: `<expiresAt>/<recordKey>`.
+ *
+ * The expiry is *in the key* rather than in the blob, which is the whole point.
+ * A `list` returns keys without their values, so a sweep driven by this index
+ * learns what has expired without reading a single record — where the scan it
+ * replaces had to `get` every blob in the store to find out.
+ *
+ * Zero-padded to a fixed width so the keys sort the way the numbers do. Nothing
+ * here depends on that ordering today; it costs one `padStart` to keep the
+ * option, and a mixed-width key set would make it unrecoverable later.
+ */
+export function expiryIndexKey(expiresAt, recordKey) {
+    return `${String(expiresAt).padStart(13, "0")}/${recordKey}`;
+}
+
+function parseExpiryIndexKey(key) {
+    const at = String(key).indexOf("/");
+    if (at <= 0) return null;
+    const expiresAt = Number(String(key).slice(0, at));
+    const recordKey = String(key).slice(at + 1);
+    if (!Number.isFinite(expiresAt) || !recordKey) return null;
+    return { expiresAt, recordKey };
+}
+
 /* ---------- ids, handles, emails ---------- */
 
 const ID_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -614,12 +639,83 @@ async function dropIndexPrefix(index, prefix) {
  * who then closed the tab — including one who never had an account at all —
  * stayed indefinitely, with no basis for keeping it once the record expired.
  *
- * Called opportunistically from the write paths rather than from a scheduler:
- * at this scale a scan per sign-in is free, and a sweep that runs whenever the
- * store is used cannot silently stop running the way a cron can.
+ * Called opportunistically from the write paths rather than from a scheduler,
+ * because a sweep that runs whenever the store is used cannot silently stop
+ * running the way a cron can.
+ *
+ * **With an `index`, nothing is read to decide what to drop.** The expiry lives
+ * in the index key (see [expiryIndexKey]), and a `list` returns keys without
+ * values, so the steady-state sweep costs a couple of listings and the deletes
+ * themselves. Without one it walks the store and `get`s every blob to read an
+ * `expiresAt` — fine for the challenge store, whose ten-minute TTL keeps it to
+ * the sign-ins of the last few minutes, and not fine for invitations, which
+ * hold a fortnight of them and are swept on the path a new organisation walks
+ * once per member it adds.
+ *
+ * **The index is caught up rather than assumed complete.** Anything the index
+ * does not know about is read and indexed here, at most `backfill` records per
+ * call. That is what keeps this from needing a migration run before it is
+ * correct: records that predate the index — or whose index write was lost — are
+ * absorbed within a few calls instead of becoming invisible to the sweep, which
+ * for a store that exists to stop holding stray email addresses would be the
+ * one failure worth avoiding. Once everything is indexed the pass reads
+ * nothing.
  */
-export async function sweepExpired(store, { now = Date.now, limit = 200 } = {}) {
+export async function sweepExpired(store, { now = Date.now, limit = 200, index = null, backfill = 100 } = {}) {
     if (!store) return 0;
+    if (!index) return scanAndSweep(store, now, limit);
+
+    let removed = 0;
+    const known = new Map();
+    let cursor;
+    do {
+        const page = await index.list({ cursor });
+        cursor = page?.cursor;
+        for (const blob of page?.blobs ?? []) {
+            const parsed = parseExpiryIndexKey(blob.key);
+            // An unparseable key is not ours. Left alone rather than deleted:
+            // guessing at the meaning of a key we did not write is how a sweep
+            // removes somebody else's data.
+            if (parsed) known.set(parsed.recordKey, { indexKey: String(blob.key), expiresAt: parsed.expiresAt });
+        }
+    } while (cursor);
+
+    for (const [recordKey, { indexKey, expiresAt }] of known) {
+        if (removed >= limit) return removed;
+        if (expiresAt > now()) continue;
+        await store.delete(recordKey);
+        await index.delete(indexKey);
+        removed += 1;
+    }
+
+    // Catch up on anything unindexed. Bounded, so a store full of legacy
+    // records costs a fixed amount per call rather than one long one.
+    let budget = backfill;
+    cursor = undefined;
+    do {
+        const page = await store.list({ cursor });
+        cursor = page?.cursor;
+        for (const blob of page?.blobs ?? []) {
+            if (budget <= 0) return removed;
+            const key = String(blob.key);
+            if (known.has(key)) continue;
+            budget -= 1;
+            const rec = await store.get(key, { type: "json" });
+            if (typeof rec?.expiresAt !== "number") continue;
+            if (rec.expiresAt <= now()) {
+                if (removed >= limit) continue;
+                await store.delete(key);
+                removed += 1;
+            } else {
+                await index.set(expiryIndexKey(rec.expiresAt, key), JSON.stringify({ indexed: true }));
+            }
+        }
+    } while (cursor);
+    return removed;
+}
+
+/** The pre-index sweep: one `get` per blob in the store. */
+async function scanAndSweep(store, now, limit) {
     let cursor;
     let removed = 0;
     do {

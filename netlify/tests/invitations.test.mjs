@@ -49,6 +49,7 @@ function harness() {
     const raw = {
         accounts: fakeStore(), users: fakeStore(), identities: fakeStore(), members: fakeStore(),
         emailIndex: fakeStore(), handles: fakeStore(), sessions: fakeStore(), invites: fakeStore(),
+        invitesExpiry: fakeStore(),
     };
     const stores = {
         accounts: () => raw.accounts, users: () => raw.users, identities: () => raw.identities,
@@ -59,7 +60,10 @@ function harness() {
     return {
         raw, stores, mailer,
         handler: createHandler({ env: ENV, stores, inviteStore: () => raw.invites }),
-        accounts: createAccountsHandler({ env: ENV, stores, inviteStore: () => raw.invites, mailer }),
+        accounts: createAccountsHandler({
+            env: ENV, stores, inviteStore: () => raw.invites,
+            inviteExpiryStore: () => raw.invitesExpiry, mailer,
+        }),
     };
 }
 

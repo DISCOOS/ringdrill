@@ -8,7 +8,7 @@ import { authenticate } from "./lib/auth/index.js";
 import {
     acceptedOwners, claimHandle, defaultStores, deleteAccount, getAccount, getUser, membersOf,
     membershipsOf, newId, normalizeEmail, putMember, removeMember, resolveHandle,
-    soleOwnerships, sweepExpired, upgradeToOrganisation, validateHandle,
+    expiryIndexKey, soleOwnerships, sweepExpired, upgradeToOrganisation, validateHandle,
 } from "./lib/identity.js";
 import { dropAccountOwnership, keysForEntry } from "./lib/catalog.js";
 import { createMailer, sendTemplate } from "./lib/mail/index.js";
@@ -40,6 +40,11 @@ export function createHandler({
     now = Date.now,
     stores = defaultStores,
     inviteStore = () => getStore("invitations", strong),
+    // The `<expiresAt>/<token>` expiry index. Without it the sweep below reads
+    // every invitation in the store to find the handful that have lapsed —
+    // fourteen days' worth, on the path an organisation walks once per member
+    // it invites.
+    inviteExpiryStore = () => getStore("invitations-expiry", strong),
     getDrillsStore = _getDrillsStore,
     getSlugIndexStore = _getSlugIndexStore,
     readJson = _readJson,
@@ -368,7 +373,7 @@ export function createHandler({
         // Expired invitations hold an address with nothing left to justify
         // keeping it. Swept here rather than on a schedule: a sweep that runs
         // whenever invitations are used cannot silently stop running.
-        await sweepExpired(inviteStore(), { now });
+        await sweepExpired(inviteStore(), { now, index: inviteExpiryStore() });
 
         // The invitation is addressed to the *email*, because inviting someone
         // with no account is the normal case (DESIGN-015 §6.4). The Member
@@ -379,6 +384,10 @@ export function createHandler({
             token, accountId, email, role, invitedBy: principal.userId,
             invitedAt: new Date(now()).toISOString(), expiresAt,
         }));
+        // Index second: an invitation the sweep cannot see is caught by the
+        // next sweep's catch-up pass, where an index entry for an invitation
+        // that was never written would delete a key belonging to nobody.
+        await inviteExpiryStore().set(expiryIndexKey(expiresAt, token), JSON.stringify({ indexed: true }));
         // A pending row keyed by address, so the members list can show it
         // before there is a userId to key on.
         await stores.members().set(`${accountId}/pending:${email}`, JSON.stringify({

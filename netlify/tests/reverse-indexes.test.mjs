@@ -1,12 +1,14 @@
 /**
- * Tests for the `member-index` and `session-index` reverse indexes.
+ * Tests for the three reverse indexes: `member-index`, `session-index`, and the
+ * expiry index the invitation sweep runs on.
  *
- * The point of these indexes is a cost, not a behaviour: `membershipsOf` runs on
+ * The point of all three is a cost, not a behaviour. `membershipsOf` runs on
  * every access-token mint and `sessionsOf` on every Devices list, and both used
  * to walk every membership — or every session — *in the system* to answer a
- * question about one user. Correctness was never in doubt; the failure mode was
- * a function timeout once the store grew, and it arrives for every tenant at
- * once because the scan is global.
+ * question about one user. `sweepExpired` read every invitation to find the
+ * lapsed ones. Correctness was never in doubt; the failure mode was a function
+ * timeout once the store grew, and it arrives for every tenant at once because
+ * the scan is global.
  *
  * So the assertions here come in two kinds, and the first kind is the one that
  * would otherwise rot: **the store is never listed without a prefix**. A
@@ -17,8 +19,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-    deleteAccount, defaultStores, membershipsOf, memberIndexKey, putMember, removeMember,
-    resolveIdentity, sessionIndexKey,
+    deleteAccount, defaultStores, expiryIndexKey, membershipsOf, memberIndexKey, putMember,
+    removeMember, resolveIdentity, sessionIndexKey, sweepExpired,
 } from "../functions/lib/identity.js";
 import { createSession, endSession, endSessionOwnedBy, sessionsOf } from "../functions/lib/auth/session.js";
 import { backfillIndexes, backfillMemberIndex } from "../functions/lib/backfill-indexes.js";
@@ -328,6 +330,140 @@ test("the backfill leaves the canonical stores untouched", async () => {
 
     await backfillMemberIndex({ dryRun: false, stores });
     assert.deepEqual([...stores.raw.members.data.entries()], [...before.entries()]);
+});
+
+// ---------- expiry index ----------
+
+/**
+ * The invitation sweep. Same idea as the two indexes above, pointed at a
+ * different question: not "which records belong to this user" but "which have
+ * lapsed". Putting the answer in the key means a `list` settles it, where the
+ * scan it replaces had to `get` every blob in the store to read an `expiresAt`.
+ */
+const HOUR = 60 * 60 * 1000;
+
+function seedRecords(store, count, { expiresAt }) {
+    return Promise.all(
+        Array.from({ length: count }, (_, i) =>
+            store.set(`inv_${i}`, JSON.stringify({ token: `inv_${i}`, email: `p${i}@example.com`, expiresAt }))),
+    );
+}
+
+test("the sweep drops what has lapsed without reading the store", async () => {
+    const store = fakeStore();
+    const index = fakeStore();
+    const now = () => 10 * HOUR;
+
+    await store.set("inv_old", JSON.stringify({ token: "inv_old", expiresAt: 1 * HOUR }));
+    await index.set(expiryIndexKey(1 * HOUR, "inv_old"), JSON.stringify({ indexed: true }));
+    await seedRecords(store, 300, { expiresAt: 100 * HOUR });
+    for (let i = 0; i < 300; i++) {
+        await index.set(expiryIndexKey(100 * HOUR, `inv_${i}`), JSON.stringify({ indexed: true }));
+    }
+
+    store.gets = 0;
+    const original = store.get.bind(store);
+    store.get = async (...a) => { store.gets++; return original(...a); };
+
+    assert.equal(await sweepExpired(store, { now, index }), 1);
+    assert.equal(await store.get("inv_old", { type: "json" }), null);
+    assert.ok(await store.get("inv_0", { type: "json" }), "a live invitation is untouched");
+    assert.equal(store.gets, 2, "only the two reads this test made itself");
+});
+
+test("the index entry goes with the record it points at", async () => {
+    const store = fakeStore();
+    const index = fakeStore();
+    const key = expiryIndexKey(1 * HOUR, "inv_old");
+    await store.set("inv_old", JSON.stringify({ expiresAt: 1 * HOUR }));
+    await index.set(key, JSON.stringify({ indexed: true }));
+
+    await sweepExpired(store, { now: () => 10 * HOUR, index });
+    assert.equal(await index.get(key, { type: "json" }), null);
+});
+
+test("records the index never saw are absorbed rather than left invisible", async () => {
+    // The failure this guards: an index-only sweep would never look at an
+    // invitation written before the index existed, so it would hold the
+    // address it exists to stop holding — silently, and forever.
+    const store = fakeStore();
+    const index = fakeStore();
+    const now = () => 10 * HOUR;
+
+    await store.set("inv_legacy_live", JSON.stringify({ expiresAt: 100 * HOUR }));
+    await store.set("inv_legacy_dead", JSON.stringify({ expiresAt: 1 * HOUR }));
+
+    assert.equal(await sweepExpired(store, { now, index }), 1);
+    assert.equal(await store.get("inv_legacy_dead", { type: "json" }), null);
+    assert.ok(
+        await index.get(expiryIndexKey(100 * HOUR, "inv_legacy_live"), { type: "json" }),
+        "the survivor is indexed, so the next sweep does not have to read it",
+    );
+});
+
+test("the catch-up is bounded, so a legacy store costs a fixed amount per call", async () => {
+    const store = fakeStore();
+    const index = fakeStore();
+    await seedRecords(store, 250, { expiresAt: 100 * HOUR });
+
+    await sweepExpired(store, { now: () => 10 * HOUR, index, backfill: 100 });
+    assert.equal(index.data.size, 100, "one call indexes its budget and no more");
+
+    await sweepExpired(store, { now: () => 10 * HOUR, index, backfill: 100 });
+    assert.equal(index.data.size, 200, "and picks up where it left off");
+});
+
+test("once everything is indexed the sweep reads nothing at all", async () => {
+    const store = fakeStore();
+    const index = fakeStore();
+    await seedRecords(store, 50, { expiresAt: 100 * HOUR });
+    await sweepExpired(store, { now: () => 10 * HOUR, index });
+
+    let gets = 0;
+    const original = store.get.bind(store);
+    store.get = async (...a) => { gets++; return original(...a); };
+    assert.equal(await sweepExpired(store, { now: () => 11 * HOUR, index }), 0);
+    assert.equal(gets, 0, "the steady state is listings and nothing else");
+});
+
+test("a key the sweep did not write is left alone", async () => {
+    // Guessing at the meaning of a foreign key is how a sweep deletes somebody
+    // else's data.
+    const store = fakeStore();
+    const index = fakeStore();
+    await index.set("not-ours", JSON.stringify({ some: "thing" }));
+
+    assert.equal(await sweepExpired(store, { now: () => 10 * HOUR, index }), 0);
+    assert.ok(await index.get("not-ours", { type: "json" }));
+});
+
+test("the removal limit still holds with an index", async () => {
+    const store = fakeStore();
+    const index = fakeStore();
+    for (let i = 0; i < 20; i++) {
+        await store.set(`inv_${i}`, JSON.stringify({ expiresAt: 1 * HOUR }));
+        await index.set(expiryIndexKey(1 * HOUR, `inv_${i}`), JSON.stringify({ indexed: true }));
+    }
+
+    assert.equal(await sweepExpired(store, { now: () => 10 * HOUR, index, limit: 5 }), 5);
+});
+
+test("without an index the old scan is still exactly what happens", async () => {
+    // The challenge store stays on this path: a ten-minute TTL keeps it to the
+    // last few minutes of sign-ins, so it never grew the problem invitations
+    // have.
+    const store = fakeStore();
+    await store.set("c_dead", JSON.stringify({ expiresAt: 1 * HOUR }));
+    await store.set("c_live", JSON.stringify({ expiresAt: 100 * HOUR }));
+
+    assert.equal(await sweepExpired(store, { now: () => 10 * HOUR }), 1);
+    assert.equal(await store.get("c_dead", { type: "json" }), null);
+    assert.ok(await store.get("c_live", { type: "json" }));
+});
+
+test("the expiry key is fixed width, so the keys sort the way the numbers do", async () => {
+    assert.equal(expiryIndexKey(5, "k"), "0000000000005/k");
+    assert.equal(expiryIndexKey(1234567890123, "k").indexOf("/"), 13);
 });
 
 test("defaultStores exposes both index stores", () => {
