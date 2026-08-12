@@ -5,8 +5,21 @@ ADR decides that a catalog entry is a distinct object identified by
 `(namespace, slug)` and keyed by an opaque entry id; this document is the
 runbook for getting the live catalog there without breaking a link.
 
-Status: **ready to run.** The blocking list below is cleared; steps 1-6 are
-not yet done.
+Status: **steps 1-4 done, 2026-08-12. Cleanup (5) and the dual-read removal
+(6) remain.** The catalog is in the new layout and serving from it; the old
+blobs and flat index keys are still in place, so rolling back is still just a
+redeploy of the previous functions. That stops being true the moment step 5
+runs.
+
+The copy moved two entries — `lier-07juni` (12 blobs, 10 versions) and
+`lsor-eidene-2026` (3 blobs, 1 version) — with no errors and nothing skipped.
+Verification found: latest and versioned downloads good on both the apex
+(proxied) and `api.` origins, archives valid with CRCs intact across the
+version range rather than only at the newest, `latest.drill` byte-identical to
+`@10`, feed and install pages fine, `npm run smoke:mcp` 12/12, and an
+unmodified plan installed *before* the migration refreshed from the catalog in
+the web app with no conflict — which is the one check that exercises
+`drills-head`'s ETag path against a migrated record.
 
 ## What changes
 
