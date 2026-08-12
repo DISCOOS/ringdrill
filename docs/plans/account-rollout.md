@@ -146,7 +146,8 @@ Two things remain, and only the first blocks a release:
   `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`.
   Magic link with a 6-character code alternative
   ([DESIGN-015](../design/015-accounts-and-iam.md) §3.3), sender
-  `noreply@mail.ringdrill.app` (a subdomain, see "Open questions"),
+  `noreply@ringdrill.app` (the apex; the `mail.` subdomain this plan first
+  proposed was dropped on 2026-08-12 when the domain was verified in Resend),
   templates in `netlify/functions/_email/`.
 * **Mail provider: Resend** (decided 2026-08-05). Free at this volume — 3,000
   emails/month, 100/day, one domain — against an expected load of tens per

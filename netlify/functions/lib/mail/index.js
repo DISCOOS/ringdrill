@@ -30,7 +30,7 @@ export const MAIL_PROVIDERS = Object.freeze({
     RESEND: "resend", SES: "ses", MOCK: "mock", CONSOLE: "console",
 });
 
-export const DEFAULT_FROM = "RingDrill <noreply@mail.ringdrill.app>";
+export const DEFAULT_FROM = "RingDrill <noreply@ringdrill.app>";
 
 export function resolveProvider(env = process.env, { warn = console.error } = {}) {
     const raw = String(env.MAIL_PROVIDER ?? "").trim().toLowerCase();
