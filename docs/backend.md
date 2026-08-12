@@ -15,6 +15,18 @@ The [ADR-0039](./adrs/0039-site-pwa-api-origins.md) three-origin split has lande
 
 **Direction (to-be, not started):** consolidate the backend onto a self-hosted rig.
 
+## Blob store indexes
+
+Two stores hold no data of their own and exist only to make a per-user lookup cheap: `member-index` (`<userId>/<accountId>`) and `session-index` (`<userId>/<sessionId>`). Without them, `membershipsOf` and `sessionsOf` walk every membership — or every session — in the system to answer a question about one user, on the hottest path in the API. See [ADR-0077](./adrs/0077-reverse-indexes-for-per-user-lookups.md) for why they carry no `role` and why deletion ignores them.
+
+Both are self-healing: a read that finds nothing indexed falls back to the old scan and indexes what it finds, so nothing has to be run in any particular order. The backfill just decides *when* the remaining scans stop rather than whether the system is correct.
+
+```bash
+curl -s -X POST "https://api.ringdrill.app/api/drills-admin?action=backfill-indexes" -H "Authorization: Bearer $RINGDRILL_ADMIN_TOKEN" | jq
+```
+
+That is a dry run. Add `&dryRun=false` to write. It is additive and idempotent — it creates derived keys and deletes nothing, so a re-run costs a duplicate pass and nothing else.
+
 ## Running the backend locally
 
 The full Netlify stack (functions plus an emulated blob store) can be run on a contributor machine without touching production. The architectural rationale is in [ADR-0013](./adrs/0013-local-catalog-testing.md).
