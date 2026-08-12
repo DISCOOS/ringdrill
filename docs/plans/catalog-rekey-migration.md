@@ -5,8 +5,7 @@ ADR decides that a catalog entry is a distinct object identified by
 `(namespace, slug)` and keyed by an opaque entry id; this document is the
 runbook for getting the live catalog there without breaking a link.
 
-Status: **steps 1-5 done, 2026-08-12. Only the dual-read removal (6)
-remains.** The catalog is in the new layout, serving from it, and the old
+Status: **complete, 2026-08-12.** All six steps ran. The catalog is in the new layout, serving from it, and the old
 blobs and flat index keys are gone. There is no rollback from here, by design
 — see Rollback below.
 
@@ -210,3 +209,37 @@ the index by namespace prefix rather than maintaining a per-account list. The
 scan is fine at current scale, is the same shape as `membershipsOf`, and has no
 second copy to keep in step. Revisit if an account ever holds enough plans for
 the paging to bite — a maintained list is the answer then, not a bigger page.
+
+## Step 6 — what the dual-read removal actually touched
+
+Larger than "delete the `else` branch", which is worth recording because the
+next migration will look just as small at the outset.
+
+* **Two fallbacks, not one.** `findEntry` fell back to the bare slug key and
+  `keysForEntry` fell back to the owner-scoped blob layout. Both are gone.
+  `keysForEntry` now **throws** on a record with no `entryId`: that used to mean
+  "pre-migration" and now means a corrupt index record, and returning a
+  plausible key would turn it into a 404 indistinguishable from an ordinary
+  missing plan.
+* **`market-feed` carried mid-migration logic** — flat/namespaced key parsing, a
+  sort putting namespaced records first, and a dedupe so one plan could not
+  appear as two during the copy window. All removed; the index key is the
+  entry's identity, so there is nothing to dedupe.
+* **The migration machinery went with it**: `lib/migrate-catalog.js`, both
+  `drills-admin` actions, and `migrate-catalog.test.mjs`. With the old layout
+  deleted the actions could only ever report finding nothing, and a
+  destructive-sounding action that does nothing invites someone to run it to see
+  what happens. Also `keysFor`, `getSlugRecord` and `getSlugRecordStrong` from
+  `lib/shared.js`, which had no callers left.
+* **Eight test files, not two.** The fixtures in `drills-head`,
+  `drills-preview`, `mcp-endpoint`, `drills-policy` and `market-feed` were all
+  built as pre-migration records, because that was the state the migration
+  started from. The two dual-world files (`mcp-catalog-layout`,
+  `drills-admin-layout`) collapsed to one world. Several assertions in
+  `catalog-keys` were vacuous once the fallback was gone — they passed while
+  testing nothing — and were replaced by the opposite property.
+* **One real bug surfaced.** `listall` reported `slug: <the index key>`, so it
+  answered `anon/lsor` where a person expects `lsor`. The migration made that
+  wrong in step 3 and nothing caught it, because `listall` was the one action
+  with no test. It round-tripped by accident: `parseCatalogPath` takes the key
+  apart again on the way back in. Fixed, with the regression test it lacked.
