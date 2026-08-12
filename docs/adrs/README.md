@@ -85,6 +85,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0075 | [Send mail through a provider adapter, and keep templates and events on our side](./0075-mail-provider-adapter.md) | Accepted |
 | ADR-0076 | [Protect local plan storage at rest, without an async read path](./0076-local-plan-storage-at-rest.md) | Accepted |
 | ADR-0077 | [Reverse indexes for per-user lookups in the blob store](./0077-reverse-indexes-for-per-user-lookups.md) | Proposed |
+| ADR-0078 | [Put the expiry in the key, and let the sweep catch itself up](./0078-expiry-index-for-the-invitation-sweep.md) | Proposed |
 
 ## When to write an ADR
 
