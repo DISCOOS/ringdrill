@@ -61,14 +61,14 @@ export function createHandler({
         let slug = (url.searchParams.get("slug") ?? "").trim();
         let version = (url.searchParams.get("version") ?? "").trim();
 
-        // Removes the index key the record actually came from. A migrated
-        // entry lives at <namespace>/<slug>; a pre-migration one at the bare
-        // slug. Deleting only the bare key would leave a migrated entry
-        // resolvable after "delete all".
+        // An entry lives at <namespace>/<slug> and nowhere else. This used to
+        // pick between that and the bare slug a pre-migration record was
+        // keyed by, because deleting only the bare key would leave a migrated
+        // entry resolvable after "delete all" — the migration deleted the last
+        // of those, so there is one key to remove.
         const deleteEntryRecord = async (found) => {
             if (!found) return;
-            const idx = getSlugIndexStore();
-            await idx.delete(found.rec.entryId ? slugIndexKey(found.namespace, found.slug) : found.slug);
+            await getSlugIndexStore().delete(slugIndexKey(found.namespace, found.slug));
         };
 
         // Every action resolves through this, so none of them can drift onto
@@ -84,7 +84,7 @@ export function createHandler({
         };
 
         switch (action) {
-            // ---------- ONE-OFF MIGRATION (ADR-0074) ----------
+            // ---------- MAINTENANCE ----------
             //
             // Run here rather than from a local script: inside the Netlify
             // runtime blob access just works, where a script would need a site
@@ -92,24 +92,18 @@ export function createHandler({
             // credential handling for no gain. It also reuses this endpoint's
             // existing ADMIN_TOKEN gate.
             //
-            // Both default to a dry run. Pass dryRun=false to act.
-            case "migrate-catalog-keys": {
-                const { migrateCatalogKeys } = await import("./lib/migrate-catalog.js");
-                const dryRun = (url.searchParams.get("dryRun") ?? "true").toLowerCase() !== "false";
-                const report = await migrateCatalogKeys({ dryRun });
-                return json(report);
-            }
-            case "migrate-catalog-keys-cleanup": {
-                const { cleanupCatalogKeys } = await import("./lib/migrate-catalog.js");
-                const dryRun = (url.searchParams.get("dryRun") ?? "true").toLowerCase() !== "false";
-                const report = await cleanupCatalogKeys({ dryRun });
-                return json(report);
-            }
+            // The ADR-0074 re-key migration lived here too, until it ran on
+            // 2026-08-12. Its actions are gone rather than left in place: with
+            // the old layout deleted they could only ever report having found
+            // nothing, and a destructive-sounding action that does nothing is
+            // worse than no action at all — someone will eventually run it to
+            // find out.
+
             // Builds the `member-index` and `session-index` reverse indexes.
             // Additive and idempotent — it writes derived keys and deletes
-            // nothing, so unlike the catalog migration above there is no
-            // separate cleanup phase and no ordering requirement against a
-            // deploy. See lib/backfill-indexes.js.
+            // nothing, so there is no separate cleanup phase and no ordering
+            // requirement against a deploy. See lib/backfill-indexes.js.
+            // Defaults to a dry run; pass dryRun=false to act.
             case "backfill-indexes": {
                 const { backfillIndexes } = await import("./lib/backfill-indexes.js");
                 const dryRun = (url.searchParams.get("dryRun") ?? "true").toLowerCase() !== "false";
@@ -131,8 +125,14 @@ export function createHandler({
                     cursor = page.cursor; // may be undefined at end
 
                     for (const b of (page.blobs || [])) {
-                        const s = b.key; // slug key
-                        const rec = await idx.get(s, { type: "json" });
+                        // The index key is `<namespace>/<slug>`, so the slug is
+                        // the second half. Reporting the whole key as `slug`
+                        // round-trips by accident — parseCatalogPath takes it
+                        // apart again — but it is not the slug, and anything
+                        // rendering this list says so to a person.
+                        const key = String(b.key);
+                        const [namespace, slugKey] = key.split("/");
+                        const rec = await idx.get(key, { type: "json" });
                         if (!rec) continue;
 
                         const { meta } = keysForEntry(rec, "latest");
@@ -151,7 +151,8 @@ export function createHandler({
                         }
 
                         items.push({
-                            slug: s,
+                            slug: slugKey,
+                            namespace,
                             ownerId: rec.ownerId,
                             programId: rec.programId,
                             planId: rec.programId,
@@ -275,10 +276,8 @@ export function createHandler({
                     const latestEtag = await getBlobEtag(latest);
                     try { if (latestEtag) await getDrillsStore().delete(latest); } catch {}
                     try { await getDrillsStore().delete(meta); } catch {}
-                    // Delete the index key the record actually came from: a
-                // migrated entry is at <namespace>/<slug>, a pre-migration one
-                // at the bare slug.
-                try { await deleteEntryRecord(found); } catch {}
+                    // The entry's index key, at <namespace>/<slug>.
+                    try { await deleteEntryRecord(found); } catch {}
                     const bytesDeleted = await dropBytes();
                     return json({
                         ok: true, slug, deletedVersion: version,
@@ -344,10 +343,11 @@ export function createHandler({
                 if (!rec) return json({ error: "Unknown slug: " + slug }, 404);
                 const { ownerId, programId } = rec;
 
-                // **The prefix comes from the record, not from ownerId.** A
-                // migrated entry lives at catalog/<entryId>/, so deriving the
-                // old owner-scoped prefix here would delete nothing and report
-                // success — the plan would look gone and still be served.
+                // **The prefix comes from the record, via keysForEntry.** An
+                // entry lives at catalog/<entryId>/, and a prefix derived from
+                // ownerId instead would name an empty location: nothing
+                // deleted, success reported, plan still served. That is what
+                // this action did before ADR-0074 landed.
                 const { prefix } = keysForEntry(rec);
                 const s = getDrillsStore();
                 let cursor, deleted = 0;
@@ -359,9 +359,7 @@ export function createHandler({
                     deleted += keys.length;
                 } while (cursor);
 
-                // Delete the index key the record actually came from: a
-                // migrated entry is at <namespace>/<slug>, a pre-migration one
-                // at the bare slug.
+                // The entry's index key, at <namespace>/<slug>.
                 try { await deleteEntryRecord(found); } catch {}
                 return json({ ok: true, slug, deletedKeys: deleted });
             }
