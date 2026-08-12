@@ -109,7 +109,7 @@ test("an unrecognised policy is refused", async () => {
 
 test("an anon plan cannot have its policy changed — no path from anon to owned", async () => {
     const h = harness({
-        entry: { ownerId: "anon", programId: "p_9", slug: "lsor", namespace: "anon" },
+        entry: { entryId: "e_9", planId: "p_9", programId: "p_9", ownerId: "anon", slug: "lsor", namespace: "anon" },
         meta: { slug: "lsor", ownerId: "anon", accessPolicy: "public" },
     });
 

@@ -78,18 +78,17 @@ export default async function (request) {
             return withCors(request, new Response(null, { status: 301, headers: { Location: u.toString() } }));
         }
 
-        // Dual-read (ADR-0074 §4): the namespaced key first, then the
-        // pre-migration flat one. This is what lets the migration run with the
-        // site live — an entry that has not been moved yet still resolves, and
-        // keysForEntry hands back the old layout for it.
+        // `(namespace, slug)` is the entry's identity (ADR-0074 §4), and
+        // resolveNamespace maps a URL handle onto the stored account id first —
+        // a renamed handle still resolves, which is what keeps an already
+        // shared link working.
         const resolvedNs = await resolveNamespace(nsSegment, {});
         const rec = await findEntry({ namespace: resolvedNs.namespace, slug });
         if (!rec) return withCors(request, new Response("Unknown slug", { status: 404 }));
 
-        // keysForEntry, never keysFor: it returns the new catalog/<entryId>/
-        // layout for a migrated record and the old owner-scoped one for a
-        // record still awaiting migration. Branching on the layout at each
-        // call site is how one read path gets migrated and another does not.
+        // keysForEntry rather than an inline `catalog/<entryId>/...`:
+        // constructing a blob key at the call site is how one read path drifts
+        // from the others.
         const { meta, versioned, latest } = keysForEntry(rec, version || "latest");
 
         const metaDoc = await readJson(meta, null);

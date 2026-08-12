@@ -399,9 +399,8 @@ export function createCompilerBackend({
         /// one call rather than two.
         getPlan: async ({ slug, version }) => {
             if (!slug) throw new Error("a slug is required");
-            // A slug may carry a namespace segment (ADR-0074 §2), and the
-            // dual-read resolves either layout — so an MCP client keeps working
-            // through the migration without knowing it happened.
+            // A slug may carry a namespace segment (ADR-0074 §2), so a client
+            // can address an account-owned plan the same way a URL does.
             const parsed = parseCatalogPath(slug);
             const ns = await resolveNamespace(parsed?.explicitNamespace ? parsed.namespace : null, {});
             const record = await findEntry({ namespace: ns.namespace, slug: parsed?.slug ?? slug });

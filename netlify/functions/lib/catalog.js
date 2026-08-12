@@ -6,8 +6,13 @@ import { newId, normalizeHandle, resolveHandle } from "./identity.js";
  *
  * A catalog entry is a distinct object from the plan an account holds: its own
  * key, its own lifecycle, its own identity `(namespace, slug)`. This module owns
- * all three, and the dual-read fallback that lets the migration run with the
- * site live.
+ * all three.
+ *
+ * It also used to own the dual-read fallback that let the re-key migration run
+ * with the site live — a flat index key and the owner-scoped blob layout that
+ * predate `(namespace, slug)`. The migration ran on 2026-08-12 and its cleanup
+ * deleted the last of both, so the fallback is gone: every record has an
+ * `entryId`, and one without is corruption rather than an older shape.
  */
 
 export const ANON_NAMESPACE = "anon";
@@ -126,46 +131,33 @@ export async function resolveNamespace(urlNamespace, { stores } = {}) {
 /**
  * Find a catalog entry by `(namespace, slug)`.
  *
- * **Dual-read**, and this is what lets the migration run with the site live:
- * the new key is tried first, then the pre-migration flat `slug-index/<slug>`.
- * A record without an `entryId` is a pre-migration one, and the caller reads
- * its blobs from the old `drills/<ownerId>/<planId>/` layout via `legacy`.
- *
- * Delete this fallback once the migration has run and been verified — the
- * cleanup phase is what makes it safe to.
+ * One key, one read. Until 2026-08-12 this also tried the pre-migration flat
+ * `slug-index/<slug>`, which is what let the re-key migration run with the site
+ * live; the cleanup phase deleted the last flat key, so there is nothing left
+ * for that read to find.
  */
 export async function findEntry({ namespace, slug }, { strong = false, store } = {}) {
     const idx = store ?? (strong ? getSlugIndexStoreStrong() : getSlugIndexStore());
-
-    const namespaced = await idx.get(slugIndexKey(namespace, slug), { type: "json" });
-    if (namespaced) return { ...namespaced, namespace, slug, legacy: !namespaced.entryId };
-
-    // Pre-migration records live at the bare slug and are all `anon`, since
-    // nothing could be account-owned before namespaces existed.
-    if (namespace === ANON_NAMESPACE) {
-        const flat = await idx.get(slug, { type: "json" });
-        if (flat) return { ...flat, namespace: ANON_NAMESPACE, slug, legacy: !flat.entryId };
-    }
-    return null;
+    const record = await idx.get(slugIndexKey(namespace, slug), { type: "json" });
+    return record ? { ...record, namespace, slug } : null;
 }
 
 /**
- * Blob keys for a record from `findEntry`, in whichever layout it is in.
+ * Blob keys for a record from `findEntry`.
  *
- * Callers should never branch on the layout themselves — that is how one read
- * path gets migrated and another does not.
+ * **A record with no `entryId` throws rather than returning keys.** It used to
+ * mean "pre-migration", and this function answered with the owner-scoped layout
+ * so callers never had to branch on which shape they held. That layout no
+ * longer exists. What a missing `entryId` means now is a corrupt index record,
+ * and the useful thing to do with one is fail loudly at the point it is read —
+ * returning a plausible key would turn it into a 404 that looks like an
+ * ordinary missing plan and hides the corruption behind it.
  */
 export function keysForEntry(record, version = "_") {
-    if (record?.entryId) return catalogKeysFor(record.entryId, version);
-    // Pre-migration: the old owner-scoped layout.
-    const owner = record?.ownerId ?? ANON_NAMESPACE;
-    const plan = record?.programId ?? record?.planId;
-    return {
-        versioned: `drills/${owner}/${plan}/${version}${DRILL_EXT}`,
-        latest: `drills/${owner}/${plan}/latest${DRILL_EXT}`,
-        meta: `drills/${owner}/${plan}/meta.json`,
-        prefix: `drills/${owner}/${plan}/`,
-    };
+    if (!record?.entryId) {
+        throw new Error(`catalog record has no entryId: ${JSON.stringify(record?.slug ?? record)}`);
+    }
+    return catalogKeysFor(record.entryId, version);
 }
 
 /**

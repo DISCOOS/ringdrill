@@ -1,11 +1,13 @@
 /**
- * Catalog entry identity, keys, URL parsing and the dual-read fallback
- * (ADR-0074 §2 and §4).
+ * Catalog entry identity, keys and URL parsing (ADR-0074 §2 and §4).
  *
  * The properties worth the most: the blob key contains neither the account nor
- * its handle, segment count alone disambiguates a namespaced URL, and a
- * pre-migration record still resolves — which is what lets the migration run
- * with the site live.
+ * its handle, and segment count alone disambiguates a namespaced URL.
+ *
+ * This file also used to pin the dual-read fallback that let the re-key
+ * migration run with the site live. That ran on 2026-08-12, so what is pinned
+ * now is the opposite property — a record with no `entryId` throws instead of
+ * naming a key in a layout that no longer exists.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -132,42 +134,34 @@ test("anon resolves to itself", async () => {
     assert.equal((await resolveNamespace(null, { stores: handleStores() })).namespace, ANON_NAMESPACE);
 });
 
-// ---------- dual read ----------
+// ---------- resolution ----------
 
-test("a migrated record resolves by namespaced key and reads from catalog/", async () => {
+test("a record resolves by namespaced key and reads from catalog/", async () => {
     const store = fakeStore({
         [slugIndexKey("a_bergen", "lsor")]: { entryId: "e_1", planId: "p_1", ownerAccountId: "a_bergen" },
     });
     const rec = await findEntry({ namespace: "a_bergen", slug: "lsor" }, { store });
     assert.equal(rec.entryId, "e_1");
-    assert.equal(rec.legacy, false);
     assert.equal(keysForEntry(rec).meta, "catalog/e_1/meta.json");
+    assert.equal(keysForEntry(rec, "5").versioned, "catalog/e_1/5.drill");
 });
 
-test("a PRE-MIGRATION record still resolves, from the bare slug and the old layout", async () => {
-    // This is the whole reason the migration can run with the site live.
+test("a record with no entryId throws rather than naming a plausible key", async () => {
+    // Before the ADR-0074 migration this meant "pre-migration" and the old
+    // owner-scoped layout was returned. It cannot mean that any more, so it
+    // means a corrupt index record — and the useful response is to fail where
+    // it is read, not to hand back a key that 404s like an ordinary missing
+    // plan and hides the corruption.
+    assert.throws(() => keysForEntry({ slug: "lsor", ownerId: "anon", programId: "p_9" }), /no entryId/);
+    assert.throws(() => keysForEntry(null), /no entryId/);
+});
+
+test("a bare slug is no longer resolvable — the flat keys are gone", async () => {
     const store = fakeStore({ "lsor": { ownerId: "anon", programId: "p_9" } });
-    const rec = await findEntry({ namespace: ANON_NAMESPACE, slug: "lsor" }, { store });
-    assert.equal(rec.legacy, true);
-    assert.equal(keysForEntry(rec).meta, "drills/anon/p_9/meta.json");
-    assert.equal(keysForEntry(rec, "5").versioned, "drills/anon/p_9/5.drill");
+    assert.equal(await findEntry({ namespace: ANON_NAMESPACE, slug: "lsor" }, { store }), null);
 });
 
-test("the namespaced key wins over a stale flat one", async () => {
-    const store = fakeStore({
-        "lsor": { ownerId: "anon", programId: "p_old" },
-        [slugIndexKey(ANON_NAMESPACE, "lsor")]: { entryId: "e_new", planId: "p_old" },
-    });
-    const rec = await findEntry({ namespace: ANON_NAMESPACE, slug: "lsor" }, { store });
-    assert.equal(rec.entryId, "e_new");
-});
-
-test("the flat fallback is only tried for anon — nothing was account-owned before namespaces", async () => {
-    const store = fakeStore({ "lsor": { ownerId: "anon", programId: "p_9" } });
-    assert.equal(await findEntry({ namespace: "a_bergen", slug: "lsor" }, { store }), null);
-});
-
-test("an unknown slug is null in both layouts", async () => {
+test("an unknown slug is null", async () => {
     assert.equal(await findEntry({ namespace: ANON_NAMESPACE, slug: "nope" }, { store: fakeStore() }), null);
 });
 
@@ -241,9 +235,13 @@ test("CLAIMING does not fall back — a brand new slug never lands in anon for a
     assert.equal(t.foundIn, null);
 });
 
-test("a pre-migration flat record is still found through the anon fallback", async () => {
-    const store = fakeStore({ "lsor": { ownerId: "anon", programId: "p_1" } });
+test("an existing anon entry is found through the anon fallback", async () => {
+    // Lookup falls back to `anon`; claiming does not. A slug already published
+    // anonymously is still that entry, whoever is uploading now.
+    const store = fakeStore({
+        [slugIndexKey(ANON_NAMESPACE, "lsor")]: { entryId: "e_1", planId: "p_1" },
+    });
     const t = await findUploadTarget({ principal: bergen, slug: "lsor" }, { store });
-    assert.equal(t.existing.legacy, true);
+    assert.equal(t.existing.entryId, "e_1");
     assert.equal(t.foundIn, ANON_NAMESPACE);
 });

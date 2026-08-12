@@ -26,11 +26,11 @@ export function createHandler({ getDrillsStore = _getDrillsStore, getSlugIndexSt
             let cursor = url.searchParams.get("cursor") || undefined;
             let nextCursor;
 
-            // A slug can appear twice mid-migration: once flat, once
-            // namespaced. The namespaced record wins, and the flat twin is
-            // dropped rather than listed as a second plan.
-            const seen = new Set();
-
+            // Every index key is `<namespace>/<slug>`, so it is the entry's
+            // identity and there is nothing to dedupe. Until 2026-08-12 a slug
+            // could also appear flat, and this sorted namespaced records first
+            // and dropped the flat twin so the copy phase could not show one
+            // plan as two. Cleanup deleted the last flat key.
             while (items.length < limit) {
                 const page = await idx.list({ cursor, limit: 100 });
                 cursor = page.cursor;
@@ -40,24 +40,17 @@ export function createHandler({ getDrillsStore = _getDrillsStore, getSlugIndexSt
                         const key = String(b.key);
                         const rec = await idx.get(key, { type: "json" });
                         if (!rec) return null;
-                        const namespaced = key.includes("/");
-                        const [ns, slug] = namespaced ? key.split("/") : ["anon", key];
-                        return { rec, namespace: ns, slug, namespaced };
+                        const [namespace, slug] = key.split("/");
+                        return { rec, namespace, slug };
                     }),
                 );
 
-                // Namespaced first, so a flat twin is the one that loses.
-                records.sort((a, b) => (b?.namespaced === true) - (a?.namespaced === true));
-
                 for (const entry of records) {
                     if (!entry) continue;
-                    const dedupeKey = `${entry.namespace}/${entry.slug}`;
-                    if (seen.has(dedupeKey)) continue;
 
                     const m = await drills.get(keysForEntry(entry.rec).meta, { type: "json" });
                     if (!m || !m.published) continue;
 
-                    seen.add(dedupeKey);
                     items.push(metaToFeedItem(m, { origin, namespace: entry.namespace }));
                     if (items.length >= limit) break;
                 }

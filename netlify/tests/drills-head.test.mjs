@@ -17,11 +17,11 @@ import assert from "node:assert/strict";
 import { createHandler } from "../functions/drills-head.js";
 
 const SLUG_RECORDS = {
-    "lsor-eidene-2026": { ownerId: "anon", programId: "prog-abc" },
+    "lsor-eidene-2026": { entryId: "e_abc", planId: "prog-abc", programId: "prog-abc" },
 };
 
 const META_STORE = {
-    "drills/anon/prog-abc/meta.json": {
+    "catalog/e_abc/meta.json": {
         versions: [
             { v: "1", etag: "\"etag-v1\"", size: 100, updatedAt: "2026-01-01T00:00:00.000Z" },
             { v: "2", etag: "\"etag-v2\"", size: 120, updatedAt: "2026-02-01T00:00:00.000Z" },
@@ -31,14 +31,12 @@ const META_STORE = {
 
 function makeHandler(slugRecords = SLUG_RECORDS, metaStore = META_STORE) {
     return createHandler({
-        // findEntry, not getSlugRecord: the handler resolves through the
-        // dual-read so a pre-migration entry (a record with no entryId, read
-        // from the old blob layout) and a migrated one both work. These
-        // fixtures are pre-migration, which is the state the migration starts
-        // from.
+        // findEntry, not getSlugRecord: the handler resolves the entry and
+        // reads its blobs through keysForEntry, so the key layout lives in one
+        // place rather than in each caller.
         findEntry: async ({ slug }) => {
             const rec = slugRecords[slug];
-            return rec ? { ...rec, slug, legacy: !rec.entryId } : null;
+            return rec ? { ...rec, slug } : null;
         },
         resolveNamespace: async (ns) => ({ namespace: ns ?? "anon", canonical: ns ?? "anon" }),
         readJson: async (key, fallback = null) => metaStore[key] ?? fallback,

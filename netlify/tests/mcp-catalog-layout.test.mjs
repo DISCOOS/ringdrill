@@ -1,15 +1,17 @@
 /**
- * The MCP catalog tools against **both** storage layouts (ADR-0074).
+ * The MCP catalog tools against the ADR-0074 storage layout.
  *
  * This test exists because the migration runbook named `mcp-backend.js` as the
  * one catalog reader with no test that would notice it breaking: it is a
  * library under `lib/` rather than a function, and the hosted endpoint is only
- * exercised by `npm run smoke:mcp`, which is not part of `npm test`.
+ * exercised by `npm run smoke:mcp`, which is not part of `npm test`. That is
+ * still true, which is why the file stays after the migration it was written
+ * for.
  *
- * So every case runs twice — once against a pre-migration record (flat index
- * key, `drills/<owner>/<plan>/` blobs) and once against a migrated one
- * (namespaced key, `catalog/<entryId>/` blobs). An MCP client must not be able
- * to tell which side of the migration it is on.
+ * Every case used to run twice, against a pre-migration record and a migrated
+ * one, so an MCP client could not tell which side of the migration it was on.
+ * The migration ran on 2026-08-12 and the old layout is gone, so only the one
+ * world remains.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -30,31 +32,20 @@ const META = (slug, ownerId) => ({
     ],
 });
 
-/**
- * Two worlds, identical in every way a caller can observe.
- *
- * `legacy` is what the catalog looks like before the migration runs; `migrated`
- * is after. The blob keys differ, the index keys differ, and nothing an MCP
- * tool returns should.
- */
-function world(kind) {
-    const migrated = kind === "migrated";
+/** The catalog as it is stored: a namespaced index key and `catalog/<entryId>/` blobs. */
+function world() {
     const meta = META("test-plan", "anon");
 
-    const indexKey = migrated ? "anon/test-plan" : "test-plan";
-    const record = migrated
-        ? { entryId: "e_1", planId: "prog-1", programId: "prog-1", ownerAccountId: null }
-        : { ownerId: "anon", programId: "prog-1" };
+    const indexKey = "anon/test-plan";
+    const record = { entryId: "e_1", planId: "prog-1", programId: "prog-1", ownerAccountId: null };
 
-    const metaKey = migrated ? "catalog/e_1/meta.json" : "drills/anon/prog-1/meta.json";
     const blobs = {
-        [metaKey]: meta,
-        [migrated ? "catalog/e_1/2.drill" : "drills/anon/prog-1/2.drill"]: Buffer.from("PK-v2"),
-        [migrated ? "catalog/e_1/latest.drill" : "drills/anon/prog-1/latest.drill"]: Buffer.from("PK-v2"),
+        "catalog/e_1/meta.json": meta,
+        "catalog/e_1/2.drill": Buffer.from("PK-v2"),
+        "catalog/e_1/latest.drill": Buffer.from("PK-v2"),
     };
 
     return {
-        kind,
         record,
         readBinaryCalls: [],
         deps(extra = {}) {
@@ -75,8 +66,7 @@ function world(kind) {
                     list: async () => ({ blobs: [{ key: indexKey }], cursor: undefined }),
                     get: async (k) => (k === indexKey ? record : null),
                 }),
-                findEntry: async ({ slug }) =>
-                    slug === "test-plan" ? { ...record, slug, legacy: !record.entryId } : null,
+                findEntry: async ({ slug }) => (slug === "test-plan" ? { ...record, slug } : null),
                 resolveNamespace: async (ns) => ({ namespace: ns ?? "anon", canonical: ns ?? "anon" }),
                 readJson: async (key) => blobs[key] ?? null,
                 readBinary: async (key) => {
@@ -90,29 +80,27 @@ function world(kind) {
     };
 }
 
-const WORLDS = ["legacy", "migrated"];
-
 // ---------- search_catalog ----------
 
-test("search_catalog lists a published plan in both layouts", async () => {
-    for (const kind of WORLDS) {
-        const w = world(kind);
+test("search_catalog lists a published plan", async () => {
+    {
+        const w = world();
         const backend = createCompilerBackend(w.deps());
         const { items } = await backend.searchCatalog({});
 
-        assert.equal(items.length, 1, kind);
-        assert.equal(items[0].slug, "test-plan", kind);
-        assert.equal(items[0].name, "Test Plan", kind);
+        assert.equal(items.length, 1);
+        assert.equal(items[0].slug, "test-plan");
+        assert.equal(items[0].name, "Test Plan");
         // An anon plan reports no namespace and keeps its bare URL either side
         // of the migration.
-        assert.equal(items[0].namespace, null, kind);
-        assert.match(items[0].latestUrl, /\/d\/test-plan$/, kind);
+        assert.equal(items[0].namespace, null);
+        assert.match(items[0].latestUrl, /\/d\/test-plan$/);
     }
 });
 
-test("search_catalog omits an unpublished plan in both layouts", async () => {
-    for (const kind of WORLDS) {
-        const w = world(kind);
+test("search_catalog omits an unpublished plan", async () => {
+    {
+        const w = world();
         const deps = w.deps();
         const origGet = deps.getDrillsStore;
         deps.getDrillsStore = () => {
@@ -123,7 +111,7 @@ test("search_catalog omits an unpublished plan in both layouts", async () => {
             } };
         };
         const { items } = await createCompilerBackend(deps).searchCatalog({});
-        assert.equal(items.length, 0, kind);
+        assert.equal(items.length, 0);
     }
 });
 
@@ -150,9 +138,9 @@ test("search_catalog surfaces an account namespace in the URL once migrated", as
 
 // ---------- get_plan ----------
 
-test("get_plan resolves `latest` to a concrete version, reading the right layout", async () => {
-    for (const kind of WORLDS) {
-        const w = world(kind);
+test("get_plan resolves `latest` to a concrete version", async () => {
+    {
+        const w = world();
         // The compiler is not what this test is about, so stub the invoke step
         // and assert on which blob key was read.
         const backend = createCompilerBackend({
@@ -162,21 +150,20 @@ test("get_plan resolves `latest` to a concrete version, reading the right layout
 
         await backend.getPlan({ slug: "test-plan" }).catch(() => {});
 
-        const expected = kind === "migrated" ? "catalog/e_1/2.drill" : "drills/anon/prog-1/2.drill";
+        const expected = "catalog/e_1/2.drill";
         assert.ok(
             w.readBinaryCalls.includes(expected),
-            `${kind}: expected a read of ${expected}, got ${JSON.stringify(w.readBinaryCalls)}`,
+            `expected a read of ${expected}, got ${JSON.stringify(w.readBinaryCalls)}`,
         );
     }
 });
 
 test("get_plan reports an unknown slug rather than throwing something opaque", async () => {
-    for (const kind of WORLDS) {
-        const backend = createCompilerBackend(world(kind).deps());
+    {
+        const backend = createCompilerBackend(world().deps());
         await assert.rejects(
             () => backend.getPlan({ slug: "no-such-plan" }),
             /no published plan with slug/,
-            kind,
         );
     }
 });

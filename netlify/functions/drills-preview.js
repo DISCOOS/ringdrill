@@ -283,7 +283,7 @@ export function createHandler({ findEntry = _findEntry, resolveNamespace = _reso
 
             // An /i/ link may carry a namespace segment too, so a shared
             // install link for an account-owned plan resolves the same way its
-            // /d/ counterpart does (ADR-0074 §2). Dual-read via findEntry.
+            // /d/ counterpart does (ADR-0074 §2).
             const parsed = parseCatalogPath(slug);
             const slugOnly = parsed?.slug ?? slug;
             const ns = await resolveNamespace(parsed?.explicitNamespace ? parsed.namespace : null, {});

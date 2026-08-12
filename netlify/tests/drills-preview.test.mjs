@@ -14,19 +14,19 @@ import { createHandler, pickLocale, renderHtml } from "../functions/drills-previ
 // ---------- Fake store fixtures ----------
 
 const SLUG_RECORDS = {
-    "test-7x": { ownerId: "anon", programId: "prog-abc" },
-    "test-unpub": { ownerId: "anon", programId: "prog-unpub" },
+    "test-7x": { entryId: "e_abc", planId: "prog-abc", programId: "prog-abc" },
+    "test-unpub": { entryId: "e_unpub", planId: "prog-unpub", programId: "prog-unpub" },
 };
 
 const META_STORE = {
-    "drills/anon/prog-abc/meta.json": {
+    "catalog/e_abc/meta.json": {
         slug: "test-7x",
         name: "Testøvelse",
         published: true,
         tags: ["team", "intro"],
         versions: [],
     },
-    "drills/anon/prog-unpub/meta.json": {
+    "catalog/e_unpub/meta.json": {
         slug: "test-unpub",
         name: "Upublisert",
         published: false,
@@ -37,12 +37,9 @@ const META_STORE = {
 
 function makeHandler(slugRecords = SLUG_RECORDS, metaStore = META_STORE) {
     return createHandler({
-        // The handler resolves through the dual-read (ADR-0074 §4), so both a
-        // pre-migration record and a migrated one work. These fixtures are
-        // pre-migration.
         findEntry: async ({ slug }) => {
             const rec = slugRecords[slug];
-            return rec ? { ...rec, slug, legacy: !rec.entryId } : null;
+            return rec ? { ...rec, slug } : null;
         },
         resolveNamespace: async (ns) => ({ namespace: ns ?? "anon", canonical: ns ?? "anon" }),
         readJson: async (key, fallback = null) => metaStore[key] ?? fallback,

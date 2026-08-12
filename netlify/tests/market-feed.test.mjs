@@ -24,23 +24,17 @@ function makeStore(metaByKey) {
 
 /**
  * The feed enumerates the slug index rather than scanning blobs (ADR-0074 §4):
- * post-migration a blob scan cannot produce a feed, because meta.json carries
- * no namespace and latestUrl needs one. These helpers build an index that
- * points at whichever layout the meta keys are in.
+ * a blob scan cannot produce a feed, because meta.json carries no namespace and
+ * latestUrl needs one.
  */
 function indexFor(metaByKey) {
     const records = {};
     for (const key of Object.keys(metaByKey)) {
         if (!key.endsWith("/meta.json")) continue;
         const meta = metaByKey[key];
-        if (key.startsWith("catalog/")) {
-            const entryId = key.split("/")[1];
-            const ns = meta.ownerId && meta.ownerId !== "anon" ? meta.ownerId : "anon";
-            records[`${ns}/${meta.slug}`] = { entryId, planId: meta.programId, ownerId: meta.ownerId };
-        } else {
-            const [, ownerId, planId] = key.split("/");
-            records[meta.slug] = { ownerId, programId: planId };
-        }
+        const entryId = key.split("/")[1];
+        const ns = meta.ownerId && meta.ownerId !== "anon" ? meta.ownerId : "anon";
+        records[`${ns}/${meta.slug}`] = { entryId, planId: meta.programId, ownerId: meta.ownerId };
     }
     return makeStore(records);
 }
@@ -55,7 +49,7 @@ function req(path) {
 }
 
 const MODERN_META = {
-    "drills/acc-1/prog-1/meta.json": {
+    "catalog/e_1/meta.json": {
         programId: "prog-1",
         slug: "modern-plan",
         name: "Modern Plan",
@@ -94,17 +88,17 @@ test("published items carry the widened shape", async () => {
         place: "Bergen, Norway",
         languageCode: "nb",
         tags: ["sar"],
-        // A pre-migration record is addressed flat, so it reports no namespace
-        // and keeps its bare /d/<slug> URL (ADR-0074 §2).
-        namespace: null,
-        latestUrl: "http://api.ringdrill.app/d/modern-plan",
+        // Owned by acc-1, so it is addressed in that namespace. An anon plan
+        // keeps its bare /d/<slug> URL instead — covered separately below.
+        namespace: "acc-1",
+        latestUrl: "http://api.ringdrill.app/d/acc-1/modern-plan",
         updatedAt: "2026-02-01T00:00:00.000Z",
     });
 });
 
 test("unpublished items are omitted", async () => {
     const metaByKey = {
-        "drills/anon/prog-2/meta.json": {
+        "catalog/e_2/meta.json": {
             programId: "prog-2",
             slug: "draft-plan",
             name: "Draft",
@@ -121,7 +115,7 @@ test("unpublished items are omitted", async () => {
 
 test("a legacy blob (no exerciseCount/author/accessPolicy) projects with graceful defaults", async () => {
     const metaByKey = {
-        "drills/anon/prog-3/meta.json": {
+        "catalog/e_3/meta.json": {
             programId: "prog-3",
             slug: "legacy-plan",
             name: "Legacy",
@@ -147,11 +141,11 @@ test("a legacy blob (no exerciseCount/author/accessPolicy) projects with gracefu
 
 test("items are sorted by updatedAt descending", async () => {
     const metaByKey = {
-        "drills/anon/prog-a/meta.json": {
+        "catalog/e_a/meta.json": {
             programId: "prog-a", slug: "older", name: "Older", ownerId: "anon", published: true,
             versions: [{ v: "1", updatedAt: "2026-01-01T00:00:00.000Z" }],
         },
-        "drills/anon/prog-b/meta.json": {
+        "catalog/e_b/meta.json": {
             programId: "prog-b", slug: "newer", name: "Newer", ownerId: "anon", published: true,
             versions: [{ v: "1", updatedAt: "2026-03-01T00:00:00.000Z" }],
         },
@@ -198,20 +192,3 @@ test("a migrated anon entry keeps its bare URL; an account entry gains its names
     assert.equal(owned.latestUrl, "http://api.ringdrill.app/d/a_bergen/vinter");
 });
 
-test("mid-migration, a slug present both flat and namespaced is listed once", async () => {
-    // The copy phase leaves the flat key in place until cleanup, so both point
-    // at the same plan. Listing it twice would show a duplicate in the catalog.
-    const both = {
-        "drills/anon/prog-a/meta.json": {
-            programId: "prog-a", slug: "lsor", name: "LSOR (old)", ownerId: "anon",
-            published: true, versions: [{ v: "1", updatedAt: "2026-03-01T00:00:00.000Z" }],
-        },
-        "catalog/e_1/meta.json": {
-            programId: "prog-a", slug: "lsor", name: "LSOR", ownerId: "anon",
-            published: true, versions: [{ v: "1", updatedAt: "2026-03-01T00:00:00.000Z" }],
-        },
-    };
-    const { items } = await (await handlerFor(both)(req("/api/market-feed"))).json();
-    assert.equal(items.length, 1);
-    assert.equal(items[0].name, "LSOR", "the migrated record wins over its flat twin");
-});

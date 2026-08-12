@@ -153,25 +153,13 @@ export async function writeBinaryConditional(key, bytes, opts = {}) {
 
 /* ---------- Slug index helpers ---------- */
 
-export async function getSlugRecord(slug) {
-    const s = getSlugIndexStore();
-    const rec = await s.get(slug, { type: "json" });
-    return rec ?? null;
-}
-
-/// `getSlugRecord` for a decision rather than a display.
-///
-/// The case that needs it is the re-read after a lost `claimSlug`: the claim itself is
-/// atomic and safe under any read consistency, because `onlyIfNew` does not depend on
-/// having read anything. What follows it does — the loser re-reads the record to check
-/// whether the winner was itself, and an eventually consistent read can return `null`
-/// or a record from before the claim, turning a legitimate re-upload into a spurious
-/// "slug already in use".
-export async function getSlugRecordStrong(slug) {
-    const s = getSlugIndexStoreStrong();
-    const rec = await s.get(slug, { type: "json" });
-    return rec ?? null;
-}
+// `getSlugRecord` / `getSlugRecordStrong` lived here and read the index by bare
+// slug. Both went with the ADR-0074 migration on 2026-08-12: an entry is
+// identified by `(namespace, slug)` now, so a lookup that takes a slug alone
+// cannot name one. `findEntry` in lib/catalog.js is the replacement, and it
+// takes both. The strong-read reasoning the second one carried has not been
+// lost — it moved to `findEntry`'s `strong` option, and lib/identity.js opens
+// with the general version of the same warning.
 
 export async function claimSlug(slug, record) {
     // Create only if missing (atomic)
@@ -222,13 +210,9 @@ export async function reportLegacyProgramIdUsage(context) {
 
 /* ---------- Keys & misc ---------- */
 
-export function keysFor({ ownerId, programId, version }) {
-    return {
-        versioned: `drills/${ownerId}/${programId}/${version}${DRILL_EXT}`,
-        latest:    `drills/${ownerId}/${programId}/latest${DRILL_EXT}`,
-        meta:      `drills/${ownerId}/${programId}/meta.json`,
-    };
-}
+// `keysFor` built the owner-scoped `drills/<ownerId>/<planId>/` keys. That
+// layout was deleted by the ADR-0074 migration; `keysForEntry` in
+// lib/catalog.js is the only way to name a catalog blob.
 
 export function sha256Hex(buf) { return crypto.createHash("sha256").update(buf).digest("hex"); }
 export function toStrongEtag(hex) { return `"${hex}"`; }

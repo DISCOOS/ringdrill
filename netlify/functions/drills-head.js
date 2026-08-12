@@ -30,10 +30,8 @@ export function createHandler({ findEntry = _findEntry, resolveNamespace = _reso
 
             if (!tail) return withCors(request, new Response("Missing slug", { status: 404 }));
 
-            // Optional namespace segment (ADR-0074 §2), then dual-read: a
-            // pre-migration entry still resolves from the flat key and the old
-            // blob layout, which is what lets the migration run with the site
-            // live. keysForEntry hides which layout a record is in.
+            // Optional namespace segment (ADR-0074 §2). keysForEntry owns the
+            // blob key, so this path never builds one itself.
             const parsed = parseCatalogPath(tail);
             if (!parsed) return withCors(request, new Response("Not found", { status: 404 }));
             const { slug, version: verMaybe } = parsed;

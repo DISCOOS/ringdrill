@@ -315,7 +315,6 @@ export default async function (request) {
 
         // The existing plan's meta decides which matrix row applies, so it is
         // read before the decision rather than after. keysForEntry, never
-        // keysFor: a pre-migration entry still lives in the old layout.
         const existingMeta = existing ? await readJson(keysForEntry(existing).meta, null) : null;
         const decision = authorizeCatalogWrite({
             principal, existing, meta: existingMeta,
