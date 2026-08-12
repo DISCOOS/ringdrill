@@ -115,13 +115,16 @@ Both phases default to a dry run; `dryRun=false` is the only way to act.
 
 ## Verification after the copy
 
-The catalog is three plans, so this is done by hand and that is fine.
+The catalog is two plans (it was trimmed to the real ones on 2026-08-12), so
+this is done by hand and that is fine. `lier-07juni` is the one that matters
+most here: it carries ten versioned blobs to `lsor-eidene-2026`'s one, so it is
+the only plan that meaningfully exercises the versioned-URL case below.
 
 * Every slug still downloads: `curl -IL https://ringdrill.app/d/<slug>` → 200,
   correct `x-version`, correct `Content-Length`.
 * A **versioned** URL still downloads: `/d/<slug>@<n>`. Versioned blobs are the
   ones most likely to be missed by a partial copy.
-* `/api/market-feed` lists all three, and each `latestUrl` resolves.
+* `/api/market-feed` lists both, and each `latestUrl` resolves.
 * `/i/<slug>` still renders.
 * The MCP endpoint still answers: `npm run smoke:mcp`. This drives the deployed
   endpoint over the network and is not part of `npm test`, so it is easy to
@@ -166,7 +169,7 @@ Kept as a running list; add to it rather than trusting memory.
   the assumption most likely to be misread while touching these paths.
 * **The dual-read removal is a third deploy**, not part of the migration. Leave
   it in place until the cleanup has run and been verified.
-* **Blob `list()` pagination.** Both phases loop on `cursor`. At three plans it
+* **Blob `list()` pagination.** Both phases loop on `cursor`. At two plans it
   will never page, which is exactly why a regression here would go unnoticed
   until it mattered.
 * **Netlify Blobs has no move.** A copy is a read plus a write, so a partially
