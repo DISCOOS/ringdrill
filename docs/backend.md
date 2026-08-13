@@ -37,7 +37,15 @@ Start the backend:
 ```bash
 make netlify-dev
 ```
-The target runs `npm install` and `ADMIN_TOKEN=dev-token npx netlify functions:serve --port 8888`. Override the token with `make netlify-dev LOCAL_ADMIN_TOKEN=<token>`. Functions are now reachable at `http://localhost:8888/.netlify/functions/<name>`. The blob store is emulated under `.netlify/blobs-serve/`.
+The target runs `npm install` and `ADMIN_TOKEN=dev-token AUTH_MODE=mock MAIL_PROVIDER=console npx netlify functions:serve --port 8888`. Override any of them with `make netlify-dev LOCAL_ADMIN_TOKEN=<token> LOCAL_AUTH_MODE=live LOCAL_MAIL_PROVIDER=resend`. Functions are now reachable at `http://localhost:8888/.netlify/functions/<name>`. The blob store is emulated under `.netlify/blobs-serve/`.
+
+`AUTH_MODE` and `MAIL_PROVIDER` are two separate seams and local sign-in needs both ([ADR-0073](./adrs/0073-auth-mode-and-adapters.md), [ADR-0075](./adrs/0075-mail-provider-adapter.md)). Their defaults are the production ones — `live`, which needs a signing key, and `resend`, which refuses to boot without an API key — so without these settings sign-in answers 500 and reads like a bug rather than two missing variables. Under `mock` the sign-in code comes back in the response body and the app's sign-in screen fills it in; the `console` mail adapter prints the whole message to the terminal instead of sending it. On the first request the server prints which mode it resolved:
+
+```
+[auth] mode=mock — unsigned test tokens, mail short-circuited, sign-in codes returned in the response body
+```
+
+Setting up the real provider is [`mail-setup.md`](./mail-setup.md).
 
 The target uses `netlify functions:serve` instead of `netlify dev` because the latter sets up an Edge Functions runtime that fails to install reliably on some macOS hosts. We do not use edge functions, so `functions:serve` is sufficient.
 

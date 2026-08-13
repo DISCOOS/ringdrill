@@ -200,3 +200,7 @@ usually rot.
   `netlify/functions/lib/mail/` (adapters),
   `netlify/functions/_email/` (templates, both locales),
   `netlify/functions/mail-webhook-*.js` (per-provider normalisers)
+
+## Links
+
+* [`docs/mail-setup.md`](../mail-setup.md) — the setup runbook this ADR decides the shape of: domain verification, environment, local development, and the security properties of the mail channel.
