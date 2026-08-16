@@ -1268,7 +1268,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountOwnerOnly => 'Only an owner can do this.';
 
   @override
-  String get accountActionFailed => 'That did not work. Try again.';
+  String get accountActionFailed =>
+      'That could not be completed. Try again in a moment.';
 
   @override
   String get inviteTitle => 'Invitation';
@@ -1440,7 +1441,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signInUseAnotherEmail => 'Use a different address';
 
   @override
-  String get signInFailed => 'That did not work. Check the code and try again.';
+  String get signInCodeWrong =>
+      'That code is not correct. Check the email and try again.';
+
+  @override
+  String get signInFailed =>
+      'Sign-in could not be completed. Try again in a moment.';
 
   @override
   String get signInCodeExpired => 'That code has expired. Ask for a new one.';

@@ -1264,7 +1264,8 @@ class AppLocalizationsNb extends AppLocalizations {
   String get accountOwnerOnly => 'Bare en eier kan gjøre dette.';
 
   @override
-  String get accountActionFailed => 'Det virket ikke. Prøv igjen.';
+  String get accountActionFailed =>
+      'Handlingen kunne ikke fullføres. Prøv igjen om litt.';
 
   @override
   String get inviteTitle => 'Invitasjon';
@@ -1435,7 +1436,12 @@ class AppLocalizationsNb extends AppLocalizations {
   String get signInUseAnotherEmail => 'Bruk en annen adresse';
 
   @override
-  String get signInFailed => 'Det virket ikke. Sjekk koden og prøv igjen.';
+  String get signInCodeWrong =>
+      'Koden er ikke riktig. Sjekk e-posten og prøv igjen.';
+
+  @override
+  String get signInFailed =>
+      'Innloggingen kunne ikke fullføres. Prøv igjen om litt.';
 
   @override
   String get signInCodeExpired => 'Koden er utløpt. Be om en ny.';

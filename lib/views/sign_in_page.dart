@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/data/auth_client.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/auth_service.dart';
+import 'package:ringdrill/views/widgets/inline_message.dart';
 
 /// Signing in (DESIGN-015 §3.3, §5.1).
 ///
@@ -76,7 +77,7 @@ class _SignInPageState extends State<SignInPage> {
       return switch (error.reason) {
         'expired' => l.signInCodeExpired,
         'too_many_attempts' => l.signInTooManyAttempts,
-        'bad_code' => l.signInFailed,
+        'bad_code' => l.signInCodeWrong,
         _ => error.status == null ? l.signInNetworkError : l.signInFailed,
       };
     }
@@ -348,12 +349,7 @@ class _SignInPageState extends State<SignInPage> {
 
             if (_error != null) ...[
               const SizedBox(height: 16),
-              Text(
-                _error!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-              ),
+              InlineMessage(message: _error!),
             ],
 
             const SizedBox(height: 24),

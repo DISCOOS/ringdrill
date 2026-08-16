@@ -291,7 +291,15 @@ void main() {
       await tester.tap(find.text('Sign in'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Check the code'), findsOneWidget);
+      // Names the actual fault. "That did not work" — what this used to say,
+      // in both languages — could equally have meant the network, the server
+      // or the address, so it told the reader nothing they could act on.
+      expect(
+        find.text('That code is not correct. Check the email and try again.'),
+        findsOneWidget,
+      );
+      // And carries an icon, so the message does not depend on colour alone.
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
       // Still on the code step with the field live — a failure that sent the
       // user back to the start would make them request a second code and
       // invalidate the one they already have.

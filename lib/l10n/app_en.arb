@@ -1353,7 +1353,7 @@
   },
   "accountLastOwnerRefused": "An organisation must keep at least one owner.",
   "accountOwnerOnly": "Only an owner can do this.",
-  "accountActionFailed": "That did not work. Try again.",
+  "accountActionFailed": "That could not be completed. Try again in a moment.",
   "inviteTitle": "Invitation",
   "inviteJoinPrompt": "{inviter} invited you to join {organisation} as {role}.",
   "@inviteJoinPrompt": {
@@ -1491,7 +1491,11 @@
     "description": "Shown after asking for another code. Says a code is on its way rather than that it has arrived: the server caps how much mail one address can be sent and a refusal is deliberately silent (ADR-0079), so the client cannot know. Also warns that the old code is dead, because a new challenge replaces it."
   },
   "signInUseAnotherEmail": "Use a different address",
-  "signInFailed": "That did not work. Check the code and try again.",
+  "signInCodeWrong": "That code is not correct. Check the email and try again.",
+  "@signInCodeWrong": {
+    "description": "The code was wrong. Split out from signInFailed, which carried this and \"the server refused for a reason we did not recognise\" at once — one sentence covering both could only be vague about which."
+  },
+  "signInFailed": "Sign-in could not be completed. Try again in a moment.",
   "signInCodeExpired": "That code has expired. Ask for a new one.",
   "signInTooManyAttempts": "Too many attempts. Ask for a new code.",
   "signInNetworkError": "Could not reach RingDrill. Check your connection and try again.",

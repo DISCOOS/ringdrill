@@ -2117,7 +2117,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountActionFailed.
   ///
   /// In en, this message translates to:
-  /// **'That did not work. Try again.'**
+  /// **'That could not be completed. Try again in a moment.'**
   String get accountActionFailed;
 
   /// No description provided for @inviteTitle.
@@ -2402,10 +2402,16 @@ abstract class AppLocalizations {
   /// **'Use a different address'**
   String get signInUseAnotherEmail;
 
+  /// The code was wrong. Split out from signInFailed, which carried this and "the server refused for a reason we did not recognise" at once — one sentence covering both could only be vague about which.
+  ///
+  /// In en, this message translates to:
+  /// **'That code is not correct. Check the email and try again.'**
+  String get signInCodeWrong;
+
   /// No description provided for @signInFailed.
   ///
   /// In en, this message translates to:
-  /// **'That did not work. Check the code and try again.'**
+  /// **'Sign-in could not be completed. Try again in a moment.'**
   String get signInFailed;
 
   /// No description provided for @signInCodeExpired.

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ringdrill/data/auth_client.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/auth_service.dart';
+import 'package:ringdrill/views/widgets/inline_message.dart';
 
 /// Signing in from the link in the email (ADR-0080).
 ///
@@ -68,7 +69,7 @@ class _SignInLinkPageState extends State<SignInLinkPage> {
         // The link was already spent — most often by the code having been
         // typed, or by the same link opened twice.
         'unknown_or_used' => l.signInLinkUsed,
-        'bad_code' => l.signInFailed,
+        'bad_code' => l.signInCodeWrong,
         _ => error.status == null ? l.signInNetworkError : l.signInFailed,
       };
     }
@@ -134,12 +135,7 @@ class _SignInLinkPageState extends State<SignInLinkPage> {
                 ],
                 if (_error != null) ...[
                   const SizedBox(height: 16),
-                  Text(
-                    _error!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.error,
-                    ),
-                  ),
+                  InlineMessage(message: _error!),
                 ],
               ],
             ),
