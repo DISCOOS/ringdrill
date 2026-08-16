@@ -7,6 +7,7 @@ import 'package:ringdrill/data/auth_client.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/auth_service.dart';
+import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/widgets/catalog_browser.dart';
 
 /// The Library's account tab (DESIGN-015 §5.7).
@@ -226,6 +227,34 @@ void main() {
       expect(state.activeAccount!.accountId, 'a_bergen');
     });
   });
+
+  /// The tab order, and the coupling that makes it fragile.
+  ///
+  /// `LibraryTab.index` is handed to the `TabController` as its initial index,
+  /// so the enum's order *is* the tab order. Reordering the `TabBar` without
+  /// the enum — or the other way round — neither fails to compile nor throws:
+  /// it silently opens the wrong tab for everyone passing `initialTab`.
+  group('library tab order', () {
+    test('nearest first: mine, my account, everybody, then the action', () {
+      // myPlans and account are both *yours* — one on this device, one owned
+      // by an account you belong to — so they sit together. online is
+      // everybody's. fromFile is not a source at all but an action, so it
+      // stays last.
+      expect(LibraryTab.values, [
+        LibraryTab.myPlans,
+        LibraryTab.account,
+        LibraryTab.online,
+        LibraryTab.fromFile,
+      ]);
+    });
+
+    test('fromFile stays last, which its own listener relies on', () {
+      // _LibraryBodyState watches for a move away from that tab and compares
+      // by index, so moving it would quietly change what the listener means.
+      expect(LibraryTab.fromFile.index, LibraryTab.values.length - 1);
+    });
+  });
+
 }
 
 class _Recording extends http.BaseClient {

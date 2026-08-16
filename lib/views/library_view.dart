@@ -31,14 +31,18 @@ import 'package:share_plus/share_plus.dart';
 
 /// Which tab [showOpenPlanDialog] should land on when it opens. Order
 /// matches the [TabBar] in [_LibraryBodyState.build] so `.index` can be
-/// used directly as the [TabController]'s initial index.
+/// used directly as the [TabController]'s initial index — which is why the
+/// two must be reordered together, and why doing one alone silently lands
+/// somebody on the wrong tab.
 ///
-/// `account` sits between `online` and `fromFile` rather than at the end,
-/// because the three plan *sources* belong together and "New from file" is the
-/// action. [online] keeps its name while its label became "Public"
-/// (DESIGN-015 §5.7): renaming the enum would churn every call site to say the
-/// same thing.
-enum LibraryTab { myPlans, online, account, fromFile }
+/// **Nearest first.** `myPlans` and `account` are both *yours* — one on this
+/// device, one owned by an account you belong to — so they sit together.
+/// `online` is everybody's, and `fromFile` is not a source at all but an
+/// action, so it stays last.
+///
+/// [online] keeps its name while its label became "Public" (DESIGN-015 §5.7):
+/// renaming the enum would churn every call site to say the same thing.
+enum LibraryTab { myPlans, account, online, fromFile }
 
 Future<void> showOpenPlanDialog(
   BuildContext context, {
@@ -139,8 +143,8 @@ class _LibraryBodyState extends State<_LibraryBody>
               controller: _tabController,
               tabs: [
                 Tab(text: localizations.libraryMyPlans),
-                Tab(text: localizations.libraryOnlineTab),
                 Tab(text: localizations.libraryAccountTab),
+                Tab(text: localizations.libraryOnlineTab),
                 Tab(text: localizations.fromFileAction),
               ],
               // Four labels do not fit a phone's width side by side, and a
@@ -153,8 +157,8 @@ class _LibraryBodyState extends State<_LibraryBody>
                 controller: _tabController,
                 children: [
                   _buildMyPlans(context),
-                  _buildCatalog(context),
                   _buildAccountPlans(context),
+                  _buildCatalog(context),
                   _buildFromFile(context),
                 ],
               ),
