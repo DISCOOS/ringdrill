@@ -1405,6 +1405,26 @@ class AppLocalizationsNb extends AppLocalizations {
   String get signInVerify => 'Logg inn';
 
   @override
+  String get signInLinkTitle => 'Logg inn';
+
+  @override
+  String get signInLinkPrompt =>
+      'Fortsett for å fullføre innloggingen på denne enheten.';
+
+  @override
+  String get signInLinkAction => 'Logg inn';
+
+  @override
+  String get signInLinkDone => 'Du er logget inn.';
+
+  @override
+  String get signInLinkContinue => 'Fortsett';
+
+  @override
+  String get signInLinkUsed =>
+      'Denne lenken er allerede brukt. Be om en ny, eller skriv inn koden fra e-posten.';
+
+  @override
   String get signInResend => 'Send ny kode';
 
   @override

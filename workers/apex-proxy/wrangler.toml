@@ -16,5 +16,10 @@ routes = [
   { pattern = "ringdrill.app/.netlify/functions/*", zone_name = "ringdrill.app" },
   { pattern = "ringdrill.app/d/*", zone_name = "ringdrill.app" },
   { pattern = "ringdrill.app/i/*", zone_name = "ringdrill.app" },
+  # Emailed links (ADR-0080): /s/ signs in, /j/ joins from an invitation. Both
+  # proxy to the API origin, which serves the browser fallback — on a phone with
+  # the app installed the universal link wins and no request is made at all.
+  { pattern = "ringdrill.app/s/*", zone_name = "ringdrill.app" },
+  { pattern = "ringdrill.app/j/*", zone_name = "ringdrill.app" },
   { pattern = "ringdrill.app/brief/*", zone_name = "ringdrill.app" },
 ]

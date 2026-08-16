@@ -115,6 +115,19 @@
                     android:scheme="https"
                     android:host="ringdrill.app"
                     android:pathPrefix="/o/" />
+                <!-- Emailed links (ADR-0080). /s/ signs in, /j/ joins from an
+                     invitation. Both are registered here together with their
+                     GoRouter routes: DEBT-0001 was an autoVerify path with no
+                     consumer, which re-verifies at every install and update and
+                     whose failure is logged where nobody looks. -->
+                <data
+                    android:scheme="https"
+                    android:host="ringdrill.app"
+                    android:pathPrefix="/s/" />
+                <data
+                    android:scheme="https"
+                    android:host="ringdrill.app"
+                    android:pathPrefix="/j/" />
             </intent-filter>
 
             <!-- 📄 Open .drill files from file managers / downloads -->

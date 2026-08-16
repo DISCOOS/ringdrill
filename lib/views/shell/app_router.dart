@@ -17,6 +17,7 @@ import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/concept_primer_screen.dart';
 import 'package:ringdrill/views/install_link_handler.dart';
 import 'package:ringdrill/views/invite_page.dart';
+import 'package:ringdrill/views/sign_in_link_page.dart';
 import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/migration_page.dart';
 import 'package:ringdrill/web/install_guide_page.dart'
@@ -233,9 +234,28 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
         // Answering an invitation (DESIGN-015 §6.4). A real route rather than
         // a dialog, because the link arrives by email and is opened cold —
         // often on a device where nobody is signed in yet, and on mobile as a
-        // universal link into the installed app.
+        // universal link into the installed app (ADR-0080).
+        //
+        // `/j/` for join, matching the one-letter shape the apex uses for every
+        // link a person receives — `/d/` download, `/i/` install, `/o/` open a
+        // shared file, `/s/` sign in. Not `/i/`, the obvious choice for invite:
+        // that is the install link, and reusing the prefix would route an
+        // invitation into the handler two lines above, which redirects to the
+        // active plan — landing the invitee on somebody else's plan with no
+        // sign an invitation was involved.
+        // Signing in from the emailed link (ADR-0080). Redeems on open in the
+        // app and waits for a tap in a browser — see SignInLinkPage for why
+        // the two surfaces differ.
         GoRoute(
-          path: '/invite/:token',
+          path: '/s/:challengeId/:code',
+          parentNavigatorKey: key,
+          builder: (context, state) => SignInLinkPage(
+            challengeId: state.pathParameters['challengeId']!,
+            code: state.pathParameters['code']!,
+          ),
+        ),
+        GoRoute(
+          path: '/j/:token',
           parentNavigatorKey: key,
           builder: (context, state) =>
               InvitePage(token: state.pathParameters['token']!),

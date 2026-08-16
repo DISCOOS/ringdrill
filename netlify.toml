@@ -247,6 +247,19 @@
     to = "/.netlify/functions/drills-preview?slug=:splat"
     status = 200
 
+# The two links RingDrill emails (ADR-0080). Reached only by a browser: on a
+# phone with the app installed the universal link wins and no request is made.
+# The function redirects to the PWA and redeems nothing — see app-link.js.
+[[redirects]]
+    from = "/s/*"
+    to = "/.netlify/functions/app-link/s/:splat"
+    status = 200
+
+[[redirects]]
+    from = "/j/*"
+    to = "/.netlify/functions/app-link/j/:splat"
+    status = 200
+
 [[redirects]]
     from = "/brief/plan/*"
     to = "https://web.ringdrill.app/brief/plan/:splat"

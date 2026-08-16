@@ -412,9 +412,10 @@ LOCAL_MAIL_PROVIDER ?= console
 # is the right value even locally: the links are not clickable from here either
 # way, and using the real one keeps the printed mail readable.
 LOCAL_APP_ORIGIN ?= https://ringdrill.app
+LOCAL_PWA_ORIGIN ?= https://web.ringdrill.app
 netlify-dev:
 	npm install
-	ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) AUTH_MODE=$(LOCAL_AUTH_MODE) MAIL_PROVIDER=$(LOCAL_MAIL_PROVIDER) PUBLIC_APP_ORIGIN=$(LOCAL_APP_ORIGIN) npx netlify functions:serve --port 8888
+	ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) AUTH_MODE=$(LOCAL_AUTH_MODE) MAIL_PROVIDER=$(LOCAL_MAIL_PROVIDER) PUBLIC_APP_ORIGIN=$(LOCAL_APP_ORIGIN) PUBLIC_PWA_ORIGIN=$(LOCAL_PWA_ORIGIN) npx netlify functions:serve --port 8888
 
 # Local Astro dev server for the site/ project. Runs `astro dev` with HMR
 # at http://localhost:4321/. Most pages need no backend; the CTAs link to

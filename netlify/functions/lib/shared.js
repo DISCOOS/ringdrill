@@ -242,6 +242,29 @@ export function appOrigin(env = process.env) {
     return origin;
 }
 
+/**
+ * Where the PWA is served, for handing an emailed link to it (ADR-0080).
+ *
+ * Separate from [appOrigin] because they are different hosts and only one of
+ * them is where links *point*: the apex owns the association files and so must
+ * be what the mail contains, while the browser fallback has to send the visitor
+ * somewhere that can actually run the app. Collapsing them into one variable
+ * would work today and break the moment either moves.
+ *
+ * Required, with no fallback, for the reason appOrigin gives at length.
+ */
+export function pwaOrigin(env = process.env) {
+    const origin = String(env.PUBLIC_PWA_ORIGIN ?? "").trim().replace(/\/+$/, "");
+    if (!origin) {
+        throw new Error(
+            "PUBLIC_PWA_ORIGIN is unset. The browser fallback for an emailed link "
+            + "redirects there, and guessing it would send somebody's single-use "
+            + "sign-in credential to whatever host was hardcoded. Set it on the API site.",
+        );
+    }
+    return origin;
+}
+
 /* ---------- Keys & misc ---------- */
 
 // `keysFor` built the owner-scoped `drills/<ownerId>/<planId>/` keys. That

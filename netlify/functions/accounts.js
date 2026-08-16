@@ -400,7 +400,7 @@ export function createHandler({
         // DESIGN-015 §3.6: an invitation uses the *inviting* user's locale —
         // the only signal available for somebody with no account yet.
         const locale = body.locale === "nb" ? "nb" : "en";
-        const url = `${appOrigin(env)}/invite/${encodeURIComponent(token)}`;
+        const url = `${appOrigin(env)}/j/${encodeURIComponent(token)}`;
         const send = mailer ?? createMailer({ env });
         await sendTemplate(send, {
             to: email, template: "invitation", locale, idempotencyKey: token,

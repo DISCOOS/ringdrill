@@ -2348,6 +2348,42 @@ abstract class AppLocalizations {
   /// **'Sign in'**
   String get signInVerify;
 
+  /// Title of the page reached by tapping the link in a sign-in email (ADR-0080).
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get signInLinkTitle;
+
+  /// Shown in a browser, where the page waits for a tap rather than signing in on load — mail scanners follow links, and a challenge is single-use, so redeeming on load would spend it before the person arrives. The native app skips this and redeems on open, because a universal link only reaches an app when a human tapped it.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to finish signing in on this device.'**
+  String get signInLinkPrompt;
+
+  /// No description provided for @signInLinkAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get signInLinkAction;
+
+  /// No description provided for @signInLinkDone.
+  ///
+  /// In en, this message translates to:
+  /// **'You are signed in.'**
+  String get signInLinkDone;
+
+  /// No description provided for @signInLinkContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get signInLinkContinue;
+
+  /// The link and the code are one challenge, so spending either retires both. Most often seen when the code was typed first, or the same link was opened twice.
+  ///
+  /// In en, this message translates to:
+  /// **'This link has already been used. Ask for a new one, or type the code from the email.'**
+  String get signInLinkUsed;
+
   /// Code step. The only recovery from an expired or lost code used to be "use another email", which reads as a different decision.
   ///
   /// In en, this message translates to:

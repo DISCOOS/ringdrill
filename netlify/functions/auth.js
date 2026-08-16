@@ -169,7 +169,7 @@ export function createHandler({
         let sent = null;
         if (gate.allowed) {
             const send = mailer ?? createMailer({ env });
-            const url = `${appOrigin(env)}/auth/callback?c=${encodeURIComponent(challengeId)}&k=${encodeURIComponent(code)}`;
+            const url = `${appOrigin(env)}/s/${encodeURIComponent(challengeId)}/${encodeURIComponent(code)}`;
             sent = await sendTemplate(send, {
                 to: email, template: "signIn", locale,
                 params: { code, url, minutes: Math.round(expiresInMs / 60000) },
