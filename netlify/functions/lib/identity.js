@@ -384,6 +384,13 @@ export async function resolveIdentity(
     const user = {
         id: userId,
         displayName: displayName || addr || "RingDrill user",
+        // **Empty, not guessed.** A provider gives a full name or nothing, and
+        // never the thing a roster wants — what a person is called on the day.
+        // Deriving one from the display name would produce "Kenneth" for a
+        // team with two, or the local part of an email for anyone who signed
+        // in with a code. Empty is the honest state and is what the app asks
+        // the person to fill in (DESIGN-015 §3.7).
+        shortName: "",
         primaryEmail: addr || null,
         primaryEmailVerified: !!(addr && emailVerified),
         createdAt: ts,
@@ -409,6 +416,43 @@ export async function resolveIdentity(
     }
 
     return { ok: true, user, account, created: true, linked: false };
+}
+
+/**
+ * Set the user's own names.
+ *
+ * **The personal account follows the display name; an organisation never
+ * does.** A personal account is created carrying the user's name (see
+ * [resolveIdentity]) and exists to be "you" — leaving it on the old name after
+ * a rename would show two different names for one person on the same screen.
+ * An organisation is a separate thing that happens to have one member today,
+ * and renaming yourself must not rename it.
+ *
+ * Blank is not a way to clear a display name: it is the fallback chain from
+ * creation, so an empty value would leave the user nameless. `shortName` may
+ * be cleared, because empty is its legitimate initial state.
+ */
+export async function updateUserNames(userId, { displayName, shortName }, stores = defaultStores) {
+    const user = await getUser(userId, stores);
+    if (!user) return { ok: false, reason: "no_such_user" };
+
+    const nextDisplay = typeof displayName === "string" ? displayName.trim() : null;
+    const nextShort = typeof shortName === "string" ? shortName.trim() : null;
+
+    if (nextDisplay) user.displayName = nextDisplay;
+    if (nextShort !== null) user.shortName = nextShort;
+    await putJson(stores.users(), userId, user);
+
+    if (nextDisplay) {
+        const { accounts } = await membershipsOf(userId, stores);
+        for (const accountId of accounts) {
+            const account = await getAccount(accountId, stores);
+            if (!account || account.type === "organization") continue;
+            account.displayName = nextDisplay;
+            await putJson(stores.accounts(), accountId, account);
+        }
+    }
+    return { ok: true, user };
 }
 
 /** Upgrade a personal account to an organisation (DESIGN-015 §5.3). */

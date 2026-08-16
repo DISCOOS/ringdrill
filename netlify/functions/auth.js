@@ -3,7 +3,10 @@ import { authenticate, AUDIENCE, ISSUER, logAuthMode, signJwt, resolveMode, AUTH
 import {
     ACCESS_TTL_S, createSession, endSessionOwnedBy, redeemChallenge, rotateSession, sessionsOf, startChallenge,
 } from "./lib/auth/session.js";
-import { defaultStores, getUser, membershipsOf, normalizeEmail, NS, resolveIdentity, sweepExpired } from "./lib/identity.js";
+import {
+    defaultStores, getUser, membershipsOf, normalizeEmail, NS, resolveIdentity, sweepExpired,
+    updateUserNames,
+} from "./lib/identity.js";
 import { offerableProviders, providerConfig } from "./lib/auth/providers.js";
 import {
     exchangeCode, putHandoff, redeemAuthorization, redeemHandoff, startAuthorization,
@@ -68,7 +71,15 @@ async function mintAccessToken({ user, env, now, stores }) {
 }
 
 function publicUser(user) {
-    return { id: user.id, displayName: user.displayName, email: user.primaryEmail };
+    return {
+        id: user.id,
+        displayName: user.displayName,
+        // Empty until the person fills it in. Sent as "" rather than omitted so
+        // a client can tell "not set yet" from "this build does not know about
+        // it" — the first is a prompt to show, the second is not.
+        shortName: user.shortName ?? "",
+        email: user.primaryEmail,
+    };
 }
 
 export function createHandler({
@@ -115,6 +126,7 @@ export function createHandler({
                 case "POST logout": return withCors(request, await logout(request));
                 case "POST sessions/revoke": return withCors(request, await revokeSession(request));
                 case "GET me": return withCors(request, await me(request));
+                case "PATCH me": return withCors(request, await updateMe(request));
                 case "GET providers": return withCors(request, await listProviders(request));
                 default: return withCors(request, json({ error: "not_found" }, 404));
             }
@@ -438,6 +450,43 @@ export function createHandler({
             activeAccount: principal.accountId,
             devices: await sessionsOf(sessionStore(), user.id, { now, index: sessionIndexStore() }),
         });
+    }
+
+    /**
+     * Set the signed-in user's own names (DESIGN-015 §3.7).
+     *
+     * Only ever the caller's own: the id comes from the verified token and is
+     * never taken from the body, so there is no shape of this request that
+     * renames somebody else.
+     *
+     * A personal account follows the display name — see `updateUserNames` for
+     * why an organisation does not.
+     */
+    async function updateMe(request) {
+        const principal = await authenticate(request, { env, now });
+        if (!principal.ok) return json({ error: principal.reason }, principal.status);
+        if (principal.anonymous) return json({ error: "authentication_required" }, 401);
+
+        const body = await request.json().catch(() => ({}));
+        const displayName = typeof body.displayName === "string" ? body.displayName.trim() : null;
+        const shortName = typeof body.shortName === "string" ? body.shortName.trim() : null;
+
+        // A display name is what every other screen shows this person as, so
+        // clearing it would leave them nameless everywhere. Refused rather than
+        // silently ignored, so a client that meant to set one is told.
+        if (displayName !== null && displayName.length === 0) {
+            return json({ error: "display_name_required" }, 400);
+        }
+        if (displayName === null && shortName === null) {
+            return json({ error: "nothing_to_update" }, 400);
+        }
+        if ((displayName?.length ?? 0) > 80 || (shortName?.length ?? 0) > 40) {
+            return json({ error: "name_too_long" }, 400);
+        }
+
+        const updated = await updateUserNames(principal.userId, { displayName, shortName }, stores);
+        if (!updated.ok) return json({ error: updated.reason }, 404);
+        return json({ user: publicUser(updated.user) });
     }
 
     async function issueTokens(user, extra = {}) {

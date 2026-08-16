@@ -359,3 +359,94 @@ test("under AUTH_MODE=live the server signs a real JWT, verifiable with the publ
     assert.equal(verified.claims.sub, session.user.id);
     assert.equal(verified.claims.roles[verified.claims.act], "owner");
 });
+
+// ---------- PATCH me ----------
+
+test("a user sets their own names, and the personal account follows", async () => {
+    // The personal account is created carrying the user's name and exists to be
+    // "you". Leaving it on the old one would show two names for one person on
+    // the same screen.
+    const h = harness();
+    const { session } = await signIn(h);
+
+    const res = await h.handler(new Request("https://api.ringdrill.app/api/auth/me", {
+        method: "PATCH",
+        headers: { "content-type": "application/json", authorization: `Bearer ${session.accessToken}` },
+        body: JSON.stringify({ displayName: "Kari Nordmann", shortName: "Kari" }),
+    }));
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.user.displayName, "Kari Nordmann");
+    assert.equal(body.user.shortName, "Kari");
+
+    const me = await (await h.handler(new Request("https://api.ringdrill.app/api/auth/me", {
+        headers: { authorization: `Bearer ${session.accessToken}` },
+    }))).json();
+    assert.equal(me.accounts[0].displayName, "Kari Nordmann", "the personal account renamed with them");
+});
+
+test("renaming yourself never renames an organisation", async () => {
+    const h = harness();
+    const { session } = await signIn(h);
+    await h.stores.accounts().set("a_bergen", JSON.stringify({
+        id: "a_bergen", displayName: "Red Cross Bergen", type: "organization",
+    }));
+    await putMember("a_bergen", session.user.id, "owner", { acceptedAt: "2026-08-08" }, h.stores);
+
+    await h.handler(new Request("https://api.ringdrill.app/api/auth/me", {
+        method: "PATCH",
+        headers: { "content-type": "application/json", authorization: `Bearer ${session.accessToken}` },
+        body: JSON.stringify({ displayName: "Kari Nordmann" }),
+    }));
+
+    const org = await h.stores.accounts().get("a_bergen", { type: "json" });
+    assert.equal(org.displayName, "Red Cross Bergen");
+});
+
+test("a short name starts empty rather than guessed", async () => {
+    // A provider gives a full name or nothing, and never what a person is
+    // called on the day. Deriving one would produce the local part of an email
+    // for anybody who signed in with a code.
+    const h = harness();
+    const { session } = await signIn(h);
+    assert.equal(session.user.shortName, "");
+});
+
+test("a display name cannot be cleared, but a short name can", async () => {
+    const h = harness();
+    const { session } = await signIn(h);
+    const patch = (body) => h.handler(new Request("https://api.ringdrill.app/api/auth/me", {
+        method: "PATCH",
+        headers: { "content-type": "application/json", authorization: `Bearer ${session.accessToken}` },
+        body: JSON.stringify(body),
+    }));
+
+    // Blank is the fallback chain from creation, so clearing it would leave
+    // this person nameless on every screen.
+    assert.equal((await patch({ displayName: "  " })).status, 400);
+    assert.equal((await patch({})).status, 400, "nothing to update is a mistake, not a no-op");
+    assert.equal((await patch({ shortName: "" })).status, 200, "empty is a short name's legitimate state");
+});
+
+test("PATCH me renames only the caller", async () => {
+    // The id comes from the verified token and is never read from the body.
+    const h = harness();
+    const { session } = await signIn(h);
+    const res = await h.handler(new Request("https://api.ringdrill.app/api/auth/me", {
+        method: "PATCH",
+        headers: { "content-type": "application/json", authorization: `Bearer ${session.accessToken}` },
+        body: JSON.stringify({ userId: "u_someone_else", displayName: "Hacked" }),
+    }));
+    assert.equal(res.status, 200);
+    assert.equal((await res.json()).user.id, session.user.id);
+});
+
+test("PATCH me is refused when signed out", async () => {
+    const h = harness();
+    const res = await h.handler(new Request("https://api.ringdrill.app/api/auth/me", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ displayName: "Nobody" }),
+    }));
+    assert.equal(res.status, 401);
+});

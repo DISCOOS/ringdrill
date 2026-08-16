@@ -407,6 +407,33 @@ class AuthService extends ChangeNotifier {
     await _client.revokeSession(sessionId: sessionId, token: token);
   }
 
+  /// Set this user's full name and short name (DESIGN-015 §3.7).
+  ///
+  /// Publishes immediately rather than waiting for the next hydrate: the
+  /// person just typed these, and a form that saves without the screen
+  /// changing reads as a form that did not save.
+  Future<void> updateNames({String? displayName, String? shortName}) async {
+    final token = await accessToken();
+    if (token == null) return;
+    final user = await _client.updateNames(
+      token: token,
+      displayName: displayName,
+      shortName: shortName,
+    );
+    _publish(
+      AuthState(
+        user: user,
+        // The personal account follows the display name server-side, so the
+        // names here are stale the moment this returns. Re-read rather than
+        // patched locally: guessing which accounts followed would duplicate a
+        // rule that lives on the server.
+        accounts: _state.accounts,
+        activeAccountId: _state.activeAccountId,
+      ),
+    );
+    await _hydrate(force: true);
+  }
+
   /// Re-read the user's accounts from the server.
   ///
   /// Needed after anything that changes membership from this device — deleting

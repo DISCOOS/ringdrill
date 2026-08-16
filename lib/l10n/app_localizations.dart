@@ -1988,6 +1988,48 @@ abstract class AppLocalizations {
   /// **'No other devices are signed in.'**
   String get accountDevicesEmpty;
 
+  /// Title of the personal account page. Not the account's display name: that is created carrying the user's own, which is their email address until they set one, and an address in a title bar says nothing about where you are.
+  ///
+  /// In en, this message translates to:
+  /// **'My account'**
+  String get accountTitleMine;
+
+  /// Heading of the section above Members on a personal account. The owner is not listed as a member — there is exactly one, and it is almost always the reader.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get accountYouTitle;
+
+  /// The same section on an organisation, where the owner may be somebody else.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get accountOwnerTitle;
+
+  /// Explains why two names are asked for, so the second does not read as a duplicate of the first.
+  ///
+  /// In en, this message translates to:
+  /// **'Your full name identifies you to the people you work with. The short name is what fits on a roster and a station board.'**
+  String get accountNamesHint;
+
+  /// No description provided for @accountFullNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get accountFullNameLabel;
+
+  /// No description provided for @accountShortNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Short name'**
+  String get accountShortNameLabel;
+
+  /// No description provided for @accountShortNameHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'What people call you on the day'**
+  String get accountShortNameHelp;
+
   /// No description provided for @accountTitle.
   ///
   /// In en, this message translates to:

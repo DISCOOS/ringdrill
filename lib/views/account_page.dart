@@ -4,6 +4,7 @@ import 'package:ringdrill/data/auth_client.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/auth_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/views/widgets/inline_message.dart';
 
 /// Managing an account's members (DESIGN-015 §6).
 ///
@@ -82,7 +83,18 @@ class _AccountPageState extends State<AccountPage> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.account.displayName)),
+      // "My account" for the personal one, the organisation's own name
+      // otherwise. A personal account is created carrying the user's display
+      // name, which is their email address until they set one — an address in
+      // the title bar tells the reader nothing about where they are, and this
+      // page is the only "your account" screen there is.
+      appBar: AppBar(
+        title: Text(
+          widget.account.isOrganisation
+              ? widget.account.displayName
+              : l.accountTitleMine,
+        ),
+      ),
       floatingActionButton: _isOwner
           ? FloatingActionButton.extended(
               onPressed: _invite,
@@ -128,14 +140,27 @@ class _AccountPageState extends State<AccountPage> {
                     ],
                   ),
                 ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Text(
-                  l.accountMembersTitle,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+              // **The owner is not a row in the members list.** There is
+              // exactly one today, and it is almost always the person reading
+              // the screen — putting them in a list of one, above a second
+              // list, made the page read as though the owner were simply the
+              // first member. This is also where the names live, because "who
+              // am I here" and "what am I called" are the same question.
+              _OwnerSection(
+                account: widget.account,
+                owner: _owner(roster),
+                onChanged: _reload,
               ),
-              ...roster.members.map((m) => _memberTile(context, l, m)),
+              if (_others(roster).isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text(
+                    l.accountMembersTitle,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                ..._others(roster).map((m) => _memberTile(context, l, m)),
+              ],
               // Devices belong to the *user*, not to an account, so they
               // appear once — on the personal account, which is the "your
               // account" page. Every user has one (ADR-0024 creates it at
@@ -167,6 +192,24 @@ class _AccountPageState extends State<AccountPage> {
         },
       ),
     );
+  }
+
+  /// The single owner, or null for an account whose owner row has not
+  /// arrived — an organisation somebody is a plain member of, say.
+  AccountMember? _owner(AccountRoster roster) {
+    for (final m in roster.members) {
+      if (m.role == 'owner' && !m.isPending) return m;
+    }
+    return null;
+  }
+
+  /// Everyone the owner section does not already show.
+  List<AccountMember> _others(AccountRoster roster) {
+    final owner = _owner(roster);
+    return [
+      for (final m in roster.members)
+        if (m != owner) m,
+    ];
   }
 
   Widget _memberTile(
@@ -563,6 +606,186 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
                 : l.accountDeleteAction,
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// Who you are in this account, and what you are called.
+///
+/// The owner sits here rather than in the members list: there is exactly one
+/// today, it is almost always the person reading the screen, and a list of one
+/// above a second list read as though the owner were merely the first member.
+///
+/// The names live here for the same reason — "who am I in this account" and
+/// "what am I called" are one question, and answering it in two places would
+/// mean two places to keep them in step.
+///
+/// **Only your own names are editable.** Viewing somebody else's account as a
+/// member shows the owner without the fields, because `PATCH /api/auth/me`
+/// only ever renames the caller.
+class _OwnerSection extends StatefulWidget {
+  const _OwnerSection({
+    required this.account,
+    required this.owner,
+    required this.onChanged,
+  });
+
+  final AccountMembership account;
+  final AccountMember? owner;
+  final VoidCallback onChanged;
+
+  @override
+  State<_OwnerSection> createState() => _OwnerSectionState();
+}
+
+class _OwnerSectionState extends State<_OwnerSection> {
+  final _full = TextEditingController();
+  final _short = TextEditingController();
+
+  bool _busy = false;
+  String? _error;
+  bool _dirty = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = AuthService.isInstalled
+        ? AuthService.instance.state.user
+        : null;
+    // The address is what account creation falls back to when a provider gave
+    // no name. It is a placeholder, not something the person chose, so the
+    // field starts empty rather than pre-filled with it — otherwise "enter
+    // your name" looks answered.
+    final display = user?.displayName ?? '';
+    _full.text = (display == user?.email) ? '' : display;
+    _short.text = user?.shortName ?? '';
+  }
+
+  @override
+  void dispose() {
+    _full.dispose();
+    _short.dispose();
+    super.dispose();
+  }
+
+  bool get _isSelf {
+    if (!AuthService.isInstalled) return false;
+    final me = AuthService.instance.state.user?.id;
+    return me != null && me == widget.owner?.userId;
+  }
+
+  Future<void> _save(AppLocalizations l) async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await AuthService.instance.updateNames(
+        displayName: _full.text.trim(),
+        shortName: _short.text.trim(),
+      );
+      if (!mounted) return;
+      setState(() => _dirty = false);
+      widget.onChanged();
+    } catch (_) {
+      if (mounted) setState(() => _error = l.accountActionFailed);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final owner = widget.owner;
+    final canEdit = _isSelf;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            widget.account.isOrganisation
+                ? l.accountOwnerTitle
+                : l.accountYouTitle,
+            style: theme.textTheme.titleMedium,
+          ),
+        ),
+        if (owner != null)
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: Text(
+              owner.displayName?.isNotEmpty == true
+                  ? owner.displayName!
+                  : (owner.email ?? ''),
+            ),
+            subtitle: Text(roleLabel(l, owner.role)),
+          ),
+        if (canEdit) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            child: Text(
+              l.accountNamesHint,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: TextField(
+              controller: _full,
+              enabled: !_busy,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                labelText: l.accountFullNameLabel,
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: (_) => setState(() => _dirty = true),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: TextField(
+              controller: _short,
+              enabled: !_busy,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                labelText: l.accountShortNameLabel,
+                helperText: l.accountShortNameHelp,
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: (_) => setState(() => _dirty = true),
+            ),
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: InlineMessage(message: _error!),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                onPressed: (!_dirty || _busy || _full.text.trim().isEmpty)
+                    ? null
+                    : () => _save(l),
+                child: _busy
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(l.save),
+              ),
+            ),
+          ),
+        ],
+        const Divider(height: 32),
       ],
     );
   }

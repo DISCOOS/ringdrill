@@ -1194,6 +1194,28 @@ class AppLocalizationsNb extends AppLocalizations {
   String get accountDevicesEmpty => 'Ingen andre enheter er innlogget.';
 
   @override
+  String get accountTitleMine => 'Min konto';
+
+  @override
+  String get accountYouTitle => 'Deg';
+
+  @override
+  String get accountOwnerTitle => 'Eier';
+
+  @override
+  String get accountNamesHint =>
+      'Fullt navn identifiserer deg for dem du jobber med. Kortnavnet er det som får plass på en mannskapsliste og en posttavle.';
+
+  @override
+  String get accountFullNameLabel => 'Fullt navn';
+
+  @override
+  String get accountShortNameLabel => 'Kortnavn';
+
+  @override
+  String get accountShortNameHelp => 'Det folk kaller deg på øvelsen';
+
+  @override
   String get accountTitle => 'Konto';
 
   @override

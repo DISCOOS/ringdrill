@@ -39,20 +39,49 @@ class AuthApiException implements Exception {
 @immutable
 class AuthUser {
   final String id;
+
+  /// The full name, shown wherever a person is identified.
   final String displayName;
+
+  /// What this person is called on the day — the name a roster and a station
+  /// board have room for (DESIGN-015 §3.7).
+  ///
+  /// Empty until they set it, and deliberately never derived: a provider gives
+  /// a full name or nothing, and guessing would produce "Kenneth" for a team
+  /// with two of them, or the local part of an email for anybody who signed in
+  /// with a code.
+  final String shortName;
+
   final String? email;
 
-  const AuthUser({required this.id, required this.displayName, this.email});
+  const AuthUser({
+    required this.id,
+    required this.displayName,
+    this.shortName = '',
+    this.email,
+  });
+
+  /// Whether this person still has names to fill in.
+  ///
+  /// The display name counts as missing when it is the address itself, which
+  /// is what account creation falls back to when a provider offered nothing.
+  /// It is a placeholder rather than a name somebody chose.
+  bool get needsNames =>
+      shortName.isEmpty ||
+      displayName.isEmpty ||
+      (email != null && displayName == email);
 
   factory AuthUser.fromJson(Map<String, dynamic> j) => AuthUser(
     id: j['id'] as String,
     displayName: (j['displayName'] as String?) ?? '',
+    shortName: (j['shortName'] as String?) ?? '',
     email: j['email'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'displayName': displayName,
+    'shortName': shortName,
     'email': ?email,
   };
 }
@@ -488,6 +517,25 @@ class AuthClient {
       'deviceLabel': ?deviceLabel,
     });
     return AuthTokens.fromJson(j, now: _now());
+  }
+
+  /// Set the signed-in user's own names (DESIGN-015 §3.7).
+  ///
+  /// Returns the updated user. Only ever the caller's own — the server takes
+  /// the id from the token and ignores anything in the body that looks like
+  /// one.
+  Future<AuthUser> updateNames({
+    required String token,
+    String? displayName,
+    String? shortName,
+  }) async {
+    final j = await _send(
+      'PATCH',
+      'auth/me',
+      token: token,
+      body: {'displayName': ?displayName, 'shortName': ?shortName},
+    );
+    return AuthUser.fromJson(j['user'] as Map<String, dynamic>);
   }
 
   Future<AuthTokens> refresh({

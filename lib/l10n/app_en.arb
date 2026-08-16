@@ -1320,6 +1320,25 @@
   "accountDeviceSignOutThis": "Log out this device",
   "accountDeviceSignedOut": "That device is signed out.",
   "accountDevicesEmpty": "No other devices are signed in.",
+  "accountTitleMine": "My account",
+  "@accountTitleMine": {
+    "description": "Title of the personal account page. Not the account's display name: that is created carrying the user's own, which is their email address until they set one, and an address in a title bar says nothing about where you are."
+  },
+  "accountYouTitle": "You",
+  "@accountYouTitle": {
+    "description": "Heading of the section above Members on a personal account. The owner is not listed as a member — there is exactly one, and it is almost always the reader."
+  },
+  "accountOwnerTitle": "Owner",
+  "@accountOwnerTitle": {
+    "description": "The same section on an organisation, where the owner may be somebody else."
+  },
+  "accountNamesHint": "Your full name identifies you to the people you work with. The short name is what fits on a roster and a station board.",
+  "@accountNamesHint": {
+    "description": "Explains why two names are asked for, so the second does not read as a duplicate of the first."
+  },
+  "accountFullNameLabel": "Full name",
+  "accountShortNameLabel": "Short name",
+  "accountShortNameHelp": "What people call you on the day",
   "accountTitle": "Account",
   "accountMembersTitle": "Members",
   "accountRoleOwner": "Owner",

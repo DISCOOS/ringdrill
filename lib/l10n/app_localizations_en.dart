@@ -1197,6 +1197,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountDevicesEmpty => 'No other devices are signed in.';
 
   @override
+  String get accountTitleMine => 'My account';
+
+  @override
+  String get accountYouTitle => 'You';
+
+  @override
+  String get accountOwnerTitle => 'Owner';
+
+  @override
+  String get accountNamesHint =>
+      'Your full name identifies you to the people you work with. The short name is what fits on a roster and a station board.';
+
+  @override
+  String get accountFullNameLabel => 'Full name';
+
+  @override
+  String get accountShortNameLabel => 'Short name';
+
+  @override
+  String get accountShortNameHelp => 'What people call you on the day';
+
+  @override
   String get accountTitle => 'Account';
 
   @override
