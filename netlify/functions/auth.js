@@ -1,4 +1,4 @@
-import { corsPreflight, withCors } from "./lib/shared.js";
+import { appOrigin, corsPreflight, withCors } from "./lib/shared.js";
 import { authenticate, AUDIENCE, ISSUER, logAuthMode, signJwt, resolveMode, AUTH_MODES } from "./lib/auth/index.js";
 import {
     ACCESS_TTL_S, createSession, endSessionOwnedBy, redeemChallenge, rotateSession, sessionsOf, startChallenge,
@@ -169,7 +169,7 @@ export function createHandler({
         let sent = null;
         if (gate.allowed) {
             const send = mailer ?? createMailer({ env });
-            const url = `${env.PUBLIC_APP_ORIGIN || "https://ringdrill.app"}/auth/callback?c=${encodeURIComponent(challengeId)}&k=${encodeURIComponent(code)}`;
+            const url = `${appOrigin(env)}/auth/callback?c=${encodeURIComponent(challengeId)}&k=${encodeURIComponent(code)}`;
             sent = await sendTemplate(send, {
                 to: email, template: "signIn", locale,
                 params: { code, url, minutes: Math.round(expiresInMs / 60000) },

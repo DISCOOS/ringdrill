@@ -407,9 +407,14 @@ patch-ios: require-clean-tree
 # link included, to this terminal.
 LOCAL_AUTH_MODE ?= mock
 LOCAL_MAIL_PROVIDER ?= console
+# Every emailed link is built from this and there is no fallback, so the
+# functions refuse to send without it (see appOrigin in lib/shared.js). The apex
+# is the right value even locally: the links are not clickable from here either
+# way, and using the real one keeps the printed mail readable.
+LOCAL_APP_ORIGIN ?= https://ringdrill.app
 netlify-dev:
 	npm install
-	ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) AUTH_MODE=$(LOCAL_AUTH_MODE) MAIL_PROVIDER=$(LOCAL_MAIL_PROVIDER) npx netlify functions:serve --port 8888
+	ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) AUTH_MODE=$(LOCAL_AUTH_MODE) MAIL_PROVIDER=$(LOCAL_MAIL_PROVIDER) PUBLIC_APP_ORIGIN=$(LOCAL_APP_ORIGIN) npx netlify functions:serve --port 8888
 
 # Local Astro dev server for the site/ project. Runs `astro dev` with HMR
 # at http://localhost:4321/. Most pages need no backend; the CTAs link to

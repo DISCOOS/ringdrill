@@ -1,6 +1,6 @@
 import { getStore } from "@netlify/blobs";
 import {
-    corsPreflight, withCors, metaToFeedItem,
+    appOrigin, corsPreflight, withCors, metaToFeedItem,
     getDrillsStore as _getDrillsStore, getSlugIndexStore as _getSlugIndexStore,
     readJson as _readJson, writeJsonConditional as _writeJsonConditional,
 } from "./lib/shared.js";
@@ -400,7 +400,7 @@ export function createHandler({
         // DESIGN-015 §3.6: an invitation uses the *inviting* user's locale —
         // the only signal available for somebody with no account yet.
         const locale = body.locale === "nb" ? "nb" : "en";
-        const url = `${env.PUBLIC_APP_ORIGIN || "https://ringdrill.app"}/invite/${encodeURIComponent(token)}`;
+        const url = `${appOrigin(env)}/invite/${encodeURIComponent(token)}`;
         const send = mailer ?? createMailer({ env });
         await sendTemplate(send, {
             to: email, template: "invitation", locale, idempotencyKey: token,

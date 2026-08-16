@@ -58,7 +58,7 @@ function harness() {
         stores,
         challengeStore: () => raw.challenges,
         sessionStore: () => raw.sessions,
-            sessionIndexStore: () => raw.sessionIndex,
+        sessionIndexStore: () => raw.sessionIndex,
         mailer,
     });
     return { handler, stores, raw, mailer };
@@ -339,6 +339,7 @@ test("under AUTH_MODE=live the server signs a real JWT, verifiable with the publ
             AUTH_MODE: "live",
             AUTH_SIGNING_KEY_PRIVATE: KEYS.privateKey,
             AUTH_SIGNING_KEY_PUBLIC: KEYS.publicKey,
+            PUBLIC_APP_ORIGIN: "https://ringdrill.app",
         },
         stores: h.stores,
         challengeStore: () => h.raw.challenges,

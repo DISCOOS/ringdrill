@@ -181,7 +181,11 @@ function harness({ recipientLimit = 3, sourceLimit = 20 } = {}) {
     return {
         mailer,
         handler: createHandler({
-            env: { AUTH_MODE: "live", AUTH_SIGNING_KEY_PRIVATE: "unused-here" },
+            env: {
+                AUTH_MODE: "live",
+                AUTH_SIGNING_KEY_PRIVATE: "unused-here",
+                PUBLIC_APP_ORIGIN: "https://ringdrill.app",
+            },
             challengeStore: () => challenges,
             mailer,
             startEmailLimiter: createStartEmailLimiter({
@@ -234,7 +238,7 @@ test("under AUTH_MODE=mock the limit does not apply", async () => {
     const blobs = fakeStore();
     const mailer = createMockAdapter();
     const handler = createHandler({
-        env: { AUTH_MODE: "mock" },
+        env: { AUTH_MODE: "mock", PUBLIC_APP_ORIGIN: "https://ringdrill.app" },
         challengeStore: () => fakeStore(),
         mailer,
         startEmailLimiter: createStartEmailLimiter({ blobs: () => blobs, recipientLimit: 1, sourceLimit: 1 }),

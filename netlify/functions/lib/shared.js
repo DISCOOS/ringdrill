@@ -208,6 +208,40 @@ export async function reportLegacyProgramIdUsage(context) {
     }
 }
 
+/* ---------- Outgoing links ---------- */
+
+/**
+ * The origin every emailed link is built from.
+ *
+ * **Required, with no fallback, and that is the point.** Both links RingDrill
+ * sends — the sign-in link and the invitation — are absolute URLs into the app,
+ * and both used to fall back to a hardcoded `https://ringdrill.app` when this
+ * was unset. That fallback defeats the only reason the variable exists: the day
+ * the apex moves, the setting changes and two files keep cheerfully mailing the
+ * old host, with nothing failing and nobody told. The links would resolve to
+ * somebody else's domain, or to nothing, and the first report would come from a
+ * user who could not sign in.
+ *
+ * So an unset value is an error at the point of use rather than a default. It
+ * takes out sending, which is loud, instead of taking out the *destination*,
+ * which is silent.
+ *
+ * Trailing slashes are trimmed, because `https://ringdrill.app/` and the path
+ * that follows would otherwise meet as `//s/…`.
+ */
+export function appOrigin(env = process.env) {
+    const origin = String(env.PUBLIC_APP_ORIGIN ?? "").trim().replace(/\/+$/, "");
+    if (!origin) {
+        throw new Error(
+            "PUBLIC_APP_ORIGIN is unset. Every link RingDrill emails is built from it — "
+            + "the sign-in link and the invitation both. Refusing to guess: a hardcoded "
+            + "default would keep mailing the old host after the apex moves, which is the "
+            + "failure this variable exists to prevent. Set it on the API site.",
+        );
+    }
+    return origin;
+}
+
 /* ---------- Keys & misc ---------- */
 
 // `keysFor` built the owner-scoped `drills/<ownerId>/<planId>/` keys. That

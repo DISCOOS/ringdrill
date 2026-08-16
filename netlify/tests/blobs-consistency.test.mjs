@@ -19,6 +19,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+    appOrigin,
     getDrillsStore,
     getDrillsStoreStrong,
     getSlugIndexStore,
@@ -150,4 +151,22 @@ test("an eventually consistent read breaks read-then-write, in both directions",
         ["b"],
         "the stale base erased the earlier entry instead of appending to it",
     );
+});
+
+// ---------- outgoing link origin ----------
+
+test("appOrigin refuses to guess when PUBLIC_APP_ORIGIN is unset", () => {
+    // Both links RingDrill emails are absolute URLs built from this. The
+    // hardcoded fallback that used to stand in here is exactly what would
+    // defeat the variable the day the apex moves: the setting changes, two
+    // files keep mailing the old host, and nothing fails. Taking out *sending*
+    // is loud; taking out the destination is silent.
+    assert.throws(() => appOrigin({}), /PUBLIC_APP_ORIGIN is unset/);
+    assert.throws(() => appOrigin({ PUBLIC_APP_ORIGIN: "   " }), /PUBLIC_APP_ORIGIN is unset/);
+});
+
+test("appOrigin trims a trailing slash, so the path does not double it", () => {
+    assert.equal(appOrigin({ PUBLIC_APP_ORIGIN: "https://ringdrill.app" }), "https://ringdrill.app");
+    assert.equal(appOrigin({ PUBLIC_APP_ORIGIN: "https://ringdrill.app/" }), "https://ringdrill.app");
+    assert.equal(appOrigin({ PUBLIC_APP_ORIGIN: "  https://ringdrill.app//  " }), "https://ringdrill.app");
 });
