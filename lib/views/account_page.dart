@@ -4,7 +4,6 @@ import 'package:ringdrill/data/auth_client.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/auth_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
-import 'package:ringdrill/views/widgets/inline_message.dart';
 
 /// Managing an account's members (DESIGN-015 §6).
 ///
@@ -37,10 +36,63 @@ class _AccountPageState extends State<AccountPage> {
 
   bool get _isOwner => widget.account.isOwner;
 
+  /// The name fields live here rather than in `_OwnerSection` because saving
+  /// is an AppBar action, and the AppBar belongs to the page.
+  final _fullName = TextEditingController();
+  final _nickname = TextEditingController();
+  bool _namesDirty = false;
+  bool _savingNames = false;
+
+  /// Whether the owner shown is the person reading, which is the only case
+  /// where the names are editable — `PATCH /api/auth/me` renames the caller
+  /// and nobody else.
+  bool _isSelf(AccountMember? owner) {
+    if (!AuthService.isInstalled) return false;
+    final me = AuthService.instance.state.user?.id;
+    return me != null && me == owner?.userId;
+  }
+
+  /// Whether the owner section is showing its fields. Set when the roster
+  /// resolves, because until then the page does not know whose account this is
+  /// — and an AppBar action that appears a beat after the page would be worse
+  /// than one that waits.
+  bool _showNameFields = false;
+
+  bool get _canSaveNames =>
+      _namesDirty && !_savingNames && _fullName.text.trim().isNotEmpty;
+
+  Future<void> _saveNames() async {
+    final l = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _savingNames = true);
+    try {
+      await AuthService.instance.updateNames(
+        displayName: _fullName.text.trim(),
+        nickname: _nickname.text.trim(),
+      );
+      if (!mounted) return;
+      setState(() => _namesDirty = false);
+      _reload();
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l.accountActionFailed)));
+    } finally {
+      if (mounted) setState(() => _savingNames = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _roster = _load();
+    final user = AuthService.isInstalled
+        ? AuthService.instance.state.user
+        : null;
+    // The address is the fallback account creation uses when a provider gave
+    // no name. Pre-filling the box with it would make "enter your name" look
+    // answered, so it starts empty.
+    final display = user?.displayName ?? '';
+    _fullName.text = (display == user?.email) ? '' : display;
+    _nickname.text = user?.nickname ?? '';
   }
 
   Future<AccountRoster> _load() async {
@@ -80,6 +132,13 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   @override
+  void dispose() {
+    _fullName.dispose();
+    _nickname.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     return Scaffold(
@@ -94,6 +153,25 @@ class _AccountPageState extends State<AccountPage> {
               ? widget.account.displayName
               : l.accountTitleMine,
         ),
+        // Saving is an AppBar action here as it is on every other form in the
+        // app (see person_form_screen), rather than a button buried in the
+        // middle of a scrolling list where it can be scrolled out of sight.
+        // Only rendered when there is something editable to save.
+        actions: [
+          if (_showNameFields) ...[
+            FilledButton(
+              onPressed: _canSaveNames ? _saveNames : null,
+              child: _savingNames
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(l.save),
+            ),
+            const SizedBox(width: 16),
+          ],
+        ],
       ),
       body: FutureBuilder<AccountRoster>(
         future: _roster,
@@ -110,6 +188,14 @@ class _AccountPageState extends State<AccountPage> {
             );
           }
           final roster = snapshot.data!;
+          final editable = _isSelf(_owner(roster));
+          if (editable != _showNameFields) {
+            // After this frame, not during it: setState inside build is an
+            // error, and the AppBar rebuilds with the rest of the page.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _showNameFields = editable);
+            });
+          }
           return ListView(
             children: [
               // Prevention, not recovery: an organisation whose sole owner
@@ -142,7 +228,11 @@ class _AccountPageState extends State<AccountPage> {
               _OwnerSection(
                 account: widget.account,
                 owner: _owner(roster),
-                onChanged: _reload,
+                editable: _showNameFields,
+                fullName: _fullName,
+                nickname: _nickname,
+                busy: _savingNames,
+                onChanged: () => setState(() => _namesDirty = true),
               ),
               // **The section renders even with nobody in it**, because it is
               // where inviting lives. Hiding it when empty left an owner with
@@ -647,83 +737,47 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
 /// **Only your own names are editable.** Viewing somebody else's account as a
 /// member shows the owner without the fields, because `PATCH /api/auth/me`
 /// only ever renames the caller.
-class _OwnerSection extends StatefulWidget {
+/// Who you are in this account, and what you are called.
+///
+/// The owner sits here rather than in the members list: there is exactly one
+/// today, it is almost always the person reading the screen, and a list of one
+/// above a second list read as though the owner were merely the first member.
+///
+/// The names live here for the same reason — "who am I in this account" and
+/// "what am I called" are one question, and answering it in two places would
+/// mean two places to keep them in step.
+///
+/// **Stateless, and the controllers belong to the page.** Saving is an AppBar
+/// action, as it is on every other form in the app, and an AppBar belongs to
+/// the page rather than to a section inside its list. Keeping the text here
+/// would have meant a section reaching up to enable a button above it.
+///
+/// **Only your own names are editable.** Viewing somebody else's account as a
+/// member shows the owner without the fields, because `PATCH /api/auth/me`
+/// only ever renames the caller.
+class _OwnerSection extends StatelessWidget {
   const _OwnerSection({
     required this.account,
     required this.owner,
+    required this.editable,
+    required this.fullName,
+    required this.nickname,
+    required this.busy,
     required this.onChanged,
   });
 
   final AccountMembership account;
   final AccountMember? owner;
+  final bool editable;
+  final TextEditingController fullName;
+  final TextEditingController nickname;
+  final bool busy;
   final VoidCallback onChanged;
-
-  @override
-  State<_OwnerSection> createState() => _OwnerSectionState();
-}
-
-class _OwnerSectionState extends State<_OwnerSection> {
-  final _full = TextEditingController();
-  final _nickname = TextEditingController();
-
-  bool _busy = false;
-  String? _error;
-  bool _dirty = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final user = AuthService.isInstalled
-        ? AuthService.instance.state.user
-        : null;
-    // The address is what account creation falls back to when a provider gave
-    // no name. It is a placeholder, not something the person chose, so the
-    // field starts empty rather than pre-filled with it — otherwise "enter
-    // your name" looks answered.
-    final display = user?.displayName ?? '';
-    _full.text = (display == user?.email) ? '' : display;
-    _nickname.text = user?.nickname ?? '';
-  }
-
-  @override
-  void dispose() {
-    _full.dispose();
-    _nickname.dispose();
-    super.dispose();
-  }
-
-  bool get _isSelf {
-    if (!AuthService.isInstalled) return false;
-    final me = AuthService.instance.state.user?.id;
-    return me != null && me == widget.owner?.userId;
-  }
-
-  Future<void> _save(AppLocalizations l) async {
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      await AuthService.instance.updateNames(
-        displayName: _full.text.trim(),
-        nickname: _nickname.text.trim(),
-      );
-      if (!mounted) return;
-      setState(() => _dirty = false);
-      widget.onChanged();
-    } catch (_) {
-      if (mounted) setState(() => _error = l.accountActionFailed);
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final owner = widget.owner;
-    final canEdit = _isSelf;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -731,7 +785,7 @@ class _OwnerSectionState extends State<_OwnerSection> {
         // No heading on a personal account: the title bar already says "My
         // account", and a "You" above your own name is the same word twice.
         // An organisation keeps one, where the owner may be somebody else.
-        if (widget.account.isOrganisation)
+        if (account.isOrganisation)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
@@ -743,15 +797,57 @@ class _OwnerSectionState extends State<_OwnerSection> {
           ListTile(
             leading: const Icon(Icons.person),
             title: Text(
-              owner.displayName?.isNotEmpty == true
-                  ? owner.displayName!
-                  : (owner.email ?? ''),
+              owner!.displayName?.isNotEmpty == true
+                  ? owner!.displayName!
+                  : (owner!.email ?? ''),
             ),
-            subtitle: Text(roleLabel(l, owner.role)),
+            subtitle: Text(roleLabel(l, owner!.role)),
           ),
-        if (canEdit) ...[
+        if (editable) ...[
+          // One row, and no explicit border: the form screens elsewhere
+          // (exercise, person, location) use a bare `InputDecoration` and let
+          // the theme draw the field. Two stacked full-width boxes made two
+          // short names look like a form of its own.
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: TextFormField(
+                    controller: fullName,
+                    enabled: !busy,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: InputDecoration(
+                      labelText: l.accountFullNameLabel,
+                    ),
+                    onChanged: (_) => onChanged(),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: TextFormField(
+                    controller: nickname,
+                    enabled: !busy,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: InputDecoration(
+                      labelText: l.accountNicknameLabel,
+                    ),
+                    onChanged: (_) => onChanged(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // **Below the fields, not above them.** It reads better as a note on
+          // what was just asked for than as a preamble to it, and it does a
+          // second job down here: a field's underline followed straight by the
+          // section divider is two rules a few pixels apart, which looks like
+          // a mistake. The text separates them.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: Text(
               l.accountNamesHint,
               style: theme.textTheme.bodySmall?.copyWith(
@@ -759,68 +855,10 @@ class _OwnerSectionState extends State<_OwnerSection> {
               ),
             ),
           ),
-          // One row, and no explicit border: the form screens elsewhere
-          // (exercise, person, location) use a bare `InputDecoration` and let
-          // the theme draw the field. Two stacked full-width boxes made two
-          // short names look like a form of its own.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: TextFormField(
-                    controller: _full,
-                    enabled: !_busy,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: InputDecoration(
-                      labelText: l.accountFullNameLabel,
-                    ),
-                    onChanged: (_) => setState(() => _dirty = true),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: TextFormField(
-                    controller: _nickname,
-                    enabled: !_busy,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: InputDecoration(
-                      labelText: l.accountNicknameLabel,
-                    ),
-                    onChanged: (_) => setState(() => _dirty = true),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: InlineMessage(message: _error!),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton(
-                onPressed: (!_dirty || _busy || _full.text.trim().isEmpty)
-                    ? null
-                    : () => _save(l),
-                child: _busy
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(l.save),
-              ),
-            ),
-          ),
         ],
-        const Divider(height: 32),
+        // No trailing rule. **Every section here draws its own leading
+        // divider** — members, devices, delete — so one at the end of this one
+        // met the next section's and drew two lines with a gap between them.
       ],
     );
   }

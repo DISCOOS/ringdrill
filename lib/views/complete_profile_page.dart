@@ -88,7 +88,23 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
         _full.text.trim().isNotEmpty && _nickname.text.trim().isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.profileCompleteTitle)),
+      appBar: AppBar(
+        title: Text(l.profileCompleteTitle),
+        // Saving is an AppBar action, as on every other form in the app.
+        actions: [
+          FilledButton(
+            onPressed: (!ready || _busy) ? null : () => _save(l),
+            child: _busy
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(l.save),
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -97,13 +113,6 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
               padding: const EdgeInsets.all(24),
               children: [
                 Text(l.profileCompleteLead, style: theme.textTheme.bodyLarge),
-                const SizedBox(height: 8),
-                Text(
-                  l.accountNamesHint,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
                 const SizedBox(height: 24),
                 // The same shape as the account page's, and the same bare
                 // decoration the form screens elsewhere use — this screen and
@@ -142,21 +151,20 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                     ),
                   ],
                 ),
+                // Below the fields, as on the account page: a note on what
+                // was just asked for rather than a preamble to it.
+                const SizedBox(height: 12),
+                Text(
+                  l.accountNamesHint,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
                 if (_error != null) ...[
                   const SizedBox(height: 16),
                   InlineMessage(message: _error!),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: (!ready || _busy) ? null : () => _save(l),
-                  child: _busy
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(l.save),
-                ),
                 TextButton(
                   onPressed: _busy
                       ? null
