@@ -1357,6 +1357,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get signInDevModeTitle => 'Development mode';
+
+  @override
+  String get signInDevModeBody =>
+      'No mail was sent. The sign-in code is in the server console. In production it only ever arrives by email.';
+
+  @override
   String get signInEntry => 'Sign in';
 
   @override

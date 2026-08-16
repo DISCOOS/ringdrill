@@ -111,12 +111,17 @@ class _SignInPageState extends State<SignInPage> {
       setState(() {
         _challenge = challenge;
         _sentTo = email;
-        // Under AUTH_MODE=mock the server returns the code, so a developer
-        // can complete the flow with no mail provider. It is null in live —
-        // there the response would be the credential.
-        if (challenge.devCode != null) {
-          _codeController.text = challenge.devCode!;
-        }
+        // **Deliberately not filled in.** Under AUTH_MODE=mock the server
+        // returns the code so a developer can finish the flow with no mail
+        // provider (it is null in live, where the response would be the
+        // credential) — and this used to paste it straight into the field.
+        //
+        // That made dev quicker and the flow wrong: the one step that carries
+        // the whole security property, proving you can read the address's
+        // mail, was the step that got skipped. Somebody testing it then sees
+        // an account open on nothing but a typed address, which looks exactly
+        // like a hole and is not one. The code is shown in a banner instead,
+        // and typing it is the same work it is in production.
       });
     }, l);
   }
@@ -245,6 +250,49 @@ class _SignInPageState extends State<SignInPage> {
                 l.signInCodeSent(_sentTo ?? ''),
                 style: theme.textTheme.bodyMedium,
               ),
+
+              // The mock-mode banner. It can only render when the *server* put
+              // a code in the response, which live never does and which
+              // ADR-0073's load-time guard stops a production deploy from
+              // doing at all — so this cannot appear in front of a real user,
+              // and it is not gated on kDebugMode as well. A release build
+              // pointed at a mock backend is precisely when it is wanted.
+              //
+              // **It says the mode, not the code.** Printing the code here
+              // would be its own divergence from live: reading it out of the
+              // server console is the step that stands in for reading your
+              // inbox, and handing it over on screen removes the same step
+              // the autofill used to remove.
+              if (_challenge?.devCode != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.tertiaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l.signInDevModeTitle,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.onTertiaryContainer,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l.signInDevModeBody,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onTertiaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 16),
               TextField(
                 controller: _codeController,

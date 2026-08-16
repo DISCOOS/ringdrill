@@ -380,6 +380,8 @@
   "publishSignInFirst": "Logg inn først",
   "publishStaffNeverPublished": "Opplysninger om stab publiseres aldri.",
   "publishRosterStaysInside": "Staben blir liggende i {organisation}. En delt konto får planen, ikke personene.",
+  "signInDevModeTitle": "Utviklingsmodus",
+  "signInDevModeBody": "Ingen e-post ble sendt. Innloggingskoden st\u00e5r i serverkonsollen. I produksjon kommer den bare p\u00e5 e-post.",
   "signInEntry": "Logg inn",
   "signInTitle": "Logg inn i RingDrill",
   "signInWhatYouGet": "Vi oppretter en personlig konto for deg. Den eier planene du publiserer.",

@@ -2258,6 +2258,18 @@ abstract class AppLocalizations {
   /// **'The roster stays inside {organisation}. A shared account gets the plan, not the people.'**
   String publishRosterStaysInside(String organisation);
 
+  /// Heading of the banner shown only when the server returned the sign-in code in its response, which is AUTH_MODE=mock (ADR-0073). It cannot appear in production, where the mock adapter refuses to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Development mode'**
+  String get signInDevModeTitle;
+
+  /// Body of the development-mode banner. Says plainly why no mail arrived, so a tester does not read the shortcut as a way into an account without mailbox access.
+  ///
+  /// In en, this message translates to:
+  /// **'No mail was sent. The sign-in code is in the server console. In production it only ever arrives by email.'**
+  String get signInDevModeBody;
+
   /// Drawer entry that opens the sign-in screen. Plain and unadorned — DESIGN-015 §5.1 forbids a badge or a 'complete your setup' nudge, because no account is the normal state rather than a step on the way to one.
   ///
   /// In en, this message translates to:

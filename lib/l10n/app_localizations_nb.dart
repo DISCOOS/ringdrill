@@ -1352,6 +1352,13 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String get signInDevModeTitle => 'Utviklingsmodus';
+
+  @override
+  String get signInDevModeBody =>
+      'Ingen e-post ble sendt. Innloggingskoden står i serverkonsollen. I produksjon kommer den bare på e-post.';
+
+  @override
   String get signInEntry => 'Logg inn';
 
   @override

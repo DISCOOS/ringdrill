@@ -200,6 +200,54 @@ void main() {
       expect(find.text('Six-digit code'), findsOneWidget);
     });
 
+    testWidgets('mock mode is announced, and never fills the code in', (
+      tester,
+    ) async {
+      // AUTH_MODE=mock returns the code in the response so the flow can be
+      // completed with no mail provider (ADR-0073). The screen used to paste
+      // it straight into the field, which skipped the one step carrying the
+      // whole security property — proving you can read the address's mail —
+      // and made a correct system look like one where a typed address is
+      // enough.
+      install([
+        _json({'challengeId': 'c_1', 'expiresInMs': 600000, 'code': '9FAQLX'}),
+      ]);
+      await pumpSignIn(tester);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Development mode'), findsOneWidget);
+      expect(
+        find.text(
+          'No mail was sent. The sign-in code is in the server console. '
+          'In production it only ever arrives by email.',
+        ),
+        findsOneWidget,
+      );
+
+      // The banner says the mode, not the code: handing it over on screen
+      // removes the same step the autofill used to remove.
+      expect(find.text('9FAQLX'), findsNothing);
+      final code = tester.widget<TextField>(find.byType(TextField).last);
+      expect(code.controller!.text, isEmpty);
+    });
+
+    testWidgets('live mode shows no development banner', (tester) async {
+      // The banner can only render when the *server* put a code in the
+      // response. Live never does, and ADR-0073's load-time guard stops a
+      // production deploy from being able to.
+      install([_challenge]);
+      await pumpSignIn(tester);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Development mode'), findsNothing);
+    });
+
     testWidgets('signs in and calls back', (tester) async {
       install([_challenge, _session, _me]);
       var resumed = false;
