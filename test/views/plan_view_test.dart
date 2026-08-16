@@ -11,6 +11,7 @@ import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/plan_view.dart';
+import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
@@ -385,6 +386,23 @@ void main() {
         reason: 'the master pane was empty at /$slug',
       );
     }
+
+    // Narrow, which is where this was reported: one pane, so the segment's
+    // own body is the only thing on screen. At master/detail width the
+    // detail pane carries a placeholder of its own and would mask whether
+    // the master rendered anything.
+    tester.view.physicalSize = const Size(560, 900);
+    await tester.pumpAndSettle();
+
+    // Script *teaches* rather than showing a blank body under the switcher —
+    // the same TeachingEmptyState it already showed on a plan that had
+    // exercises. Its copy names the thing to do first, because a role hangs
+    // off an exercise and there are none to hang it on.
+    router.go('/plan/$_emptyPlanUuid/script');
+    await tester.pumpAndSettle();
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.byType(TeachingEmptyState).hitTestable(), findsOneWidget);
+    expect(find.text(l10n.emptyRolesTitle).hitTestable(), findsOneWidget);
   });
 
   testWidgets(
