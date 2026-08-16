@@ -1405,6 +1405,13 @@ class AppLocalizationsNb extends AppLocalizations {
   String get signInVerify => 'Logg inn';
 
   @override
+  String get signInResend => 'Send ny kode';
+
+  @override
+  String get signInResent =>
+      'En ny kode er på vei. Den forrige virker ikke lenger.';
+
+  @override
   String get signInUseAnotherEmail => 'Bruk en annen adresse';
 
   @override

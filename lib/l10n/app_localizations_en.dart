@@ -1410,6 +1410,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signInVerify => 'Sign in';
 
   @override
+  String get signInResend => 'Send a new code';
+
+  @override
+  String get signInResent =>
+      'A new code is on its way. The previous one no longer works.';
+
+  @override
   String get signInUseAnotherEmail => 'Use a different address';
 
   @override

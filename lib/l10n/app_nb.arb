@@ -395,6 +395,8 @@
   "signInCodeSent": "Vi sendte en lenke og en sekssifret kode til {email}. Begge virker.",
   "signInCodeLabel": "Sekssifret kode",
   "signInVerify": "Logg inn",
+  "signInResend": "Send ny kode",
+  "signInResent": "En ny kode er p\u00e5 vei. Den forrige virker ikke lenger.",
   "signInUseAnotherEmail": "Bruk en annen adresse",
   "signInFailed": "Det virket ikke. Sjekk koden og prøv igjen.",
   "signInCodeExpired": "Koden er utløpt. Be om en ny.",

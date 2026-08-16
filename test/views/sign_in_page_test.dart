@@ -319,6 +319,38 @@ void main() {
       expect(find.textContaining('expired'), findsOneWidget);
     });
 
+    testWidgets('can ask for a new code without changing address', (
+      tester,
+    ) async {
+      // A ten-minute expiry with no resend made "use another email" the only
+      // way forward, which reads as a different decision entirely.
+      final fake = install([_challenge, _json({'challengeId': 'c_2', 'expiresInMs': 600000})]);
+      await pumpSignIn(tester);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'OLDCOD');
+
+      await tester.tap(find.text('Send a new code'));
+      await tester.pumpAndSettle();
+
+      // Same address, asked again.
+      final starts = fake.requests
+          .where((r) => r.url.path.endsWith('/auth/start-email'))
+          .toList();
+      assert(starts.length == 2);
+      expect(
+        find.text('A new code is on its way. The previous one no longer works.'),
+        findsOneWidget,
+      );
+
+      // The old code is dead once a new challenge exists, so leaving it in the
+      // field would invite typing something the server has forgotten.
+      final code = tester.widget<TextField>(find.byType(TextField).last);
+      expect(code.controller!.text, isEmpty);
+    });
+
     testWidgets('can go back to a different address', (tester) async {
       // A typo in the address is otherwise unrecoverable without leaving the
       // screen.

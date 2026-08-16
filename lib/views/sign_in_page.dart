@@ -46,6 +46,9 @@ class _SignInPageState extends State<SignInPage> {
   bool _busy = false;
   String? _error;
 
+  /// Whether a replacement code has been asked for, so the screen can say so.
+  bool _resent = false;
+
   /// Discovered once when the screen opens. An empty list is the normal
   /// answer for a deployment with no providers configured, and renders as
   /// nothing at all — not as an empty section with a heading.
@@ -153,6 +156,41 @@ class _SignInPageState extends State<SignInPage> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// Ask for another code for the address already entered.
+  ///
+  /// The only recovery from an expired or lost code used to be "use another
+  /// email", which reads as a different decision and made a ten-minute expiry
+  /// feel like a dead end.
+  ///
+  /// The confirmation is unconditional, and that is deliberate. The server
+  /// caps how much mail one address can be sent (ADR-0079) and a refusal is
+  /// silent, so a client cannot tell a suppressed send from a delivered one —
+  /// by design, because a visible refusal would say which addresses are worth
+  /// mailing. Reporting "sent" either way is the honest reading of what we
+  /// know, and the message says a code is on its way rather than promising it
+  /// has arrived.
+  Future<void> _resend(AppLocalizations l) {
+    final email = _sentTo;
+    if (email == null) return Future.value();
+    return _run(() async {
+      final challenge = await AuthService.instance.startEmailSignIn(
+        email,
+        locale: Localizations.localeOf(context).languageCode == 'nb'
+            ? 'nb'
+            : 'en',
+      );
+      if (!mounted) return;
+      setState(() {
+        // The new challenge replaces the old one: the previous code stops
+        // working, so keeping it in the field would invite typing a code the
+        // server has already forgotten.
+        _challenge = challenge;
+        _codeController.clear();
+        _resent = true;
+      });
+    }, l);
   }
 
   Future<void> _verify(AppLocalizations l) {
@@ -330,6 +368,20 @@ class _SignInPageState extends State<SignInPage> {
                   : Text(sent ? l.signInVerify : l.signInSendCode),
             ),
 
+            if (sent) ...[
+              TextButton(
+                onPressed: _busy ? null : () => _resend(l),
+                child: Text(l.signInResend),
+              ),
+              if (_resent)
+                Text(
+                  l.signInResent,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+
             if (sent)
               TextButton(
                 onPressed: _busy
@@ -338,6 +390,7 @@ class _SignInPageState extends State<SignInPage> {
                         _challenge = null;
                         _codeController.clear();
                         _error = null;
+                        _resent = false;
                       }),
                 child: Text(l.signInUseAnotherEmail),
               ),

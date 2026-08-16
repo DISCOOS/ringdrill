@@ -2348,6 +2348,18 @@ abstract class AppLocalizations {
   /// **'Sign in'**
   String get signInVerify;
 
+  /// Code step. The only recovery from an expired or lost code used to be "use another email", which reads as a different decision.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a new code'**
+  String get signInResend;
+
+  /// Shown after asking for another code. Says a code is on its way rather than that it has arrived: the server caps how much mail one address can be sent and a refusal is deliberately silent (ADR-0079), so the client cannot know. Also warns that the old code is dead, because a new challenge replaces it.
+  ///
+  /// In en, this message translates to:
+  /// **'A new code is on its way. The previous one no longer works.'**
+  String get signInResent;
+
   /// No description provided for @signInUseAnotherEmail.
   ///
   /// In en, this message translates to:
