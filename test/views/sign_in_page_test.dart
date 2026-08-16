@@ -276,6 +276,45 @@ void main() {
       expect(resumed, isTrue);
     });
 
+    testWidgets('asks for names on a plain sign-in', (tester) async {
+      // Neither name can be derived — a provider gives a full name or nothing,
+      // the code flow gives only an address — so the app has to ask once.
+      install([_challenge, _session, _me]);
+      await pumpSignIn(tester);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, '123456');
+      await tester.tap(find.text('Sign in'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Your name'), findsOneWidget);
+      expect(find.text('Nickname'), findsOneWidget);
+    });
+
+    testWidgets('does not ask when a flow is waiting to resume', (
+      tester,
+    ) async {
+      // onSignedIn means this sign-in interrupted something the person was
+      // already doing — accepting an invitation, publishing a plan. Asking for
+      // names in front of it stacks a second interruption on the first, for a
+      // prompt the account page carries anyway.
+      install([_challenge, _session, _me]);
+      var resumed = false;
+      await pumpSignIn(tester, onSignedIn: () => resumed = true);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, '123456');
+      await tester.tap(find.text('Sign in'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Your name'), findsNothing);
+      expect(resumed, isTrue);
+    });
+
     testWidgets('a wrong code is retryable, not a dead end', (tester) async {
       install([
         _challenge,

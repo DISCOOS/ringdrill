@@ -1332,6 +1332,18 @@
   "@accountOwnerTitle": {
     "description": "The same section on an organisation, where the owner may be somebody else."
   },
+  "profileCompleteTitle": "Your name",
+  "@profileCompleteTitle": {
+    "description": "Asked once after the first sign-in, for the two names the app cannot invent (DESIGN-015 §3.7)."
+  },
+  "profileCompleteLead": "One thing before you carry on — we do not know what to call you.",
+  "@profileCompleteLead": {
+    "description": "Explains why the screen appeared. A provider gives a full name or nothing, and the code flow gives only an address, so neither name can be derived."
+  },
+  "profileCompleteLater": "Not now",
+  "@profileCompleteLater": {
+    "description": "Skips the prompt. Deliberately possible: DESIGN-015 §5.1 keeps an account optional, and a hard gate would strand somebody who signed in mid-exercise to fetch a plan. The account page carries the same fields."
+  },
   "accountNamesHint": "Your full name identifies you to the people you work with. The nickname is what fits on a roster and a station board.",
   "@accountNamesHint": {
     "description": "Explains why two names are asked for, so the second does not read as a duplicate of the first."

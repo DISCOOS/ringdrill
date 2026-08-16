@@ -1203,6 +1203,16 @@ class AppLocalizationsNb extends AppLocalizations {
   String get accountOwnerTitle => 'Eier';
 
   @override
+  String get profileCompleteTitle => 'Navnet ditt';
+
+  @override
+  String get profileCompleteLead =>
+      'Én ting før du går videre — vi vet ikke hva vi skal kalle deg.';
+
+  @override
+  String get profileCompleteLater => 'Ikke nå';
+
+  @override
   String get accountNamesHint =>
       'Fullt navn identifiserer deg for dem du jobber med. Kallenavnet er det som får plass på en mannskapsliste og en posttavle.';
 

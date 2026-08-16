@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/data/auth_client.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/auth_service.dart';
+import 'package:ringdrill/views/complete_profile_page.dart';
 import 'package:ringdrill/views/widgets/inline_message.dart';
 
 /// Signing in (DESIGN-015 §3.3, §5.1).
@@ -138,6 +139,11 @@ class _SignInPageState extends State<SignInPage> {
     try {
       await AuthService.instance.signInWithProvider(provider);
       if (!mounted) return;
+      // Same rule as the code path above: never in front of a resumed flow.
+      if (widget.onSignedIn == null) {
+        await promptForNamesIfNeeded(context);
+        if (!mounted) return;
+      }
       widget.onSignedIn?.call();
       Navigator.of(context).maybePop();
     } on SignInCancelled {
@@ -203,6 +209,15 @@ class _SignInPageState extends State<SignInPage> {
         code: _codeController.text.trim(),
       );
       if (!mounted) return;
+      // **Only when nothing is waiting.** `onSignedIn` means this sign-in
+      // interrupted something the person was already doing — accepting an
+      // invitation, publishing a plan — and that is what they came for. Asking
+      // for names in front of it would be a second interruption stacked on the
+      // first, for a prompt the account page carries anyway.
+      if (widget.onSignedIn == null) {
+        await promptForNamesIfNeeded(context);
+        if (!mounted) return;
+      }
       widget.onSignedIn?.call();
       Navigator.of(context).maybePop();
     }, l);

@@ -1206,6 +1206,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountOwnerTitle => 'Owner';
 
   @override
+  String get profileCompleteTitle => 'Your name';
+
+  @override
+  String get profileCompleteLead =>
+      'One thing before you carry on — we do not know what to call you.';
+
+  @override
+  String get profileCompleteLater => 'Not now';
+
+  @override
   String get accountNamesHint =>
       'Your full name identifies you to the people you work with. The nickname is what fits on a roster and a station board.';
 

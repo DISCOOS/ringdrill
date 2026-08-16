@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ringdrill/data/auth_client.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/auth_service.dart';
+import 'package:ringdrill/views/complete_profile_page.dart';
 import 'package:ringdrill/views/widgets/inline_message.dart';
 
 /// Signing in from the link in the email (ADR-0080).
@@ -90,6 +91,7 @@ class _SignInLinkPageState extends State<SignInLinkPage> {
       );
       if (!mounted) return;
       setState(() => _done = true);
+      await promptForNamesIfNeeded(context);
     } catch (e) {
       if (mounted) setState(() => _error = _messageFor(e, l));
     } finally {

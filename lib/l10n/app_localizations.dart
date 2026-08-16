@@ -2006,6 +2006,24 @@ abstract class AppLocalizations {
   /// **'Owner'**
   String get accountOwnerTitle;
 
+  /// Asked once after the first sign-in, for the two names the app cannot invent (DESIGN-015 §3.7).
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
+  String get profileCompleteTitle;
+
+  /// Explains why the screen appeared. A provider gives a full name or nothing, and the code flow gives only an address, so neither name can be derived.
+  ///
+  /// In en, this message translates to:
+  /// **'One thing before you carry on — we do not know what to call you.'**
+  String get profileCompleteLead;
+
+  /// Skips the prompt. Deliberately possible: DESIGN-015 §5.1 keeps an account optional, and a hard gate would strand somebody who signed in mid-exercise to fetch a plan. The account page carries the same fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get profileCompleteLater;
+
   /// Explains why two names are asked for, so the second does not read as a duplicate of the first.
   ///
   /// In en, this message translates to:
