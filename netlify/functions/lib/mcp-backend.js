@@ -43,7 +43,7 @@ import {
     readJson as _readJson,
 } from "./shared.js";
 import {
-    findEntry as _findEntry, keysForEntry, parseCatalogPath, resolveNamespace as _resolveNamespace,
+    findEntry as _findEntry, keysForEntry, keysForEntryOrNull, parseCatalogPath, resolveNamespace as _resolveNamespace,
 } from "./catalog.js";
 import {
     ARTIFACT_CACHE_NS,
@@ -372,7 +372,9 @@ export function createCompilerBackend({
                     const dedupeKey = `${entry.namespace}/${entry.slug}`;
                     if (seen.has(dedupeKey)) continue;
 
-                    const m = await drills.get(keysForEntry(entry.rec).meta, { type: "json" });
+                    const keys = keysForEntryOrNull(entry.rec);
+                    if (!keys) continue;
+                    const m = await drills.get(keys.meta, { type: "json" });
                     if (!m || !m.published) continue;
 
                     seen.add(dedupeKey);

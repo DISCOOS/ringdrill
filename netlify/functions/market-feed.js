@@ -1,5 +1,5 @@
 import {getDrillsStore as _getDrillsStore, getSlugIndexStore as _getSlugIndexStore, nowIso, corsPreflight, withCors, metaToFeedItem} from "./lib/shared.js";
-import {keysForEntry} from "./lib/catalog.js";
+import { keysForEntryOrNull } from "./lib/catalog.js";
 
 export function createHandler({ getDrillsStore = _getDrillsStore, getSlugIndexStore = _getSlugIndexStore } = {}) {
     return async function (request) {
@@ -48,7 +48,12 @@ export function createHandler({ getDrillsStore = _getDrillsStore, getSlugIndexSt
                 for (const entry of records) {
                     if (!entry) continue;
 
-                    const m = await drills.get(keysForEntry(entry.rec).meta, { type: "json" });
+                    // Skip, never throw: one corrupt row must not empty the
+                    // public catalog for everybody.
+                    const keys = keysForEntryOrNull(entry.rec);
+                    if (!keys) continue;
+
+                    const m = await drills.get(keys.meta, { type: "json" });
                     if (!m || !m.published) continue;
 
                     items.push(metaToFeedItem(m, { origin, namespace: entry.namespace }));

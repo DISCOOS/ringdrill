@@ -10,7 +10,7 @@ import {
     membershipsOf, newId, normalizeEmail, putMember, removeMember, resolveHandle,
     expiryIndexKey, soleOwnerships, sweepExpired, upgradeToOrganisation, validateHandle,
 } from "./lib/identity.js";
-import { dropAccountOwnership, keysForEntry } from "./lib/catalog.js";
+import { dropAccountOwnership, keysForEntryOrNull } from "./lib/catalog.js";
 import { createMailer, sendTemplate } from "./lib/mail/index.js";
 
 /**
@@ -261,7 +261,9 @@ export function createHandler({
                 const rec = await idx.get(key, { type: "json" });
                 if (!rec) continue;
 
-                const meta = await drills.get(keysForEntry(rec).meta, { type: "json" });
+                const keys = keysForEntryOrNull(rec);
+                if (!keys) continue;
+                const meta = await drills.get(keys.meta, { type: "json" });
                 if (!meta) continue;
 
                 items.push({

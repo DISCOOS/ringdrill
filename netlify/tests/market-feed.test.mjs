@@ -192,3 +192,31 @@ test("a migrated anon entry keeps its bare URL; an account entry gains its names
     assert.equal(owned.latestUrl, "http://api.ringdrill.app/d/a_bergen/vinter");
 });
 
+
+test("one unkeyable record does not take down the whole feed", async () => {
+    // A record with no entryId is corruption now that the ADR-0074 layout is
+    // the only one (keysForEntry throws on it, deliberately). That is the right
+    // answer for a single-entry lookup, where the alternative is a 404 that
+    // looks like an ordinary missing plan. It is the wrong answer for an
+    // enumeration: one bad row must not remove every good one from the catalog.
+    const metaByKey = {
+        "catalog/e_ok/meta.json": {
+            programId: "prog-ok", slug: "good-plan", name: "Good", ownerId: "anon", published: true,
+            versions: [{ v: "1", updatedAt: "2026-03-01T00:00:00.000Z" }],
+        },
+    };
+    const idx = makeStore({
+        "anon/good-plan": { entryId: "e_ok", planId: "prog-ok", ownerId: "anon" },
+        // No entryId — the shape left behind by a pre-migration record.
+        "anon/broken-plan": { ownerId: "anon", programId: "prog-legacy" },
+    });
+    const handler = createHandler({
+        getDrillsStore: () => makeStore(metaByKey),
+        getSlugIndexStore: () => idx,
+    });
+
+    const res = await handler(req("/api/market-feed"));
+    assert.equal(res.status, 200, "the feed must still serve");
+    const { items } = await res.json();
+    assert.deepEqual(items.map((i) => i.slug), ["good-plan"]);
+});

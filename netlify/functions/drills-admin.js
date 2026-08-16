@@ -11,7 +11,7 @@ import {
     corsPreflight, withCors
 } from "./lib/shared.js";
 import {
-    findEntry as _findEntry, keysForEntry, parseCatalogPath,
+    findEntry as _findEntry, keysForEntry, keysForEntryOrNull, parseCatalogPath,
     resolveNamespace as _resolveNamespace, slugIndexKey,
 } from "./lib/catalog.js";
 
@@ -135,8 +135,12 @@ export function createHandler({
                         const rec = await idx.get(key, { type: "json" });
                         if (!rec) continue;
 
-                        const { meta } = keysForEntry(rec, "latest");
-                        const m = await readJson(meta, null);
+                        // Skip, never throw: an admin listing exists to *find*
+                        // a bad record, so it must not be the thing a bad
+                        // record breaks.
+                        const keys = keysForEntryOrNull(rec, "latest");
+                        if (!keys) continue;
+                        const m = await readJson(keys.meta, null);
 
                         let latest = null, versionCount = 0, published = false, name, tags;
                         if (m) {

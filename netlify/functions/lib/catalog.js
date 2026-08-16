@@ -161,6 +161,23 @@ export function keysForEntry(record, version = "_") {
 }
 
 /**
+ * [keysForEntry] for a caller enumerating the index, which returns null instead
+ * of throwing.
+ *
+ * The distinction is the caller's shape, not the record's. Resolving *one*
+ * entry should fail loudly — a corrupt record there is the whole request, and a
+ * plausible-looking key would turn it into a 404 indistinguishable from an
+ * ordinary missing plan. Listing *many* is the opposite case: one unkeyable row
+ * must not remove every good one from the catalog, so it is skipped and
+ * reported, and the listing serves what it can.
+ */
+export function keysForEntryOrNull(record, version = "_", { warn = console.warn } = {}) {
+    if (record?.entryId) return catalogKeysFor(record.entryId, version);
+    warn(`[catalog] skipping index record with no entryId: ${JSON.stringify(record?.slug ?? record)}`);
+    return null;
+}
+
+/**
  * Claim `(namespace, slug)` for a new entry, atomically.
  *
  * `onlyIfNew` rather than read-then-write: two people publishing the same name
