@@ -127,6 +127,18 @@ Concretely:
    route moves with it; keeping `/invite/:token` internally would leave two
    names for one thing, which is the problem being fixed.
 
+   **Not `/i/`, which is the obvious choice and is taken.** `/i/<slug>` is the
+   install link (ADR-0015) and is spoken for in four places at once — the app
+   route `/i/:slug`, both association files, the Android intent filter, and the
+   `netlify.toml` redirect to `drills-preview`. Reusing the prefix would not
+   merely be ambiguous to a reader: `pathPrefix="/i/"` on Android and `/i/*` in
+   the AASA would capture invitation links into the install handler, which
+   redirects to the active plan. The invitee would land in the app, on somebody
+   else's plan, with no sign that an invitation was ever involved.
+
+   The taken prefixes are `/d/` download, `/i/` install, `/o/` open-shared-file,
+   and now `/s/` sign-in.
+
    Renaming a live route is normally not worth it. It is worth it here because
    **no invitation has ever been sent**: production holds no accounts (the
    ADR-0077 backfill scanned zero members and zero sessions on 2026-08-12), an
