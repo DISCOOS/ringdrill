@@ -59,20 +59,34 @@ verify and monitor costs more than it saves.
 
 ### DNS
 
-Resend issues the exact records when you add the domain; add them to the
+Resend issues the records when you add the domain; they go in the
 `ringdrill.app` zone in **Cloudflare**, which is where the zone lives (see
-[`backend.md`](./backend.md)). There are three kinds and each does a different
-job:
+[`backend.md`](./backend.md)). This is what is deployed, verified 2026-08-16:
 
-* **SPF** (TXT) — says Resend's servers may send for this domain.
-* **DKIM** (TXT or CNAME) — the public half of the signing key. Resend holds the
-  private half; we never see it, which is also why there is nothing secret in
-  this record.
-* **DMARC** (TXT) — tells receiving servers what to do when SPF and DKIM
-  disagree with the From address, and where to send reports.
+| Name | Type | Purpose |
+|---|---|---|
+| `resend._domainkey.ringdrill.app` | TXT | DKIM public key. Resend holds the private half, which is why nothing here is secret. |
+| `send.ringdrill.app` | TXT | `v=spf1 include:amazonses.com ~all` |
+| `send.ringdrill.app` | MX | `feedback-smtp.eu-west-1.amazonses.com` — bounce and complaint feedback |
+| `_dmarc.ringdrill.app` | TXT | `v=DMARC1; p=none;` |
+
+**SPF and the bounce MX sit on `send.`, not on the apex, and that is correct.**
+It cost twenty minutes of looking in the wrong place once: an apex `dig TXT`
+finds no SPF and the setup looks half-finished. DKIM signs for the apex, which
+is what aligns `noreply@ringdrill.app`; the subdomain is only the Return-Path.
 
 Verification is Resend-side once the records resolve. Cloudflare's proxy does
-not apply to TXT records, so nothing needs unproxying.
+not apply to TXT or MX records, so nothing needs unproxying.
+
+**DMARC carries no `rua`, deliberately.** `p=none` is monitor-only: it publishes
+a policy and asks receivers to change nothing, which is the right posture while
+the sending domain is new. Aggregate reports are omitted because there is
+nowhere to send them — `ringdrill.app` has no MX, so an address there receives
+nothing, and pointing `rua` at an external mailbox needs an authorisation
+record (`ringdrill.app._report._dmarc.<their-domain>`) that only the *receiving*
+domain can publish. Adding reports later is an edit to this one record, plus
+either a real mailbox on the domain or a DMARC reporting service that supplies
+both halves.
 
 ## Environment
 
@@ -82,6 +96,24 @@ On the **API site** (`api.ringdrill.app`) in Netlify:
 RESEND_API_KEY = re_...        # required; sending-only scope
 MAIL_PROVIDER  = resend        # optional — this is already the default
 ```
+
+**A Netlify environment change only takes effect on the next deploy.** Setting a
+variable and retrying immediately gives exactly the same failure as not setting
+it, which reads as a wrong value rather than an unloaded one. Redeploy, then
+retry.
+
+Mail is one of several settings the auth surface needs, and they fail at
+different points — so fixing one and retrying can simply move the error:
+
+| Missing | Fails at | Looks like |
+|---|---|---|
+| `RESEND_API_KEY` | `start-email` | HTTP 500, `{"error":"internal"}` — the mailer refuses to construct |
+| `AUTH_SIGNING_KEY_PRIVATE` | `callback` | `no_signing_key`, one step later, after the code is typed |
+| `AUTH_MODE=off` | nowhere | Everything answers, nobody is ever authenticated (ADR-0073's rollback) |
+
+The `[auth] mode=…` line printed on every cold start names the resolved mode and
+says outright when `live` is missing its signing key. It is the fastest way to
+tell these apart, and it is in the function log rather than any response.
 
 `MAIL_PROVIDER` selects the adapter (ADR-0075): `resend`, `ses`, `console` or
 `mock`. Unset means `resend`, which is why a missing `RESEND_API_KEY` is a boot
