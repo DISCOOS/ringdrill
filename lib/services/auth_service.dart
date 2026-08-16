@@ -30,7 +30,14 @@ abstract class AuthTokenStore {
 /// and the more important half, but rotation cannot help a token that was read
 /// straight off disk.
 class SecureAuthTokenStore implements AuthTokenStore {
-  static const _key = 'ringdrill.auth.session';
+  static const sessionKey = 'ringdrill.auth.session';
+
+  /// The half-finished email sign-in. A separate entry from the session
+  /// because the two never coexist: this one only means anything while signed
+  /// out, and must not survive the sign-in it leads to.
+  static const pendingKey = 'ringdrill.auth.pending';
+
+  final String _key;
 
   final FlutterSecureStorage _storage;
 
@@ -39,7 +46,10 @@ class SecureAuthTokenStore implements AuthTokenStore {
   /// Keystore-held key), so the `encryptedSharedPreferences` opt-in that older
   /// guidance calls for no longer exists. iOS and macOS use the Keychain, web
   /// uses WebCrypto.
-  const SecureAuthTokenStore([this._storage = const FlutterSecureStorage()]);
+  const SecureAuthTokenStore([
+    this._storage = const FlutterSecureStorage(),
+    this._key = sessionKey,
+  ]);
 
   @override
   Future<String?> read() => _storage.read(key: _key);
@@ -64,6 +74,45 @@ class InMemoryAuthTokenStore implements AuthTokenStore {
 
   @override
   Future<void> clear() async => _value = null;
+}
+
+/// An email sign-in that was started and not finished.
+///
+/// **Only the challenge id, never the code.** The id identifies the attempt;
+/// the code proves you can read the address's mail, and those two halves are
+/// the entire security property of this flow. Keeping the code on the device —
+/// or prefilling it — would make the device the whole credential and skip the
+/// step the flow exists for.
+///
+/// The address rides along because the code screen names it ("we sent a code
+/// to …"), and a screen that has forgotten which address it is waiting on is
+/// worse than one that never offered to wait.
+class PendingChallenge {
+  const PendingChallenge({
+    required this.challengeId,
+    required this.email,
+    required this.expiresAt,
+  });
+
+  final String challengeId;
+  final String email;
+  final DateTime expiresAt;
+
+  bool isLive(DateTime now) => expiresAt.isAfter(now);
+
+  Map<String, dynamic> toJson() => {
+    'challengeId': challengeId,
+    'email': email,
+    'expiresAt': expiresAt.toIso8601String(),
+  };
+
+  static PendingChallenge? fromJson(Map<String, dynamic> json) {
+    final id = json['challengeId'];
+    final email = json['email'];
+    final expires = DateTime.tryParse(json['expiresAt'] as String? ?? '');
+    if (id is! String || email is! String || expires == null) return null;
+    return PendingChallenge(challengeId: id, email: email, expiresAt: expires);
+  }
 }
 
 /// Opens [url] in a system browser and returns the callback URL it lands on.
@@ -207,6 +256,7 @@ class AuthService extends ChangeNotifier {
 
   final AuthClient _client;
   final AuthTokenStore _store;
+  final AuthTokenStore _pending;
   final DateTime Function() _now;
 
   AuthTokens? _tokens;
@@ -228,10 +278,23 @@ class AuthService extends ChangeNotifier {
   AuthService({
     required AuthClient client,
     AuthTokenStore? store,
+    AuthTokenStore? pendingStore,
     DateTime Function()? now,
     WebAuthLauncher? launcher,
   }) : _client = client,
        _store = store ?? const SecureAuthTokenStore(),
+       // Follows `store`: a caller that brought its own session store is a
+       // test or the CLI, and reaching for a keychain it deliberately avoided
+       // for the *other* half would fail on a platform channel that is not
+       // there. Passing neither gets the real thing, which is the app.
+       _pending =
+           pendingStore ??
+           (store == null
+               ? const SecureAuthTokenStore(
+                   FlutterSecureStorage(),
+                   SecureAuthTokenStore.pendingKey,
+                 )
+               : InMemoryAuthTokenStore()),
        _now = now ?? (() => DateTime.now().toUtc()),
        _launch = launcher ?? _launchWebAuth;
 
@@ -305,7 +368,70 @@ class AuthService extends ChangeNotifier {
   Future<EmailChallenge> startEmailSignIn(
     String email, {
     String locale = 'en',
-  }) => _client.startEmail(email, locale: locale);
+  }) async {
+    final challenge = await _client.startEmail(email, locale: locale);
+    // Written before the code is typed, because the case this exists for is
+    // the app not being alive to type it into: the person asks for a code,
+    // leaves for their mail app, and comes back to a cold start. The code in
+    // their inbox is still good for ten minutes; without this, the screen that
+    // could accept it is gone.
+    await _writePending(
+      PendingChallenge(
+        challengeId: challenge.challengeId,
+        email: email,
+        expiresAt: _now().add(challenge.expiresIn),
+      ),
+    );
+    return challenge;
+  }
+
+  /// The unfinished sign-in this device started, if it is still redeemable.
+  ///
+  /// Expiry is checked here as a courtesy to the screen — offering a code box
+  /// for a challenge the server has already forgotten wastes somebody's time.
+  /// It is not a security check: the server enforces the same deadline, and
+  /// this clock is the device's.
+  Future<PendingChallenge?> pendingSignIn() async {
+    final raw = await _readPending();
+    if (raw == null) return null;
+    if (!raw.isLive(_now())) {
+      await discardPendingSignIn();
+      return null;
+    }
+    return raw;
+  }
+
+  /// Forget it — redeemed, expired, or the person chose a different address.
+  Future<void> discardPendingSignIn() async {
+    try {
+      await _pending.clear();
+    } catch (e) {
+      debugPrint('auth: could not clear the pending sign-in ($e)');
+    }
+  }
+
+  /// Both directions are best effort. A device that cannot persist this loses
+  /// the convenience of resuming; it must never lose the ability to sign in,
+  /// which is what an exception escaping [startEmailSignIn] would cost.
+  Future<void> _writePending(PendingChallenge pending) async {
+    try {
+      await _pending.write(jsonEncode(pending.toJson()));
+    } catch (e) {
+      debugPrint('auth: could not store the pending sign-in ($e)');
+    }
+  }
+
+  Future<PendingChallenge?> _readPending() async {
+    try {
+      final raw = await _pending.read();
+      if (raw == null) return null;
+      return PendingChallenge.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (e) {
+      debugPrint('auth: discarding an unreadable pending sign-in ($e)');
+      await discardPendingSignIn();
+      return null;
+    }
+  }
 
   /// Which third-party providers this deployment offers, in the order they
   /// should be shown.
@@ -374,6 +500,9 @@ class AuthService extends ChangeNotifier {
       deviceLabel: deviceLabel,
     );
     await _adopt(tokens);
+    // Spent. Leaving it would offer a code box for a challenge the server
+    // deleted on redeeming it.
+    await discardPendingSignIn();
     await _hydrate(force: true);
   }
 
@@ -461,6 +590,7 @@ class AuthService extends ChangeNotifier {
     _refreshing = null;
     _hydratedAt = null;
     await _store.clear();
+    await discardPendingSignIn();
     _publish(AuthState.signedOut);
 
     if (tokens != null) {

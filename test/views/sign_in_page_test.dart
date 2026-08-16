@@ -92,12 +92,14 @@ FakeTransport install(
   List<http.Response> script, {
   List<AuthProvider> providers = const [],
   WebAuthLauncher? launcher,
+  AuthTokenStore? pendingStore,
 }) {
   final fake = FakeTransport(script, providers: providers);
   AuthService.install(
     AuthService(
       client: AuthClient(baseUrl: 'https://api.test', httpClient: fake),
       store: InMemoryAuthTokenStore(),
+      pendingStore: pendingStore,
       launcher: launcher,
     ),
   );
@@ -467,6 +469,108 @@ void main() {
 
       expect(find.text('Six-digit code'), findsNothing);
       expect(find.text('Continue'), findsOneWidget);
+    });
+  });
+
+  /// Finishing a sign-in the app was killed in the middle of.
+  ///
+  /// Reading the mailed code means leaving the app, which on a phone is how
+  /// the app gets killed. The code stays valid for ten minutes; the screen
+  /// that could take it did not.
+  group('an unfinished sign-in', () {
+    testWidgets('reopens on the code step, naming the address', (tester) async {
+      final pending = InMemoryAuthTokenStore();
+      install([_challenge], pendingStore: pending);
+      await pumpSignIn(tester);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      // The app dies here — a fresh screen against the same storage.
+      install([], pendingStore: pending);
+      await pumpSignIn(tester);
+
+      expect(
+        find.text(
+          'We sent a link and a six-digit code to kari@example.com. '
+          'Either one works.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Sign in'), findsOneWidget);
+    });
+
+    testWidgets('stores the challenge and never the code', (tester) async {
+      // The id says which attempt; the code proves you can read the address's
+      // mail. Keeping both on the device would make the device the whole
+      // credential and skip the step the flow exists for.
+      final pending = InMemoryAuthTokenStore();
+      install([_challenge], pendingStore: pending);
+      await pumpSignIn(tester);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      final stored = await pending.read();
+      expect(stored, contains('c_1'));
+      expect(stored, contains('kari@example.com'));
+      expect(stored, isNot(contains('123456')));
+    });
+
+    testWidgets('an expired one is dropped rather than offered', (
+      tester,
+    ) async {
+      // Offering a code box for a challenge the server has already forgotten
+      // wastes somebody's time and ends in "unknown or used".
+      final pending = InMemoryAuthTokenStore();
+      await pending.write(
+        jsonEncode({
+          'challengeId': 'c_old',
+          'email': 'kari@example.com',
+          'expiresAt': DateTime.now()
+              .toUtc()
+              .subtract(const Duration(minutes: 1))
+              .toIso8601String(),
+        }),
+      );
+      install([], pendingStore: pending);
+      await pumpSignIn(tester);
+
+      expect(find.text('Continue'), findsOneWidget, reason: 'the address step');
+      expect(await pending.read(), isNull, reason: 'and it is forgotten');
+    });
+
+    testWidgets('signing in spends it', (tester) async {
+      final pending = InMemoryAuthTokenStore();
+      install([_challenge, _session, _me], pendingStore: pending);
+      await pumpSignIn(tester);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, '123456');
+      await tester.tap(find.text('Sign in'));
+      await tester.pumpAndSettle();
+
+      expect(await pending.read(), isNull);
+    });
+
+    testWidgets('choosing another address forgets it', (tester) async {
+      // Otherwise the next cold start reopens the address just rejected.
+      final pending = InMemoryAuthTokenStore();
+      install([_challenge], pendingStore: pending);
+      await pumpSignIn(tester);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Use a different address'));
+      await tester.pumpAndSettle();
+
+      expect(await pending.read(), isNull);
     });
   });
 

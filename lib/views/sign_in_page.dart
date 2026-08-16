@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ringdrill/data/auth_client.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
@@ -76,6 +78,37 @@ class _SignInPageState extends State<SignInPage> {
           (_) => <AuthProvider>[],
         )
       : Future.value(const <AuthProvider>[]);
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_resumePending());
+  }
+
+  /// Reopen on the code step if this device has a sign-in it never finished.
+  ///
+  /// The code was mailed to an inbox, and reading it means leaving the app —
+  /// which on a phone is exactly how the app gets killed. Coming back to the
+  /// address field, with a still-valid code in hand and no box to type it in,
+  /// leaves asking for a second code as the only way forward. That is also how
+  /// somebody reaches a rate limit doing nothing wrong.
+  ///
+  /// Only the challenge is restored, never a code: see [PendingChallenge].
+  Future<void> _resumePending() async {
+    if (!AuthService.isInstalled) return;
+    final pending = await AuthService.instance.pendingSignIn();
+    if (!mounted || pending == null) return;
+    setState(() {
+      _challenge = EmailChallenge(
+        challengeId: pending.challengeId,
+        // Only the id is ever used from here — the remaining lifetime is the
+        // server's to enforce, and this one was already checked as live.
+        expiresIn: Duration.zero,
+      );
+      _sentTo = pending.email;
+      _emailController.text = pending.email;
+    });
+  }
 
   @override
   void dispose() {
@@ -432,12 +465,22 @@ class _SignInPageState extends State<SignInPage> {
               TextButton(
                 onPressed: _busy
                     ? null
-                    : () => setState(() {
-                        _challenge = null;
-                        _codeController.clear();
-                        _error = null;
-                        _resent = false;
-                      }),
+                    : () {
+                        // Forgotten, not just hidden: otherwise the next cold
+                        // start reopens the address they just rejected.
+                        if (AuthService.isInstalled) {
+                          unawaited(
+                            AuthService.instance.discardPendingSignIn(),
+                          );
+                        }
+                        setState(() {
+                          _challenge = null;
+                          _sends = 0;
+                          _codeController.clear();
+                          _error = null;
+                          _resent = false;
+                        });
+                      },
                 child: Text(l.signInUseAnotherEmail),
               ),
           ],
