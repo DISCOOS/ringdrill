@@ -1518,6 +1518,10 @@
     "description": "Code step. The only recovery from an expired or lost code used to be \"use another email\", which reads as a different decision."
   },
   "signInResent": "A new code is on its way. The previous one no longer works.",
+  "signInManySends": "Several codes have been sent to this address. Check your spam folder and use the code from the newest email — asking again may not send another.",
+  "@signInManySends": {
+    "description": "Shown once this screen has asked for a third code for the same address. The server stops mailing an address past a few sends an hour and answers identically either way (ADR-0079), so it can never say this — but the device knows its own history, and saying so leaks nothing. Hedged on purpose: this count is per screen, so the sends may already have stopped, or may not have."
+  },
   "@signInResent": {
     "description": "Shown after asking for another code. Says a code is on its way rather than that it has arrived: the server caps how much mail one address can be sent and a refusal is deliberately silent (ADR-0079), so the client cannot know. Also warns that the old code is dead, because a new challenge replaces it."
   },

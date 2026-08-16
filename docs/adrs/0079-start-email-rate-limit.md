@@ -108,6 +108,48 @@ usual advice to make rate limiting visible is wrong.
   many *different* addresses. That is bounded by the per-IP limit only, and
   imperfectly.
 
+### Amendment, 2026-08-16: two windows, a refund, and a hint the client can give
+
+Shipped with a single per-recipient cap of **3 an hour**, and production found
+both ways that was wrong within a day of going live.
+
+**The number was below normal use.** A first sign-in is not one send: a phone, a
+tablet, a laptop and the PWA each need their own link, and at least one gets
+retried because the mail was slow or landed in spam. Three an hour is reached by
+using the product correctly — which is precisely what the consequence above says
+the cap must never do.
+
+Raising it alone does not work either, because one window has to serve two
+purposes. The burst allowance has to cover that multi-device hour, and an hourly
+cap permits that same burst *every* hour — at six, 144 messages a day to a chosen
+inbox. So the recipient counter now has two windows, and they say different
+things: **6 an hour** (a busy hour is normal) and **20 a day** (a busy day is
+not). The daily figure is the one that bounds harassment; the hourly one only
+smooths bursts. The per-source limit is unchanged.
+
+**Quota was charged for mail that never left.** The counter is spent before the
+send, because the decision is what gates it — but a mailer failure then charges
+somebody for nothing and locks them out of retrying the thing that never
+happened. That is not theoretical: three sign-in attempts that 500'd inside the
+mailer emptied a real address's whole allowance without one message being sent,
+and every refusal after it was silent. A failed send is now refunded. This does
+not reopen enumeration: a provider outage looks identical for an address with an
+account and one without.
+
+**The silence is now broken by the client, not the server.** The response must
+stay identical — that part of the decision is unchanged and is the reason a 429
+is still not returned. But the *device* knows how many links it has asked for,
+and that is our own history rather than an answer about the address, so saying
+it leaks nothing. After a third request for the same address the sign-in screen
+says several codes have been sent, to check spam, and that asking again may not
+send another. It is deliberately hedged: the count is per screen, so links
+requested elsewhere are invisible to it, and the server may have stopped sending
+before it fires.
+
+None of this changes the decision — it corrects three values and adds a
+client-side affordance the original wrote off too quickly, by reading "the
+caller cannot be told" as "nobody can say anything".
+
 ## Pros and cons of the options
 
 ### Option A: per recipient and per source (chosen)

@@ -1471,6 +1471,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'A new code is on its way. The previous one no longer works.';
 
   @override
+  String get signInManySends =>
+      'Several codes have been sent to this address. Check your spam folder and use the code from the newest email — asking again may not send another.';
+
+  @override
   String get signInUseAnotherEmail => 'Use a different address';
 
   @override

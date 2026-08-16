@@ -1466,6 +1466,10 @@ class AppLocalizationsNb extends AppLocalizations {
       'En ny kode er på vei. Den forrige virker ikke lenger.';
 
   @override
+  String get signInManySends =>
+      'Det er sendt flere koder til denne adressen. Sjekk søppelposten og bruk koden fra den nyeste e-posten — ber du om en ny, blir den kanskje ikke sendt.';
+
+  @override
   String get signInUseAnotherEmail => 'Bruk en annen adresse';
 
   @override

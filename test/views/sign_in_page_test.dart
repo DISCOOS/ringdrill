@@ -371,7 +371,10 @@ void main() {
     ) async {
       // A ten-minute expiry with no resend made "use another email" the only
       // way forward, which reads as a different decision entirely.
-      final fake = install([_challenge, _json({'challengeId': 'c_2', 'expiresInMs': 600000})]);
+      final fake = install([
+        _challenge,
+        _json({'challengeId': 'c_2', 'expiresInMs': 600000}),
+      ]);
       await pumpSignIn(tester);
 
       await tester.enterText(find.byType(TextField), 'kari@example.com');
@@ -388,7 +391,9 @@ void main() {
           .toList();
       assert(starts.length == 2);
       expect(
-        find.text('A new code is on its way. The previous one no longer works.'),
+        find.text(
+          'A new code is on its way. The previous one no longer works.',
+        ),
         findsOneWidget,
       );
 
@@ -396,6 +401,55 @@ void main() {
       // field would invite typing something the server has forgotten.
       final code = tester.widget<TextField>(find.byType(TextField).last);
       expect(code.controller!.text, isEmpty);
+    });
+
+    testWidgets('a third request says the mail may have stopped', (
+      tester,
+    ) async {
+      // ADR-0079 caps how much mail one address gets and keeps a refusal
+      // silent, so the server answers "sent" either way. Somebody who asked
+      // three times and has nothing in their inbox is exactly who that silence
+      // strands — and this device already knows it asked three times, which is
+      // our own history rather than an answer about the address.
+      final fake = install([
+        _challenge,
+        _json({'challengeId': 'c_2', 'expiresInMs': 600000}),
+        _json({'challengeId': 'c_3', 'expiresInMs': 600000}),
+      ]);
+      await pumpSignIn(tester);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      const hint =
+          'Several codes have been sent to this address. Check your spam '
+          'folder and use the code from the newest email — asking again may '
+          'not send another.';
+      expect(find.text(hint), findsNothing, reason: 'not on the first send');
+
+      await tester.tap(find.text('Send a new code'));
+      await tester.pumpAndSettle();
+      expect(find.text(hint), findsNothing, reason: 'twice is still normal');
+
+      await tester.tap(find.text('Send a new code'));
+      await tester.pumpAndSettle();
+      expect(find.text(hint), findsOneWidget);
+
+      // It replaces the resend confirmation rather than stacking with it: two
+      // notes about the same send is one too many.
+      expect(
+        find.text(
+          'A new code is on its way. The previous one no longer works.',
+        ),
+        findsNothing,
+      );
+      assert(
+        fake.requests
+                .where((r) => r.url.path.endsWith('/auth/start-email'))
+                .length ==
+            3,
+      );
     });
 
     testWidgets('can go back to a different address', (tester) async {

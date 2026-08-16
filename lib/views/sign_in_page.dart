@@ -45,6 +45,22 @@ class _SignInPageState extends State<SignInPage> {
   EmailChallenge? _challenge;
   String? _sentTo;
 
+  /// How many links this screen has asked for, for the address in [_sentTo].
+  ///
+  /// **The client says what the API deliberately cannot.** Past a few sends an
+  /// hour, ADR-0079 stops mailing an address and answers exactly as if it had
+  /// mailed it — a refusal has to be invisible, or the response tells a caller
+  /// which addresses are worth mailing. The cost lands on the one person it was
+  /// never aimed at: somebody who asked three times, was told "check your
+  /// inbox" three times, and has nothing to check.
+  ///
+  /// This device already knows what it has asked for, and saying so leaks
+  /// nothing — it is our own history, not an answer about the address. It is
+  /// only ever a hint: the count is per screen, so links requested on a phone
+  /// are invisible to a laptop, and the server may have stopped sending well
+  /// before this fires.
+  int _sends = 0;
+
   bool _busy = false;
   String? _error;
 
@@ -115,6 +131,9 @@ class _SignInPageState extends State<SignInPage> {
       if (!mounted) return;
       setState(() {
         _challenge = challenge;
+        // Counted per address: asking for a link to a different one is a first
+        // attempt, not a fourth.
+        _sends = (email == _sentTo) ? _sends + 1 : 1;
         _sentTo = email;
         // **Deliberately not filled in.** Under AUTH_MODE=mock the server
         // returns the code so a developer can finish the flow with no mail
@@ -196,6 +215,7 @@ class _SignInPageState extends State<SignInPage> {
         _challenge = challenge;
         _codeController.clear();
         _resent = true;
+        _sends += 1;
       });
     }, l);
   }
@@ -384,7 +404,22 @@ class _SignInPageState extends State<SignInPage> {
                 onPressed: _busy ? null : () => _resend(l),
                 child: Text(l.signInResend),
               ),
-              if (_resent)
+              // Three is where "it must be slow" stops being the likely
+              // explanation and the inbox is worth doubting instead. It also
+              // sits below the hourly allowance, so the advice arrives before
+              // the sends stop rather than after.
+              if (_sends >= 3)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: InlineMessage(
+                    message: l.signInManySends,
+                    // Nothing failed, and saying otherwise would be a third
+                    // red box on a screen where the other two mean a code was
+                    // wrong.
+                    tone: MessageTone.info,
+                  ),
+                )
+              else if (_resent)
                 Text(
                   l.signInResent,
                   style: theme.textTheme.bodySmall?.copyWith(

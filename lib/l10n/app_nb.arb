@@ -413,6 +413,7 @@
   "signInLinkUsed": "Denne lenken er allerede brukt. Be om en ny, eller skriv inn koden fra e-posten.",
   "signInResend": "Send ny kode",
   "signInResent": "En ny kode er p\u00e5 vei. Den forrige virker ikke lenger.",
+  "signInManySends": "Det er sendt flere koder til denne adressen. Sjekk søppelposten og bruk koden fra den nyeste e-posten — ber du om en ny, blir den kanskje ikke sendt.",
   "signInUseAnotherEmail": "Bruk en annen adresse",
   "signInCodeWrong": "Koden er ikke riktig. Sjekk e-posten og prøv igjen.",
   "signInFailed": "Innloggingen kunne ikke fullføres. Prøv igjen om litt.",

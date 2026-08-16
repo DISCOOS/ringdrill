@@ -2456,6 +2456,12 @@ abstract class AppLocalizations {
   /// **'A new code is on its way. The previous one no longer works.'**
   String get signInResent;
 
+  /// Shown once this screen has asked for a third code for the same address. The server stops mailing an address past a few sends an hour and answers identically either way (ADR-0079), so it can never say this — but the device knows its own history, and saying so leaks nothing. Hedged on purpose: this count is per screen, so the sends may already have stopped, or may not have.
+  ///
+  /// In en, this message translates to:
+  /// **'Several codes have been sent to this address. Check your spam folder and use the code from the newest email — asking again may not send another.'**
+  String get signInManySends;
+
   /// No description provided for @signInUseAnotherEmail.
   ///
   /// In en, this message translates to:
