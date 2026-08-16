@@ -30,6 +30,19 @@ So a person who taps the link in their mail — the obvious thing to do, and the
 thing the copy invites — lands on a 404. They then have to work out for
 themselves that the six characters further down the message are the way in.
 
+**The path is also misnamed.** Three different things are called `auth/callback`
+and only one of them is this:
+
+| Path | Direction | What it is |
+|---|---|---|
+| `POST /api/auth/callback` | app → backend | Redeems a `{challengeId, code}`, a provider `idToken`, or a `handoff`, and returns tokens |
+| `GET /api/auth/callback/<provider>` | provider → backend | Where a provider redirects the browser; the server exchanges the code and bounces to the app |
+| `<apex>/auth/callback?c=&k=` | mail → device | The magic link — the only user-facing one, and the only one nothing serves |
+
+The first two are backend endpoints on the API origin. The third borrows their
+name for something else on a different origin, which is a collision that costs
+nothing today and will cost somebody an afternoon later.
+
 Two further things shape the fix rather than merely following from it.
 
 **Mail is scanned, and scanners follow links.** Corporate mail security and
@@ -60,11 +73,10 @@ kept in browser history far more casually than six characters are.
 
 ## Considered options
 
-* Option A: Serve `/auth/callback` on the apex, proxied to a function, and
-  register it as a universal link — the shape `/i/*` already uses.
-* Option B: Point the link at `web.ringdrill.app/auth/callback` and let the PWA
-  route it.
-* Option C: Put a custom scheme (`ringdrill://auth/callback`) in the mail.
+* Option A: Serve the link path on the apex, proxied to a function, and register
+  it as a universal link — the shape `/i/*` already uses.
+* Option B: Point the link at `web.ringdrill.app` and let the PWA route it.
+* Option C: Put a custom scheme (`ringdrill://…`) in the mail.
 * Option D: Keep the apex URL and have the proxy Worker rewrite it to the PWA.
 
 ## Decision outcome
@@ -76,13 +88,27 @@ second link-bearing origin.
 
 Concretely:
 
-1. `/auth/callback` is added to the apex proxy Worker's routes and served by a
-   function, mirroring `/i/*` ([ADR-0015](./0015-shareable-install-links.md)).
-2. The path is added to both copies of the association file
+1. **The link becomes `<apex>/s/<challengeId>/<code>`.** One letter, matching
+   the convention the apex already uses for user-facing links — `/d/<slug>` for
+   downloads, `/i/<slug>` for install links — rather than the long
+   `/auth/callback`, which reads like the two backend endpoints above and is
+   not either of them. `/s/` for sign-in matches the app's own vocabulary and
+   leaves `/a/` free for accounts, which `/api/accounts/` and `AccountPage`
+   would otherwise make ambiguous. Path segments rather than `?c=&k=`: shorter,
+   and a plaintext mail that wraps a long URL breaks the link in some clients.
+2. `/s/*` is added to the apex proxy Worker's routes and served by a function,
+   mirroring `/i/*` ([ADR-0015](./0015-shareable-install-links.md)).
+3. The path is added to both copies of the association file
    (`web/.well-known/` and `site/public/.well-known/`) and to the Android
    intent filter, alongside `/i/` and `/o/`.
-3. The app gains a route that takes `c` and `k` from the URL and completes
-   sign-in.
+4. The app gains a route that takes the two segments and completes sign-in.
+
+**The association entry and the consumer ship together.** Not as "register now,
+wire later" — [DEBT-0001](../debts/0001-orphan-https-app-link-for-o-path.md) is
+this mistake already made once: `/o` was declared `autoVerify="true"` with
+nothing behind it, which triggers App-Link verification on every install and
+every update, and a verification failure is silently logged precisely because
+nothing depends on it working.
 
 ### The landing page does not redeem
 
@@ -114,8 +140,10 @@ adversaries.
   files, the intent filter — and a mismatch is silent. A path missing from the
   AASA does not error; it just quietly opens Safari instead of the app, which
   looks like the feature was never built.
-* Bad: the credential is in a URL, so it reaches browser history and anything
-  that logs query strings. Bounded by the ten-minute TTL and single use, and no
+* Bad: the credential is in a URL, so it reaches browser history and any access
+  log along the way. Path segments rather than a query string keeps it out of
+  the places that strip or redact `?…` specifically, but that is a small
+  mitigation, not a fix. Bounded by the ten-minute TTL and single use, and no
   worse than the code it accompanies — but a URL is forwarded more casually than
   six characters, and that is a real difference in practice rather than in
   theory.
