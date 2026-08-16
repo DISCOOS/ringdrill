@@ -462,7 +462,18 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
     final word = l.accountDeleteConfirmWord;
     final armed = _controller.text.trim().toUpperCase() == word;
 
-    return AlertDialog.adaptive(
+    // **Not `AlertDialog.adaptive`.** On Apple platforms that renders a
+    // `CupertinoAlertDialog`, which provides no `Material` ancestor — and this
+    // dialog's content is Material through and through: two `RadioListTile`s
+    // and a `TextField`. They threw, and the whole choice-and-confirm section
+    // rendered as a red error box, leaving a destructive dialog whose only
+    // remaining controls were Cancel and a permanently disabled Delete.
+    //
+    // `confirmDestructive` in dialog_widgets.dart is the house shape and is
+    // plain `AlertDialog` for the same reason. This one cannot call it —
+    // that helper takes a message, and this needs a radio group and a typed
+    // confirmation — but it matches its chrome.
+    return AlertDialog(
       title: Text(l.accountDeleteTitle(widget.account.displayName)),
       content: SizedBox(
         width: 420,
@@ -597,7 +608,10 @@ class _InviteDialogState extends State<_InviteDialog> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final valid = _controller.text.contains('@');
-    return AlertDialog.adaptive(
+    // Plain `AlertDialog`, not `.adaptive`, for the reason spelled out on the
+    // delete dialog above: the Cupertino variant provides no `Material`
+    // ancestor and the `TextField` below needs one.
+    return AlertDialog(
       title: Text(l.accountInviteAction),
       content: SizedBox(
         width: 420,
@@ -659,7 +673,10 @@ class _RolePickerDialogState extends State<_RolePickerDialog> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    return AlertDialog.adaptive(
+    // Plain `AlertDialog` — `_RoleOptions` is a column of `RadioListTile`s,
+    // and the Cupertino variant gives them no `Material` ancestor. Same fault
+    // as the delete dialog above.
+    return AlertDialog(
       title: Text(l.accountChangeRoleAction),
       content: SizedBox(
         width: 420,

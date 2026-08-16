@@ -517,10 +517,45 @@ class AuthService extends ChangeNotifier {
     _publish(
       AuthState(
         user: tokens.user,
-        accounts: tokens.accounts.isEmpty ? _state.accounts : tokens.accounts,
+        accounts: _named(tokens.accounts),
         activeAccountId: _state.activeAccountId,
       ),
     );
+  }
+
+  /// Keep the names we already know when the incoming list has none.
+  ///
+  /// **The two sources disagree about what an account is, and each is right
+  /// about a different half.** `callback` and `refresh` return the `acts` and
+  /// `roles` claims — ids and roles, no names, because the token carries no
+  /// names — so [AuthClient] projects them with an empty `displayName`. `/me`
+  /// returns the joined records. The token is therefore authoritative for
+  /// *which accounts and what role*, and `/me` for *what they are called*.
+  ///
+  /// Replacing wholesale lost the second half on every refresh: an hour after
+  /// signing in, every account went nameless until the next hydrate. It showed
+  /// up as a delete dialog titled "Slette ?" — the confirmation for a
+  /// destructive action, naming nothing.
+  List<AccountMembership> _named(List<AccountMembership> incoming) {
+    if (incoming.isEmpty) return _state.accounts;
+    final known = {
+      for (final a in _state.accounts)
+        if (a.displayName.isNotEmpty) a.accountId: a,
+    };
+    return [
+      for (final a in incoming)
+        if (a.displayName.isEmpty && known.containsKey(a.accountId))
+          // The name and type come from the record we already had; the role
+          // comes from the token, which is the half it is authoritative for.
+          AccountMembership(
+            accountId: a.accountId,
+            displayName: known[a.accountId]!.displayName,
+            type: known[a.accountId]!.type,
+            role: a.role,
+          )
+        else
+          a,
+    ];
   }
 
   /// Replace the id-only membership list from the token with the named one.
@@ -563,6 +598,11 @@ class AuthService extends ChangeNotifier {
   }
 
   bool get _hydrationDue {
+    // A missing name outranks the interval. The TTL exists to save a call, not
+    // to keep a screen showing a blank where an account's name belongs — and
+    // an account with no name is the one state the stored session cannot
+    // repair on its own.
+    if (_state.accounts.any((a) => a.displayName.isEmpty)) return true;
     final last = _hydratedAt;
     return last == null || !_now().isBefore(last.add(_hydrateInterval));
   }

@@ -191,6 +191,12 @@ void main() {
     DateTime clock() => at;
 
     /// A stored session whose access token was issued [ago] before now.
+    ///
+    /// The accounts are stored **named**, because that is what a real session
+    /// holds: `/me` has run at least once by the time anybody has a session to
+    /// restore. A nameless account is a separate state with its own rule — it
+    /// forces a hydrate regardless of the interval — and seeding one here would
+    /// mean these tests measured that instead of the interval they are about.
     Future<void> seed(
       InMemoryAuthTokenStore store, {
       required Duration ago,
@@ -200,6 +206,14 @@ void main() {
       await store.write(
         jsonEncode({
           ...tokens.toJson(),
+          'accounts': [
+            {
+              'id': 'a_kari',
+              'displayName': 'Kari',
+              'type': 'personal',
+              'role': 'owner',
+            },
+          ],
           if (hydratedAt != null) 'hydratedAt': hydratedAt.toIso8601String(),
         }),
       );
@@ -642,6 +656,75 @@ void main() {
         isWeb: false,
       );
       expect(input.map((p) => p.id), ['google', 'apple', 'microsoft']);
+    });
+  });
+
+  /// Account names, and the two sources that each know half.
+  ///
+  /// `callback` and `refresh` return the token's `acts`/`roles` claims — ids
+  /// and roles, and no names, because the token carries none. `/me` returns
+  /// the joined records. Replacing wholesale on every adopt lost the names an
+  /// hour after signing in, and it surfaced where it does most harm: a delete
+  /// confirmation titled "Slette ?", naming nothing it was about to destroy.
+  group('account names', () {
+    test('a refresh keeps the names it was not sent', () async {
+      var now = DateTime.utc(2026, 1, 1, 12);
+      final h = harness([
+        _json(_tokens()),
+        _json(_me),
+        _json(_tokens(access: 'at_2', refresh: 'rt_2')),
+      ], now: () => now);
+
+      await h.service.completeSignIn(challengeId: 'c_1', code: '123456');
+      expect(h.service.state.activeAccount!.displayName, 'Kari');
+
+      // The access token ages out, so the next call rotates it. The refresh
+      // response carries ids and roles only.
+      now = now.add(const Duration(hours: 2));
+      await h.service.accessToken();
+
+      expect(h.fake.refreshCount, 1, reason: 'the refresh actually happened');
+      expect(
+        h.service.state.activeAccount!.displayName,
+        'Kari',
+        reason: 'the token is authoritative for roles, /me for names',
+      );
+    });
+
+    test('a missing name outranks the hydrate interval', () async {
+      // The interval exists to save a call, not to keep a blank where a name
+      // belongs — and an account with no name is the one state a stored
+      // session cannot repair on its own.
+      final at = DateTime.utc(2026, 1, 1, 12);
+      final h = harness([_json(_me)], now: () => at);
+      await h.store.write(
+        jsonEncode({
+          ...AuthTokens.fromJson(_tokens(), now: at).toJson(),
+          // Hydrated a minute ago, so the interval alone would skip it…
+          'hydratedAt': at
+              .subtract(const Duration(minutes: 1))
+              .toIso8601String(),
+          // …but the stored accounts have no names.
+          'accounts': [
+            {
+              'id': 'a_kari',
+              'displayName': '',
+              'type': 'personal',
+              'role': 'owner',
+            },
+          ],
+        }),
+      );
+
+      await h.service.restore();
+      await pumpEventQueue();
+
+      expect(
+        h.fake.requests,
+        isNotEmpty,
+        reason: 'hydrated despite the interval',
+      );
+      expect(h.service.state.accounts.first.displayName, 'Kari');
     });
   });
 }
