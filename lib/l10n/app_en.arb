@@ -1439,9 +1439,9 @@
     "description": "Drawer entry that opens the sign-in screen. Plain and unadorned — DESIGN-015 §5.1 forbids a badge or a 'complete your setup' nudge, because no account is the normal state rather than a step on the way to one."
   },
   "signInTitle": "Sign in to RingDrill",
-  "signInWhatYouGet": "We create a personal account for you. It owns the plans you publish.",
+  "signInWhatYouGet": "If you do not have an account yet, one is created for you. It owns the plans you publish.",
   "@signInWhatYouGet": {
-    "description": "Shown on the sign-in screen itself (DESIGN-015 §5.1). Signing in *is* getting an account, so the UI must never present them as two decisions — but it must say that this is what happens. A thing created silently on your behalf is worse than a thing you were told about."
+    "description": "Shown on the sign-in screen itself (DESIGN-015 §5.1). Signing in *is* getting an account, so the UI must never present them as two decisions — but it must say that this is what happens. A thing created silently on your behalf is worse than a thing you were told about. Conditional rather than flat, because the same screen and the same magic link are how a returning user signs back in: stating outright that an account is being created is wrong for everybody after their first time, and the screen cannot know which they are — start-email deliberately answers the same for a known and an unknown address, so that it cannot be used to discover who has an account."
   },
   "signInOptional": "You do not need an account to use RingDrill. Plans, briefs and the catalog all work signed out.",
   "@signInOptional": {

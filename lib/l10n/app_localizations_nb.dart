@@ -1366,7 +1366,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get signInWhatYouGet =>
-      'Vi oppretter en personlig konto for deg. Den eier planene du publiserer.';
+      'Har du ikke konto ennå, opprettes en for deg. Den eier planene du publiserer.';
 
   @override
   String get signInOptional =>

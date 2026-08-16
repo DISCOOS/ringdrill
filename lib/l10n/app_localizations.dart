@@ -2282,10 +2282,10 @@ abstract class AppLocalizations {
   /// **'Sign in to RingDrill'**
   String get signInTitle;
 
-  /// Shown on the sign-in screen itself (DESIGN-015 §5.1). Signing in *is* getting an account, so the UI must never present them as two decisions — but it must say that this is what happens. A thing created silently on your behalf is worse than a thing you were told about.
+  /// Shown on the sign-in screen itself (DESIGN-015 §5.1). Signing in *is* getting an account, so the UI must never present them as two decisions — but it must say that this is what happens. A thing created silently on your behalf is worse than a thing you were told about. Conditional rather than flat, because the same screen and the same magic link are how a returning user signs back in: stating outright that an account is being created is wrong for everybody after their first time, and the screen cannot know which they are — start-email deliberately answers the same for a known and an unknown address, so that it cannot be used to discover who has an account.
   ///
   /// In en, this message translates to:
-  /// **'We create a personal account for you. It owns the plans you publish.'**
+  /// **'If you do not have an account yet, one is created for you. It owns the plans you publish.'**
   String get signInWhatYouGet;
 
   /// Reassurance on the sign-in screen. Someone reaching this screen by accident should be able to leave without believing they broke something.

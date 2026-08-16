@@ -384,7 +384,7 @@
   "signInDevModeBody": "Ingen e-post ble sendt. Innloggingskoden st\u00e5r i serverkonsollen. I produksjon kommer den bare p\u00e5 e-post.",
   "signInEntry": "Logg inn",
   "signInTitle": "Logg inn i RingDrill",
-  "signInWhatYouGet": "Vi oppretter en personlig konto for deg. Den eier planene du publiserer.",
+  "signInWhatYouGet": "Har du ikke konto enn\u00e5, opprettes en for deg. Den eier planene du publiserer.",
   "signInOptional": "Du trenger ingen konto for å bruke RingDrill. Planer, briefer og katalogen virker uten innlogging.",
   "signInWithProvider": "Fortsett med {provider}",
   "signInOrEmail": "eller fortsett med e-post",

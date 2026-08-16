@@ -1371,7 +1371,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signInWhatYouGet =>
-      'We create a personal account for you. It owns the plans you publish.';
+      'If you do not have an account yet, one is created for you. It owns the plans you publish.';
 
   @override
   String get signInOptional =>

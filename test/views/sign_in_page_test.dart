@@ -120,16 +120,24 @@ void main() {
   tearDown(AuthService.resetForTest);
 
   group('what the screen has to say', () {
-    testWidgets('discloses that an account is being created', (tester) async {
+    testWidgets('discloses that an account may be created', (tester) async {
       // Signing in *is* getting an account (ADR-0024 creates it), so this is
       // the only place the user is told. A thing created silently on your
       // behalf is worse than a thing you were told about.
+      //
+      // Conditional, and that is the assertion worth having: this screen and
+      // this magic link are also how a returning user signs back in, so
+      // stating flatly that an account is being created is wrong for
+      // everybody after their first time. The screen cannot tell which they
+      // are — start-email answers identically for a known and an unknown
+      // address on purpose, so that it cannot be used to find out who has an
+      // account — so the sentence has to be true either way.
       install([_challenge]);
       await pumpSignIn(tester);
 
       expect(
         find.text(
-          'We create a personal account for you. '
+          'If you do not have an account yet, one is created for you. '
           'It owns the plans you publish.',
         ),
         findsOneWidget,
