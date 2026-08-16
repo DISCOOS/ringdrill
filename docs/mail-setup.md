@@ -145,11 +145,29 @@ account the *recipient* controls — but it is real:
 * the Resend quota, which is finite (the rollout plan records 3 000/month and
   100/day on the free tier).
 
-**The control is a rate limit**, enforced in the function against a strongly
-consistent store — the same shape as `lib/mcp-rate-limit.js`, and for the same
-reason: Netlify's declarative rate limiting is read during a deploy's
-post-processing stage, which this site's deploy path never runs. See
-[ADR-0079](./adrs/0079-start-email-rate-limit.md).
+**The control is a rate limit**, in `lib/auth/start-email-limit.js`. Two
+counters: **3 mails per address per hour**, counted whoever asks, and **20
+attempts per source IP per hour**. The first is the one that matters — it cannot
+be defeated by rotating IPs, so no one can flood a chosen person's inbox. The
+second protects the quota and the function meter.
+
+Both are overridable with `START_EMAIL_RECIPIENT_LIMIT` and
+`START_EMAIL_SOURCE_LIMIT` if the caps prove wrong in practice.
+
+Enforced in the function against a strongly consistent store, the same shape as
+`lib/mcp-rate-limit.js` and for the same reason: Netlify's declarative rate
+limiting is read during a deploy's post-processing stage, which this site's
+deploy path never runs.
+
+**A refusal is silent** — same response, same status, only the send suppressed —
+because a visible 429 would tell a caller which addresses are being mailed, which
+is the enumeration oracle the next section is about. Refusals are logged
+server-side (`[auth] start-email suppressed by <recipient|source> limit`), which
+is the only signal that somebody is working through addresses. It does not apply
+under `AUTH_MODE=mock`, where three sign-ins an hour would make local testing
+miserable and there is no production to protect.
+
+See [ADR-0079](./adrs/0079-start-email-rate-limit.md).
 
 Two alternatives were considered and rejected. A **BFF in front** moves the hop
 without adding a gate: whatever endpoint it exposes is equally unauthenticated

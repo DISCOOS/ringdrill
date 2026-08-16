@@ -9,6 +9,7 @@ import {
     exchangeCode, putHandoff, redeemAuthorization, redeemHandoff, startAuthorization,
 } from "./lib/auth/oauth.js";
 import { createMailer, sendTemplate } from "./lib/mail/index.js";
+import { createStartEmailLimiter } from "./lib/auth/start-email-limit.js";
 import { getStore } from "@netlify/blobs";
 
 /**
@@ -81,7 +82,12 @@ export function createHandler({
     // store, which is the O(all users) read this store layout exists to remove.
     sessionIndexStore = () => getStore(NS.SESSION_INDEX, strong),
     mailer = null,
+    // The abuse bound on start-email (ADR-0079). Built lazily so constructing a
+    // handler never touches Blobs.
+    startEmailLimiter = null,
 } = {}) {
+    let limiter = startEmailLimiter;
+    const limitSend = () => (limiter ??= createStartEmailLimiter());
     return async function (request) {
         const preflight = corsPreflight(request);
         if (preflight) return preflight;
@@ -133,24 +139,44 @@ export function createHandler({
 
         const { challengeId, code, expiresInMs } = await startChallenge(challengeStore(), { email, locale, now });
 
-        const send = mailer ?? createMailer({ env });
-        const url = `${env.PUBLIC_APP_ORIGIN || "https://ringdrill.app"}/auth/callback?c=${encodeURIComponent(challengeId)}&k=${encodeURIComponent(code)}`;
-        const sent = await sendTemplate(send, {
-            to: email, template: "signIn", locale,
-            params: { code, url, minutes: Math.round(expiresInMs / 60000) },
-            idempotencyKey: challengeId,
-        });
-
         // Under AUTH_MODE=mock the code comes back in the body, so the flow
         // can be completed without reading the mail at all (ADR-0073). Never in
         // live: the response would be the credential.
-        //
-        // The mail itself is still sent through whatever MAIL_PROVIDER selects
-        // — the two are separate seams, and mock does not imply a mail adapter.
-        // Locally that is MAIL_PROVIDER=console (see `make netlify-dev`), which
-        // prints the message instead of delivering it. Leaving it at the
-        // default answers 500 here, because Resend refuses to boot with no key.
         const mocked = resolveMode(env) === AUTH_MODES.MOCK;
+
+        // **The limit suppresses the send, never the response** (ADR-0079).
+        // This endpoint answers identically for an address that has an account
+        // and one that does not, and a visible 429 would undo that: it would
+        // tell a caller which addresses are being mailed. So a refusal costs
+        // exactly one thing, the mail, and is logged rather than returned.
+        //
+        // Not applied under mock, which is a developer's own machine and cannot
+        // load in production (ADR-0073's CONTEXT guard). Three sign-ins an hour
+        // is the right bound for a stranger and the wrong one for someone
+        // testing the flow.
+        const gate = mocked ? { allowed: true } : await limitSend().allowSend({ email, headers: request.headers });
+        if (!gate.allowed) {
+            // Visible to us even though it is invisible to the caller — this is
+            // the only signal that somebody is working through addresses.
+            console.warn(`[auth] start-email suppressed by ${gate.reason} limit`);
+        }
+
+        // The mail goes through whatever MAIL_PROVIDER selects — the two are
+        // separate seams, and mock does not imply a mail adapter. Locally that
+        // is MAIL_PROVIDER=console (see `make netlify-dev`), which prints the
+        // message instead of delivering it. Leaving it at the default answers
+        // 500 here, because Resend refuses to boot with no key.
+        let sent = null;
+        if (gate.allowed) {
+            const send = mailer ?? createMailer({ env });
+            const url = `${env.PUBLIC_APP_ORIGIN || "https://ringdrill.app"}/auth/callback?c=${encodeURIComponent(challengeId)}&k=${encodeURIComponent(code)}`;
+            sent = await sendTemplate(send, {
+                to: email, template: "signIn", locale,
+                params: { code, url, minutes: Math.round(expiresInMs / 60000) },
+                idempotencyKey: challengeId,
+            });
+        }
+
         return json({
             challengeId,
             expiresInMs,
