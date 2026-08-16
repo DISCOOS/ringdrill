@@ -6,32 +6,40 @@ consulted: []
 informed: []
 ---
 
-# ADR-0080: Make the magic link open the app, and never redeem it on load
+# ADR-0080: Emailed links open the app, and never act on load
 
 ## Context and problem statement
 
-Sign-in mail promises two ways in. The screen says so in as many words: *"We
-sent a link and a six-digit code to you. Either one works."*
+RingDrill sends two links by email, and **both are dead**.
 
-Only the code works. The link has never worked anywhere.
+Sign-in mail promises two ways in — the screen says so in as many words: *"We
+sent a link and a six-digit code to you. Either one works."* Only the code
+works. An invitation has no such fallback: the link is the entire message.
 
-The mail contains `${PUBLIC_APP_ORIGIN}/auth/callback?c=<challengeId>&k=<code>`,
-and `PUBLIC_APP_ORIGIN` defaults to the apex. Probed 2026-08-16:
+Both are built from `PUBLIC_APP_ORIGIN`, which defaults to the apex. Probed
+2026-08-16:
 
-| Surface | Today |
-|---|---|
-| `ringdrill.app/auth/callback` | **404** — nothing serves it |
-| `web.ringdrill.app/auth/callback` | 200, but only the PWA shell |
-| iOS AASA | declares `/i/*` only |
-| Android intent filters | `/i/` and `/o/` only |
-| App routing | no route for `/auth/callback` at all |
+| Emailed link | Apex | AASA | Intent filter | App route |
+|---|---|---|---|---|
+| `/auth/callback?c=&k=` — sign-in | **404** | ✗ | ✗ | ✗ |
+| `/invite/<token>` — invitation | **404** | ✗ | ✗ | **✓ `/invite/:token`** |
 
-So a person who taps the link in their mail — the obvious thing to do, and the
-thing the copy invites — lands on a 404. They then have to work out for
-themselves that the six characters further down the message are the way in.
+So a person who taps either link — the obvious thing to do, and for an
+invitation the *only* thing to do — lands on a 404. A sign-in recipient can
+recover by finding the six characters further down the message. An invitee
+cannot recover at all.
 
-**The path is also misnamed.** Three different things are called `auth/callback`
-and only one of them is this:
+The invitation route already knows what it was supposed to be. Its own comment
+says so:
+
+> A real route rather than a dialog, because the link arrives by email and is
+> opened cold — often on a device where nobody is signed in yet, and on mobile
+> as a universal link into the installed app.
+
+The route was built. The association entry and the served path never were.
+
+**The sign-in path is also misnamed.** Three different things are called
+`auth/callback` and only one of them is this:
 
 | Path | Direction | What it is |
 |---|---|---|
@@ -43,16 +51,28 @@ The first two are backend endpoints on the API origin. The third borrows their
 name for something else on a different origin, which is a collision that costs
 nothing today and will cost somebody an afternoon later.
 
+`/invite/` has no such problem — it collides with nothing and is already a live
+route in the app.
+
 Two further things shape the fix rather than merely following from it.
 
 **Mail is scanned, and scanners follow links.** Corporate mail security and
-link-preview generators fetch URLs before a human sees them. A challenge is
-single-use and is deleted on redemption, so a landing page that redeems on
-`GET` hands the user's sign-in to the scanner: by the time they tap, the
-challenge is gone and they are told the link is "unknown or used". That failure
-is unreproducible on the developer's machine, arrives only for users at
-organisations with such scanning, and looks exactly like a bug in the sign-in
-flow rather than a property of their mail provider.
+link-preview generators fetch URLs before a human sees them, and both of these
+links carry an action.
+
+A sign-in challenge is single-use and deleted on redemption, so a page that
+redeems on `GET` hands the user's sign-in to the scanner: by the time they tap,
+the challenge is gone and they are told the link is "unknown or used". That
+failure is unreproducible on the developer's machine, arrives only for users at
+organisations that scan, and looks exactly like a bug in our flow rather than a
+property of their mail provider.
+
+An invitation is worse in kind rather than degree. Accepting on `GET` would
+have a scanner join an organisation on somebody's behalf — a membership granted
+by a machine that was checking for malware. `InvitePage` already gets this
+right: it describes the invitation and accepts on a button press. The rule
+below is therefore not a new invention, it is the behaviour invitations already
+have, written down so the sign-in landing page matches it.
 
 **The link is a bearer credential.** Anyone holding it can sign in as that
 address until it expires or is used. That is equally true of the code, and is
@@ -61,8 +81,10 @@ kept in browser history far more casually than six characters are.
 
 ## Decision drivers
 
-* The link has to work on the two surfaces a person will actually open it on: a
-  phone with the app, and a browser anywhere.
+* Both links have to work on the two surfaces a person will actually open them
+  on: a phone with the app, and a browser anywhere.
+* An invitation has no fallback. A sign-in recipient can fall back to the code;
+  an invitee who cannot open the link has nothing else to try.
 * A universal link is only honoured for the host in the URL, and only if that
   host serves the association file. `ringdrill.app` already serves one;
   `web.ringdrill.app` serves none.
@@ -88,20 +110,25 @@ second link-bearing origin.
 
 Concretely:
 
-1. **The link becomes `<apex>/s/<challengeId>/<code>`.** One letter, matching
-   the convention the apex already uses for user-facing links — `/d/<slug>` for
-   downloads, `/i/<slug>` for install links — rather than the long
-   `/auth/callback`, which reads like the two backend endpoints above and is
-   not either of them. `/s/` for sign-in matches the app's own vocabulary and
-   leaves `/a/` free for accounts, which `/api/accounts/` and `AccountPage`
+1. **The sign-in link becomes `<apex>/s/<challengeId>/<code>`.** One letter,
+   matching the convention the apex already uses for user-facing links —
+   `/d/<slug>` for downloads, `/i/<slug>` for install links — rather than the
+   long `/auth/callback`, which reads like the two backend endpoints above and
+   is not either of them. `/s/` for sign-in matches the app's own vocabulary
+   and leaves `/a/` free for accounts, which `/api/accounts/` and `AccountPage`
    would otherwise make ambiguous. Path segments rather than `?c=&k=`: shorter,
    and a plaintext mail that wraps a long URL breaks the link in some clients.
-2. `/s/*` is added to the apex proxy Worker's routes and served by a function,
-   mirroring `/i/*` ([ADR-0015](./0015-shareable-install-links.md)).
-3. The path is added to both copies of the association file
+2. **The invitation link keeps `<apex>/invite/<token>`.** It collides with
+   nothing, and it is already a live route in the app — renaming it to match
+   `/s/`'s brevity would be churn against working code for the sake of a
+   pattern.
+3. Both paths are added to the apex proxy Worker's routes and served by a
+   function, mirroring `/i/*` ([ADR-0015](./0015-shareable-install-links.md)).
+4. Both are added to the two copies of the association file
    (`web/.well-known/` and `site/public/.well-known/`) and to the Android
    intent filter, alongside `/i/` and `/o/`.
-4. The app gains a route that takes the two segments and completes sign-in.
+5. The app gains a `/s/` route that completes sign-in. `/invite/:token` already
+   exists and needs nothing.
 
 **The association entry and the consumer ship together**, in one change, not as
 "register now, wire later".
@@ -122,36 +149,39 @@ iOS fails differently and just as quietly: a path absent from the AASA is not an
 error, it simply opens Safari — indistinguishable from the feature not having
 been built.
 
-### The landing page does not redeem
+### A landing page never acts on load
 
-**On the web, the page renders and waits for a tap.** It shows which address is
-signing in and a button; the redemption happens on the button, never on the
-`GET`. This is the whole defence against prefetching, and it is worth the extra
-tap precisely because the failure it prevents is invisible to us — it happens in
-somebody else's mail infrastructure and reports as "the link didn't work".
+**On the web, the page renders and waits for a tap.** It shows what is about to
+happen — which address is signing in, which organisation is being joined — and
+acts on a button, never on the `GET`. This is the whole defence against
+prefetching, and it is worth the extra tap precisely because the failure it
+prevents is invisible to us: it happens in somebody else's mail infrastructure
+and reports back as "the link didn't work".
 
 **In the app, opening *is* the tap.** A universal link only resolves to the app
-because a human tapped it; no scanner opens an iOS app. So the app may redeem
+because a human tapped it; no scanner opens an iOS app. So the app may act
 immediately, and asking for a second confirmation there would be ceremony
 protecting against nothing.
 
-That asymmetry is the one part of this most likely to be "tidied" into
-consistency later. It is deliberate: the two surfaces have different
-adversaries.
+That asymmetry is the part of this most likely to be "tidied" into consistency
+later. It is deliberate: the two surfaces have different adversaries.
 
 ### Consequences
 
 * Good: the copy becomes true. Both halves of "either one works" work.
-* Good: on a phone with the app installed, sign-in is one tap from the mail,
-  with no code to read or retype.
+* Good: **invitations start working at all.** They have no fallback, so every
+  invitation sent before this lands on a 404 and the invitee has nothing else
+  to try.
+* Good: on a phone with the app installed, both sign-in and accepting an
+  invitation are one tap from the mail.
 * Good: no new link-bearing origin, so ADR-0039's split holds and one
   association file governs every link RingDrill sends.
 * Good: a prefetching scanner costs the user nothing.
 * Bad: an extra tap on the web path, for a threat most users do not face.
-* Bad: three more places that must agree — the Worker route, the association
-  files, the intent filter — and a mismatch is silent. A path missing from the
-  AASA does not error; it just quietly opens Safari instead of the app, which
-  looks like the feature was never built.
+* Bad: three more places that must agree, now for two paths — the Worker
+  routes, the association files, the intent filter — and a mismatch is silent.
+  A path missing from the AASA does not error; it just quietly opens Safari
+  instead of the app, which looks like the feature was never built.
 * Bad: the credential is in a URL, so it reaches browser history and any access
   log along the way. Path segments rather than a query string keeps it out of
   the places that strip or redact `?…` specifically, but that is a small
@@ -198,7 +228,7 @@ adversaries.
 
 ## Links
 
-* [ADR-0024: Account and identity model](./0024-account-and-identity-model.md) — the challenge this link redeems.
+* [ADR-0024: Account and identity model](./0024-account-and-identity-model.md) — the challenge the sign-in link redeems, and the invitation model behind the other.
 * [ADR-0015: Shareable install links](./0015-shareable-install-links.md) — the `/i/*` shape this copies.
 * [ADR-0021: iOS bundle identifier](./0021-ios-bundle-identifier-app-ringdrill.md) — the app IDs the association file names.
 * [ADR-0039: Site, PWA and API origins](./0039-site-pwa-api-origins.md) — why link-bearing paths live on the apex.
