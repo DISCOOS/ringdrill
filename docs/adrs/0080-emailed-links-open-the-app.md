@@ -24,6 +24,10 @@ Both are built from `PUBLIC_APP_ORIGIN`, which defaults to the apex. Probed
 | `/auth/callback?c=&k=` — sign-in | **404** | ✗ | ✗ | ✗ |
 | `/invite/<token>` — invitation | **404** | ✗ | ✗ | **✓ `/invite/:token`** |
 
+Neither follows the shape the apex already uses for links people receive:
+`/d/<slug>` to download, `/i/<slug>` to install, `/o/<path>` to open a shared
+file. One is a two-segment backend-sounding path, the other a word.
+
 So a person who taps either link — the obvious thing to do, and for an
 invitation the *only* thing to do — lands on a 404. A sign-in recipient can
 recover by finding the six characters further down the message. An invitee
@@ -51,8 +55,8 @@ The first two are backend endpoints on the API origin. The third borrows their
 name for something else on a different origin, which is a collision that costs
 nothing today and will cost somebody an afternoon later.
 
-`/invite/` has no such problem — it collides with nothing and is already a live
-route in the app.
+`/invite/` has no such collision. Its problem is only that it is the odd one
+out.
 
 Two further things shape the fix rather than merely following from it.
 
@@ -118,17 +122,25 @@ Concretely:
    and leaves `/a/` free for accounts, which `/api/accounts/` and `AccountPage`
    would otherwise make ambiguous. Path segments rather than `?c=&k=`: shorter,
    and a plaintext mail that wraps a long URL breaks the link in some clients.
-2. **The invitation link keeps `<apex>/invite/<token>`.** It collides with
-   nothing, and it is already a live route in the app — renaming it to match
-   `/s/`'s brevity would be churn against working code for the sake of a
-   pattern.
+2. **The invitation link becomes `<apex>/j/<token>`** — `j` for join, which is
+   what the recipient does and the verb the invitation itself uses. The app
+   route moves with it; keeping `/invite/:token` internally would leave two
+   names for one thing, which is the problem being fixed.
+
+   Renaming a live route is normally not worth it. It is worth it here because
+   **no invitation has ever been sent**: production holds no accounts (the
+   ADR-0077 backfill scanned zero members and zero sessions on 2026-08-12), an
+   invitation can only be sent by an account owner, and the link has never
+   resolved anywhere regardless. There is nothing to keep working. That stops
+   being true the first time somebody invites a colleague, and the cost only
+   rises from there.
 3. Both paths are added to the apex proxy Worker's routes and served by a
    function, mirroring `/i/*` ([ADR-0015](./0015-shareable-install-links.md)).
 4. Both are added to the two copies of the association file
    (`web/.well-known/` and `site/public/.well-known/`) and to the Android
    intent filter, alongside `/i/` and `/o/`.
-5. The app gains a `/s/` route that completes sign-in. `/invite/:token` already
-   exists and needs nothing.
+5. The app gains a `/s/` route that completes sign-in, and `/invite/:token`
+   becomes `/j/:token` — the page behind it is unchanged.
 
 **The association entry and the consumer ship together**, in one change, not as
 "register now, wire later".
@@ -182,6 +194,10 @@ later. It is deliberate: the two surfaces have different adversaries.
   routes, the association files, the intent filter — and a mismatch is silent.
   A path missing from the AASA does not error; it just quietly opens Safari
   instead of the app, which looks like the feature was never built.
+* Bad: `/d/`, `/i/`, `/o/`, `/s/` and `/j/` are terse to the point of being
+  unguessable from outside the codebase. That is the price of the brevity, and
+  the brevity is bought for a reason — these go in mail bodies, where a long URL
+  wraps and a wrapped URL stops being a link in some clients.
 * Bad: the credential is in a URL, so it reaches browser history and any access
   log along the way. Path segments rather than a query string keeps it out of
   the places that strip or redact `?…` specifically, but that is a small
