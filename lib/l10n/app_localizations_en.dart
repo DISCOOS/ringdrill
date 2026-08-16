@@ -1200,9 +1200,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountTitleMine => 'My account';
 
   @override
-  String get accountYouTitle => 'You';
-
-  @override
   String get accountOwnerTitle => 'Owner';
 
   @override
@@ -1230,6 +1227,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountTitle => 'Account';
+
+  @override
+  String get accountMembersEmpty =>
+      'Nobody else yet. Invite the people you plan with.';
 
   @override
   String get accountMembersTitle => 'Members';

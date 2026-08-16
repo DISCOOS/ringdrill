@@ -1324,10 +1324,6 @@
   "@accountTitleMine": {
     "description": "Title of the personal account page. Not the account's display name: that is created carrying the user's own, which is their email address until they set one, and an address in a title bar says nothing about where you are."
   },
-  "accountYouTitle": "You",
-  "@accountYouTitle": {
-    "description": "Heading of the section above Members on a personal account. The owner is not listed as a member — there is exactly one, and it is almost always the reader."
-  },
   "accountOwnerTitle": "Owner",
   "@accountOwnerTitle": {
     "description": "The same section on an organisation, where the owner may be somebody else."
@@ -1352,6 +1348,10 @@
   "accountNicknameLabel": "Nickname",
   "accountNicknameHelp": "What people call you on the day",
   "accountTitle": "Account",
+  "accountMembersEmpty": "Nobody else yet. Invite the people you plan with.",
+  "@accountMembersEmpty": {
+    "description": "Shown when the members list holds only the owner, who is not listed there. The section still renders, because it is where inviting lives."
+  },
   "accountMembersTitle": "Members",
   "accountRoleOwner": "Owner",
   "accountRoleMember": "Member",

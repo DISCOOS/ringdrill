@@ -105,29 +105,42 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                TextField(
-                  controller: _full,
-                  enabled: !_busy,
-                  autofocus: true,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    labelText: l.accountFullNameLabel,
-                    border: const OutlineInputBorder(),
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _nickname,
-                  enabled: !_busy,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    labelText: l.accountNicknameLabel,
-                    helperText: l.accountNicknameHelp,
-                    border: const OutlineInputBorder(),
-                  ),
-                  onChanged: (_) => setState(() {}),
-                  onSubmitted: (_) => ready && !_busy ? _save(l) : null,
+                // The same shape as the account page's, and the same bare
+                // decoration the form screens elsewhere use — this screen and
+                // that section ask for the identical two things, so looking
+                // different would be the odd part.
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: TextFormField(
+                        controller: _full,
+                        enabled: !_busy,
+                        autofocus: true,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: InputDecoration(
+                          labelText: l.accountFullNameLabel,
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        controller: _nickname,
+                        enabled: !_busy,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: InputDecoration(
+                          labelText: l.accountNicknameLabel,
+                        ),
+                        onChanged: (_) => setState(() {}),
+                        onFieldSubmitted: (_) =>
+                            ready && !_busy ? _save(l) : null,
+                      ),
+                    ),
+                  ],
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 16),

@@ -1994,12 +1994,6 @@ abstract class AppLocalizations {
   /// **'My account'**
   String get accountTitleMine;
 
-  /// Heading of the section above Members on a personal account. The owner is not listed as a member — there is exactly one, and it is almost always the reader.
-  ///
-  /// In en, this message translates to:
-  /// **'You'**
-  String get accountYouTitle;
-
   /// The same section on an organisation, where the owner may be somebody else.
   ///
   /// In en, this message translates to:
@@ -2053,6 +2047,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account'**
   String get accountTitle;
+
+  /// Shown when the members list holds only the owner, who is not listed there. The section still renders, because it is where inviting lives.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody else yet. Invite the people you plan with.'**
+  String get accountMembersEmpty;
 
   /// No description provided for @accountMembersTitle.
   ///

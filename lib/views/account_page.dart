@@ -95,13 +95,6 @@ class _AccountPageState extends State<AccountPage> {
               : l.accountTitleMine,
         ),
       ),
-      floatingActionButton: _isOwner
-          ? FloatingActionButton.extended(
-              onPressed: _invite,
-              icon: const Icon(Icons.person_add_alt),
-              label: Text(l.accountInviteAction),
-            )
-          : null,
       body: FutureBuilder<AccountRoster>(
         future: _roster,
         builder: (context, snapshot) {
@@ -151,16 +144,46 @@ class _AccountPageState extends State<AccountPage> {
                 owner: _owner(roster),
                 onChanged: _reload,
               ),
-              if (_others(roster).isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Text(
-                    l.accountMembersTitle,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+              // **The section renders even with nobody in it**, because it is
+              // where inviting lives. Hiding it when empty left an owner with
+              // no way to add the first person, and left the page showing two
+              // adjacent dividers with nothing between them.
+              const Divider(height: 32),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l.accountMembersTitle,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    // In the section it belongs to, rather than a floating
+                    // button over the page: it acts on this list and on
+                    // nothing else, and as a FAB it also sat on top of
+                    // "Delete account".
+                    if (_isOwner)
+                      TextButton.icon(
+                        onPressed: _invite,
+                        icon: const Icon(Icons.person_add_alt, size: 20),
+                        label: Text(l.accountInviteAction),
+                      ),
+                  ],
                 ),
+              ),
+              if (_others(roster).isEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Text(
+                    l.accountMembersEmpty,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                )
+              else
                 ..._others(roster).map((m) => _memberTile(context, l, m)),
-              ],
               // Devices belong to the *user*, not to an account, so they
               // appear once — on the personal account, which is the "your
               // account" page. Every user has one (ADR-0024 creates it at
@@ -705,15 +728,17 @@ class _OwnerSectionState extends State<_OwnerSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(
-            widget.account.isOrganisation
-                ? l.accountOwnerTitle
-                : l.accountYouTitle,
-            style: theme.textTheme.titleMedium,
+        // No heading on a personal account: the title bar already says "My
+        // account", and a "You" above your own name is the same word twice.
+        // An organisation keeps one, where the owner may be somebody else.
+        if (widget.account.isOrganisation)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              l.accountOwnerTitle,
+              style: theme.textTheme.titleMedium,
+            ),
           ),
-        ),
         if (owner != null)
           ListTile(
             leading: const Icon(Icons.person),
@@ -734,31 +759,41 @@ class _OwnerSectionState extends State<_OwnerSection> {
               ),
             ),
           ),
+          // One row, and no explicit border: the form screens elsewhere
+          // (exercise, person, location) use a bare `InputDecoration` and let
+          // the theme draw the field. Two stacked full-width boxes made two
+          // short names look like a form of its own.
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: TextField(
-              controller: _full,
-              enabled: !_busy,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                labelText: l.accountFullNameLabel,
-                border: const OutlineInputBorder(),
-              ),
-              onChanged: (_) => setState(() => _dirty = true),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: TextField(
-              controller: _nickname,
-              enabled: !_busy,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                labelText: l.accountNicknameLabel,
-                helperText: l.accountNicknameHelp,
-                border: const OutlineInputBorder(),
-              ),
-              onChanged: (_) => setState(() => _dirty = true),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: TextFormField(
+                    controller: _full,
+                    enabled: !_busy,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: InputDecoration(
+                      labelText: l.accountFullNameLabel,
+                    ),
+                    onChanged: (_) => setState(() => _dirty = true),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: TextFormField(
+                    controller: _nickname,
+                    enabled: !_busy,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: InputDecoration(
+                      labelText: l.accountNicknameLabel,
+                    ),
+                    onChanged: (_) => setState(() => _dirty = true),
+                  ),
+                ),
+              ],
             ),
           ),
           if (_error != null)

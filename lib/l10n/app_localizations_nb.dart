@@ -1197,9 +1197,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get accountTitleMine => 'Min konto';
 
   @override
-  String get accountYouTitle => 'Deg';
-
-  @override
   String get accountOwnerTitle => 'Eier';
 
   @override
@@ -1227,6 +1224,10 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get accountTitle => 'Konto';
+
+  @override
+  String get accountMembersEmpty =>
+      'Ingen andre ennå. Inviter dem du planlegger sammen med.';
 
   @override
   String get accountMembersTitle => 'Medlemmer';
