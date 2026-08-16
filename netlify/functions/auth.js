@@ -182,11 +182,21 @@ export function createHandler({
         if (gate.allowed) {
             const send = mailer ?? createMailer({ env });
             const url = `${appOrigin(env)}/s/${encodeURIComponent(challengeId)}/${encodeURIComponent(code)}`;
-            sent = await sendTemplate(send, {
-                to: email, template: "signIn", locale,
-                params: { code, url, minutes: Math.round(expiresInMs / 60000) },
-                idempotencyKey: challengeId,
-            });
+            try {
+                sent = await sendTemplate(send, {
+                    to: email, template: "signIn", locale,
+                    params: { code, url, minutes: Math.round(expiresInMs / 60000) },
+                    idempotencyKey: challengeId,
+                });
+            } catch (err) {
+                // The budget was spent on a send that did not happen, and the
+                // reason is ours rather than the caller's. Give it back before
+                // the failure propagates, or a mail outage quietly locks people
+                // out for the rest of the window — which is exactly how three
+                // 500s cost a real address its whole hourly allowance.
+                await limitSend().refundSend({ email });
+                throw err;
+            }
         }
 
         return json({

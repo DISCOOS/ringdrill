@@ -239,5 +239,47 @@ export function createRateLimiter({
 
             return { allowed: true, remaining: limit - used - cost };
         },
+
+        /// Gives `cost` back to `key`, for work that was allowed and then did not
+        /// happen.
+        ///
+        /// `consume` has to spend before the work, because the decision is what
+        /// gates it. When the work then fails for a reason that has nothing to do
+        /// with the caller — a provider outage, say — the spend was a charge for
+        /// nothing, and the caller is left unable to retry the thing that never
+        /// occurred. That is not a theoretical case: three sign-in attempts that
+        /// 500'd inside the mailer emptied a real person's budget without a single
+        /// mail being sent.
+        ///
+        /// Only ever refunds within the current window, and never below zero. A
+        /// refund arriving after the window rolled over must not resurrect it: that
+        /// would hand back budget the caller already got for free, and — worse — let
+        /// a caller who can reliably make the work fail spend an unbounded number of
+        /// times inside one window.
+        ///
+        /// Silent on every failure, like the rest of this file. A refund that cannot
+        /// be written costs the caller some budget; a refund that throws costs them
+        /// the request.
+        async refund(key, cost) {
+            if (cost <= 0) return;
+
+            let s;
+            try {
+                s = blobs();
+            } catch {
+                return;
+            }
+
+            try {
+                const entry = await s.get(key, { type: "json" });
+                if (!entry || typeof entry.windowStart !== "number") return;
+                if (now() - entry.windowStart >= windowMs) return;
+
+                const count = Math.max(0, (entry.count ?? 0) - cost);
+                await s.set(key, JSON.stringify({ windowStart: entry.windowStart, count }));
+            } catch {
+                // Uncounted, like a failed write in `consume`.
+            }
+        },
     };
 }

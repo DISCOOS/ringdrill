@@ -247,3 +247,93 @@ test("under AUTH_MODE=mock the limit does not apply", async () => {
     for (let i = 0; i < 4; i++) await handler(start("kari@example.com", "203.0.113.1"));
     assert.equal(mailer.outbox.length, 4);
 });
+
+// ---------- the daily cap ----------
+
+test("a busy hour is normal, a busy day is not", async () => {
+    // The reason there are two windows. The hourly cap has to be generous
+    // enough for somebody setting up four devices, and on its own that same
+    // allowance repeats every hour — 144 messages a day to a chosen inbox.
+    const { limiter: l, advance } = limiter({ recipientLimit: 6, recipientDayLimit: 20 });
+    const to = { email: "kari@example.com", headers: headersFor("203.0.113.1") };
+
+    let sent = 0;
+    for (let hour = 0; hour < 8; hour++) {
+        for (let i = 0; i < 6; i++) if ((await l.allowSend(to)).allowed) sent += 1;
+        advance(60 * 60 * 1000);
+    }
+
+    assert.equal(sent, 20, "the day bounds the total, however the hours are spent");
+});
+
+test("the day cap lifts, so nobody is locked out for good", async () => {
+    const { limiter: l, advance } = limiter({ recipientLimit: 6, recipientDayLimit: 2 });
+    const to = { email: "kari@example.com", headers: headersFor("203.0.113.1") };
+
+    await l.allowSend(to);
+    await l.allowSend(to);
+    assert.equal((await l.allowSend(to)).reason, "recipient_day");
+
+    advance(24 * 60 * 60 * 1000);
+    assert.equal((await l.allowSend(to)).allowed, true);
+});
+
+test("being stopped by the day cap does not also cost the hour", async () => {
+    // The hourly token is spent before the daily one is checked, so without the
+    // refund a caller refused by the day would silently lose the next hour's
+    // budget too — and would keep losing it, one send per attempt, for as long
+    // as they kept trying.
+    const { limiter: l, advance } = limiter({ recipientLimit: 6, recipientDayLimit: 1 });
+    const to = { email: "kari@example.com", headers: headersFor("203.0.113.1") };
+
+    await l.allowSend(to);
+    for (let i = 0; i < 5; i++) {
+        assert.equal((await l.allowSend(to)).reason, "recipient_day");
+    }
+
+    // The day is what is exhausted. Once it rolls over the hour must still have
+    // its full budget, which it does not if those five refusals were charged.
+    advance(24 * 60 * 60 * 1000);
+    assert.equal((await l.allowSend(to)).allowed, true);
+});
+
+// ---------- a send that never happened ----------
+
+test("a failed send is refunded, so a mail outage is not a lockout", async () => {
+    // This is not hypothetical: three sign-in attempts that 500'd inside the
+    // mailer emptied a real address's allowance without one mail being sent,
+    // and the refusals that followed were invisible by design.
+    const blobs = fakeStore();
+    const challenges = fakeStore();
+    let broken = true;
+    const mailer = createMockAdapter();
+    const flaky = {
+        provider: "mock",
+        async send(message) {
+            if (broken) throw new Error("resend send failed: 503");
+            return mailer.send(message);
+        },
+    };
+    const handler = createHandler({
+        env: {
+            AUTH_MODE: "live",
+            AUTH_SIGNING_KEY_PRIVATE: "unused-here",
+            PUBLIC_APP_ORIGIN: "https://ringdrill.app",
+        },
+        challengeStore: () => challenges,
+        mailer: flaky,
+        startEmailLimiter: createStartEmailLimiter({
+            blobs: () => blobs, recipientLimit: 3, sourceLimit: 20,
+        }),
+    });
+
+    for (let i = 0; i < 3; i++) {
+        const res = await handler(start("kari@example.com", "203.0.113.1"));
+        assert.equal(res.status, 500, "the provider failure surfaces");
+    }
+
+    broken = false;
+    for (let i = 0; i < 3; i++) await handler(start("kari@example.com", "203.0.113.1"));
+
+    assert.equal(mailer.outbox.length, 3, "the whole allowance survived the outage");
+});

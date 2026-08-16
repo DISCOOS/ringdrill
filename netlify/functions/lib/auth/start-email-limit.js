@@ -35,13 +35,34 @@ import { createRateLimiter } from "../mcp-rate-limit.js";
  * outages bought — is documented there and applies here for the same reasons.
  */
 
-/** Emails to one address per hour, counted whoever asks. */
-export const RECIPIENT_LIMIT = Number(process.env.START_EMAIL_RECIPIENT_LIMIT ?? 3);
+/**
+ * Emails to one address per hour, counted whoever asks.
+ *
+ * **Six because a real sign-in is not one send.** Somebody setting up an
+ * account puts it on a phone, a tablet, a laptop and the PWA, each of which
+ * needs its own link, and at least one of those will be retried because the
+ * mail was slow or went to spam. A cap that a first-time user reaches by using
+ * the product correctly is not an abuse bound, it is an outage — and a silent
+ * one, since the refusal is invisible by design.
+ */
+export const RECIPIENT_LIMIT = Number(process.env.START_EMAIL_RECIPIENT_LIMIT ?? 6);
+
+/**
+ * And per day, which is the bound that actually constrains harassment.
+ *
+ * One window cannot do both jobs: the burst allowance has to be generous
+ * enough for the multi-device hour above, and an hourly cap on its own permits
+ * that burst *every hour*, which is 144 messages a day to a chosen inbox. The
+ * pair says what is meant — a busy hour is normal, a busy day is not.
+ */
+export const RECIPIENT_DAY_LIMIT = Number(process.env.START_EMAIL_RECIPIENT_DAY_LIMIT ?? 20);
 
 /** Distinct sign-in attempts from one source per hour. */
 export const SOURCE_LIMIT = Number(process.env.START_EMAIL_SOURCE_LIMIT ?? 20);
 
 export const WINDOW_MS = 60 * 60 * 1000;
+
+export const DAY_MS = 24 * 60 * 60 * 1000;
 
 const NS = "start-email-limit";
 
@@ -57,6 +78,18 @@ const NS = "start-email-limit";
 export function recipientKey(email) {
     const normalised = String(email ?? "").trim().toLowerCase();
     return `to:${createHash("sha256").update(`ringdrill-start-email:${normalised}`).digest("hex").slice(0, 32)}`;
+}
+
+/**
+ * The daily counter's key for a recipient already hashed by [recipientKey].
+ *
+ * A suffix rather than a second hash of the address: the two windows must not
+ * share an entry — one would overwrite the other's `windowStart` and both
+ * counters would reset on the hour — and deriving it here keeps the address
+ * itself out of a second call site.
+ */
+export function dayKey(recipient) {
+    return `${recipient}:day`;
 }
 
 export function sourceKey(headers) {
@@ -92,21 +125,48 @@ export function createStartEmailLimiter({
     blobs = store,
     now = () => Date.now(),
     recipientLimit = RECIPIENT_LIMIT,
+    recipientDayLimit = RECIPIENT_DAY_LIMIT,
     sourceLimit = SOURCE_LIMIT,
     windowMs = WINDOW_MS,
+    dayMs = DAY_MS,
 } = {}) {
     const bySource = createRateLimiter({ blobs, now, limit: sourceLimit, windowMs });
     const byRecipient = createRateLimiter({ blobs, now, limit: recipientLimit, windowMs });
+    const byRecipientDay = createRateLimiter({ blobs, now, limit: recipientDayLimit, windowMs: dayMs });
 
     return {
         async allowSend({ email, headers }) {
             const source = await bySource.consume(sourceKey(headers), 1);
             if (!source.allowed) return { allowed: false, reason: "source" };
 
-            const recipient = await byRecipient.consume(recipientKey(email), 1);
-            if (!recipient.allowed) return { allowed: false, reason: "recipient" };
+            const key = recipientKey(email);
+            const hour = await byRecipient.consume(key, 1);
+            if (!hour.allowed) return { allowed: false, reason: "recipient" };
+
+            const day = await byRecipientDay.consume(dayKey(key), 1);
+            if (!day.allowed) {
+                // The hourly token was already spent on a request that is not
+                // going to send. Hand it back, or a caller stopped by the daily
+                // cap also loses the next hour's budget for nothing.
+                await byRecipient.refund(key, 1);
+                return { allowed: false, reason: "recipient_day" };
+            }
 
             return { allowed: true };
+        },
+
+        /// Undo the spend for a send that was allowed and then failed.
+        ///
+        /// The mail provider is the only thing between `allowSend` and delivery,
+        /// and its failures say nothing about the caller — so charging for one
+        /// leaves a person unable to retry the request that never happened. It
+        /// also cannot be used to probe: a provider outage looks the same for an
+        /// address that has an account and one that does not, which is the
+        /// property `start-email` is built around.
+        async refundSend({ email }) {
+            const key = recipientKey(email);
+            await byRecipient.refund(key, 1);
+            await byRecipientDay.refund(dayKey(key), 1);
         },
     };
 }
