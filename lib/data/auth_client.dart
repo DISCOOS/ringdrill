@@ -50,14 +50,14 @@ class AuthUser {
   /// a full name or nothing, and guessing would produce "Kenneth" for a team
   /// with two of them, or the local part of an email for anybody who signed in
   /// with a code.
-  final String shortName;
+  final String nickname;
 
   final String? email;
 
   const AuthUser({
     required this.id,
     required this.displayName,
-    this.shortName = '',
+    this.nickname = '',
     this.email,
   });
 
@@ -67,21 +67,21 @@ class AuthUser {
   /// is what account creation falls back to when a provider offered nothing.
   /// It is a placeholder rather than a name somebody chose.
   bool get needsNames =>
-      shortName.isEmpty ||
+      nickname.isEmpty ||
       displayName.isEmpty ||
       (email != null && displayName == email);
 
   factory AuthUser.fromJson(Map<String, dynamic> j) => AuthUser(
     id: j['id'] as String,
     displayName: (j['displayName'] as String?) ?? '',
-    shortName: (j['shortName'] as String?) ?? '',
+    nickname: (j['nickname'] as String?) ?? '',
     email: j['email'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'displayName': displayName,
-    'shortName': shortName,
+    'nickname': nickname,
     'email': ?email,
   };
 }
@@ -527,13 +527,13 @@ class AuthClient {
   Future<AuthUser> updateNames({
     required String token,
     String? displayName,
-    String? shortName,
+    String? nickname,
   }) async {
     final j = await _send(
       'PATCH',
       'auth/me',
       token: token,
-      body: {'displayName': ?displayName, 'shortName': ?shortName},
+      body: {'displayName': ?displayName, 'nickname': ?nickname},
     );
     return AuthUser.fromJson(j['user'] as Map<String, dynamic>);
   }

@@ -372,12 +372,12 @@ test("a user sets their own names, and the personal account follows", async () =
     const res = await h.handler(new Request("https://api.ringdrill.app/api/auth/me", {
         method: "PATCH",
         headers: { "content-type": "application/json", authorization: `Bearer ${session.accessToken}` },
-        body: JSON.stringify({ displayName: "Kari Nordmann", shortName: "Kari" }),
+        body: JSON.stringify({ displayName: "Kari Nordmann", nickname: "Kari" }),
     }));
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.user.displayName, "Kari Nordmann");
-    assert.equal(body.user.shortName, "Kari");
+    assert.equal(body.user.nickname, "Kari");
 
     const me = await (await h.handler(new Request("https://api.ringdrill.app/api/auth/me", {
         headers: { authorization: `Bearer ${session.accessToken}` },
@@ -403,16 +403,16 @@ test("renaming yourself never renames an organisation", async () => {
     assert.equal(org.displayName, "Red Cross Bergen");
 });
 
-test("a short name starts empty rather than guessed", async () => {
+test("a nickname starts empty rather than guessed", async () => {
     // A provider gives a full name or nothing, and never what a person is
     // called on the day. Deriving one would produce the local part of an email
     // for anybody who signed in with a code.
     const h = harness();
     const { session } = await signIn(h);
-    assert.equal(session.user.shortName, "");
+    assert.equal(session.user.nickname, "");
 });
 
-test("a display name cannot be cleared, but a short name can", async () => {
+test("a display name cannot be cleared, but a nickname can", async () => {
     const h = harness();
     const { session } = await signIn(h);
     const patch = (body) => h.handler(new Request("https://api.ringdrill.app/api/auth/me", {
@@ -425,7 +425,7 @@ test("a display name cannot be cleared, but a short name can", async () => {
     // this person nameless on every screen.
     assert.equal((await patch({ displayName: "  " })).status, 400);
     assert.equal((await patch({})).status, 400, "nothing to update is a mistake, not a no-op");
-    assert.equal((await patch({ shortName: "" })).status, 200, "empty is a short name's legitimate state");
+    assert.equal((await patch({ nickname: "" })).status, 200, "empty is a nickname's legitimate state");
 });
 
 test("PATCH me renames only the caller", async () => {

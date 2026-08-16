@@ -390,7 +390,7 @@ export async function resolveIdentity(
         // team with two, or the local part of an email for anyone who signed
         // in with a code. Empty is the honest state and is what the app asks
         // the person to fill in (DESIGN-015 §3.7).
-        shortName: "",
+        nickname: "",
         primaryEmail: addr || null,
         primaryEmailVerified: !!(addr && emailVerified),
         createdAt: ts,
@@ -429,18 +429,18 @@ export async function resolveIdentity(
  * and renaming yourself must not rename it.
  *
  * Blank is not a way to clear a display name: it is the fallback chain from
- * creation, so an empty value would leave the user nameless. `shortName` may
+ * creation, so an empty value would leave the user nameless. `nickname` may
  * be cleared, because empty is its legitimate initial state.
  */
-export async function updateUserNames(userId, { displayName, shortName }, stores = defaultStores) {
+export async function updateUserNames(userId, { displayName, nickname }, stores = defaultStores) {
     const user = await getUser(userId, stores);
     if (!user) return { ok: false, reason: "no_such_user" };
 
     const nextDisplay = typeof displayName === "string" ? displayName.trim() : null;
-    const nextShort = typeof shortName === "string" ? shortName.trim() : null;
+    const nextShort = typeof nickname === "string" ? nickname.trim() : null;
 
     if (nextDisplay) user.displayName = nextDisplay;
-    if (nextShort !== null) user.shortName = nextShort;
+    if (nextShort !== null) user.nickname = nextShort;
     await putJson(stores.users(), userId, user);
 
     if (nextDisplay) {

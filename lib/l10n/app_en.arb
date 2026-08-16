@@ -1332,13 +1332,13 @@
   "@accountOwnerTitle": {
     "description": "The same section on an organisation, where the owner may be somebody else."
   },
-  "accountNamesHint": "Your full name identifies you to the people you work with. The short name is what fits on a roster and a station board.",
+  "accountNamesHint": "Your full name identifies you to the people you work with. The nickname is what fits on a roster and a station board.",
   "@accountNamesHint": {
     "description": "Explains why two names are asked for, so the second does not read as a duplicate of the first."
   },
   "accountFullNameLabel": "Full name",
-  "accountShortNameLabel": "Short name",
-  "accountShortNameHelp": "What people call you on the day",
+  "accountNicknameLabel": "Nickname",
+  "accountNicknameHelp": "What people call you on the day",
   "accountTitle": "Account",
   "accountMembersTitle": "Members",
   "accountRoleOwner": "Owner",

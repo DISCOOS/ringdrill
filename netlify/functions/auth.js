@@ -77,7 +77,7 @@ function publicUser(user) {
         // Empty until the person fills it in. Sent as "" rather than omitted so
         // a client can tell "not set yet" from "this build does not know about
         // it" — the first is a prompt to show, the second is not.
-        shortName: user.shortName ?? "",
+        nickname: user.nickname ?? "",
         email: user.primaryEmail,
     };
 }
@@ -469,7 +469,7 @@ export function createHandler({
 
         const body = await request.json().catch(() => ({}));
         const displayName = typeof body.displayName === "string" ? body.displayName.trim() : null;
-        const shortName = typeof body.shortName === "string" ? body.shortName.trim() : null;
+        const nickname = typeof body.nickname === "string" ? body.nickname.trim() : null;
 
         // A display name is what every other screen shows this person as, so
         // clearing it would leave them nameless everywhere. Refused rather than
@@ -477,14 +477,14 @@ export function createHandler({
         if (displayName !== null && displayName.length === 0) {
             return json({ error: "display_name_required" }, 400);
         }
-        if (displayName === null && shortName === null) {
+        if (displayName === null && nickname === null) {
             return json({ error: "nothing_to_update" }, 400);
         }
-        if ((displayName?.length ?? 0) > 80 || (shortName?.length ?? 0) > 40) {
+        if ((displayName?.length ?? 0) > 80 || (nickname?.length ?? 0) > 40) {
             return json({ error: "name_too_long" }, 400);
         }
 
-        const updated = await updateUserNames(principal.userId, { displayName, shortName }, stores);
+        const updated = await updateUserNames(principal.userId, { displayName, nickname }, stores);
         if (!updated.ok) return json({ error: updated.reason }, 404);
         return json({ user: publicUser(updated.user) });
     }

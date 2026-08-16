@@ -1207,16 +1207,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountNamesHint =>
-      'Your full name identifies you to the people you work with. The short name is what fits on a roster and a station board.';
+      'Your full name identifies you to the people you work with. The nickname is what fits on a roster and a station board.';
 
   @override
   String get accountFullNameLabel => 'Full name';
 
   @override
-  String get accountShortNameLabel => 'Short name';
+  String get accountNicknameLabel => 'Nickname';
 
   @override
-  String get accountShortNameHelp => 'What people call you on the day';
+  String get accountNicknameHelp => 'What people call you on the day';
 
   @override
   String get accountTitle => 'Account';

@@ -1204,16 +1204,16 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get accountNamesHint =>
-      'Fullt navn identifiserer deg for dem du jobber med. Kortnavnet er det som får plass på en mannskapsliste og en posttavle.';
+      'Fullt navn identifiserer deg for dem du jobber med. Kallenavnet er det som får plass på en mannskapsliste og en posttavle.';
 
   @override
   String get accountFullNameLabel => 'Fullt navn';
 
   @override
-  String get accountShortNameLabel => 'Kortnavn';
+  String get accountNicknameLabel => 'Kallenavn';
 
   @override
-  String get accountShortNameHelp => 'Det folk kaller deg på øvelsen';
+  String get accountNicknameHelp => 'Det folk kaller deg på øvelsen';
 
   @override
   String get accountTitle => 'Konto';

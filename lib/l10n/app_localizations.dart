@@ -2009,7 +2009,7 @@ abstract class AppLocalizations {
   /// Explains why two names are asked for, so the second does not read as a duplicate of the first.
   ///
   /// In en, this message translates to:
-  /// **'Your full name identifies you to the people you work with. The short name is what fits on a roster and a station board.'**
+  /// **'Your full name identifies you to the people you work with. The nickname is what fits on a roster and a station board.'**
   String get accountNamesHint;
 
   /// No description provided for @accountFullNameLabel.
@@ -2018,17 +2018,17 @@ abstract class AppLocalizations {
   /// **'Full name'**
   String get accountFullNameLabel;
 
-  /// No description provided for @accountShortNameLabel.
+  /// No description provided for @accountNicknameLabel.
   ///
   /// In en, this message translates to:
-  /// **'Short name'**
-  String get accountShortNameLabel;
+  /// **'Nickname'**
+  String get accountNicknameLabel;
 
-  /// No description provided for @accountShortNameHelp.
+  /// No description provided for @accountNicknameHelp.
   ///
   /// In en, this message translates to:
   /// **'What people call you on the day'**
-  String get accountShortNameHelp;
+  String get accountNicknameHelp;
 
   /// No description provided for @accountTitle.
   ///

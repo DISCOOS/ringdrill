@@ -641,7 +641,7 @@ class _OwnerSection extends StatefulWidget {
 
 class _OwnerSectionState extends State<_OwnerSection> {
   final _full = TextEditingController();
-  final _short = TextEditingController();
+  final _nickname = TextEditingController();
 
   bool _busy = false;
   String? _error;
@@ -659,13 +659,13 @@ class _OwnerSectionState extends State<_OwnerSection> {
     // your name" looks answered.
     final display = user?.displayName ?? '';
     _full.text = (display == user?.email) ? '' : display;
-    _short.text = user?.shortName ?? '';
+    _nickname.text = user?.nickname ?? '';
   }
 
   @override
   void dispose() {
     _full.dispose();
-    _short.dispose();
+    _nickname.dispose();
     super.dispose();
   }
 
@@ -683,7 +683,7 @@ class _OwnerSectionState extends State<_OwnerSection> {
     try {
       await AuthService.instance.updateNames(
         displayName: _full.text.trim(),
-        shortName: _short.text.trim(),
+        nickname: _nickname.text.trim(),
       );
       if (!mounted) return;
       setState(() => _dirty = false);
@@ -750,12 +750,12 @@ class _OwnerSectionState extends State<_OwnerSection> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: TextField(
-              controller: _short,
+              controller: _nickname,
               enabled: !_busy,
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
-                labelText: l.accountShortNameLabel,
-                helperText: l.accountShortNameHelp,
+                labelText: l.accountNicknameLabel,
+                helperText: l.accountNicknameHelp,
                 border: const OutlineInputBorder(),
               ),
               onChanged: (_) => setState(() => _dirty = true),
