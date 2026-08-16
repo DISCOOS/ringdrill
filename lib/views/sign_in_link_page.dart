@@ -108,38 +108,62 @@ class _SignInLinkPageState extends State<SignInLinkPage> {
       appBar: AppBar(title: Text(l.signInLinkTitle)),
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.all(24),
-              children: [
-                if (_done) ...[
-                  Text(l.signInLinkDone, style: theme.textTheme.bodyLarge),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: () => context.go('/'),
-                    child: Text(l.signInLinkContinue),
+          // Scrollable rather than a plain Column, so a short viewport — a
+          // phone in landscape, a browser with the address bar showing — can
+          // still reach the button rather than overflowing behind it.
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              // A card, as everywhere else a screen holds one short piece of
+              // business. On a desktop-width browser the alternative is a
+              // sentence and a button floating on an empty background, with
+              // nothing to say where the content begins and the page ends.
+              child: Card(
+                margin: EdgeInsets.zero,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_done) ...[
+                        Text(
+                          l.signInLinkDone,
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                        const SizedBox(height: 24),
+                        FilledButton(
+                          onPressed: () => context.go('/'),
+                          child: Text(l.signInLinkContinue),
+                        ),
+                      ] else ...[
+                        Text(
+                          l.signInLinkPrompt,
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                        const SizedBox(height: 24),
+                        FilledButton(
+                          onPressed: _busy ? null : _redeem,
+                          child: _busy
+                              ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(l.signInLinkAction),
+                        ),
+                      ],
+                      if (_error != null) ...[
+                        const SizedBox(height: 16),
+                        InlineMessage(message: _error!),
+                      ],
+                    ],
                   ),
-                ] else ...[
-                  Text(l.signInLinkPrompt, style: theme.textTheme.bodyLarge),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: _busy ? null : _redeem,
-                    child: _busy
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(l.signInLinkAction),
-                  ),
-                ],
-                if (_error != null) ...[
-                  const SizedBox(height: 16),
-                  InlineMessage(message: _error!),
-                ],
-              ],
+                ),
+              ),
             ),
           ),
         ),
