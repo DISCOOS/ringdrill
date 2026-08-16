@@ -29,6 +29,7 @@ import {
     ISSUER,
     AUDIENCE,
 } from "../functions/lib/auth/index.js";
+import { normalizePem } from "../functions/lib/auth/jwt.js";
 import { createLiveAdapter } from "../functions/lib/auth/live.js";
 import { createOffAdapter } from "../functions/lib/auth/off.js";
 
@@ -316,4 +317,30 @@ test("logAuthMode reports off as the rollback mode it is", () => {
     logAuthMode({ AUTH_MODE: "off" }, { log: (m) => lines.push(m) });
     assert.match(lines.at(-1), /mode=off/);
     assert.match(lines.at(-1), /every request anonymous/);
+});
+
+// ---------- keys as they survive an environment variable ----------
+
+/// A PEM is multi-line and node needs it that way, but plenty of paths between
+/// a key and a deployed function do not preserve newlines — a form that trims
+/// them, a CI secret stored as JSON, a shell that ate the quotes. Node then
+/// rejects the value with the same opaque error it gives for a key that is
+/// absent or corrupt, so the deploy fails identically to having set nothing.
+test("an escaped single-line PEM signs and verifies like a real one", () => {
+    const escape = (pem) => pem.replace(/\n/g, "\\n");
+    const claims = { ...CLAIMS };
+
+    const fromEscapedKey = signJwt(claims, escape(KEYS.privateKey));
+    const opts = { issuer: ISSUER, audience: AUDIENCE };
+
+    assert.equal(verifyJwt(fromEscapedKey, [KEYS.publicKey], opts).ok, true);
+    assert.equal(verifyJwt(signJwt(claims, KEYS.privateKey), [escape(KEYS.publicKey)], opts).ok, true);
+    // And a value that also picked up the quotes meant to protect it.
+    assert.equal(verifyJwt(fromEscapedKey, [`"${escape(KEYS.publicKey)}"`], opts).ok, true);
+});
+
+test("a well-formed PEM is passed through untouched", () => {
+    // The normalisation must not "fix" anything that was already right.
+    assert.equal(normalizePem(KEYS.publicKey), KEYS.publicKey.trim());
+    assert.equal(normalizePem(undefined), undefined);
 });

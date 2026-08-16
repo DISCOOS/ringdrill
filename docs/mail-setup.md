@@ -97,6 +97,22 @@ RESEND_API_KEY = re_...        # required; sending-only scope
 MAIL_PROVIDER  = resend        # optional — this is already the default
 ```
 
+The signing pair is generated with:
+
+```bash
+make auth-keys
+```
+
+It writes to `.secrets/auth-signing-<date>.{private,public}.pem` — gitignored,
+`0600` on the private half, and it refuses to overwrite an existing pair rather
+than silently invalidating every session signed with the old one. It prints the
+full paths and what to do next. Copy each file whole, `BEGIN` and `END` lines
+included, then move both somewhere durable and access-controlled and delete the
+local copies.
+
+An escaped single-line PEM is accepted as well as a multi-line one, so a value
+that lost its newlines on the way through a form or a JSON secret still works.
+
 **A Netlify environment change only takes effect on the next deploy.** Setting a
 variable and retrying immediately gives exactly the same failure as not setting
 it, which reads as a wrong value rather than an unloaded one. Redeploy, then

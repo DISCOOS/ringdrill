@@ -26,11 +26,40 @@ function fromB64u(input) {
 }
 
 /**
+ * A PEM as it survived being pasted into an environment variable.
+ *
+ * A PEM is multi-line and `crypto.createPrivateKey` needs it that way. Plenty
+ * of paths between a key and a deployed function do not preserve newlines —
+ * a form that trims them, a CI secret stored as JSON, a shell that ate the
+ * quotes — and what arrives is one line with a literal backslash-n between the
+ * base64 and the armour.
+ *
+ * Node rejects that with the same opaque error it gives for a key that is
+ * absent, corrupt or the wrong type, so the deploy fails identically to having
+ * set nothing at all. Accepting the escaped form costs one substitution and
+ * removes an afternoon of looking at a correct-looking value in a settings
+ * page.
+ *
+ * Anything already well-formed passes through untouched: real newlines are not
+ * matched, and a string with no `\n` sequence is returned as it came.
+ */
+export function normalizePem(pem) {
+    if (typeof pem !== "string") return pem;
+    const trimmed = pem.trim();
+    // A value that survived a JSON round trip can also arrive wrapped in the
+    // quotes that were meant to protect it.
+    const unquoted = trimmed.startsWith('"') && trimmed.endsWith('"')
+        ? trimmed.slice(1, -1)
+        : trimmed;
+    return unquoted.replace(/\\r\\n|\\n/g, "\n");
+}
+
+/**
  * Sign `claims` into a compact JWS. `privateKey` is a PEM Ed25519 private key
  * (what `AUTH_SIGNING_KEY_PRIVATE` holds).
  */
 export function signJwt(claims, privateKey) {
-    const key = crypto.createPrivateKey(privateKey);
+    const key = crypto.createPrivateKey(normalizePem(privateKey));
     if (key.asymmetricKeyType !== "ed25519") {
         throw new Error(`signing key must be ed25519, got ${key.asymmetricKeyType}`);
     }
@@ -83,7 +112,7 @@ export function verifyJwt(token, publicKeys, { now = Date.now, issuer, audience 
     const accepted = keys.some((pem) => {
         if (!pem) return false;
         try {
-            return crypto.verify(null, signingInput, crypto.createPublicKey(pem), sig);
+            return crypto.verify(null, signingInput, crypto.createPublicKey(normalizePem(pem)), sig);
         } catch {
             // A malformed key in the list must not mask a good one after it.
             return false;

@@ -405,6 +405,16 @@ patch-ios: require-clean-tree
 # without this, start-email and every invitation answer 500 even under
 # AUTH_MODE=mock. The console adapter prints the whole message, code and magic
 # link included, to this terminal.
+# Generate the Ed25519 pair that signs access tokens (ADR-0025). Writes to
+# .secrets/, which is gitignored, rather than stdout: a private key echoed into
+# a terminal lands in scrollback and shell history, and selecting it with a
+# mouse is where truncated copies come from.
+#
+# Only needed for a deployment running AUTH_MODE=live. `make netlify-dev` uses
+# mock, which mints unsigned test tokens and needs no key material at all.
+auth-keys:
+	node tools/generate-signing-keys.mjs
+
 LOCAL_AUTH_MODE ?= mock
 LOCAL_MAIL_PROVIDER ?= console
 # Every emailed link is built from this and there is no fallback, so the

@@ -65,3 +65,9 @@ sentry.properties
 # document.
 /assets/example/*.docx
 /assets/example/~$*
+
+# Signing keys from `make auth-keys` (ADR-0025). Never committed: this pair
+# mints access tokens for every user and account, so anyone holding the private
+# half can issue a valid token for anybody. Move them into the shared vault and
+# delete the local copies.
+.secrets/
