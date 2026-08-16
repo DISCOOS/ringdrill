@@ -1507,8 +1507,6 @@
     "description": "Shown in a browser, where the page waits for a tap rather than signing in on load — mail scanners follow links, and a challenge is single-use, so redeeming on load would spend it before the person arrives. The native app skips this and redeems on open, because a universal link only reaches an app when a human tapped it."
   },
   "signInLinkAction": "Sign in",
-  "signInLinkDone": "You are signed in.",
-  "signInLinkContinue": "Continue",
   "signInLinkUsed": "This link has already been used. Ask for a new one, or type the code from the email.",
   "@signInLinkUsed": {
     "description": "The link and the code are one challenge, so spending either retires both. Most often seen when the code was typed first, or the same link was opened twice."

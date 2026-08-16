@@ -2426,18 +2426,6 @@ abstract class AppLocalizations {
   /// **'Sign in'**
   String get signInLinkAction;
 
-  /// No description provided for @signInLinkDone.
-  ///
-  /// In en, this message translates to:
-  /// **'You are signed in.'**
-  String get signInLinkDone;
-
-  /// No description provided for @signInLinkContinue.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue'**
-  String get signInLinkContinue;
-
   /// The link and the code are one challenge, so spending either retires both. Most often seen when the code was typed first, or the same link was opened twice.
   ///
   /// In en, this message translates to:

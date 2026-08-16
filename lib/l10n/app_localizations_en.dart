@@ -1454,12 +1454,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signInLinkAction => 'Sign in';
 
   @override
-  String get signInLinkDone => 'You are signed in.';
-
-  @override
-  String get signInLinkContinue => 'Continue';
-
-  @override
   String get signInLinkUsed =>
       'This link has already been used. Ask for a new one, or type the code from the email.';
 

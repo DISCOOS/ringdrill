@@ -47,7 +47,6 @@ class SignInLinkPage extends StatefulWidget {
 
 class _SignInLinkPageState extends State<SignInLinkPage> {
   bool _busy = false;
-  bool _done = false;
   String? _error;
 
   @override
@@ -90,8 +89,12 @@ class _SignInLinkPageState extends State<SignInLinkPage> {
         code: widget.code,
       );
       if (!mounted) return;
-      setState(() => _done = true);
+      // Straight on, with no "you are signed in" step in between. The next
+      // screen is the confirmation: either the name prompt or the app itself,
+      // both of which are only reachable signed in. A dialog that says a thing
+      // worked, in front of the thing working, is a click for nothing.
       await promptForNamesIfNeeded(context);
+      if (mounted) context.go('/');
     } catch (e) {
       if (mounted) setState(() => _error = _messageFor(e, l));
     } finally {
@@ -127,35 +130,23 @@ class _SignInLinkPageState extends State<SignInLinkPage> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (_done) ...[
-                        Text(
-                          l.signInLinkDone,
-                          style: theme.textTheme.bodyLarge,
-                        ),
-                        const SizedBox(height: 24),
-                        FilledButton(
-                          onPressed: () => context.go('/'),
-                          child: Text(l.signInLinkContinue),
-                        ),
-                      ] else ...[
-                        Text(
-                          l.signInLinkPrompt,
-                          style: theme.textTheme.bodyLarge,
-                        ),
-                        const SizedBox(height: 24),
-                        FilledButton(
-                          onPressed: _busy ? null : _redeem,
-                          child: _busy
-                              ? const SizedBox(
-                                  height: 18,
-                                  width: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Text(l.signInLinkAction),
-                        ),
-                      ],
+                      Text(
+                        l.signInLinkPrompt,
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                      const SizedBox(height: 24),
+                      FilledButton(
+                        onPressed: _busy ? null : _redeem,
+                        child: _busy
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(l.signInLinkAction),
+                      ),
                       if (_error != null) ...[
                         const SizedBox(height: 16),
                         InlineMessage(message: _error!),

@@ -107,74 +107,87 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       ),
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: ListView(
-              padding: const EdgeInsets.all(24),
-              children: [
-                Text(l.profileCompleteLead, style: theme.textTheme.bodyLarge),
-                const SizedBox(height: 24),
-                // The same shape as the account page's, and the same bare
-                // decoration the form screens elsewhere use — this screen and
-                // that section ask for the identical two things, so looking
-                // different would be the odd part.
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: TextFormField(
-                        controller: _full,
-                        enabled: !_busy,
-                        autofocus: true,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: InputDecoration(
-                          labelText: l.accountFullNameLabel,
-                        ),
-                        onChanged: (_) => setState(() {}),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Card(
+                margin: EdgeInsets.zero,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        l.profileCompleteLead,
+                        style: theme.textTheme.bodyLarge,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: TextFormField(
-                        controller: _nickname,
-                        enabled: !_busy,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: InputDecoration(
-                          labelText: l.accountNicknameLabel,
-                        ),
-                        onChanged: (_) => setState(() {}),
-                        onFieldSubmitted: (_) =>
-                            ready && !_busy ? _save(l) : null,
+                      const SizedBox(height: 24),
+                      // The same shape as the account page's, and the same bare
+                      // decoration the form screens elsewhere use — this screen and
+                      // that section ask for the identical two things, so looking
+                      // different would be the odd part.
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: TextFormField(
+                              controller: _full,
+                              enabled: !_busy,
+                              autofocus: true,
+                              textCapitalization: TextCapitalization.words,
+                              decoration: InputDecoration(
+                                labelText: l.accountFullNameLabel,
+                              ),
+                              onChanged: (_) => setState(() {}),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: TextFormField(
+                              controller: _nickname,
+                              enabled: !_busy,
+                              textCapitalization: TextCapitalization.words,
+                              decoration: InputDecoration(
+                                labelText: l.accountNicknameLabel,
+                              ),
+                              onChanged: (_) => setState(() {}),
+                              onFieldSubmitted: (_) =>
+                                  ready && !_busy ? _save(l) : null,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-                // Below the fields, as on the account page: a note on what
-                // was just asked for rather than a preamble to it.
-                const SizedBox(height: 12),
-                Text(
-                  l.accountNamesHint,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                      // Below the fields, as on the account page: a note on what
+                      // was just asked for rather than a preamble to it.
+                      const SizedBox(height: 12),
+                      Text(
+                        l.accountNamesHint,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (_error != null) ...[
+                        const SizedBox(height: 16),
+                        InlineMessage(message: _error!),
+                      ],
+                      const SizedBox(height: 24),
+                      TextButton(
+                        onPressed: _busy
+                            ? null
+                            : () {
+                                widget.onDone?.call();
+                                Navigator.of(context).maybePop();
+                              },
+                        child: Text(l.profileCompleteLater),
+                      ),
+                    ],
                   ),
                 ),
-                if (_error != null) ...[
-                  const SizedBox(height: 16),
-                  InlineMessage(message: _error!),
-                ],
-                const SizedBox(height: 24),
-                TextButton(
-                  onPressed: _busy
-                      ? null
-                      : () {
-                          widget.onDone?.call();
-                          Navigator.of(context).maybePop();
-                        },
-                  child: Text(l.profileCompleteLater),
-                ),
-              ],
+              ),
             ),
           ),
         ),

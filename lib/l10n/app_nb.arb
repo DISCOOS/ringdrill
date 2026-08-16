@@ -408,8 +408,6 @@
   "signInLinkTitle": "Logg inn",
   "signInLinkPrompt": "Fortsett for \u00e5 fullf\u00f8re innloggingen p\u00e5 denne enheten.",
   "signInLinkAction": "Logg inn",
-  "signInLinkDone": "Du er logget inn.",
-  "signInLinkContinue": "Fortsett",
   "signInLinkUsed": "Denne lenken er allerede brukt. Be om en ny, eller skriv inn koden fra e-posten.",
   "signInResend": "Send ny kode",
   "signInResent": "En ny kode er p\u00e5 vei. Den forrige virker ikke lenger.",

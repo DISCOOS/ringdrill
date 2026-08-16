@@ -454,9 +454,17 @@ class _SignInPageState extends State<SignInPage> {
 /// fear both.
 Future<bool> confirmSignOut(BuildContext context) async {
   final l = AppLocalizations.of(context)!;
+  // **Not `AlertDialog.adaptive`**, which renders a `CupertinoAlertDialog` on
+  // Apple platforms — a different dialog from every other one in the app, with
+  // its own centred title, divided buttons and padding. Plain `AlertDialog` is
+  // the house chrome, for the same reason the account page's three dialogs are.
+  //
+  // Not `confirmDestructive` either, though it is the house helper: it paints
+  // its confirm button red, and this dialog exists precisely to say that
+  // nothing is destroyed. A red button would contradict the sentence above it.
   final ok = await showAdaptiveDialog<bool>(
     context: context,
-    builder: (context) => AlertDialog.adaptive(
+    builder: (context) => AlertDialog(
       title: Text(l.signOutConfirmTitle),
       content: Text(l.signOutConfirmBody),
       actions: [
