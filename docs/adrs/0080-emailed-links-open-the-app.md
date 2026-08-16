@@ -148,6 +148,14 @@ Concretely:
    rises from there.
 3. Both paths are added to the apex proxy Worker's routes and served by a
    function, mirroring `/i/*` ([ADR-0015](./0015-shareable-install-links.md)).
+
+   **The function redirects rather than rendering**, which is where this
+   departs from `/i/*`'s shape. `/i/` builds its own HTML because there is no
+   other copy of a share preview; here the PWA already owns both routes, in
+   both languages, including the wait-for-a-tap behaviour below. A
+   server-rendered second copy would be two places to keep saying the same
+   things. The security property is unaffected: nothing is redeemed at either
+   hop, so a prefetch still costs nothing.
 4. Both are added to the two copies of the association file
    (`web/.well-known/` and `site/public/.well-known/`) and to the Android
    intent filter, alongside `/i/` and `/o/`.
