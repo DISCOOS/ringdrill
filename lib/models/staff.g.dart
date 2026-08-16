@@ -15,6 +15,7 @@ _Staff _$StaffFromJson(Map<String, dynamic> json) => _Staff(
           ?.map((e) => $enumDecode(_$StaffRoleEnumMap, e))
           .toSet() ??
       const <StaffRole>{},
+  userId: json['userId'] as String?,
 );
 
 Map<String, dynamic> _$StaffToJson(_Staff instance) => <String, dynamic>{
@@ -22,6 +23,7 @@ Map<String, dynamic> _$StaffToJson(_Staff instance) => <String, dynamic>{
   'realName': instance.realName,
   'phone': instance.phone,
   'roles': instance.roles.map((e) => _$StaffRoleEnumMap[e]!).toList(),
+  'userId': instance.userId,
 };
 
 const _$StaffRoleEnumMap = {

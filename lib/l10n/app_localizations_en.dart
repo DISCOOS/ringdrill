@@ -1461,6 +1461,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signInResend => 'Send a new code';
 
   @override
+  String get staffFromAccountTitle => 'Add from account';
+
+  @override
+  String get staffFromAccountYou => 'You';
+
+  @override
+  String get staffFromAccountSignedOut =>
+      'Sign in to add yourself or people from your account. You can always add someone by name instead.';
+
+  @override
+  String get staffFromAccountFailed =>
+      'Could not load the members of your account. You are still listed above, and you can add anyone by name.';
+
+  @override
   String get signInResent =>
       'A new code is on its way. The previous one no longer works.';
 

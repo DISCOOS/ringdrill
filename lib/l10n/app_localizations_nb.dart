@@ -1456,6 +1456,20 @@ class AppLocalizationsNb extends AppLocalizations {
   String get signInResend => 'Send ny kode';
 
   @override
+  String get staffFromAccountTitle => 'Legg til fra konto';
+
+  @override
+  String get staffFromAccountYou => 'Deg';
+
+  @override
+  String get staffFromAccountSignedOut =>
+      'Logg inn for å legge til deg selv eller folk fra kontoen din. Du kan alltid legge til noen ved navn i stedet.';
+
+  @override
+  String get staffFromAccountFailed =>
+      'Fikk ikke hentet medlemmene i kontoen din. Du står fortsatt i lista over, og du kan legge til hvem som helst ved navn.';
+
+  @override
   String get signInResent =>
       'En ny kode er på vei. Den forrige virker ikke lenger.';
 

@@ -23,10 +23,24 @@ import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
 /// save button text is "Add" rather than "Save". The widget is stateless
 /// with respect to persistence — the caller persists via [PlanService].
 class StaffFormScreen extends StatefulWidget {
-  const StaffFormScreen({super.key, this.staff, this.modal = false});
+  const StaffFormScreen({
+    super.key,
+    this.staff,
+    this.template,
+    this.modal = false,
+  });
 
   /// Existing member to edit; null to create a new one.
   final Staff? staff;
+
+  /// Values to open a *new* form with — the name and account link of somebody
+  /// picked from the account roster.
+  ///
+  /// Separate from [staff] because the difference is not cosmetic: this is
+  /// still a create, so there is no delete action and the title says so.
+  /// Passing a half-built record as [staff] would offer to delete a member who
+  /// does not exist yet. Ignored when [staff] is set.
+  final Staff? template;
 
   /// When true, the form is shown inside a bottom sheet (cast roster FAB /
   /// cast picker inline). Changes button label from "Save" to the locale's
@@ -71,7 +85,10 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
   @override
   void initState() {
     super.initState();
-    final staff = widget.staff;
+    // The template only ever fills the boxes: everything below reads from
+    // whichever record is in play, and a create with a template is still a
+    // create (see [StaffFormScreen.template]).
+    final staff = widget.staff ?? widget.template;
     if (staff != null) {
       _nameController.text = staff.realName;
       _phoneController.text = staff.phone ?? '';
@@ -349,6 +366,10 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
     final saved = existing == null
         ? Staff(
             uuid: nanoid(10),
+            // Carried through from the template, and only from there: this is
+            // what makes the row *that* account user rather than someone with
+            // the same name, and it is never something the form asks for.
+            userId: widget.template?.userId,
             roles: _roles,
             realName: _nameController.text.trim(),
             phone: _phoneController.text.trim().isEmpty

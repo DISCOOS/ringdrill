@@ -2438,6 +2438,30 @@ abstract class AppLocalizations {
   /// **'Send a new code'**
   String get signInResend;
 
+  /// Title of the sheet that lists you and the members of the account owning the plan, as candidates for the staff roster. Also the tooltip of the roster action that opens it.
+  ///
+  /// In en, this message translates to:
+  /// **'Add from account'**
+  String get staffFromAccountTitle;
+
+  /// Marks your own row in that list. Adding yourself is the common case and works offline; the member list needs the network.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get staffFromAccountYou;
+
+  /// Shown in the sheet when nobody is signed in. Says what an account would add without implying the roster needs one — most of a roster is people typed in by hand (DESIGN-015 §5.1: an account is optional).
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to add yourself or people from your account. You can always add someone by name instead.'**
+  String get staffFromAccountSignedOut;
+
+  /// The member list needs a round trip and this is a field app. Names what failed and what still works, rather than replacing the sheet with an error.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the members of your account. You are still listed above, and you can add anyone by name.'**
+  String get staffFromAccountFailed;
+
   /// Shown after asking for another code. Says a code is on its way rather than that it has arrived: the server caps how much mail one address can be sent and a refusal is deliberately silent (ADR-0079), so the client cannot know. Also warns that the old code is dead, because a new challenge replaces it.
   ///
   /// In en, this message translates to:

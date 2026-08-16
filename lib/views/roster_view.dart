@@ -14,6 +14,7 @@ import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
+import 'package:ringdrill/views/widgets/staff_from_account_sheet.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
 // ---------------------------------------------------------------------------
@@ -69,6 +70,56 @@ class RosterController extends ScreenController {
       label: Text(label),
       onPressed: () => _openCreate(context),
     );
+  }
+
+  /// The account route onto the roster, beside the FAB's blank form.
+  ///
+  /// An action rather than a second FAB, and rather than a chooser in front of
+  /// the FAB: most rows are markører typed in on the day, who have no account
+  /// and never will, so the blank form stays the one-tap path. This is for the
+  /// two cases it cannot serve — putting yourself on, and putting on the people
+  /// you already share the plan with.
+  @override
+  List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
+    final l = AppLocalizations.of(context)!;
+    return [
+      IfCreatable(
+        target: EditTarget.staff,
+        child: IconButton(
+          icon: const Icon(Icons.person_add_alt),
+          tooltip: l.staffFromAccountTitle,
+          onPressed: () => _openFromAccount(context),
+        ),
+      ),
+    ];
+  }
+
+  Future<void> _openFromAccount(BuildContext context) async {
+    final localizations = AppLocalizations.of(context)!;
+    final candidate = await pickStaffFromAccount(
+      context,
+      roster: PlanService().loadStaff(),
+    );
+    if (candidate == null || !context.mounted) return;
+
+    // Straight into the form, prefilled: the role is mandatory and an account
+    // cannot supply it — it knows who may publish, not who is running which
+    // post.
+    final result = await openFormSurface<StaffFormResult>(
+      context,
+      builder: (_) => StaffFormScreen(
+        template: Staff(
+          uuid: '',
+          realName: candidate.name,
+          userId: candidate.userId,
+        ),
+      ),
+    );
+    if (result == null || !context.mounted) return;
+    if (result case StaffFormSave(:final staff)) {
+      await PlanService().saveStaff(localizations, staff);
+      if (context.mounted) _reloadTick.value++;
+    }
   }
 
   Future<void> _openCreate(BuildContext context) async {

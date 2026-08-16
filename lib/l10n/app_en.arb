@@ -1515,6 +1515,22 @@
   "@signInResend": {
     "description": "Code step. The only recovery from an expired or lost code used to be \"use another email\", which reads as a different decision."
   },
+  "staffFromAccountTitle": "Add from account",
+  "@staffFromAccountTitle": {
+    "description": "Title of the sheet that lists you and the members of the account owning the plan, as candidates for the staff roster. Also the tooltip of the roster action that opens it."
+  },
+  "staffFromAccountYou": "You",
+  "@staffFromAccountYou": {
+    "description": "Marks your own row in that list. Adding yourself is the common case and works offline; the member list needs the network."
+  },
+  "staffFromAccountSignedOut": "Sign in to add yourself or people from your account. You can always add someone by name instead.",
+  "@staffFromAccountSignedOut": {
+    "description": "Shown in the sheet when nobody is signed in. Says what an account would add without implying the roster needs one \u2014 most of a roster is people typed in by hand (DESIGN-015 \u00a75.1: an account is optional)."
+  },
+  "staffFromAccountFailed": "Could not load the members of your account. You are still listed above, and you can add anyone by name.",
+  "@staffFromAccountFailed": {
+    "description": "The member list needs a round trip and this is a field app. Names what failed and what still works, rather than replacing the sheet with an error."
+  },
   "signInResent": "A new code is on its way. The previous one no longer works.",
   "signInManySends": "Several codes have been sent to this address. Check your spam folder and use the code from the newest email — asking again may not send another.",
   "@signInManySends": {

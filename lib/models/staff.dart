@@ -28,6 +28,29 @@ sealed class Staff with _$Staff {
     /// before DESIGN-011 reads back unchanged — and one written before [actor]
     /// existed still reads as an actor when a roleplay is cast to them.
     @Default(<StaffRole>{}) Set<StaffRole> roles,
+
+    /// The account user this row was created from, when it came from one.
+    ///
+    /// **A link, not an identity.** The row is still a plain local record: the
+    /// name here is a copy made when it was added, and nothing keeps the two in
+    /// step. What the id buys is knowing that two rows are the same person —
+    /// "you are already on this roster" instead of a second you, which is
+    /// otherwise unanswerable when the only handle is a name somebody typed.
+    /// It is also what ADR-0057's self-edit rule can key on: an actor may put
+    /// *themselves* on the list, and "themselves" needs a referent.
+    ///
+    /// Null for everyone typed in by hand, which is most of a roster — markører
+    /// recruited for a day have no RingDrill account and never will.
+    ///
+    /// Where it travels is the roster's own rule (ADR-0072), which is not "PII
+    /// never leaves the device": a plan owned by an account is stored whole,
+    /// roster included, because the co-coordinator running the same exercise
+    /// needs the same phone list. Only the **catalog** path strips `staff/`,
+    /// at write time, because those bytes must not exist in a publicly
+    /// readable store. So this id reaches the account and never the catalog —
+    /// which is also what makes it useful, since a roster shared between two
+    /// coordinators is exactly where "is this row already me?" gets asked.
+    String? userId,
   }) = _Staff;
 
   factory Staff.fromJson(Map<String, dynamic> json) => _$StaffFromJson(json);
