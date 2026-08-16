@@ -362,6 +362,30 @@ test("under AUTH_MODE=live the server signs a real JWT, verifiable with the publ
 
 // ---------- PATCH me ----------
 
+test("the browser is allowed to use every verb these routes answer", async () => {
+    // A route and its CORS entry are edited in different files, and nothing
+    // fails when they disagree until a browser tries it: the CLI and the native
+    // apps send no Origin, so they never preflight. `PATCH me` shipped this way
+    // — green tests, working curl, working iOS, and "Method PATCH is not
+    // allowed by Access-Control-Allow-Methods" on web only.
+    const h = harness();
+    const res = await h.handler(new Request("https://api.ringdrill.app/api/auth/me", {
+        method: "OPTIONS",
+        headers: {
+            origin: "https://web.ringdrill.app",
+            "access-control-request-method": "PATCH",
+        },
+    }));
+
+    assert.equal(res.status, 204);
+    const allowed = (res.headers.get("access-control-allow-methods") ?? "")
+        .split(",").map((m) => m.trim());
+    for (const method of ["GET", "POST", "PATCH", "OPTIONS"]) {
+        assert.ok(allowed.includes(method), `${method} must be advertised, got ${allowed.join(", ")}`);
+    }
+});
+
+
 test("a user sets their own names, and the personal account follows", async () => {
     // The personal account is created carrying the user's name and exists to be
     // "you". Leaving it on the old one would show two names for one person on

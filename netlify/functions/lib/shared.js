@@ -374,7 +374,13 @@ function corsHeadersFor(request) {
     if (!origin) return null;
     return {
         "access-control-allow-origin": origin,
-        "access-control-allow-methods": "GET, POST, HEAD, OPTIONS",
+        // PATCH is here for `PATCH /api/auth/me`. Adding a route does not add
+        // its method to this list, and nothing fails until a browser tries it:
+        // the CLI and the native apps send no Origin and never preflight, so
+        // the endpoint tests green, works from curl, works on iOS, and is
+        // blocked only on the web build. Any new verb belongs here the moment
+        // its route does.
+        "access-control-allow-methods": "GET, POST, PATCH, HEAD, OPTIONS",
         "access-control-allow-headers": "authorization, content-type, if-match, if-none-match, accept",
         "access-control-expose-headers": "etag, content-type, content-disposition, last-modified, cache-control, x-conflict-kind, x-version, x-latest, x-versioned, x-program-id, x-plan-id",
         "access-control-max-age": "600",
