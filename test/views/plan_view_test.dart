@@ -345,6 +345,48 @@ void main() {
     expect(find.byType(TeamScreen), findsOneWidget);
   });
 
+  testWidgets('an empty plan renders every segment through the router', (
+    tester,
+  ) async {
+    // Reported from the app, and only reproducible through the *router*:
+    // navigating to /plan/<uuid>/script on a plan with no exercises rendered
+    // an empty master pane — no overview card, no segmented button, no empty
+    // state. /exercises and /teams on the same plan were fine.
+    //
+    // Driving `activeSegment` directly does not reproduce it, which is why
+    // this goes through buildRouter and a real URL.
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await PlanService().setActive(_emptyPlanUuid);
+    addTearDown(() => PlanService().setActive(_planUuid));
+
+    final router = buildRouter(false, true);
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    for (final slug in ['exercises', 'stations', 'script', 'teams']) {
+      router.go('/plan/$_emptyPlanUuid/$slug');
+      await tester.pumpAndSettle();
+      // hitTestable: IndexedStack keeps every segment mounted, so a plain
+      // finder matches the switcher inside the three that are not showing.
+      expect(
+        find.byType(SegmentedButton<PlanSegment>).hitTestable(),
+        findsOneWidget,
+        reason: 'the master pane was empty at /$slug',
+      );
+    }
+  });
+
   testWidgets(
     'wide detail empty pane still shows when a segment has no items',
     (tester) async {

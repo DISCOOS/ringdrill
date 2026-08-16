@@ -393,12 +393,20 @@ class _PlanViewState extends State<PlanView> {
         ],
       );
       if (overlay != null) {
-        scrollView = Stack(
-          children: [
-            Positioned.fill(child: scrollView),
-            overlay,
-          ],
-        );
+        // **The scroll view sizes the Stack; the overlay must not.** It used
+        // to be `Positioned.fill`, which leaves the overlay as the only
+        // non-positioned child — and `RolePlaysCreateFab` returns
+        // `SizedBox.shrink()` when there is nothing to create from, which on a
+        // plan with no exercises is always. The Stack then measured zero, the
+        // filled scroll view was given zero space, and the whole Script
+        // segment rendered blank: no overview card, no segment switcher, no
+        // empty state, and no way back to the other segments without leaving
+        // the screen.
+        //
+        // Unpositioned first, so the Stack takes its size from the content.
+        // The FAB is a `Positioned` when it renders at all, so it never
+        // contributes to sizing either way.
+        scrollView = Stack(children: [scrollView, overlay]);
       }
       if (footer == null) return scrollView;
       return Column(
