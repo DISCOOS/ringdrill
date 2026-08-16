@@ -339,6 +339,31 @@ test("an escaped single-line PEM signs and verifies like a real one", () => {
     assert.equal(verifyJwt(fromEscapedKey, [`"${escape(KEYS.publicKey)}"`], opts).ok, true);
 });
 
+test("a PEM whose newlines were eaten outright still works", () => {
+    // The shape Netlify's environment editor stores: not escaped, just gone,
+    // with the armour butted against the base64 on a single line. There is no
+    // escape sequence left to put back, and node answers with
+    // ERR_OSSL_UNSUPPORTED — the same opaque error as an absent key — from a
+    // value that reads as perfectly correct in the settings page. Production
+    // spent an evening on exactly this: sign-in got as far as minting a token
+    // and died there, every time, on both keys at once.
+    const flatten = (pem) => pem.trim().replace(/\n/g, "");
+    const opts = { issuer: ISSUER, audience: AUDIENCE };
+
+    const token = signJwt({ ...CLAIMS }, flatten(KEYS.privateKey));
+    assert.equal(verifyJwt(token, [KEYS.publicKey], opts).ok, true);
+    assert.equal(verifyJwt(token, [flatten(KEYS.publicKey)], opts).ok, true);
+    // Quotes and flattening arrive together often enough to pin the pair.
+    assert.equal(verifyJwt(token, [`"${flatten(KEYS.publicKey)}"`], opts).ok, true);
+});
+
+test("rebuilding a PEM does not make an unusable value usable", () => {
+    // It reformats; it does not vouch. A rebuilt value that was never a key has
+    // to fail where it failed before, or this turns a wrong key into a
+    // confusing one.
+    assert.throws(() => signJwt({ ...CLAIMS }, "-----BEGIN PRIVATE KEY-----bm90YWtleQ==-----END PRIVATE KEY-----"));
+});
+
 test("a well-formed PEM is passed through untouched", () => {
     // The normalisation must not "fix" anything that was already right.
     assert.equal(normalizePem(KEYS.publicKey), KEYS.publicKey.trim());

@@ -40,6 +40,19 @@ function fromB64u(input) {
  * removes an afternoon of looking at a correct-looking value in a settings
  * page.
  *
+ * **The worse case is the one where the newlines are simply gone**, which is
+ * what Netlify's environment editor does to a pasted key: no escape sequence is
+ * left to put back, just the armour butted against the base64 on one line. That
+ * is still unambiguous — a PEM is armour, one base64 body and armour, and the
+ * body's alphabet cannot contain either — so it is rebuilt rather than refused.
+ * Production spent an evening on this exact value: sign-in reached the point of
+ * minting a token and died at `createPrivateKey` with `ERR_OSSL_UNSUPPORTED`,
+ * from a variable that looked perfectly correct in the settings page.
+ *
+ * Reformatting is not the same as trusting: nothing here decides whether the
+ * key is usable, only what shape it is in. A rebuilt value that was never a key
+ * fails in `createPrivateKey` exactly as it did before.
+ *
  * Anything already well-formed passes through untouched: real newlines are not
  * matched, and a string with no `\n` sequence is returned as it came.
  */
@@ -51,7 +64,26 @@ export function normalizePem(pem) {
     const unquoted = trimmed.startsWith('"') && trimmed.endsWith('"')
         ? trimmed.slice(1, -1)
         : trimmed;
-    return unquoted.replace(/\\r\\n|\\n/g, "\n");
+    const unescaped = unquoted.replace(/\\r\\n|\\n/g, "\n");
+
+    // The label has to be carried through: PRIVATE KEY and PUBLIC KEY select
+    // different decoders, and guessing it would turn a public key into an
+    // unreadable private one.
+    const framed = /-----BEGIN ([A-Z][A-Z ]*)-----([\s\S]*?)-----END \1-----/.exec(unescaped);
+    if (!framed) return unescaped;
+
+    const [, label, body] = framed;
+    // Already broken into lines: leave it exactly as it came. Re-wrapping a
+    // correct key would only mean this function has an opinion about keys that
+    // already work, and every difference it introduced would be one more thing
+    // to rule out the next time one does not.
+    if (body.includes("\n")) return unescaped;
+
+    const base64 = body.replace(/\s+/g, "");
+    // 64 characters per line is what every PEM writer emits and what Node's
+    // decoder expects; the line length is part of the format, not decoration.
+    const lines = base64.match(/.{1,64}/g) ?? [];
+    return `-----BEGIN ${label}-----\n${lines.join("\n")}\n-----END ${label}-----\n`;
 }
 
 /**
