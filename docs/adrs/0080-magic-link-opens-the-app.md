@@ -103,12 +103,24 @@ Concretely:
    intent filter, alongside `/i/` and `/o/`.
 4. The app gains a route that takes the two segments and completes sign-in.
 
-**The association entry and the consumer ship together.** Not as "register now,
-wire later" — [DEBT-0001](../debts/0001-orphan-https-app-link-for-o-path.md) is
-this mistake already made once: `/o` was declared `autoVerify="true"` with
-nothing behind it, which triggers App-Link verification on every install and
-every update, and a verification failure is silently logged precisely because
-nothing depends on it working.
+**The association entry and the consumer ship together**, in one change, not as
+"register now, wire later".
+
+[DEBT-0001](../debts/0001-orphan-https-app-link-for-o-path.md) is this mistake
+already made once and since fixed. `/o` was declared `autoVerify="true"` in the
+Android manifest with no route behind it. Android re-runs App-Link verification
+at every install and every app update, so the declaration had a standing cost
+and no benefit — and worse, if verification ever *failed*, say after a signing
+key rotation changed the fingerprint in `assetlinks.json`, the failure would be
+logged and nothing would visibly break, precisely because nothing depended on
+the link. A broken association is then discovered by the next feature that
+needs one, where it presents as a bug in that feature. It was resolved by
+ADR-0015's implementation giving the path a real consumer (`pathPrefix="/o/"`
+reaching the existing Flutter `/o/` route) rather than by removing it.
+
+iOS fails differently and just as quietly: a path absent from the AASA is not an
+error, it simply opens Safari — indistinguishable from the feature not having
+been built.
 
 ### The landing page does not redeem
 
