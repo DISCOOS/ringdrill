@@ -1429,6 +1429,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your plans stay on this device and your account is not deleted. You can sign in again at any time.';
 
   @override
+  String get accountKindPersonal => 'Personal account';
+
+  @override
+  String get accountKindOrganisation => 'Organisation';
+
+  @override
   String accountSignedInAs(String name) {
     return 'Signed in as $name';
   }

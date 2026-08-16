@@ -1424,6 +1424,12 @@ class AppLocalizationsNb extends AppLocalizations {
       'Planene dine blir liggende på denne enheten, og kontoen din slettes ikke. Du kan logge inn igjen når som helst.';
 
   @override
+  String get accountKindPersonal => 'Personlig konto';
+
+  @override
+  String get accountKindOrganisation => 'Organisasjon';
+
+  @override
   String accountSignedInAs(String name) {
     return 'Logget inn som $name';
   }

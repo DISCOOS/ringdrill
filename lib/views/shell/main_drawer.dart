@@ -262,11 +262,43 @@ class MainDrawer extends StatelessWidget {
                 );
               }
               final account = AuthService.instance.state.activeAccount;
+              // **The identity, then the account it acts in.** Both lines are
+              // clamped: a drawer is narrow, and an email address is long
+              // enough that an unclamped title wraps to three lines and breaks
+              // mid-word.
+              //
+              // The subtitle used to be the account's name unconditionally,
+              // which read as a stutter for most people: a personal account is
+              // created with the user's own display name, and that display name
+              // is the email address when the provider gave no better one. So
+              // the row said the same address twice. It now falls back to
+              // naming the *kind* of account when repeating the name would add
+              // nothing — which is also the more useful line, because what a
+              // person cannot otherwise see here is which account a publish
+              // would land in.
+              final subtitle = account == null
+                  ? localizations.accountTitle
+                  : (account.displayName == user.displayName
+                        ? (account.isOrganisation
+                              ? localizations.accountKindOrganisation
+                              : localizations.accountKindPersonal)
+                        : account.displayName);
               return ListTile(
                 leading: const Icon(Icons.account_circle),
-                title: Text(localizations.accountSignedInAs(user.displayName)),
+                // Two lines, not one: an email address is the display name
+                // whenever the provider gave no better one, and clamping it to
+                // a single line elides before the `@` — "kenneth.gulbrands…"
+                // does not tell you which identity you are signed in as. Two
+                // lines fit a normal address whole and still cannot run away.
+                title: Text(
+                  user.displayName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 subtitle: Text(
-                  account?.displayName ?? localizations.accountTitle,
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 // Tapping opens the account; signing out is the trailing
                 // action rather than the whole row's job. Making the row

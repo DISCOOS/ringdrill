@@ -2384,6 +2384,18 @@ abstract class AppLocalizations {
   /// **'Your plans stay on this device and your account is not deleted. You can sign in again at any time.'**
   String get signOutConfirmBody;
 
+  /// Drawer subtitle under the signed-in identity, used when naming the account would only repeat the line above — a personal account carries the user's own display name. Says which account a publish lands in, which is the part not otherwise visible there.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal account'**
+  String get accountKindPersonal;
+
+  /// The organisation counterpart of accountKindPersonal, for the rare case where an organisation's name matches the user's own display name.
+  ///
+  /// In en, this message translates to:
+  /// **'Organisation'**
+  String get accountKindOrganisation;
+
   /// No description provided for @accountSignedInAs.
   ///
   /// In en, this message translates to:

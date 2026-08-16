@@ -401,6 +401,8 @@
   "signOutAction": "Logg ut",
   "signOutConfirmTitle": "Logge ut?",
   "signOutConfirmBody": "Planene dine blir liggende på denne enheten, og kontoen din slettes ikke. Du kan logge inn igjen når som helst.",
+  "accountKindPersonal": "Personlig konto",
+  "accountKindOrganisation": "Organisasjon",
   "accountSignedInAs": "Logget inn som {name}",
   "libraryAccountTab": "Konto",
   "libraryAccountSubtitle": "Planer som eies av {account}",
