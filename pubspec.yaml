@@ -28,7 +28,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  sentry_flutter: ^9.6.0
+  sentry_flutter: ^10.0.0-alpha.3
   flutter:
     sdk: flutter
   flutter_web_plugins:
@@ -52,7 +52,7 @@ dependencies:
   flutter_map: ^8.3.1
   flutter_map_marker_cluster: ^8.2.2
   geolocator: ^14.0.3
-  google_fonts: ^8.2.0
+  google_fonts: ^8.2.1
   url_launcher: ^6.3.2
   osm_nominatim: ^4.0.1
   json_annotation: ^4.12.0
@@ -71,14 +71,14 @@ dependencies:
   # wants the issuer and client id in the app and performs the token exchange
   # on-device, which is exactly what the server-side flow exists to avoid (and
   # it has no web support). See docs/identity-provider-setup.md.
-  flutter_web_auth_2: ^5.0.3
+  flutter_web_auth_2: ^5.1.0
   shorebird_code_push: ^2.0.7
   flutter_local_notifications: ^21.0.0
 
   flutter_native_splash: ^2.4.8
   flutter_localizations:
     sdk: flutter
-  intl: any
+  intl: 0.20.3
   path_provider: ^2.1.6
   path: ^1.9.1
   universal_io: ^2.2.2
@@ -87,9 +87,9 @@ dependencies:
   proj4dart: ^3.0.0
   web: ^1.1.1
   file_picker: ^12.0.0-beta.4
-  go_router: ^17.3.0
+  go_router: ^17.5.0
   http: ^1.5.0
-  meta: ^1.16.0
+  meta: ^1.19.0
   mustache_template: ^2.0.5
   http_parser: ^4.1.2
   args: ^2.7.0
@@ -109,9 +109,9 @@ dev_dependencies:
   # url_launcher we depend on directly here.
   url_launcher_platform_interface: ^2.3.2
 
-  build_runner: ^2.15.1
-  freezed: ^3.2.0
-  json_serializable: ^6.10.0
+  build_runner: ^2.16.0
+  freezed: ^4.0.0-dev.3
+  json_serializable: ^6.14.1
   flutter_launcher_icons: ^0.14.4
 
   flutter_lints: ^6.0.0
