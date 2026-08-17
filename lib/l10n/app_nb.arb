@@ -414,6 +414,7 @@
   "staffFromAccountYou": "Deg",
   "staffFromAccountSignedOut": "Logg inn for å legge til deg selv eller folk fra kontoen din. Du kan alltid legge til noen ved navn i stedet.",
   "staffFromAccountFailed": "Fikk ikke hentet medlemmene i kontoen din. Du står fortsatt i lista over, og du kan legge til hvem som helst ved navn.",
+  "signInUnavailable": "Innlogging er midlertidig utilgjengelig. Planene dine på denne enheten er uberørt — prøv igjen senere.",
   "signInResent": "En ny kode er p\u00e5 vei. Den forrige virker ikke lenger.",
   "signInManySends": "Det er sendt flere koder til denne adressen. Sjekk søppelposten og bruk koden fra den nyeste e-posten — ber du om en ny, blir den kanskje ikke sendt.",
   "signInUseAnotherEmail": "Bruk en annen adresse",

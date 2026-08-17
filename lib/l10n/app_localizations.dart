@@ -2462,6 +2462,12 @@ abstract class AppLocalizations {
   /// **'Could not load the members of your account. You are still listed above, and you can add anyone by name.'**
   String get staffFromAccountFailed;
 
+  /// Shown when the deployment is running with AUTH_MODE=off (ADR-0073's rollback switch), which makes every auth route answer 503. Says it is temporary, because a rollback is, and says what still works, because losing your plans is the fear an unexplained failure creates.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing in is temporarily unavailable. Your plans on this device are unaffected — try again later.'**
+  String get signInUnavailable;
+
   /// Shown after asking for another code. Says a code is on its way rather than that it has arrived: the server caps how much mail one address can be sent and a refusal is deliberately silent (ADR-0079), so the client cannot know. Also warns that the old code is dead, because a new challenge replaces it.
   ///
   /// In en, this message translates to:

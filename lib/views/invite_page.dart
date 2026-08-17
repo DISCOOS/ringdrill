@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/data/auth_client.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/auth_service.dart';
+import 'package:ringdrill/views/widgets/inline_message.dart';
 import 'package:ringdrill/views/account_page.dart'
     show buildAuthClient, roleLabel;
 import 'package:ringdrill/views/sign_in_page.dart';
@@ -161,21 +162,31 @@ class _InvitePageState extends State<InvitePage> {
           // addresses was invited.
           Text(l.inviteSignInToAccept(invitation.email)),
           const SizedBox(height: 16),
-          FilledButton(
-            onPressed: AuthService.isInstalled
-                ? () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => SignInPage(
-                        // Coming back to a page that still says "sign in to
-                        // accept" would be the wrong answer to a completed
-                        // sign-in.
-                        onSignedIn: () => setState(() {}),
+          // **Said, not hidden.** Everywhere else an unavailable sign-in is
+          // simply absent, but somebody here followed an invitation link and
+          // is looking for the button. Removing it would read as the
+          // invitation being broken, which is the one thing it is not.
+          if (AuthService.isInstalled && !AuthService.instance.authAvailable)
+            InlineMessage(
+              message: AppLocalizations.of(context)!.signInUnavailable,
+              tone: MessageTone.info,
+            )
+          else
+            FilledButton(
+              onPressed: AuthService.isInstalled
+                  ? () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => SignInPage(
+                          // Coming back to a page that still says "sign in to
+                          // accept" would be the wrong answer to a completed
+                          // sign-in.
+                          onSignedIn: () => setState(() {}),
+                        ),
                       ),
-                    ),
-                  )
-                : null,
-            child: Text(AppLocalizations.of(context)!.signInEntry),
-          ),
+                    )
+                  : null,
+              child: Text(AppLocalizations.of(context)!.signInEntry),
+            ),
         ] else
           FilledButton(
             onPressed: _busy ? null : () => _accept(invitation),

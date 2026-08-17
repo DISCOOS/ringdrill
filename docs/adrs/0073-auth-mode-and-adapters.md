@@ -201,6 +201,49 @@ be pointed anywhere unexpected.
 * Bad: one more environment variable to get wrong in a deploy. Mitigated by
   unset meaning `live`.
 
+### Amendment, 2026-08-17: `off` now refuses, and the app can see it
+
+Shipped as an adapter change alone: `off` returned an anonymous principal from
+`authenticate()` and nothing else moved. The auth endpoints kept working, so a
+rollback produced the worst available outcome — `start-email` mailed a code,
+`callback` minted a real signed token, and every request after it was treated
+as a stranger. A user would report "I signed in and my account is empty", which
+names neither the switch nor the deploy that threw it.
+
+Two changes make the switch whole.
+
+**The server refuses rather than pretends.** Under `off`, `start-email`,
+`callback`, `refresh`, `me`, `PATCH me` and `sessions/revoke` answer **503
+`auth_disabled`**. 503 rather than 404 because the route exists and is switched
+off, and because a rollback is temporary by construction. Two routes stay
+exempt: `providers`, because it is how a client learns why, and `logout`,
+because devices that signed in before the switch still hold tokens and must be
+able to tidy up.
+
+**`GET /api/auth/providers` carries the mode**, in every mode rather than only
+in `off` — a client that can only learn the mode from an absence cannot tell a
+rollback from an old build.
+
+The app treats availability as **optimistic and self-correcting**: it starts
+true, goes false only on being told `auth_disabled`, and goes true again on any
+auth call that succeeds — which is proof, since under `off` there are none.
+Nothing is persisted and nothing polls. Hiding sign-in whenever the server is
+unreachable would hide it on a plane and in a basement, which is the wrong
+failure for a field app.
+
+**A session is kept, not ended.** The tokens stay, the surfaces they can no
+longer reach say so, and throwing the switch back restores the account with
+nothing to redo. Signing everybody out would make the emergency lever expensive
+to pull — every user re-authenticating after a rollback that may have lasted an
+hour — which is how a lever stops being pulled when it should be.
+
+Where sign-in is offered as one option among several — the drawer, the publish
+dialog — it is **absent** under `off`: a greyed-out row invites "why can I not
+sign in?", a support conversation about a server setting nobody can see. On the
+invitation page it is **stated instead**, because somebody there followed a
+link and is looking for that button, and its absence would read as the
+invitation being broken.
+
 ## Pros and cons of the options
 
 ### A. `if (dev)` branches in `authenticate()`

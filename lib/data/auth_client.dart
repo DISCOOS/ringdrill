@@ -271,6 +271,25 @@ class EmailChallenge {
   });
 }
 
+/// What the deployment offers: the provider buttons, and whether it is
+/// answering at all.
+///
+/// The second half exists because `AUTH_MODE=off` is a server-side rollback
+/// (ADR-0073) that the app has no other way to learn about. Every other auth
+/// route answers 503 once it is thrown, so this endpoint is the only one that
+/// can explain the difference between "switched off" and "the network is bad".
+class AuthDiscovery {
+  const AuthDiscovery({required this.providers, required this.enabled});
+
+  final List<AuthProvider> providers;
+
+  /// False only when the server said `off`. Unknown reads as **true**: the
+  /// common case is a working deployment, and an app that hides sign-in
+  /// whenever it cannot reach the server would hide it on every plane and in
+  /// every basement.
+  final bool enabled;
+}
+
 /// What `/api/auth/me` knows: the user, their accounts *with names*, and the
 /// sessions they can end from the account page (DESIGN-015 §4.3).
 @immutable
@@ -460,11 +479,17 @@ class AuthClient {
   ///
   /// Each call mints fresh single-use `state` values server-side, so the
   /// result must not be cached across sign-in attempts.
-  Future<List<AuthProvider>> providers() async {
+  Future<AuthDiscovery> providers() async {
     final j = await _get('auth/providers');
-    return ((j['providers'] as List?) ?? const [])
-        .map((e) => AuthProvider.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return AuthDiscovery(
+      providers: ((j['providers'] as List?) ?? const [])
+          .map((e) => AuthProvider.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      // Absent from a deployment older than this field. Read as enabled, which
+      // is the state every such deployment is in — `off` is a switch somebody
+      // throws, not a default.
+      enabled: (j['mode'] as String?) != 'off',
+    );
   }
 
   /// Exchange the handoff code the browser returned for a session.

@@ -1531,6 +1531,10 @@
   "@staffFromAccountFailed": {
     "description": "The member list needs a round trip and this is a field app. Names what failed and what still works, rather than replacing the sheet with an error."
   },
+  "signInUnavailable": "Signing in is temporarily unavailable. Your plans on this device are unaffected \u2014 try again later.",
+  "@signInUnavailable": {
+    "description": "Shown when the deployment is running with AUTH_MODE=off (ADR-0073's rollback switch), which makes every auth route answer 503. Says it is temporary, because a rollback is, and says what still works, because losing your plans is the fear an unexplained failure creates."
+  },
   "signInResent": "A new code is on its way. The previous one no longer works.",
   "signInManySends": "Several codes have been sent to this address. Check your spam folder and use the code from the newest email — asking again may not send another.",
   "@signInManySends": {

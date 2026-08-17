@@ -574,6 +574,58 @@ void main() {
     });
   });
 
+  /// The rollback switch, seen from the app (ADR-0073).
+  ///
+  /// `off` makes every auth route answer 503, so the app has to stop offering
+  /// a sign-in that cannot finish — and has to keep the session it already
+  /// has, because a rollback is meant to be reversible and signing everybody
+  /// out makes it expensive to pull.
+  group('AUTH_MODE=off', () {
+    testWidgets('a 503 teaches the app that sign-in is unavailable', (
+      tester,
+    ) async {
+      install([
+        _json({'error': 'auth_disabled'}, 503),
+      ]);
+      await pumpSignIn(tester);
+      expect(AuthService.instance.authAvailable, isTrue, reason: 'until told');
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(AuthService.instance.authAvailable, isFalse);
+      expect(
+        find.text(
+          'Signing in is temporarily unavailable. Your plans on this device '
+          'are unaffected — try again later.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a call that works says the switch is not thrown', (
+      tester,
+    ) async {
+      // Recovery with no polling and no restart: under off every one of these
+      // routes answers 503, so a success is proof.
+      install([
+        _json({'error': 'auth_disabled'}, 503),
+        _challenge,
+      ]);
+      await pumpSignIn(tester);
+
+      await tester.enterText(find.byType(TextField), 'kari@example.com');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(AuthService.instance.authAvailable, isFalse);
+
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(AuthService.instance.authAvailable, isTrue);
+    });
+  });
+
   group('provider sign-in', () {
     const google = AuthProvider(
       id: 'google',

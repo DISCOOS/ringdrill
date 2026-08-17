@@ -355,8 +355,26 @@ class _LibraryBodyState extends State<_LibraryBody>
     }
 
     return ListenableBuilder(
-      listenable: AuthService.instance,
+      // Availability as well as identity: under AUTH_MODE=off a session is
+      // kept but every account call behind this tab is refused, and the tab
+      // has to stop claiming otherwise the moment that is known.
+      listenable: Listenable.merge([
+        AuthService.instance,
+        AuthService.instance.authAvailability,
+      ]),
       builder: (context, _) {
+        // **The session is not thrown away** (ADR-0073). A rollback is meant
+        // to be reversible, and signing everybody out would make it expensive
+        // to pull — every user re-authenticating afterwards. So the tokens
+        // stay, the surfaces they can no longer reach say so, and flipping the
+        // switch back restores the account with nothing to redo.
+        if (!AuthService.instance.authAvailable) {
+          return EmptyState(
+            icon: Icons.cloud_off,
+            text: localizations.signInUnavailable,
+          );
+        }
+
         final account = AuthService.instance.state.activeAccount;
         if (account == null) {
           return EmptyState(

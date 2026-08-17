@@ -125,6 +125,8 @@ class _SignInPageState extends State<SignInPage> {
   String _messageFor(Object error, AppLocalizations l) {
     if (error is AuthApiException) {
       return switch (error.reason) {
+        // The rollback switch, thrown while this screen was open.
+        'auth_disabled' => l.signInUnavailable,
         'expired' => l.signInCodeExpired,
         'too_many_attempts' => l.signInTooManyAttempts,
         'bad_code' => l.signInCodeWrong,

@@ -1475,6 +1475,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not load the members of your account. You are still listed above, and you can add anyone by name.';
 
   @override
+  String get signInUnavailable =>
+      'Signing in is temporarily unavailable. Your plans on this device are unaffected — try again later.';
+
+  @override
   String get signInResent =>
       'A new code is on its way. The previous one no longer works.';
 

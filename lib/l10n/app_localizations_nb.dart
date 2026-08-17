@@ -1470,6 +1470,10 @@ class AppLocalizationsNb extends AppLocalizations {
       'Fikk ikke hentet medlemmene i kontoen din. Du står fortsatt i lista over, og du kan legge til hvem som helst ved navn.';
 
   @override
+  String get signInUnavailable =>
+      'Innlogging er midlertidig utilgjengelig. Planene dine på denne enheten er uberørt — prøv igjen senere.';
+
+  @override
   String get signInResent =>
       'En ny kode er på vei. Den forrige virker ikke lenger.';
 

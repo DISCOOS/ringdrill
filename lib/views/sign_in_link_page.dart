@@ -64,6 +64,8 @@ class _SignInLinkPageState extends State<SignInLinkPage> {
   String _messageFor(Object error, AppLocalizations l) {
     if (error is AuthApiException) {
       return switch (error.reason) {
+        // The rollback switch, thrown while this screen was open.
+        'auth_disabled' => l.signInUnavailable,
         'expired' => l.signInCodeExpired,
         'too_many_attempts' => l.signInTooManyAttempts,
         // The link was already spent — most often by the code having been

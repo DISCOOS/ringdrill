@@ -369,7 +369,9 @@ class AuthService extends ChangeNotifier {
     String email, {
     String locale = 'en',
   }) async {
-    final challenge = await _client.startEmail(email, locale: locale);
+    final challenge = await _observing(
+      () => _client.startEmail(email, locale: locale),
+    );
     // Written before the code is typed, because the case this exists for is
     // the app not being alive to type it into: the person asks for a code,
     // leaves for their mail app, and comes back to a cold start. The code in
@@ -442,8 +444,49 @@ class AuthService extends ChangeNotifier {
   /// **Ordering is the client's job**, because only the client knows the
   /// platform — the server has no business guessing it from a user agent. See
   /// [orderProvidersForPlatform] for why the iOS case is not a preference.
-  Future<List<AuthProvider>> providers() async =>
-      orderProvidersForPlatform(await _client.providers());
+  Future<List<AuthProvider>> providers() async {
+    final discovered = await _client.providers();
+    _noteAuthAvailability(discovered.enabled);
+    return orderProvidersForPlatform(discovered.providers);
+  }
+
+  /// Whether this deployment is answering auth calls at all.
+  ///
+  /// **Optimistic by default, and deliberately so.** `AUTH_MODE=off` is a
+  /// server-side rollback (ADR-0073); every deployment that has not had it
+  /// thrown is enabled, and an app that hid sign-in whenever it could not
+  /// reach the server would hide it on a plane, in a basement, and on the
+  /// first launch before anything has been fetched. So this starts true, goes
+  /// false only on being *told*, and goes back the moment it is told
+  /// otherwise.
+  ///
+  /// Sticky within a launch rather than persisted: a rollback is measured in
+  /// hours, a stale "off" cached on disk would outlive it, and the cost of
+  /// asking again is one call the sign-in screen already makes.
+  bool get authAvailable => authAvailability.value;
+
+  /// Listenable, so a drawer or a tab already on screen stops offering a
+  /// sign-in that cannot work rather than waiting to be rebuilt.
+  final ValueNotifier<bool> authAvailability = ValueNotifier<bool>(true);
+
+  void _noteAuthAvailability(bool enabled) => authAvailability.value = enabled;
+
+  /// Run an auth call and learn from what it answers.
+  ///
+  /// Success is as informative as failure here: under `off` every one of these
+  /// routes answers 503, so a call that worked *is* proof the switch is not
+  /// thrown. That is what lets availability recover on its own when the switch
+  /// goes back, with no polling and no restart.
+  Future<T> _observing<T>(Future<T> Function() call) async {
+    try {
+      final result = await call();
+      _noteAuthAvailability(true);
+      return result;
+    } on AuthApiException catch (e) {
+      if (e.reason == 'auth_disabled') _noteAuthAvailability(false);
+      rethrow;
+    }
+  }
 
   /// Sign in through a provider.
   ///
@@ -492,12 +535,14 @@ class AuthService extends ChangeNotifier {
     String? idToken,
     String? deviceLabel,
   }) async {
-    final tokens = await _client.callback(
-      challengeId: challengeId,
-      code: code,
-      provider: provider,
-      idToken: idToken,
-      deviceLabel: deviceLabel,
+    final tokens = await _observing(
+      () => _client.callback(
+        challengeId: challengeId,
+        code: code,
+        provider: provider,
+        idToken: idToken,
+        deviceLabel: deviceLabel,
+      ),
     );
     await _adopt(tokens);
     // Spent. Leaving it would offer a code box for a challenge the server

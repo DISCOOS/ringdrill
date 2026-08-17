@@ -249,16 +249,26 @@ class MainDrawer extends StatelessWidget {
             builder: (context, _) {
               final user = AuthService.instance.state.user;
               if (user == null) {
-                return _DrawerTile(
-                  icon: Icons.login,
-                  title: localizations.signInEntry,
-                  onTap: () {
-                    Navigator.pop(context);
-                    openFormSurface<void>(
-                      context,
-                      builder: (_) => const SignInPage(),
-                    );
-                  },
+                // **Absent, not disabled, under AUTH_MODE=off** (ADR-0073).
+                // The rollback switch makes every auth route answer 503, so
+                // this entry leads nowhere — and a greyed-out row invites the
+                // question "why can I not sign in?", which is a support
+                // conversation about a server setting nobody can see.
+                return ValueListenableBuilder<bool>(
+                  valueListenable: AuthService.instance.authAvailability,
+                  builder: (context, available, _) => available
+                      ? _DrawerTile(
+                          icon: Icons.login,
+                          title: localizations.signInEntry,
+                          onTap: () {
+                            Navigator.pop(context);
+                            openFormSurface<void>(
+                              context,
+                              builder: (_) => const SignInPage(),
+                            );
+                          },
+                        )
+                      : const SizedBox.shrink(),
                 );
               }
               final account = AuthService.instance.state.activeAccount;

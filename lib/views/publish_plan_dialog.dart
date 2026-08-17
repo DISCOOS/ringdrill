@@ -271,7 +271,10 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
         // The offer, not a gate: Publish stays the primary action in the
         // button row below, and this sits under the explanation as the
         // alternative. Absent entirely when there is no session to sign into.
-        if (AuthService.isInstalled)
+        // Absent under AUTH_MODE=off too (ADR-0073): the switch makes every
+        // auth route answer 503, so the offer leads to a screen that cannot
+        // finish.
+        if (AuthService.isInstalled && AuthService.instance.authAvailable)
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(
