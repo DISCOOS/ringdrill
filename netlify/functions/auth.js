@@ -24,6 +24,16 @@ import { getStore } from "@netlify/blobs";
  */
 
 const CHALLENGES_NS = "auth-challenges";
+
+/**
+ * The two routes that keep answering under `AUTH_MODE=off`.
+ *
+ * `providers` because it carries the mode, and a client told nothing cannot
+ * explain to anybody why sign-in vanished. `logout` because devices that
+ * signed in before the switch still hold tokens, and refusing to let them tidy
+ * up would strand a session nobody can end.
+ */
+const OFF_EXEMPT = new Set(["GET providers", "POST logout"]);
 const strong = { consistency: "strong" };
 
 const json = (body, status = 200, headers = {}) =>
@@ -116,6 +126,20 @@ export function createHandler({
                 console.error("[auth] provider callback", err);
                 return withCors(request, bounceToApp(null, { error: "internal" }));
             }
+        }
+
+        // **`off` refuses rather than pretends** (ADR-0073). The adapter already
+        // ignores every token, so minting one here would sign somebody in and
+        // then treat them as a stranger — an empty account tab and a refused
+        // publish, from a sign-in that reported success. Worse than no sign-in,
+        // and much harder to diagnose from a user's description.
+        //
+        // 503 rather than 404: the route exists and is switched off, and a
+        // rollback is temporary by design. `logout` and `providers` are exempt
+        // — one lets a device that signed in before the switch clean up after
+        // itself, the other is how a client finds out why.
+        if (resolveMode(env) === AUTH_MODES.OFF && !OFF_EXEMPT.has(`${request.method} ${route}`)) {
+            return withCors(request, json({ error: "auth_disabled" }, 503));
         }
 
         try {
@@ -221,6 +245,7 @@ export function createHandler({
      */
     async function listProviders(request) {
         const origin = env.PUBLIC_API_ORIGIN || new URL(request.url).origin;
+        const mode = resolveMode(env);
         const providers = [];
         // Not `configuredProviders` — see `offerableProviders` for why a
         // deployment missing Apple offers nothing rather than offering the
@@ -239,7 +264,11 @@ export function createHandler({
                 authorizeUrl: started.authorizeUrl,
             });
         }
-        return json({ providers }, 200, { "cache-control": "no-store" });
+        // **The one thing a client can always ask.** `off` is a server-side
+        // rollback (ADR-0073) and the app has no other way to learn it happened
+        // — every other route answers 503 by then. Sent in every mode so a
+        // client never has to infer it from an absence.
+        return json({ providers, mode }, 200, { "cache-control": "no-store" });
     }
 
     /**

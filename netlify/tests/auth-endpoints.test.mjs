@@ -360,6 +360,72 @@ test("under AUTH_MODE=live the server signs a real JWT, verifiable with the publ
     assert.equal(verified.claims.roles[verified.claims.act], "owner");
 });
 
+// ---------- AUTH_MODE=off ----------
+
+/// The rollback switch (ADR-0073), and the gap that made it half a switch.
+///
+/// `off` only ever changed `authenticate()`, which ignores every token. The
+/// auth endpoints kept working, so a rollback produced an app that signed you
+/// in successfully and was then treated as a stranger by every request after
+/// it: empty account tab, refused publish, from a sign-in that reported
+/// success.
+function offHandler() {
+    return createHandler({
+        env: { AUTH_MODE: "off", AUTH_SIGNING_KEY_PRIVATE: "unused-here" },
+        challengeStore: () => fakeStore(),
+    });
+}
+
+const req = (method, route, body) => new Request(`https://api.ringdrill.app/api/auth/${route}`, {
+    method,
+    headers: { "content-type": "application/json" },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+});
+
+test("off refuses to mint what it has already decided to ignore", async () => {
+    const handler = offHandler();
+
+    for (const [method, route, body] of [
+        ["POST", "start-email", { email: "kari@example.com" }],
+        ["POST", "callback", { challengeId: "c_1", code: "ABC123" }],
+        ["POST", "refresh", { refreshToken: "rt_1" }],
+        ["GET", "me", null],
+    ]) {
+        const res = await handler(req(method, route, body));
+        assert.equal(res.status, 503, `${method} ${route}`);
+        assert.equal((await res.json()).error, "auth_disabled");
+    }
+});
+
+test("off still says it is off, which is how a client finds out", async () => {
+    // Every other route answers 503 by then, so an app with no working call
+    // cannot tell "switched off" from "the network is bad" — and would keep
+    // offering a sign-in that cannot work.
+    const res = await offHandler()(req("GET", "providers"));
+
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.mode, "off");
+    assert.deepEqual(body.providers, []);
+});
+
+test("live and mock report their own mode too", async () => {
+    // Sent always, never inferred from an absence: a client that only learns
+    // the mode when it is "off" cannot tell a rollback from an old build.
+    const live = createHandler({
+        env: { AUTH_MODE: "live", AUTH_SIGNING_KEY_PRIVATE: "unused-here" },
+        challengeStore: () => fakeStore(),
+    });
+    assert.equal((await (await live(req("GET", "providers"))).json()).mode, "live");
+});
+
+test("a device that signed in before the switch can still log out", async () => {
+    // Refusing this strands a session nobody can end: the token is already
+    // worthless, and the device would keep it until it expired.
+    const res = await offHandler()(req("POST", "logout", { refreshToken: "rt_1" }));
+    assert.notEqual(res.status, 503);
+});
+
 // ---------- PATCH me ----------
 
 test("the browser is allowed to use every verb these routes answer", async () => {
