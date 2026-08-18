@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
@@ -29,11 +31,15 @@ Future<void> _open(
   WidgetTester tester,
   _Captured captured, {
   required List<String> items,
+  Future<List<String>>? itemsFuture,
   String Function(String)? searchText,
   int searchThreshold = 8,
   List<Widget> footerActions = const [],
   List<PickerFilter<String>> filters = const [],
   String? Function(String)? sectionLabel,
+  // A CircularProgressIndicator never stops animating, so a picker still
+  // loading can never "settle" — those tests pump a fixed frame instead.
+  bool settle = true,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -44,6 +50,7 @@ Future<void> _open(
               context: context,
               title: 'Velg element',
               items: items,
+              itemsFuture: itemsFuture,
               itemBuilder: (context, item, onTap) =>
                   ListTile(title: Text(item), onTap: onTap),
               searchText: searchText,
@@ -61,7 +68,12 @@ Future<void> _open(
     ),
   );
   await tester.tap(find.text('Open'));
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
 }
 
 void main() {
@@ -331,6 +343,57 @@ void main() {
         findsNWidgets(2),
         reason: 'the chip and the section header',
       );
+    });
+  });
+
+  /// Items that need fetching (ADR-0049's surface, applied to a list that is
+  /// not local).
+  ///
+  /// A picker that waits on a round trip before appearing looks like a tap
+  /// that did nothing, and the wait lands exactly where somebody has just
+  /// decided what they want.
+  group('items that arrive late', () {
+    testWidgets('opens on what is already known, with a spinner for the rest', (
+      tester,
+    ) async {
+      final completer = Completer<List<String>>();
+      final captured = _Captured();
+      await _open(
+        tester,
+        captured,
+        items: const ['Deg'],
+        itemsFuture: completer.future,
+        settle: false,
+      );
+
+      expect(find.text('Deg'), findsOneWidget, reason: 'open immediately');
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      completer.complete(const ['Deg', 'Ola', 'Per']);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ola'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('a fetch that fails leaves what was passed in', (tester) async {
+      // The caller knows what it was fetching and what a partial answer means,
+      // so it reports; the picker just stops loading rather than emptying.
+      final completer = Completer<List<String>>();
+      final captured = _Captured();
+      await _open(
+        tester,
+        captured,
+        items: const ['Deg'],
+        itemsFuture: completer.future,
+        settle: false,
+      );
+
+      completer.completeError(Exception('offline'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Deg'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
   });
 }

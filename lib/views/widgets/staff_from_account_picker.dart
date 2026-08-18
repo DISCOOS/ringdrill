@@ -73,6 +73,19 @@ StaffCandidate? suggestedLinkFor(
 String _fold(String value) =>
     value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
+/// You, resolved with no network at all.
+///
+/// The picker opens on this and fills in the account's members when they
+/// arrive. Adding yourself is the common case and must work on a hill with no
+/// signal; waiting on a round trip to show a list that already has its most
+/// likely answer in it is the wrong trade twice over.
+List<StaffCandidate> selfCandidateOnly({required List<Staff> roster}) {
+  if (!AuthService.isInstalled) return const [];
+  final user = AuthService.instance.state.user;
+  if (user == null) return const [];
+  return buildStaffCandidates(user: user, members: const [], roster: roster);
+}
+
 /// Load the people who could be added: you, and the account's members.
 ///
 /// **You are resolved without the network, the members are not.** Adding
@@ -149,6 +162,7 @@ Future<({List<StaffCandidate> candidates, bool failed})> loadStaffCandidates({
 Future<StaffCandidate?> pickStaffFromAccount(
   BuildContext context, {
   required List<StaffCandidate> candidates,
+  Future<List<StaffCandidate>>? pending,
   required String title,
 }) {
   final theme = Theme.of(context);
@@ -157,6 +171,7 @@ Future<StaffCandidate?> pickStaffFromAccount(
     context: context,
     title: title,
     items: candidates,
+    itemsFuture: pending,
     itemBuilder: (context, candidate, onTap) => ListTile(
       leading: Icon(candidate.isSelf ? Icons.person : Icons.face),
       title: Text(candidate.name),

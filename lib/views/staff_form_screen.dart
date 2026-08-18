@@ -356,17 +356,20 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
         .loadStaff()
         .where((member) => member.uuid != widget.staff?.uuid)
         .toList();
-    final loaded = await loadStaffCandidates(roster: roster);
-    if (!mounted) return;
-    if (loaded.failed) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.staffFromAccountFailed)));
-    }
+    final messenger = ScaffoldMessenger.of(context);
+    final pending = loadStaffCandidates(roster: roster).then((loaded) {
+      if (loaded.failed) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(l10n.staffFromAccountFailed)),
+        );
+      }
+      return loaded.candidates;
+    });
 
     final candidate = await pickStaffFromAccount(
       context,
-      candidates: loaded.candidates,
+      candidates: selfCandidateOnly(roster: roster),
+      pending: pending,
       title: l10n.staffLinkToAccount,
     );
     if (candidate == null || !mounted) return;

@@ -14,6 +14,7 @@ import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
+import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/auth_service.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/views/widgets/staff_from_account_picker.dart';
@@ -104,19 +105,28 @@ class RosterController extends ScreenController {
 
   Future<void> _openFromAccount(BuildContext context) async {
     final l = AppLocalizations.of(context)!;
-    final loaded = await loadStaffCandidates(roster: PlanService().loadStaff());
-    if (!context.mounted) return;
-    if (loaded.failed) {
-      // The member list needs a round trip and this is a field app. Said once,
-      // over a list that still has you in it, rather than instead of the list.
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l.staffFromAccountFailed)));
-    }
+    final roster = PlanService().loadStaff();
+    final messenger = ScaffoldMessenger.of(context);
+
+    // Started before the picker opens, awaited by the picker rather than in
+    // front of it: the surface appears on the tap that asked for it, with you
+    // already in the list, and the members drop in under a spinner.
+    final pending = loadStaffCandidates(roster: roster).then((loaded) {
+      if (loaded.failed) {
+        // The member list needs a round trip and this is a field app. Said
+        // once, over a list that still has you in it, rather than instead of
+        // the list.
+        messenger.showSnackBar(
+          SnackBar(content: Text(l.staffFromAccountFailed)),
+        );
+      }
+      return loaded.candidates;
+    });
 
     final candidate = await pickStaffFromAccount(
       context,
-      candidates: loaded.candidates,
+      candidates: selfCandidateOnly(roster: roster),
+      pending: pending,
       title: l.staffFromAccountTitle,
     );
     if (candidate == null || !context.mounted) return;
@@ -130,7 +140,17 @@ class RosterController extends ScreenController {
         template: Staff(
           uuid: '',
           realName: candidate.name,
+          phone: candidate.phone,
+          email: candidate.email,
           userId: candidate.userId,
+          // **Only for yourself.** The role this device is set to is a claim
+          // about the person holding it — it gates their edit affordances
+          // (ADR-0057) — so for your own row it is the best answer available
+          // and saves the tap everybody would make. For a colleague it says
+          // nothing: a veileder adding somebody does not make that person a
+          // veileder, and a wrong role on a roster is worse than an
+          // unanswered one.
+          roles: candidate.isSelf ? {currentAppUserRole()} : const {},
         ),
       ),
     );

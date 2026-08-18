@@ -55,7 +55,17 @@ import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 Future<T?> showRingdrillPicker<T>({
   required BuildContext context,
   required String title,
-  required List<T> items,
+  List<T> items = const [],
+
+  /// Items that need fetching.
+  ///
+  /// **The surface opens first and fills in.** A picker that waits on a round
+  /// trip before appearing looks like a tap that did nothing, and the delay
+  /// lands exactly where the person has just decided what they want. Given
+  /// this, the list starts as [items] — whatever is already known, which for
+  /// the account picker is you — and shows a spinner beneath it until the rest
+  /// arrive.
+  Future<List<T>>? itemsFuture,
   required Widget Function(BuildContext context, T item, VoidCallback onTap)
   itemBuilder,
   String Function(T item)? searchText,
@@ -89,6 +99,7 @@ Future<T?> showRingdrillPicker<T>({
     title: title,
     subtitle: subtitle,
     items: items,
+    itemsFuture: itemsFuture,
     itemBuilder: itemBuilder,
     searchText: searchText,
     searchHint: searchHint,
@@ -132,6 +143,7 @@ class _RingdrillPickerBody<T> extends StatefulWidget {
     required this.title,
     required this.subtitle,
     required this.items,
+    required this.itemsFuture,
     required this.itemBuilder,
     required this.searchText,
     required this.searchHint,
@@ -147,6 +159,7 @@ class _RingdrillPickerBody<T> extends StatefulWidget {
   final String title;
   final String? subtitle;
   final List<T> items;
+  final Future<List<T>>? itemsFuture;
   final Widget Function(BuildContext context, T item, VoidCallback onTap)
   itemBuilder;
   final String Function(T item)? searchText;
@@ -168,6 +181,32 @@ class _RingdrillPickerBodyState<T> extends State<_RingdrillPickerBody<T>> {
   final _searchController = TextEditingController();
   String _query = '';
 
+  /// What the list shows now: the caller's items until a pending fetch
+  /// replaces them.
+  late List<T> _items = widget.items;
+  late bool _loading = widget.itemsFuture != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final pending = widget.itemsFuture;
+    if (pending == null) return;
+    // Failure is not this widget's to report: the caller knows what it was
+    // fetching and what a partial answer means. Here it simply stops loading,
+    // leaving whatever was passed synchronously.
+    pending
+        .then((items) {
+          if (mounted) setState(() => _items = items);
+        })
+        // Caught, not merely ignored: an unhandled rejection here would take
+        // down the zone the picker was opened in, which is a far louder
+        // failure than the list being short.
+        .catchError((_) {})
+        .whenComplete(() {
+          if (mounted) setState(() => _loading = false);
+        });
+  }
+
   /// Index into `widget.filters`, or null for the implicit "all".
   int? _filter;
 
@@ -184,9 +223,9 @@ class _RingdrillPickerBodyState<T> extends State<_RingdrillPickerBody<T>> {
   /// statement about the search and not about the whole picker.
   List<T> get _searched {
     final searchText = widget.searchText;
-    if (searchText == null || _query.isEmpty) return widget.items;
+    if (searchText == null || _query.isEmpty) return _items;
     final q = _query.toLowerCase();
-    return widget.items
+    return _items
         .where((item) => searchText(item).toLowerCase().contains(q))
         .toList();
   }
@@ -202,8 +241,7 @@ class _RingdrillPickerBodyState<T> extends State<_RingdrillPickerBody<T>> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final showSearch =
-        widget.searchText != null &&
-        widget.items.length >= widget.searchThreshold;
+        widget.searchText != null && _items.length >= widget.searchThreshold;
     final filtered = _filtered;
 
     return Column(
@@ -272,6 +310,17 @@ class _RingdrillPickerBodyState<T> extends State<_RingdrillPickerBody<T>> {
           ),
         ] else
           Flexible(child: _list(theme, filtered)),
+        if (_loading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          ),
         if (widget.footerActions.isNotEmpty) ...[
           const Divider(height: 1),
           ...widget.footerActions,
