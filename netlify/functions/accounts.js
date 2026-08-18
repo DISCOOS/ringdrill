@@ -206,6 +206,14 @@ export function createHandler({
                 userId: m.userId ?? null,
                 email: m.email ?? user?.primaryEmail ?? null,
                 displayName: user?.displayName ?? null,
+                // **Shared with fellow members on purpose.** ADR-0072 put the
+                // boundary at the public catalog rather than the device: an
+                // account is a bounded set of people already running the
+                // exercise together, and a roster exists so they can reach
+                // each other. The address on this row is already shared for
+                // the same reason. Only members read this endpoint — the
+                // `isMember` guard above is what makes that true.
+                phone: user?.phone ?? null,
                 role: m.role,
                 // Invited and Failed are states on the row, not roles
                 // (DESIGN-015 §6.2).

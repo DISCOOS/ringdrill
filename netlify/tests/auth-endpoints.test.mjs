@@ -360,6 +360,37 @@ test("under AUTH_MODE=live the server signs a real JWT, verifiable with the publ
     assert.equal(verified.claims.roles[verified.claims.act], "owner");
 });
 
+test("a phone number is part of the profile, and reaches the people who need it", async () => {
+    // A roster is dialled by a human running an exercise. Storing the number on
+    // the account rather than retyping it into every plan's roster is the whole
+    // point of linking a staff row to an identity.
+    const h = harness();
+    const { session } = await signIn(h);
+
+    const res = await h.handler(new Request("https://api.ringdrill.app/api/auth/me", {
+        method: "PATCH",
+        headers: { "content-type": "application/json", authorization: `Bearer ${session.accessToken}` },
+        body: JSON.stringify({ phone: "+47 900 12 345" }),
+    }));
+
+    assert.equal(res.status, 200);
+    assert.equal((await res.json()).user.phone, "+47 900 12 345");
+});
+
+test("a phone number can be set without touching the names", async () => {
+    // "nothing_to_update" used to fire for a body that carried only a phone,
+    // because the check predated the field.
+    const h = harness();
+    const { session } = await signIn(h);
+    const res = await h.handler(new Request("https://api.ringdrill.app/api/auth/me", {
+        method: "PATCH",
+        headers: { "content-type": "application/json", authorization: `Bearer ${session.accessToken}` },
+        body: JSON.stringify({ phone: "" }),
+    }));
+    assert.equal(res.status, 200, "clearing it is an update too");
+    assert.equal((await res.json()).user.phone, "");
+});
+
 // ---------- AUTH_MODE=off ----------
 
 /// The rollback switch (ADR-0073), and the gap that made it half a switch.

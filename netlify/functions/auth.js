@@ -89,6 +89,12 @@ function publicUser(user) {
         // it" — the first is a prompt to show, the second is not.
         nickname: user.nickname ?? "",
         email: user.primaryEmail,
+        // **Contact detail, carried on purpose** (ADR-0072's logic): an
+        // account is a bounded set of people already running an exercise
+        // together, and a roster exists so they can reach each other. Empty
+        // rather than omitted, so a client can tell "not set" from "this build
+        // does not know about it".
+        phone: user.phone ?? "",
     };
 }
 
@@ -509,6 +515,7 @@ export function createHandler({
         const body = await request.json().catch(() => ({}));
         const displayName = typeof body.displayName === "string" ? body.displayName.trim() : null;
         const nickname = typeof body.nickname === "string" ? body.nickname.trim() : null;
+        const phone = typeof body.phone === "string" ? body.phone.trim() : null;
 
         // A display name is what every other screen shows this person as, so
         // clearing it would leave them nameless everywhere. Refused rather than
@@ -516,14 +523,17 @@ export function createHandler({
         if (displayName !== null && displayName.length === 0) {
             return json({ error: "display_name_required" }, 400);
         }
-        if (displayName === null && nickname === null) {
+        if (displayName === null && nickname === null && phone === null) {
             return json({ error: "nothing_to_update" }, 400);
         }
         if ((displayName?.length ?? 0) > 80 || (nickname?.length ?? 0) > 40) {
             return json({ error: "name_too_long" }, 400);
         }
+        // Long enough for an international number with an extension and a
+        // note; short enough that the field is not a second notes box.
+        if ((phone?.length ?? 0) > 40) return json({ error: "phone_too_long" }, 400);
 
-        const updated = await updateUserNames(principal.userId, { displayName, nickname }, stores);
+        const updated = await updateUserNames(principal.userId, { displayName, nickname, phone }, stores);
         if (!updated.ok) return json({ error: updated.reason }, 404);
         return json({ user: publicUser(updated.user) });
     }

@@ -5109,7 +5109,7 @@ A.aX(b,A.aC(h,"props.md",f),s.at)}for(c=J.O(a1.gcB());c.n();){s=c.gp()
 q=B.w.al(B.t.bq(A.w_(s),f))
 r=s.a
 b.k(0,A.dD(A.aC("staff",r+".json",f),q.length,q))
-A.aX(b,A.aC("staff",r,"notes.md"),s.d)}c=A.h([],t.en)
+A.aX(b,A.aC("staff",r,"notes.md"),s.e)}c=A.h([],t.en)
 s=A.h([],t.mL)
 q=B.w.al(B.t.bq(A.vW(a1.mt(A.h([],t.O),A.h([],t.A),s,A.h([],t.iC),c)),f))
 b.k(0,A.dD("program.json",q.length,q))
@@ -6570,19 +6570,20 @@ break
 default:s=null}return s},
 m9:function m9(){},
 w6(a,b){return b.a(a)},
-vZ(a){var s=A.t(a.h(0,"uuid")),r=A.t(a.h(0,"realName")),q=A.m(a.h(0,"phone")),p=t.g.a(a.h(0,"roles"))
-p=p==null?null:J.aa(p,new A.oZ(),t.al).cY(0)
-if(p==null)p=B.fd
-return new A.du(s,r,q,null,p,A.m(a.h(0,"userId")))},
+vZ(a){var s=A.t(a.h(0,"uuid")),r=A.t(a.h(0,"realName")),q=A.m(a.h(0,"phone")),p=A.m(a.h(0,"email")),o=t.g.a(a.h(0,"roles"))
+o=o==null?null:J.aa(o,new A.oZ(),t.al).cY(0)
+if(o==null)o=B.fd
+return new A.du(s,r,q,p,null,o,A.m(a.h(0,"userId")))},
 w_(a){var s=t.N
-return A.o(["uuid",a.a,"realName",a.b,"phone",a.c,"roles",a.gis().aP(0,new A.p_(),s).aW(0),"userId",a.f],s,t.z)},
-du:function du(a,b,c,d,e,f){var _=this
+return A.o(["uuid",a.a,"realName",a.b,"phone",a.c,"email",a.d,"roles",a.gis().aP(0,new A.p_(),s).aW(0),"userId",a.r],s,t.z)},
+du:function du(a,b,c,d,e,f,g){var _=this
 _.a=a
 _.b=b
 _.c=c
 _.d=d
 _.e=e
-_.f=f},
+_.f=f
+_.r=g},
 kR:function kR(a,b,c){this.a=a
 this.b=b
 this.$ti=c},
@@ -23329,7 +23330,7 @@ t.Y.a(b)
 return a+b.b+b.a+b.c},
 $S:135}
 A.du.prototype={
-gis(){var s=this.e
+gis(){var s=this.f
 if(s instanceof A.eH)return s
 return new A.eH(s,s,t.i9)},
 ga2(){return new A.kR(this,B.cU,t.jF)},
@@ -23341,18 +23342,19 @@ if(J.aJ(b)===A.U(q))if(b instanceof A.du){r=b.a===q.a
 if(r||r){r=b.b===q.b
 if(r||r){r=b.c==q.c
 if(r||r){r=b.d==q.d
-if(r||r)if(B.o.Y(b.e,q.e)){s=b.f==q.f
-s=s||s}}}}}}else s=!0
+if(r||r){r=b.e==q.e
+if(r||r)if(B.o.Y(b.f,q.f)){s=b.r==q.r
+s=s||s}}}}}}}else s=!0
 return s},
 gB(a){var s=this
-return A.ao(A.U(s),s.a,s.b,s.c,s.d,B.o.W(s.e),s.f,B.b,B.b,B.b,B.b,B.b,B.b,B.b,B.b,B.b,B.b,B.b,B.b)},
+return A.ao(A.U(s),s.a,s.b,s.c,s.d,s.e,B.o.W(s.f),s.r,B.b,B.b,B.b,B.b,B.b,B.b,B.b,B.b,B.b,B.b,B.b)},
 l(a){var s=this
-return"Staff(uuid: "+s.a+", realName: "+s.b+", phone: "+A.j(s.c)+", notes: "+A.j(s.d)+", roles: "+s.gis().l(0)+", userId: "+A.j(s.f)+")"},
+return"Staff(uuid: "+s.a+", realName: "+s.b+", phone: "+A.j(s.c)+", email: "+A.j(s.d)+", notes: "+A.j(s.e)+", roles: "+s.gis().l(0)+", userId: "+A.j(s.r)+")"},
 $ie3:1,
 mk(a){return this.ga2().$1$notes(a)}}
 A.kR.prototype={
-$1$notes(a){var s=this.a,r=B.e===a?s.d:A.m(a)
-return this.b.$1(new A.du(s.a,s.b,s.c,r,s.e,s.f))},
+$1$notes(a){var s=this.a,r=B.e===a?s.e:A.m(a)
+return this.b.$1(new A.du(s.a,s.b,s.c,s.d,r,s.f,s.r))},
 $0(){return this.$1$notes(B.e)}}
 A.oZ.prototype={
 $1(a){return A.xR(B.cc,a,t.al,t.N)},

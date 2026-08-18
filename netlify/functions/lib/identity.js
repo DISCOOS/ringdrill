@@ -432,15 +432,21 @@ export async function resolveIdentity(
  * creation, so an empty value would leave the user nameless. `nickname` may
  * be cleared, because empty is its legitimate initial state.
  */
-export async function updateUserNames(userId, { displayName, nickname }, stores = defaultStores) {
+export async function updateUserNames(userId, { displayName, nickname, phone }, stores = defaultStores) {
     const user = await getUser(userId, stores);
     if (!user) return { ok: false, reason: "no_such_user" };
 
     const nextDisplay = typeof displayName === "string" ? displayName.trim() : null;
     const nextShort = typeof nickname === "string" ? nickname.trim() : null;
+    const nextPhone = typeof phone === "string" ? phone.trim() : null;
 
     if (nextDisplay) user.displayName = nextDisplay;
     if (nextShort !== null) user.nickname = nextShort;
+    // **Stored unvalidated and unnormalised.** A roster is dialled by a human
+    // reading it, and the formats that matter here — a Norwegian mobile, a
+    // switchboard with an extension, "KO: 815 …" — do not survive a shape
+    // check written against E.164. Empty string clears it.
+    if (nextPhone !== null) user.phone = nextPhone;
     await putJson(stores.users(), userId, user);
 
     if (nextDisplay) {
