@@ -1429,7 +1429,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String signInCodeSent(String email) {
-    return 'Vi sendte en lenke og en sekssifret kode til $email. Begge virker.';
+    return 'Vi sendte en lenke og en sekssifret kode til $email. Bruk én av dem — det er samme innlogging.';
   }
 
   @override

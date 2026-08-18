@@ -1434,7 +1434,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String signInCodeSent(String email) {
-    return 'We sent a link and a six-digit code to $email. Either one works.';
+    return 'We sent a link and a six-digit code to $email. Use either one — it is the same sign-in.';
   }
 
   @override

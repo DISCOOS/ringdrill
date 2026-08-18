@@ -2390,10 +2390,10 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get signInSendCode;
 
-  /// After a challenge is started. Both redemptions are the same challenge (DESIGN-015 §3.3), so the wording must not imply picking one rules out the other.
+  /// After a challenge is started. The link and the code redeem the *same* challenge (DESIGN-015 §3.3), so this must not read as two independent ways in — nor as "both work", which the previous wording said and which is false: whichever is used first wins and the other is refused as already used.
   ///
   /// In en, this message translates to:
-  /// **'We sent a link and a six-digit code to {email}. Either one works.'**
+  /// **'We sent a link and a six-digit code to {email}. Use either one — it is the same sign-in.'**
   String signInCodeSent(String email);
 
   /// No description provided for @signInCodeLabel.

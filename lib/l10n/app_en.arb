@@ -1491,9 +1491,9 @@
   "signInEmailLabel": "Email address",
   "signInEmailInvalid": "Enter an email address",
   "signInSendCode": "Continue",
-  "signInCodeSent": "We sent a link and a six-digit code to {email}. Either one works.",
+  "signInCodeSent": "We sent a link and a six-digit code to {email}. Use either one \u2014 it is the same sign-in.",
   "@signInCodeSent": {
-    "description": "After a challenge is started. Both redemptions are the same challenge (DESIGN-015 §3.3), so the wording must not imply picking one rules out the other.",
+    "description": "After a challenge is started. The link and the code redeem the *same* challenge (DESIGN-015 \u00a73.3), so this must not read as two independent ways in \u2014 nor as \"both work\", which the previous wording said and which is false: whichever is used first wins and the other is refused as already used.",
     "placeholders": { "email": { "type": "String" } }
   },
   "signInCodeLabel": "Six-digit code",

@@ -402,7 +402,7 @@
   "signInEmailLabel": "E-postadresse",
   "signInEmailInvalid": "Skriv inn en e-postadresse",
   "signInSendCode": "Fortsett",
-  "signInCodeSent": "Vi sendte en lenke og en sekssifret kode til {email}. Begge virker.",
+  "signInCodeSent": "Vi sendte en lenke og en sekssifret kode til {email}. Bruk én av dem — det er samme innlogging.",
   "signInCodeLabel": "Sekssifret kode",
   "signInVerify": "Logg inn",
   "signInLinkTitle": "Logg inn",

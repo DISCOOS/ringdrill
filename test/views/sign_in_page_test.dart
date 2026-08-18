@@ -203,7 +203,7 @@ void main() {
       expect(
         find.text(
           'We sent a link and a six-digit code to kari@example.com. '
-          'Either one works.',
+          'Use either one — it is the same sign-in.',
         ),
         findsOneWidget,
       );
@@ -494,7 +494,7 @@ void main() {
       expect(
         find.text(
           'We sent a link and a six-digit code to kari@example.com. '
-          'Either one works.',
+          'Use either one — it is the same sign-in.',
         ),
         findsOneWidget,
       );
