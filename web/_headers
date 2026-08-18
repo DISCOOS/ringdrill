@@ -1,0 +1,35 @@
+# Cloudflare Pages serves these with the PWA (web.ringdrill.app).
+#
+# Why: the web build is `flutter build web --wasm`, and skwasm renders on
+# several threads only when the page is *cross-origin isolated*. Without these
+# two headers it silently drops to a single thread, which is what the console
+# has been saying on every load.
+#
+# Isolation needs COOP `same-origin` plus a COEP value, and the choice of COEP
+# is the whole risk:
+#
+#   require-corp   every cross-origin subresource must send CORP. The map
+#                  tiles do not — cache.kartverket.no answers with
+#                  `access-control-allow-origin: *` and no CORP header — so
+#                  this would blank the map, which is most of what this app is.
+#   credentialless what is used here. Cross-origin no-cors requests are allowed
+#                  and sent without credentials. The tiles need no credentials,
+#                  so nothing is lost, and CanvasKit keeps loading from gstatic
+#                  (which does send CORP: cross-origin either way).
+#
+# A browser that does not know `credentialless` ignores it, is not isolated,
+# and runs single-threaded — exactly today's behaviour, so old Safari is no
+# worse off than it is now.
+#
+# **The one thing this breaks, when it arrives.** COOP `same-origin` severs
+# `window.opener`, and provider sign-in on web goes through
+# `flutter_web_auth_2`, which is a popup that reports back to its opener. That
+# is inert today because no OAuth providers are configured — /api/auth/providers
+# answers with an empty list — but the day Google or Microsoft is enabled, this
+# file and that flow are in direct conflict. `same-origin-allow-popups` would
+# fix the popup and forfeit isolation: it is not one of the values that grants
+# it. The way out is a redirect flow rather than a popup, which the backend
+# already supports (`/api/auth/callback/<provider>` bounces to the app).
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless

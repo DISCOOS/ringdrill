@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
@@ -14,14 +15,23 @@ class PatchAlertWidget extends StatefulWidget {
 }
 
 class _PatchAlertWidgetState extends State<PatchAlertWidget> {
-  late Timer _timer;
+  /// Null on web, where there is nothing to poll for.
+  ///
+  /// Shorebird patches a Flutter *engine*, and the web build has none — the
+  /// package says so itself, at length, on the first call. Polling it every
+  /// ten seconds from the PWA printed that essay into the console of a browser
+  /// that was never going to receive a patch, and asked the question 8 640
+  /// times a day to be told no.
+  Timer? _timer;
 
   final updater = ShorebirdUpdater();
   UpdateStatus status = UpdateStatus.unavailable;
 
   @override
   void initState() {
-    _timer = Timer.periodic(const Duration(seconds: 10), _check);
+    if (!kIsWeb) {
+      _timer = Timer.periodic(const Duration(seconds: 10), _check);
+    }
     super.initState();
   }
 
@@ -71,7 +81,7 @@ class _PatchAlertWidgetState extends State<PatchAlertWidget> {
 
   @override
   void dispose() {
-    _timer.cancel();
+    _timer?.cancel();
     super.dispose();
   }
 }

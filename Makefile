@@ -257,6 +257,7 @@ build-web:
 		$(DART_DEFINE_MIGRATION)
 	mkdir -p build/web/.well-known
 	cp -f web/.well-known/assetlinks.json build/web/.well-known/assetlinks.json
+	cp -f web/_headers build/web/_headers
 
 # dart2js-only fallback. Kept around so we can bisect WASM
 # regressions without reverting commits, and so we have a
@@ -273,6 +274,7 @@ build-web-js:
 		$(DART_DEFINE_MIGRATION)
 	mkdir -p build/web/.well-known
 	cp -f web/.well-known/assetlinks.json build/web/.well-known/assetlinks.json
+	cp -f web/_headers build/web/_headers
 
 upload-symbols-web:
 	dart run sentry_dart_plugin
