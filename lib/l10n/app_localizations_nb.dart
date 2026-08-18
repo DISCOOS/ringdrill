@@ -1217,6 +1217,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get accountFullNameLabel => 'Fullt navn';
 
   @override
+  String get accountPhoneLabel => 'Telefon';
+
+  @override
   String get accountNicknameLabel => 'Kallenavn';
 
   @override
@@ -1454,6 +1457,17 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get signInResend => 'Send ny kode';
+
+  @override
+  String get actorEmail => 'E-post';
+
+  @override
+  String staffLinkSuggestion(String name) {
+    return '$name finnes i kontoen din. Koble denne raden?';
+  }
+
+  @override
+  String get staffLinkSuggestionAccept => 'Koble';
 
   @override
   String get staffAddManually => 'Skriv inn selv';

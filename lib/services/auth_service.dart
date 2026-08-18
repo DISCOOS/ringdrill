@@ -586,13 +586,18 @@ class AuthService extends ChangeNotifier {
   /// Publishes immediately rather than waiting for the next hydrate: the
   /// person just typed these, and a form that saves without the screen
   /// changing reads as a form that did not save.
-  Future<void> updateNames({String? displayName, String? nickname}) async {
+  Future<void> updateNames({
+    String? displayName,
+    String? nickname,
+    String? phone,
+  }) async {
     final token = await accessToken();
     if (token == null) return;
     final user = await _client.updateNames(
       token: token,
       displayName: displayName,
       nickname: nickname,
+      phone: phone,
     );
     _publish(
       AuthState(

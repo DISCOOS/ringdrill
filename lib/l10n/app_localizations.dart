@@ -2030,6 +2030,12 @@ abstract class AppLocalizations {
   /// **'Full name'**
   String get accountFullNameLabel;
 
+  /// On the account page, beside your names. Shared with the members of accounts you belong to, so a coordinator building a roster can reach you without asking for it again — the same reason your address is already visible there.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get accountPhoneLabel;
+
   /// No description provided for @accountNicknameLabel.
   ///
   /// In en, this message translates to:
@@ -2437,6 +2443,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send a new code'**
   String get signInResend;
+
+  /// Contact field on a roster row. A director reaches staff in writing before and after an execution and by phone during it, so a roster that carries only a number covers one of the two.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get actorEmail;
+
+  /// Offered on a hand-typed row whose name matches exactly one account member. A suggestion, never automatic: matching on a name is too weak to decide, since two people can share one, but strong enough to ask.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is in your account. Link this row?'**
+  String staffLinkSuggestion(String name);
+
+  /// No description provided for @staffLinkSuggestionAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get staffLinkSuggestionAccept;
 
   /// The other half of the add-member choice, beside "Add from account". Most roster rows are markører recruited for a day who have no account, so this is the ordinary path, not the fallback.
   ///

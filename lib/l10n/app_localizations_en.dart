@@ -1220,6 +1220,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountFullNameLabel => 'Full name';
 
   @override
+  String get accountPhoneLabel => 'Phone';
+
+  @override
   String get accountNicknameLabel => 'Nickname';
 
   @override
@@ -1459,6 +1462,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signInResend => 'Send a new code';
+
+  @override
+  String get actorEmail => 'Email';
+
+  @override
+  String staffLinkSuggestion(String name) {
+    return '$name is in your account. Link this row?';
+  }
+
+  @override
+  String get staffLinkSuggestionAccept => 'Link';
 
   @override
   String get staffAddManually => 'Enter by hand';

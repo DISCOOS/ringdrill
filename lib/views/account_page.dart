@@ -40,6 +40,7 @@ class _AccountPageState extends State<AccountPage> {
   /// is an AppBar action, and the AppBar belongs to the page.
   final _fullName = TextEditingController();
   final _nickname = TextEditingController();
+  final _phone = TextEditingController();
   bool _namesDirty = false;
   bool _savingNames = false;
 
@@ -69,6 +70,7 @@ class _AccountPageState extends State<AccountPage> {
       await AuthService.instance.updateNames(
         displayName: _fullName.text.trim(),
         nickname: _nickname.text.trim(),
+        phone: _phone.text.trim(),
       );
       if (!mounted) return;
       setState(() => _namesDirty = false);
@@ -93,6 +95,7 @@ class _AccountPageState extends State<AccountPage> {
     final display = user?.displayName ?? '';
     _fullName.text = (display == user?.email) ? '' : display;
     _nickname.text = user?.nickname ?? '';
+    _phone.text = user?.phone ?? '';
   }
 
   Future<AccountRoster> _load() async {
@@ -135,6 +138,7 @@ class _AccountPageState extends State<AccountPage> {
   void dispose() {
     _fullName.dispose();
     _nickname.dispose();
+    _phone.dispose();
     super.dispose();
   }
 
@@ -231,6 +235,7 @@ class _AccountPageState extends State<AccountPage> {
                 editable: _showNameFields,
                 fullName: _fullName,
                 nickname: _nickname,
+                phone: _phone,
                 busy: _savingNames,
                 onChanged: () => setState(() => _namesDirty = true),
               ),
@@ -762,6 +767,7 @@ class _OwnerSection extends StatelessWidget {
     required this.editable,
     required this.fullName,
     required this.nickname,
+    required this.phone,
     required this.busy,
     required this.onChanged,
   });
@@ -771,6 +777,13 @@ class _OwnerSection extends StatelessWidget {
   final bool editable;
   final TextEditingController fullName;
   final TextEditingController nickname;
+
+  /// The number fellow members see (ADR-0072's logic: an account is people
+  /// already running the exercise together, and a roster exists so they can
+  /// reach each other). Its own row rather than a third column — a phone
+  /// number needs the width, and two names plus a number in one row is three
+  /// cramped boxes.
+  final TextEditingController phone;
   final bool busy;
   final VoidCallback onChanged;
 
@@ -839,6 +852,16 @@ class _OwnerSection extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: TextFormField(
+              controller: phone,
+              enabled: !busy,
+              keyboardType: TextInputType.phone,
+              decoration: InputDecoration(labelText: l.accountPhoneLabel),
+              onChanged: (_) => onChanged(),
             ),
           ),
           // **Below the fields, not above them.** It reads better as a note on

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/role_play.dart';
+import 'dart:async';
+
 import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/services/auth_service.dart';
+import 'package:ringdrill/views/widgets/inline_message.dart';
 import 'package:ringdrill/views/widgets/staff_from_account_picker.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/edit_permissions.dart';
@@ -90,6 +93,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
 
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
   final _notesController = TextEditingController();
 
   @override
@@ -102,6 +106,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
     if (staff != null) {
       _nameController.text = staff.realName;
       _phoneController.text = staff.phone ?? '';
+      _emailController.text = staff.email ?? '';
       _notesController.text = staff.notes ?? '';
       // A record written before roles existed has none. Default it to `other`
       // rather than opening in an invalid state: the validation below applies to
@@ -110,6 +115,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
       // member whose role was never recorded, and the user can correct it.
       _roles = staff.roles.isEmpty ? {StaffRole.other} : {...staff.roles};
       _userId = staff.userId;
+      if (staff.userId == null) unawaited(_lookForMatch(staff));
       // The stored row has no copy of the account's own name, so the linked
       // label falls back to the row's — which is what it was created from.
       _linkedName = staff.userId == null ? null : staff.realName;
@@ -120,6 +126,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -186,6 +193,19 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
                   ),
                   const SizedBox(height: 12),
 
+                  // Email (optional). Beside the phone rather than below the
+                  // notes: they are the same question — how the director
+                  // reaches this person — asked for two different moments.
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: localizations.actorEmail,
+                      hintText: localizations.optional,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
                   // Notes (optional, multiline)
                   TextFormField(
                     controller: _notesController,
@@ -229,6 +249,22 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
     if (!available) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
+
+    final suggestion = _suggestion;
+    if (_userId == null && suggestion != null) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 20),
+        child: InlineMessage(
+          message: l10n.staffLinkSuggestion(suggestion.name),
+          tone: MessageTone.info,
+          trailing: TextButton(
+            onPressed: () => _acceptSuggestion(suggestion),
+            child: Text(l10n.staffLinkSuggestionAccept),
+          ),
+        ),
+      );
+    }
+
     if (_userId != null) {
       return Padding(
         padding: const EdgeInsets.only(top: 20),
@@ -275,6 +311,44 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
     );
   }
 
+  /// The account member this hand-typed row is probably meant to be.
+  ///
+  /// Looked up in the background on open, so the form is usable immediately
+  /// and the suggestion appears when it can. Silent on failure: a nudge that
+  /// could not load is a nudge nobody was waiting for.
+  StaffCandidate? _suggestion;
+
+  Future<void> _lookForMatch(Staff member) async {
+    if (!AuthService.isInstalled ||
+        !AuthService.instance.authAvailable ||
+        AuthService.instance.state.user == null) {
+      return;
+    }
+    final roster = PlanService()
+        .loadStaff()
+        .where((row) => row.uuid != member.uuid)
+        .toList();
+    final loaded = await loadStaffCandidates(roster: roster);
+    if (!mounted) return;
+    final match = suggestedLinkFor(member, loaded.candidates);
+    if (match != null) setState(() => _suggestion = match);
+  }
+
+  void _acceptSuggestion(StaffCandidate candidate) {
+    setState(() {
+      _suggestion = null;
+      _userId = candidate.userId;
+      _linkedName = candidate.name;
+      _nameController.text = candidate.name;
+      if (_phoneController.text.trim().isEmpty && candidate.phone != null) {
+        _phoneController.text = candidate.phone!;
+      }
+      if (_emailController.text.trim().isEmpty && candidate.email != null) {
+        _emailController.text = candidate.email!;
+      }
+    });
+  }
+
   Future<void> _linkToAccount(AppLocalizations l10n) async {
     // The roster minus this row: linking to somebody already on it would make
     // two rows the same person, which is the thing the link exists to prevent.
@@ -300,6 +374,16 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
     setState(() {
       _userId = candidate.userId;
       _linkedName = candidate.name;
+      // **Fills empty boxes, never overwrites a typed one.** A coordinator who
+      // wrote a duty number against this person knows something the account
+      // does not — that is the number for *this* exercise — and a link should
+      // not quietly replace it with a personal mobile.
+      if (_phoneController.text.trim().isEmpty && candidate.phone != null) {
+        _phoneController.text = candidate.phone!;
+      }
+      if (_emailController.text.trim().isEmpty && candidate.email != null) {
+        _emailController.text = candidate.email!;
+      }
       // **Replaces the name too.** A row typed as "kenneth" that turns out to
       // be an account member should read as that member does everywhere else,
       // and the form is not saved yet — anyone who wanted the local spelling
@@ -487,6 +571,9 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
             phone: _phoneController.text.trim().isEmpty
                 ? null
                 : _phoneController.text.trim(),
+            email: _emailController.text.trim().isEmpty
+                ? null
+                : _emailController.text.trim(),
             notes: _notesController.text.trim().isEmpty
                 ? null
                 : _notesController.text.trim(),
@@ -498,6 +585,9 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
             phone: _phoneController.text.trim().isEmpty
                 ? null
                 : _phoneController.text.trim(),
+            email: _emailController.text.trim().isEmpty
+                ? null
+                : _emailController.text.trim(),
             notes: _notesController.text.trim().isEmpty
                 ? null
                 : _notesController.text.trim(),

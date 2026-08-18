@@ -22,6 +22,18 @@ sealed class Staff with _$Staff {
     required String uuid,
     required String realName,
     String? phone,
+
+    /// How to reach them in writing, when a phone call is the wrong register.
+    ///
+    /// A director talks to staff before, during and after an execution —
+    /// briefing material and a plan link go out days ahead, the phone is for
+    /// the day itself. A roster that carries only a number covers one of
+    /// those.
+    ///
+    /// PII like the rest of this record, and it travels by exactly the same
+    /// rule (ADR-0072): to the account that owns the plan, never to the public
+    /// catalog.
+    String? email,
     @JsonKey(includeFromJson: false, includeToJson: false) String? notes,
 
     /// The roles this person holds. Additive and defaulted, so a record written

@@ -18,12 +18,21 @@ class StaffCandidate {
   const StaffCandidate({
     required this.userId,
     required this.name,
+    this.phone,
+    this.email,
     this.isSelf = false,
     this.alreadyOnRoster = false,
   });
 
   final String userId;
   final String name;
+
+  /// How the director reaches them. Both carried, because the two are for
+  /// different moments: material and a plan link go out days ahead in writing,
+  /// the phone is for the day itself.
+  final String? phone;
+  final String? email;
+
   final bool isSelf;
 
   /// Matched on [Staff.userId], never on the name. Two people called "Kari
@@ -31,6 +40,38 @@ class StaffCandidate {
   /// signing in is not yet linked to anything.
   final bool alreadyOnRoster;
 }
+
+/// The account member a hand-typed row is probably meant to be.
+///
+/// **A nudge, never a merge.** The link is matched on the id and never on the
+/// name, because two people called Kari Nordmann are two people and a wrong
+/// merge puts one person's phone number against another's name on a station
+/// board. But a coordinator who typed "kenneth gulbrandsøy" before signing in
+/// is looking at their own account name in the same list, and making them
+/// notice that unaided is a poor trade for the safety.
+///
+/// So the comparison that is too weak to decide is strong enough to *ask*:
+/// case and whitespace folded, exact otherwise — no initials, no fuzzy
+/// distance, nothing that would suggest a colleague who merely shares a first
+/// name. Ambiguity is silence: two members matching one row means no
+/// suggestion, because the one thing worse than no nudge is a confident wrong
+/// one.
+StaffCandidate? suggestedLinkFor(
+  Staff member,
+  List<StaffCandidate> candidates,
+) {
+  if (member.userId != null) return null;
+  final typed = _fold(member.realName);
+  if (typed.isEmpty) return null;
+
+  final matches = candidates
+      .where((c) => !c.alreadyOnRoster && _fold(c.name) == typed)
+      .toList();
+  return matches.length == 1 ? matches.single : null;
+}
+
+String _fold(String value) =>
+    value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
 /// Load the people who could be added: you, and the account's members.
 ///
@@ -161,6 +202,8 @@ List<StaffCandidate> buildStaffCandidates({
       // The nickname is what fits a station board; a roster wants the name a
       // coordinator will recognise on a phone list.
       name: user.displayName,
+      phone: user.phone.isEmpty ? null : user.phone,
+      email: user.email,
       isSelf: true,
       alreadyOnRoster: linked.contains(user.id),
     ),
@@ -179,6 +222,8 @@ List<StaffCandidate> buildStaffCandidates({
           name: member.displayName?.trim().isNotEmpty == true
               ? member.displayName!.trim()
               : member.email ?? member.userId!,
+          phone: member.phone,
+          email: member.email,
           alreadyOnRoster: linked.contains(member.userId),
         ),
   ];

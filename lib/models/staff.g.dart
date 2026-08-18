@@ -10,6 +10,7 @@ _Staff _$StaffFromJson(Map<String, dynamic> json) => _Staff(
   uuid: json['uuid'] as String,
   realName: json['realName'] as String,
   phone: json['phone'] as String?,
+  email: json['email'] as String?,
   roles:
       (json['roles'] as List<dynamic>?)
           ?.map((e) => $enumDecode(_$StaffRoleEnumMap, e))
@@ -22,6 +23,7 @@ Map<String, dynamic> _$StaffToJson(_Staff instance) => <String, dynamic>{
   'uuid': instance.uuid,
   'realName': instance.realName,
   'phone': instance.phone,
+  'email': instance.email,
   'roles': instance.roles.map((e) => _$StaffRoleEnumMap[e]!).toList(),
   'userId': instance.userId,
 };

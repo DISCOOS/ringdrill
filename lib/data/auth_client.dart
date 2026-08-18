@@ -54,11 +54,19 @@ class AuthUser {
 
   final String? email;
 
+  /// The number a coordinator would ring on the day.
+  ///
+  /// Empty until set. Kept on the account rather than retyped into every
+  /// plan's roster — which is the point of linking a roster row to an
+  /// identity, and the reason [AccountMember] carries it too.
+  final String phone;
+
   const AuthUser({
     required this.id,
     required this.displayName,
     this.nickname = '',
     this.email,
+    this.phone = '',
   });
 
   /// Whether this person still has names to fill in.
@@ -76,12 +84,14 @@ class AuthUser {
     displayName: (j['displayName'] as String?) ?? '',
     nickname: (j['nickname'] as String?) ?? '',
     email: j['email'] as String?,
+    phone: (j['phone'] as String?) ?? '',
   );
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'displayName': displayName,
     'nickname': nickname,
+    'phone': phone,
     'email': ?email,
   };
 }
@@ -388,6 +398,12 @@ class AccountMember {
   final String? userId;
   final String? email;
   final String? displayName;
+
+  /// Shared with fellow members by design (ADR-0072): an account is a bounded
+  /// set of people already running the exercise together, and a roster exists
+  /// so they can reach each other. Null until that person fills it in.
+  final String? phone;
+
   final String role;
 
   /// `accepted`, `invited` or `failed` — a state on the row, never a role.
@@ -399,6 +415,7 @@ class AccountMember {
     this.userId,
     this.email,
     this.displayName,
+    this.phone,
   });
 
   bool get isPending => state != 'accepted';
@@ -411,6 +428,7 @@ class AccountMember {
     userId: j['userId'] as String?,
     email: j['email'] as String?,
     displayName: j['displayName'] as String?,
+    phone: j['phone'] as String?,
     role: (j['role'] as String?) ?? 'member',
     state: (j['state'] as String?) ?? 'accepted',
   );
@@ -553,12 +571,17 @@ class AuthClient {
     required String token,
     String? displayName,
     String? nickname,
+    String? phone,
   }) async {
     final j = await _send(
       'PATCH',
       'auth/me',
       token: token,
-      body: {'displayName': ?displayName, 'nickname': ?nickname},
+      body: {
+        'displayName': ?displayName,
+        'nickname': ?nickname,
+        'phone': ?phone,
+      },
     );
     return AuthUser.fromJson(j['user'] as Map<String, dynamic>);
   }

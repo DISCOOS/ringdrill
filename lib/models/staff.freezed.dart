@@ -15,7 +15,17 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Staff {
 
- String get uuid; String get realName; String? get phone;@JsonKey(includeFromJson: false, includeToJson: false) String? get notes;/// The roles this person holds. Additive and defaulted, so a record written
+ String get uuid; String get realName; String? get phone;/// How to reach them in writing, when a phone call is the wrong register.
+///
+/// A director talks to staff before, during and after an execution —
+/// briefing material and a plan link go out days ahead, the phone is for
+/// the day itself. A roster that carries only a number covers one of
+/// those.
+///
+/// PII like the rest of this record, and it travels by exactly the same
+/// rule (ADR-0072): to the account that owns the plan, never to the public
+/// catalog.
+ String? get email;@JsonKey(includeFromJson: false, includeToJson: false) String? get notes;/// The roles this person holds. Additive and defaulted, so a record written
 /// before DESIGN-011 reads back unchanged — and one written before [actor]
 /// existed still reads as an actor when a roleplay is cast to them.
  Set<StaffRole> get roles;/// The account user this row was created from, when it came from one.
@@ -31,8 +41,14 @@ mixin _$Staff {
 /// Null for everyone typed in by hand, which is most of a roster — markører
 /// recruited for a day have no RingDrill account and never will.
 ///
-/// Stays inside the `staff/` folder the publisher strips (ADR-0018), so it
-/// never reaches the catalog.
+/// Where it travels is the roster's own rule (ADR-0072), which is not "PII
+/// never leaves the device": a plan owned by an account is stored whole,
+/// roster included, because the co-coordinator running the same exercise
+/// needs the same phone list. Only the **catalog** path strips `staff/`,
+/// at write time, because those bytes must not exist in a publicly
+/// readable store. So this id reaches the account and never the catalog —
+/// which is also what makes it useful, since a roster shared between two
+/// coordinators is exactly where "is this row already me?" gets asked.
  String? get userId;
 /// Create a copy of Staff
 /// with the given fields replaced by the non-null parameter values.
@@ -46,16 +62,16 @@ $StaffCopyWith<Staff> get copyWith => _$StaffCopyWithImpl<Staff>(this as Staff, 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Staff&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.realName, realName) || other.realName == realName)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other.roles, roles)&&(identical(other.userId, userId) || other.userId == userId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Staff&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.realName, realName) || other.realName == realName)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other.roles, roles)&&(identical(other.userId, userId) || other.userId == userId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,uuid,realName,phone,notes,const DeepCollectionEquality().hash(roles),userId);
+int get hashCode => Object.hash(runtimeType,uuid,realName,phone,email,notes,const DeepCollectionEquality().hash(roles),userId);
 
 @override
 String toString() {
-  return 'Staff(uuid: $uuid, realName: $realName, phone: $phone, notes: $notes, roles: $roles, userId: $userId)';
+  return 'Staff(uuid: $uuid, realName: $realName, phone: $phone, email: $email, notes: $notes, roles: $roles, userId: $userId)';
 }
 
 
@@ -66,7 +82,7 @@ abstract mixin class $StaffCopyWith<$Res>  {
   factory $StaffCopyWith(Staff value, $Res Function(Staff) _then) = _$StaffCopyWithImpl;
 @useResult
 $Res call({
- String uuid, String realName, String? phone,@JsonKey(includeFromJson: false, includeToJson: false) String? notes, Set<StaffRole> roles, String? userId
+ String uuid, String realName, String? phone, String? email,@JsonKey(includeFromJson: false, includeToJson: false) String? notes, Set<StaffRole> roles, String? userId
 });
 
 
@@ -83,11 +99,12 @@ class _$StaffCopyWithImpl<$Res>
 
 /// Create a copy of Staff
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? uuid = null,Object? realName = null,Object? phone = freezed,Object? notes = freezed,Object? roles = null,Object? userId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? uuid = null,Object? realName = null,Object? phone = freezed,Object? email = freezed,Object? notes = freezed,Object? roles = null,Object? userId = freezed,}) {
   return _then(_self.copyWith(
 uuid: null == uuid ? _self.uuid : uuid // ignore: cast_nullable_to_non_nullable
 as String,realName: null == realName ? _self.realName : realName // ignore: cast_nullable_to_non_nullable
 as String,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String?,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,roles: null == roles ? _self.roles : roles // ignore: cast_nullable_to_non_nullable
 as Set<StaffRole>,userId: freezed == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
@@ -173,10 +190,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String realName,  String? phone, @JsonKey(includeFromJson: false, includeToJson: false)  String? notes,  Set<StaffRole> roles,  String? userId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String realName,  String? phone,  String? email, @JsonKey(includeFromJson: false, includeToJson: false)  String? notes,  Set<StaffRole> roles,  String? userId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Staff() when $default != null:
-return $default(_that.uuid,_that.realName,_that.phone,_that.notes,_that.roles,_that.userId);case _:
+return $default(_that.uuid,_that.realName,_that.phone,_that.email,_that.notes,_that.roles,_that.userId);case _:
   return orElse();
 
 }
@@ -194,10 +211,10 @@ return $default(_that.uuid,_that.realName,_that.phone,_that.notes,_that.roles,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String realName,  String? phone, @JsonKey(includeFromJson: false, includeToJson: false)  String? notes,  Set<StaffRole> roles,  String? userId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String realName,  String? phone,  String? email, @JsonKey(includeFromJson: false, includeToJson: false)  String? notes,  Set<StaffRole> roles,  String? userId)  $default,) {final _that = this;
 switch (_that) {
 case _Staff():
-return $default(_that.uuid,_that.realName,_that.phone,_that.notes,_that.roles,_that.userId);}
+return $default(_that.uuid,_that.realName,_that.phone,_that.email,_that.notes,_that.roles,_that.userId);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -211,10 +228,10 @@ return $default(_that.uuid,_that.realName,_that.phone,_that.notes,_that.roles,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String realName,  String? phone, @JsonKey(includeFromJson: false, includeToJson: false)  String? notes,  Set<StaffRole> roles,  String? userId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String realName,  String? phone,  String? email, @JsonKey(includeFromJson: false, includeToJson: false)  String? notes,  Set<StaffRole> roles,  String? userId)?  $default,) {final _that = this;
 switch (_that) {
 case _Staff() when $default != null:
-return $default(_that.uuid,_that.realName,_that.phone,_that.notes,_that.roles,_that.userId);case _:
+return $default(_that.uuid,_that.realName,_that.phone,_that.email,_that.notes,_that.roles,_that.userId);case _:
   return null;
 
 }
@@ -226,12 +243,23 @@ return $default(_that.uuid,_that.realName,_that.phone,_that.notes,_that.roles,_t
 @JsonSerializable()
 
 class _Staff implements Staff {
-  const _Staff({required this.uuid, required this.realName, this.phone, @JsonKey(includeFromJson: false, includeToJson: false) this.notes, final  Set<StaffRole> roles = const <StaffRole>{}, this.userId}): _roles = roles;
+  const _Staff({required this.uuid, required this.realName, this.phone, this.email, @JsonKey(includeFromJson: false, includeToJson: false) this.notes, final  Set<StaffRole> roles = const <StaffRole>{}, this.userId}): _roles = roles;
   factory _Staff.fromJson(Map<String, dynamic> json) => _$StaffFromJson(json);
 
 @override final  String uuid;
 @override final  String realName;
 @override final  String? phone;
+/// How to reach them in writing, when a phone call is the wrong register.
+///
+/// A director talks to staff before, during and after an execution —
+/// briefing material and a plan link go out days ahead, the phone is for
+/// the day itself. A roster that carries only a number covers one of
+/// those.
+///
+/// PII like the rest of this record, and it travels by exactly the same
+/// rule (ADR-0072): to the account that owns the plan, never to the public
+/// catalog.
+@override final  String? email;
 @override@JsonKey(includeFromJson: false, includeToJson: false) final  String? notes;
 /// The roles this person holds. Additive and defaulted, so a record written
 /// before DESIGN-011 reads back unchanged — and one written before [actor]
@@ -259,8 +287,14 @@ class _Staff implements Staff {
 /// Null for everyone typed in by hand, which is most of a roster — markører
 /// recruited for a day have no RingDrill account and never will.
 ///
-/// Stays inside the `staff/` folder the publisher strips (ADR-0018), so it
-/// never reaches the catalog.
+/// Where it travels is the roster's own rule (ADR-0072), which is not "PII
+/// never leaves the device": a plan owned by an account is stored whole,
+/// roster included, because the co-coordinator running the same exercise
+/// needs the same phone list. Only the **catalog** path strips `staff/`,
+/// at write time, because those bytes must not exist in a publicly
+/// readable store. So this id reaches the account and never the catalog —
+/// which is also what makes it useful, since a roster shared between two
+/// coordinators is exactly where "is this row already me?" gets asked.
 @override final  String? userId;
 
 /// Create a copy of Staff
@@ -276,16 +310,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Staff&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.realName, realName) || other.realName == realName)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other._roles, _roles)&&(identical(other.userId, userId) || other.userId == userId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Staff&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.realName, realName) || other.realName == realName)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other._roles, _roles)&&(identical(other.userId, userId) || other.userId == userId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,uuid,realName,phone,notes,const DeepCollectionEquality().hash(_roles),userId);
+int get hashCode => Object.hash(runtimeType,uuid,realName,phone,email,notes,const DeepCollectionEquality().hash(_roles),userId);
 
 @override
 String toString() {
-  return 'Staff(uuid: $uuid, realName: $realName, phone: $phone, notes: $notes, roles: $roles, userId: $userId)';
+  return 'Staff(uuid: $uuid, realName: $realName, phone: $phone, email: $email, notes: $notes, roles: $roles, userId: $userId)';
 }
 
 
@@ -296,7 +330,7 @@ abstract mixin class _$StaffCopyWith<$Res> implements $StaffCopyWith<$Res> {
   factory _$StaffCopyWith(_Staff value, $Res Function(_Staff) _then) = __$StaffCopyWithImpl;
 @override @useResult
 $Res call({
- String uuid, String realName, String? phone,@JsonKey(includeFromJson: false, includeToJson: false) String? notes, Set<StaffRole> roles, String? userId
+ String uuid, String realName, String? phone, String? email,@JsonKey(includeFromJson: false, includeToJson: false) String? notes, Set<StaffRole> roles, String? userId
 });
 
 
@@ -313,11 +347,12 @@ class __$StaffCopyWithImpl<$Res>
 
 /// Create a copy of Staff
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? uuid = null,Object? realName = null,Object? phone = freezed,Object? notes = freezed,Object? roles = null,Object? userId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? uuid = null,Object? realName = null,Object? phone = freezed,Object? email = freezed,Object? notes = freezed,Object? roles = null,Object? userId = freezed,}) {
   return _then(_Staff(
 uuid: null == uuid ? _self.uuid : uuid // ignore: cast_nullable_to_non_nullable
 as String,realName: null == realName ? _self.realName : realName // ignore: cast_nullable_to_non_nullable
 as String,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String?,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,roles: null == roles ? _self._roles : roles // ignore: cast_nullable_to_non_nullable
 as Set<StaffRole>,userId: freezed == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable

@@ -1345,6 +1345,10 @@
     "description": "Explains why two names are asked for, so the second does not read as a duplicate of the first."
   },
   "accountFullNameLabel": "Full name",
+  "accountPhoneLabel": "Phone",
+  "@accountPhoneLabel": {
+    "description": "On the account page, beside your names. Shared with the members of accounts you belong to, so a coordinator building a roster can reach you without asking for it again \u2014 the same reason your address is already visible there."
+  },
   "accountNicknameLabel": "Nickname",
   "accountNicknameHelp": "What people call you on the day",
   "accountTitle": "Account",
@@ -1515,6 +1519,16 @@
   "@signInResend": {
     "description": "Code step. The only recovery from an expired or lost code used to be \"use another email\", which reads as a different decision."
   },
+  "actorEmail": "Email",
+  "@actorEmail": {
+    "description": "Contact field on a roster row. A director reaches staff in writing before and after an execution and by phone during it, so a roster that carries only a number covers one of the two."
+  },
+  "staffLinkSuggestion": "{name} is in your account. Link this row?",
+  "@staffLinkSuggestion": {
+    "description": "Offered on a hand-typed row whose name matches exactly one account member. A suggestion, never automatic: matching on a name is too weak to decide, since two people can share one, but strong enough to ask.",
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "staffLinkSuggestionAccept": "Link",
   "staffAddManually": "Enter by hand",
   "@staffAddManually": {
     "description": "The other half of the add-member choice, beside \"Add from account\". Most roster rows are mark\u00f8rer recruited for a day who have no account, so this is the ordinary path, not the fallback."
