@@ -14,12 +14,17 @@ import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/edit_affordance.dart';
 import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
-import 'package:ringdrill/views/widgets/staff_from_account_sheet.dart';
+import 'package:ringdrill/services/auth_service.dart';
+import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
+import 'package:ringdrill/views/widgets/staff_from_account_picker.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
 // ---------------------------------------------------------------------------
 // Controller
 // ---------------------------------------------------------------------------
+
+/// The two ways a roster row starts life.
+enum _AddStaffRoute { fromAccount, manual }
 
 class RosterController extends ScreenController {
   final _reloadTick = ValueNotifier<int>(0);
@@ -55,50 +60,64 @@ class RosterController extends ScreenController {
     );
   }
 
-  Widget _buildCreateFab(BuildContext context, String label) {
-    // Compact circular FAB on phones so the labelled bar does not cover the
-    // bottom list rows; keep the extended variant on medium/expanded.
-    if (WindowSizeClass.of(context) == WindowSizeClass.compact) {
-      return FloatingActionButton(
-        tooltip: label,
-        onPressed: () => _openCreate(context),
-        child: const Icon(Icons.add),
-      );
-    }
-    return FloatingActionButton.extended(
-      icon: const Icon(Icons.add),
-      label: Text(label),
-      onPressed: () => _openCreate(context),
-    );
-  }
-
-  /// The account route onto the roster, beside the FAB's blank form.
+  /// The FAB's two ways in, offered as a choice only when both exist.
   ///
-  /// An action rather than a second FAB, and rather than a chooser in front of
-  /// the FAB: most rows are markører typed in on the day, who have no account
-  /// and never will, so the blank form stays the one-tap path. This is for the
-  /// two cases it cannot serve — putting yourself on, and putting on the people
-  /// you already share the plan with.
-  @override
-  List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
+  /// **A menu that is not always a menu.** Signed out — which is most of the
+  /// app's use, since an account is optional (DESIGN-015 §5.1) — there is
+  /// nothing to choose between, and a chooser in front of the blank form would
+  /// be a tap that always has one answer. Signed in, the account route is worth
+  /// a choice, because a roster shared between coordinators is where it pays.
+  ///
+  /// Routed through [showRingdrillPicker] rather than a popup menu, so it is a
+  /// sheet on compact and a dialog on medium/expanded like every other choice
+  /// in the app (ADR-0049).
+  Future<void> _openAdd(BuildContext context) async {
     final l = AppLocalizations.of(context)!;
-    return [
-      IfCreatable(
-        target: EditTarget.staff,
-        child: IconButton(
-          icon: const Icon(Icons.person_add_alt),
-          tooltip: l.staffFromAccountTitle,
-          onPressed: () => _openFromAccount(context),
+    final canUseAccount =
+        AuthService.isInstalled &&
+        AuthService.instance.authAvailable &&
+        AuthService.instance.state.user != null;
+    if (!canUseAccount) return _openCreate(context);
+
+    final choice = await showRingdrillPicker<_AddStaffRoute>(
+      context: context,
+      title: l.newStaff,
+      items: _AddStaffRoute.values,
+      itemBuilder: (context, route, onTap) => ListTile(
+        leading: Icon(
+          route == _AddStaffRoute.fromAccount
+              ? Icons.person_add_alt
+              : Icons.edit_outlined,
         ),
+        title: Text(
+          route == _AddStaffRoute.fromAccount
+              ? l.staffFromAccountTitle
+              : l.staffAddManually,
+        ),
+        onTap: onTap,
       ),
-    ];
+    );
+    if (choice == null || !context.mounted) return;
+    if (choice == _AddStaffRoute.manual) return _openCreate(context);
+    return _openFromAccount(context);
   }
 
   Future<void> _openFromAccount(BuildContext context) async {
-    final localizations = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context)!;
+    final loaded = await loadStaffCandidates(roster: PlanService().loadStaff());
+    if (!context.mounted) return;
+    if (loaded.failed) {
+      // The member list needs a round trip and this is a field app. Said once,
+      // over a list that still has you in it, rather than instead of the list.
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l.staffFromAccountFailed)));
+    }
+
     final candidate = await pickStaffFromAccount(
       context,
-      roster: PlanService().loadStaff(),
+      candidates: loaded.candidates,
+      title: l.staffFromAccountTitle,
     );
     if (candidate == null || !context.mounted) return;
 
@@ -117,9 +136,26 @@ class RosterController extends ScreenController {
     );
     if (result == null || !context.mounted) return;
     if (result case StaffFormSave(:final staff)) {
-      await PlanService().saveStaff(localizations, staff);
+      await PlanService().saveStaff(l, staff);
       if (context.mounted) _reloadTick.value++;
     }
+  }
+
+  Widget _buildCreateFab(BuildContext context, String label) {
+    // Compact circular FAB on phones so the labelled bar does not cover the
+    // bottom list rows; keep the extended variant on medium/expanded.
+    if (WindowSizeClass.of(context) == WindowSizeClass.compact) {
+      return FloatingActionButton(
+        tooltip: label,
+        onPressed: () => _openAdd(context),
+        child: const Icon(Icons.add),
+      );
+    }
+    return FloatingActionButton.extended(
+      icon: const Icon(Icons.add),
+      label: Text(label),
+      onPressed: () => _openAdd(context),
+    );
   }
 
   Future<void> _openCreate(BuildContext context) async {

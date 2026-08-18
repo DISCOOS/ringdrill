@@ -1461,6 +1461,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signInResend => 'Send a new code';
 
   @override
+  String get staffAddManually => 'Enter by hand';
+
+  @override
+  String get staffLinkToAccount => 'Link to an account member';
+
+  @override
+  String staffLinkedTo(String name) {
+    return 'Linked to $name';
+  }
+
+  @override
+  String get staffUnlinkFromAccount => 'Remove link';
+
+  @override
   String get staffFromAccountTitle => 'Add from account';
 
   @override

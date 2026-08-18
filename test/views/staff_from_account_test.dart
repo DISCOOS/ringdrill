@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/data/auth_client.dart';
 import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/services/auth_service.dart';
-import 'package:ringdrill/views/widgets/staff_from_account_sheet.dart';
+import 'package:ringdrill/views/widgets/staff_from_account_picker.dart';
 
 /// Putting yourself, and the people you share a plan with, on the roster.
 ///

@@ -3,6 +3,8 @@ import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/staff.dart';
+import 'package:ringdrill/services/auth_service.dart';
+import 'package:ringdrill/views/widgets/staff_from_account_picker.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/edit_permissions.dart';
 import 'package:ringdrill/services/plan_service.dart';
@@ -78,6 +80,14 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
   /// to [StaffRole.other], since "not any of the named roles" is what that means.
   Set<StaffRole> _roles = <StaffRole>{};
 
+  /// The account identity this row refers to, if any.
+  ///
+  /// Editable state rather than read straight from the record, because linking
+  /// is a form change like any other: nothing is written until Save, and
+  /// Cancel leaves the row exactly as it was.
+  String? _userId;
+  String? _linkedName;
+
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _notesController = TextEditingController();
@@ -99,6 +109,10 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
       // unrelated change like a phone number. `other` is the honest answer for a
       // member whose role was never recorded, and the user can correct it.
       _roles = staff.roles.isEmpty ? {StaffRole.other} : {...staff.roles};
+      _userId = staff.userId;
+      // The stored row has no copy of the account's own name, so the linked
+      // label falls back to the row's — which is what it was created from.
+      _linkedName = staff.userId == null ? null : staff.realName;
     }
   }
 
@@ -187,6 +201,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
                   const SizedBox(height: 20),
 
                   _buildRoles(context, localizations),
+                  _buildAccountLink(context, localizations),
                 ],
               ),
             ),
@@ -194,6 +209,103 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
         ),
       ),
     );
+  }
+
+  /// Attach this row to the account member it refers to — or detach it.
+  ///
+  /// **Rows arrive unlinked far more often than not.** Most of a roster is
+  /// typed in on the day, and somebody who wrote their own name in before
+  /// signing in has a row that no amount of name matching can safely claim is
+  /// them: two people called Kari Nordmann are two people. Linking is that
+  /// judgement, made by the person who knows the answer.
+  ///
+  /// Absent when there is no account to link to, rather than disabled: an
+  /// offer that cannot be taken invites the question why.
+  Widget _buildAccountLink(BuildContext context, AppLocalizations l10n) {
+    final available =
+        AuthService.isInstalled &&
+        AuthService.instance.authAvailable &&
+        AuthService.instance.state.user != null;
+    if (!available) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    if (_userId != null) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 20),
+        child: Row(
+          children: [
+            Icon(
+              Icons.link,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                l10n.staffLinkedTo(_linkedName ?? _nameController.text.trim()),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            TextButton(
+              // Only the link goes. The row and the name it shows are the
+              // plan's own data and survive it.
+              onPressed: () => setState(() {
+                _userId = null;
+                _linkedName = null;
+              }),
+              child: Text(l10n.staffUnlinkFromAccount),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          icon: const Icon(Icons.link),
+          label: Text(l10n.staffLinkToAccount),
+          onPressed: () => _linkToAccount(l10n),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _linkToAccount(AppLocalizations l10n) async {
+    // The roster minus this row: linking to somebody already on it would make
+    // two rows the same person, which is the thing the link exists to prevent.
+    final roster = PlanService()
+        .loadStaff()
+        .where((member) => member.uuid != widget.staff?.uuid)
+        .toList();
+    final loaded = await loadStaffCandidates(roster: roster);
+    if (!mounted) return;
+    if (loaded.failed) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.staffFromAccountFailed)));
+    }
+
+    final candidate = await pickStaffFromAccount(
+      context,
+      candidates: loaded.candidates,
+      title: l10n.staffLinkToAccount,
+    );
+    if (candidate == null || !mounted) return;
+
+    setState(() {
+      _userId = candidate.userId;
+      _linkedName = candidate.name;
+      // **Replaces the name too.** A row typed as "kenneth" that turns out to
+      // be an account member should read as that member does everywhere else,
+      // and the form is not saved yet — anyone who wanted the local spelling
+      // can type it back before pressing Save.
+      _nameController.text = candidate.name;
+    });
   }
 
   /// The roles as a filter-chip multi-select, with the read-only "Spiller" list
@@ -366,10 +478,10 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
     final saved = existing == null
         ? Staff(
             uuid: nanoid(10),
-            // Carried through from the template, and only from there: this is
-            // what makes the row *that* account user rather than someone with
-            // the same name, and it is never something the form asks for.
-            userId: widget.template?.userId,
+            // What makes the row *that* account user rather than somebody with
+            // the same name. Never typed: it arrives from the template the
+            // account picker built, or from linking below.
+            userId: _userId,
             roles: _roles,
             realName: _nameController.text.trim(),
             phone: _phoneController.text.trim().isEmpty
@@ -380,6 +492,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
                 : _notesController.text.trim(),
           )
         : existing.copyWith(
+            userId: _userId,
             roles: _roles,
             realName: _nameController.text.trim(),
             phone: _phoneController.text.trim().isEmpty

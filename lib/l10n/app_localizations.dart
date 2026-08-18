@@ -2438,6 +2438,30 @@ abstract class AppLocalizations {
   /// **'Send a new code'**
   String get signInResend;
 
+  /// The other half of the add-member choice, beside "Add from account". Most roster rows are markører recruited for a day who have no account, so this is the ordinary path, not the fallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter by hand'**
+  String get staffAddManually;
+
+  /// On an existing roster row that was typed by hand: attach it to the account identity it refers to. The link is what makes "you are already on this roster" answerable; matching on the name would merge two different people who share one.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to an account member'**
+  String get staffLinkToAccount;
+
+  /// Shown on a roster row that carries an account link.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked to {name}'**
+  String staffLinkedTo(String name);
+
+  /// Detach a roster row from the account identity, leaving the row and its name in place. The row is still a plain local record — only the link goes.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove link'**
+  String get staffUnlinkFromAccount;
+
   /// Title of the sheet that lists you and the members of the account owning the plan, as candidates for the staff roster. Also the tooltip of the roster action that opens it.
   ///
   /// In en, this message translates to:

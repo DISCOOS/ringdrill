@@ -1456,6 +1456,20 @@ class AppLocalizationsNb extends AppLocalizations {
   String get signInResend => 'Send ny kode';
 
   @override
+  String get staffAddManually => 'Skriv inn selv';
+
+  @override
+  String get staffLinkToAccount => 'Koble til et kontomedlem';
+
+  @override
+  String staffLinkedTo(String name) {
+    return 'Koblet til $name';
+  }
+
+  @override
+  String get staffUnlinkFromAccount => 'Fjern kobling';
+
+  @override
   String get staffFromAccountTitle => 'Legg til fra konto';
 
   @override

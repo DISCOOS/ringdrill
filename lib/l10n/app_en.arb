@@ -1515,6 +1515,23 @@
   "@signInResend": {
     "description": "Code step. The only recovery from an expired or lost code used to be \"use another email\", which reads as a different decision."
   },
+  "staffAddManually": "Enter by hand",
+  "@staffAddManually": {
+    "description": "The other half of the add-member choice, beside \"Add from account\". Most roster rows are mark\u00f8rer recruited for a day who have no account, so this is the ordinary path, not the fallback."
+  },
+  "staffLinkToAccount": "Link to an account member",
+  "@staffLinkToAccount": {
+    "description": "On an existing roster row that was typed by hand: attach it to the account identity it refers to. The link is what makes \"you are already on this roster\" answerable; matching on the name would merge two different people who share one."
+  },
+  "staffLinkedTo": "Linked to {name}",
+  "@staffLinkedTo": {
+    "description": "Shown on a roster row that carries an account link.",
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "staffUnlinkFromAccount": "Remove link",
+  "@staffUnlinkFromAccount": {
+    "description": "Detach a roster row from the account identity, leaving the row and its name in place. The row is still a plain local record \u2014 only the link goes."
+  },
   "staffFromAccountTitle": "Add from account",
   "@staffFromAccountTitle": {
     "description": "Title of the sheet that lists you and the members of the account owning the plan, as candidates for the staff roster. Also the tooltip of the roster action that opens it."
