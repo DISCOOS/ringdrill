@@ -652,6 +652,11 @@ the account's own section, which both kinds of account have. Not its own rail
 entry: a section whose only content is a destructive button is a trap in a list
 people scan, and it would sit next to Profile where a mis-tap is expensive.
 
+**Every action on this section reads in the same order: what it is, what it
+does, then the control.** The upgrade and the delete both follow it, as the
+fields above them already do — label, value, hint. An action offered before its
+explanation invites a press before the sentence that would have stopped it.
+
 **Actions are buttons, and descriptions are text.** Both destructive delete and
 "Make this an organisation" are `OutlinedButton.icon` with the icon *inside*,
 which is what the account page already does for delete (`colorScheme.error`,

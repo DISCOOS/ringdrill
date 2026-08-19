@@ -910,8 +910,9 @@ acct_personal = _split(
             <div class="s"><b>The handle is the short name in your plans&rsquo; web addresses</b> &mdash; <code>ringdrill.app/d/kari-gulbrandsen/winter-drill</code> &mdash; and the name you give somebody so they can share a plan <i>with</i> you. Until one is claimed your plans publish under the account&rsquo;s id, which works, but is not a name anybody can pass on.</div>
             <div class="note note-plain"><i class="ti ti-at"></i><span>Claimed first-come and globally unique, like a handle anywhere else. Changing it later keeps the old links working &mdash; the previous name redirects (ADR-0074 &sect;2).</span></div>
             <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div class="t">Share these plans with colleagues</div>
+              <div class="s">Inviting somebody makes this an organisation. It cannot be undone by removing them again.</div>
               <div style="display: flex;"><div class="btn" style="padding: 0 16px;"><i class="ti ti-users-group"></i> Make this an organisation</div></div>
-              <div class="s">To share these plans with colleagues who can publish updates. It cannot be undone by removing them again.</div>
             </div>
             <div class="note note-plain"><i class="ti ti-info-circle"></i><span><b>No Members section yet.</b> There is nobody to list, and showing one would say this account is already something it is not.</span></div>
             <div style="border-top: 0.5px solid var(--color-border-tertiary); padding-top: 14px; display: flex; flex-direction: column; gap: 10px;">
