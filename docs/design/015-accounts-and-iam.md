@@ -704,6 +704,21 @@ cost of a single form, and it is the right way round: the alternative is a
 separate profile screen, which makes "change my phone number" a different
 journey depending on which account happens to be active.
 
+**Details holds two names, and they must not both be called one.** The
+*account name* is the display name — "Red Cross Bergen", or the person's own on
+a personal account. The *account handle* is `red-cross-bergen`. Labelling both
+"name" is the confusion this section is most likely to produce, and the app
+already says "Account handle" in the publish dialog (`publishSharedHandleLabel`),
+so that is the term.
+
+The handle carries an explanation, because nothing about the field says what it
+is for: it is the short name in the plans' web addresses
+(`ringdrill.app/d/red-cross-bergen/lsor-eidene-2026`) and the name you give
+another account so they can share a plan *with* you (§5.10). It also carries a
+**copy button** — handing it over is what it is for, and the next thing anybody
+does with it is paste it into a message. Unclaimed, the same row offers *Claim*
+instead.
+
 **The handle does not wait for the upgrade.** A personal account is created
 with `handle: null` and publishes perfectly well without one — `resolveNamespace`
 falls back to the account id, so a plan lands at `/d/a_x7k2h9/winter-drill`.
