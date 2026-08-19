@@ -639,6 +639,13 @@ organisation owns — which is exactly the confusion that made this form look
 like two screens in the first place. The order follows the header: this is the
 account, and you are also here.
 
+An interactive canvas of these screens — the same design at the app's real
+palette and dialog size, wide and narrow —
+[is published here](https://claude.ai/code/artifact/1fb00519-1d72-4b07-a195-6b21cb75b976).
+It is a review surface rather than the record: the mockups under `mockups/` are
+what this repository keeps, because they open in a browser with no build step,
+and this section is what settles anything the two disagree about.
+
 **On medium and expanded it is a dialog, not a page.** `openFormSurface` routes
 the form through `showRingdrillFormDialog`, which caps it at **720 wide and 88%
 of the viewport height** with a 24px inset — so on a 1280×800 window the whole
