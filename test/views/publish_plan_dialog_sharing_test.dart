@@ -139,11 +139,21 @@ void main() {
     testWidgets('names the account the publish lands in', (tester) async {
       // Someone who publishes to the wrong account otherwise finds out
       // afterwards.
+      //
+      // Named *on the option*, not on a separate line above it. That line was
+      // a label and a bare avatar, which said nothing at all when the display
+      // name was empty and read as decoration when it was not — and the
+      // destination is not a separate decision from the sharing choice, it is
+      // the first half of the same sentence.
       installSignedIn(organisation: true);
       await openDialog(tester);
 
-      expect(find.text('Publishes to'), findsOneWidget);
-      expect(find.text('Red Cross Bergen'), findsOneWidget);
+      expect(find.text('Red Cross Bergen only'), findsOneWidget);
+      expect(
+        find.text('Publishes to'),
+        findsNothing,
+        reason: 'no separate destination row',
+      );
     });
 
     testWidgets('calls it Sharing, never Access', (tester) async {
@@ -169,13 +179,16 @@ void main() {
       expect(find.text('Only my account'), findsNothing);
     });
 
-    testWidgets('says "Only my account" for a personal account', (
+    testWidgets('names a personal account too, not just an organisation', (
       tester,
     ) async {
+      // "Only my account" is exactly the reading somebody publishing to the
+      // wrong one of two accounts would not question. The name is the whole
+      // safeguard, and a person with one account loses nothing by seeing it.
       installSignedIn(organisation: false);
       await openDialog(tester);
 
-      expect(find.text('Only my account'), findsOneWidget);
+      expect(find.text('Kari only'), findsOneWidget);
     });
 
     testWidgets('defaults to the protective option, not to public', (
@@ -223,11 +236,24 @@ void main() {
       expect(PublishSharing.shared, isA<PublishSharing>());
     });
 
-    test('needsGrantees is set only for shared', () {
+    test('needsGrantees means shared *and* somebody named', () {
+      // The grantee list is chosen in the dialog now, so this answers "is
+      // there a grant to apply", not "should we go and ask". Shared with
+      // nobody named leaves the plan at `account`, which is less open than
+      // asked for rather than more.
       expect(
         const PublishPlanInput(
           slug: 'a',
           sharing: PublishSharing.shared,
+        ).needsGrantees,
+        isFalse,
+        reason: 'nothing to apply',
+      );
+      expect(
+        const PublishPlanInput(
+          slug: 'a',
+          sharing: PublishSharing.shared,
+          sharedAccountIds: ['a_bergen'],
         ).needsGrantees,
         isTrue,
       );

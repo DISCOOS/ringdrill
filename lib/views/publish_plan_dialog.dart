@@ -11,6 +11,8 @@ import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/sign_in_page.dart';
+import 'package:ringdrill/views/widgets/handle_lookup_dialog.dart';
+import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 /// Modes the publish dialog adapts to. The dialog itself behaves the same in
@@ -60,6 +62,7 @@ class PublishPlanInput {
     required this.slug,
     this.sharing = PublishSharing.public,
     this.accountId,
+    this.sharedAccountIds = const [],
   });
 
   final String slug;
@@ -72,9 +75,19 @@ class PublishPlanInput {
   /// The account the publish lands in, or null when signed out.
   final String? accountId;
 
-  /// True when the user asked for `shared`, which needs a follow-up choice of
-  /// grantee accounts.
-  bool get needsGrantees => sharing == PublishSharing.shared;
+  /// The accounts a `shared` plan is shared with, chosen in the dialog.
+  ///
+  /// **Chosen here, applied after.** The upload endpoint refuses `shared`,
+  /// because grantees are set on a plan that has to exist first — so the
+  /// second *call* is structural. The second *screen* was not: it used to
+  /// interrupt after publishing to ask a question that belonged with the
+  /// choice it qualifies.
+  final List<String> sharedAccountIds;
+
+  /// True when the user asked for `shared` and named somebody, so the caller
+  /// has a grant to apply once the plan exists.
+  bool get needsGrantees =>
+      sharing == PublishSharing.shared && sharedAccountIds.isNotEmpty;
 }
 
 /// Shows the publish-to-catalog dialog and returns the user's input.
@@ -118,6 +131,9 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
   /// [PublishSharing.public] when signed out — the only thing an anonymous
   /// publish can be.
   late PublishSharing _sharing;
+
+  /// The accounts a `shared` publish names, in the order they were added.
+  final _grantees = <AccountMembership>[];
 
   @override
   void initState() {
@@ -207,6 +223,9 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
                     slug: _sanitizedSlug,
                     sharing: _sharing,
                     accountId: _account?.accountId,
+                    sharedAccountIds: _grantees
+                        .map((a) => a.accountId)
+                        .toList(),
                   ),
                 )
               : null,
@@ -233,28 +252,11 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
     return [
       const SizedBox(height: 20),
 
-      if (account != null) ...[
-        // Naming the destination is the whole point: someone who publishes to
-        // the wrong account otherwise finds out afterwards.
-        Text(
-          localizations.publishPublishesTo,
-          style: theme.textTheme.labelLarge,
-        ),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            const Icon(Icons.account_circle_outlined, size: 20),
-            const SizedBox(width: 8),
-            Expanded(child: Text(account.displayName)),
-            if (AuthService.instance.state.accounts.length > 1)
-              TextButton(
-                onPressed: () => _pickAccount(context),
-                child: Text(localizations.publishSwitchAccount),
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
-      ],
+      // **No separate destination row.** It used to sit above as a label and a
+      // bare avatar with the account's name beside it — which said nothing
+      // when that name was empty, and read as decoration when it was not. The
+      // destination is not a separate decision from the sharing choice; it is
+      // the first half of the same sentence, so the options below say it.
 
       // "Sharing", never "Access": §7 reserves that word for a person's
       // standing in an account, and one word for both would conflate a plan's
@@ -303,10 +305,24 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
             dense: true,
             title: Text(_sharingLabel(localizations, option, account)),
             subtitle: option == PublishSharing.shared
-                ? Text(localizations.publishSharingSharedHint, style: subtle)
+                ? _granteeSummary(localizations, subtle)
+                : null,
+            // Switching account belongs on the option that names it, and only
+            // for somebody who has more than one — for everybody else it is a
+            // control whose only outcome is the state it is already in.
+            secondary:
+                option == PublishSharing.accountOnly &&
+                    AuthService.instance.state.accounts.length > 1
+                ? TextButton(
+                    onPressed: () => _pickAccount(context),
+                    child: Text(localizations.publishSwitchAccount),
+                  )
                 : null,
           ),
         ),
+
+      if (account != null && _sharing == PublishSharing.shared)
+        _buildGranteeEditor(localizations, theme),
 
       const SizedBox(height: 16),
       // This line belongs on this screen and nowhere else: publishing is the
@@ -330,31 +346,138 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
     PublishSharing option,
     AccountMembership account,
   ) => switch (option) {
-    // An organisation is named, because "only my account" is meaningless for
-    // one shared with colleagues.
-    PublishSharing.accountOnly =>
-      account.isOrganisation
-          ? localizations.publishSharingOrgOnly(account.displayName)
-          : localizations.publishSharingAccountOnly,
+    // **Always named.** An organisation always was; a personal account said
+    // only "my account", which is exactly the reading somebody publishing to
+    // the wrong one of two accounts would not question. A name is the whole
+    // safeguard here, and a person who belongs to one account loses nothing by
+    // seeing their own.
+    PublishSharing.accountOnly => account.displayName.trim().isEmpty
+        ? localizations.publishSharingAccountOnly
+        : localizations.publishSharingOrgOnly(account.displayName),
     PublishSharing.shared => localizations.publishSharingShared,
     PublishSharing.public => localizations.publishSharingPublic,
   };
 
-  Future<void> _pickAccount(BuildContext context) async {
-    final accounts = AuthService.instance.state.accounts;
-    final chosen = await showAdaptiveDialog<String>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(AppLocalizations.of(context)!.publishPublishesTo),
-        children: accounts
-            .map(
-              (a) => SimpleDialogOption(
-                onPressed: () => Navigator.pop(context, a.accountId),
-                child: Text(a.displayName),
+  /// What the `shared` option says beneath itself: who, or that nobody yet.
+  Widget _granteeSummary(AppLocalizations l, TextStyle? subtle) {
+    if (_grantees.isEmpty) return Text(l.publishSharingSharedHint, style: subtle);
+    return Text(_grantees.map((a) => a.displayName).join(', '), style: subtle);
+  }
+
+  /// The chips and the two ways to add one.
+  ///
+  /// **Two, because they answer different questions.** An account you belong
+  /// to is one you can be shown a list of; an organisation you do not belong
+  /// to can only be named, and naming it is the case the handle exists for.
+  /// Offering only the list would quietly drop the ability to share outward,
+  /// and offering only the box is what made this hard to use.
+  Widget _buildGranteeEditor(AppLocalizations l, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 32, bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_grantees.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                for (final a in _grantees)
+                  InputChip(
+                    label: Text(a.displayName),
+                    onDeleted: () => setState(() => _grantees.remove(a)),
+                  ),
+              ],
+            ),
+          Wrap(
+            children: [
+              TextButton.icon(
+                icon: const Icon(Icons.groups, size: 18),
+                label: Text(l.publishSharedPickAccount),
+                onPressed: _pickGrantee,
               ),
-            )
-            .toList(),
+              TextButton.icon(
+                icon: const Icon(Icons.alternate_email, size: 18),
+                label: Text(l.publishSharedByHandle),
+                onPressed: _addGranteeByHandle,
+              ),
+            ],
+          ),
+        ],
       ),
+    );
+  }
+
+  /// One of your own accounts, other than the one publishing.
+  Future<void> _pickGrantee() async {
+    final l = AppLocalizations.of(context)!;
+    final owner = _account?.accountId;
+    final options = AuthService.instance.state.accounts
+        .where((a) => a.accountId != owner)
+        .where((a) => !_grantees.any((g) => g.accountId == a.accountId))
+        .toList();
+
+    if (options.isEmpty) {
+      // Nothing to list is not an empty picker: it means the answer is a
+      // handle, so say that instead of opening a blank surface.
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l.publishSharedNoOtherAccounts)));
+      return;
+    }
+
+    final chosen = await showRingdrillPicker<AccountMembership>(
+      context: context,
+      title: l.publishSharedPickAccount,
+      items: options,
+      itemBuilder: (context, a, onTap) => ListTile(
+        leading: Icon(a.isOrganisation ? Icons.groups : Icons.person),
+        title: Text(a.displayName),
+        subtitle: a.handle == null ? null : Text(a.handle!),
+        onTap: onTap,
+      ),
+    );
+    if (chosen != null && mounted) setState(() => _grantees.add(chosen));
+  }
+
+  /// An account named by handle, which is the only way to reach one you are
+  /// not a member of.
+  Future<void> _addGranteeByHandle() async {
+    final account = await showHandleLookupDialog(context);
+    if (account == null || !mounted) return;
+    // Adding the same account twice would send a duplicate id, which the
+    // server stores as written.
+    if (_grantees.any((g) => g.accountId == account.accountId)) return;
+    setState(() => _grantees.add(account));
+  }
+
+  Future<void> _pickAccount(BuildContext context) async {
+    final l = AppLocalizations.of(context)!;
+    final accounts = AuthService.instance.state.accounts;
+    // A `SimpleDialog` was the last ad-hoc selector left in this flow — a
+    // dialog at every window size, with none of the chrome the rest of the app
+    // uses for picking one of a list (ADR-0049).
+    final chosen = await showRingdrillPicker<String>(
+      context: context,
+      title: l.publishPublishesTo,
+      items: accounts.map((a) => a.accountId).toList(),
+      itemBuilder: (context, id, onTap) {
+        final a = accounts.firstWhere((m) => m.accountId == id);
+        final selected = id == _account?.accountId;
+        return ListTile(
+          selected: selected,
+          leading: Icon(
+            selected
+                ? Icons.check
+                : (a.isOrganisation ? Icons.groups : Icons.person),
+          ),
+          title: Text(a.displayName),
+          // The handle, because two accounts can carry the same display name
+          // and this is the name that is unique.
+          subtitle: a.handle == null ? null : Text(a.handle!),
+          onTap: onTap,
+        );
+      },
     );
     if (chosen == null) return;
     await AuthService.instance.setActiveAccount(chosen);
