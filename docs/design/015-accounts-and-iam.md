@@ -619,11 +619,37 @@ depends on the reader:
 
 | Section | Edits | Shown to | Editable by |
 |---|---|---|---|
-| Profile | the user | everybody, in every account | the user |
 | Details | the account | everybody in the account | owners |
 | Members | the account | **an organisation's** members | owners |
 | Sharing | the account's published plans | everybody in the account | anyone who may publish |
+| *— divider —* | | | |
+| Profile | the user | everybody, in every account | the user |
 | Devices | the user | everybody | the user |
+
+**The rail is grouped, and the divider is load-bearing.** The account's
+sections come first, then a rule, then the user's. Without it "Profile" sits in
+a list headed by an organisation's name and reads as something that
+organisation owns — which is exactly the confusion that made this form look
+like two screens in the first place. The order follows the header: this is the
+account, and you are also here.
+
+**On medium and expanded it is a dialog, not a page.** `openFormSurface` routes
+the form through `showRingdrillFormDialog`, which caps it at **720 wide and 88%
+of the viewport height** with a 24px inset — so on a 1280×800 window the whole
+thing is 720×704, with the app visible behind it. Worth stating because it is
+easy to design this as a full-bleed screen and end up with a rail and a body
+that only work at twice the width they get.
+
+**The header is two lines**: `Account`, then `Personal` or
+`Red Cross Bergen (red-cross-bergen)`. One line — "Account · Red Cross Bergen"
+— reads as a breadcrumb to somewhere else, and the two lines answer different
+questions: what this form is, and which account it is pointed at. Only the
+second changes.
+
+**Details is on every account, personal included.** It is where the handle is
+claimed (below), and it is where a personal account becomes an organisation —
+an explicit action on the section that already describes the account, rather
+than a consequence of inviting somebody.
 
 **Details is never hidden from a member.** The account's name and handle are
 what a member tells somebody else in order to be shared with (§5.8) — read-only

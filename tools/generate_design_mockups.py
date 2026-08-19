@@ -798,9 +798,19 @@ inv_c = '''
 # inside it (DESIGN-015 §5.3) rather than a different screen.
 
 def _rail(items):
-    """The section rail: (icon, label, selected, sub)."""
+    """The section rail: (icon, label, selected, sub), or None for a divider.
+
+    The divider is the point. The form edits two records — the account and the
+    user — and grouping the sections by which one they touch is what stops
+    "Profile" reading as something the organisation owns.
+    """
     rows = []
-    for icon, label, sel, sub in items:
+    for entry in items:
+        if entry is None:
+            rows.append('<div style="height: 1px; background: var(--color-border-tertiary); '
+                        'margin: 6px 10px;"></div>')
+            continue
+        icon, label, sel, sub = entry
         style = ' style="background: var(--accent-fill);"' if sel else ''
         tcol = ' style="color: var(--accent-text); font-weight: 500;"' if sel else ''
         icol = ' style="color: var(--accent-text);"' if sel else ''
@@ -811,6 +821,16 @@ def _rail(items):
             '<div class="t"%s>%s</div>%s</div></div>'
             % (style, icon, icol, tcol, label, subline))
     return "\n              ".join(rows)
+
+
+def _title(second):
+    """The header: what this form is, then which account it is.
+
+    Two lines because they answer different questions and only the second one
+    changes. "Account · Red Cross Bergen" on one line read as a breadcrumb.
+    """
+    return ('<div class="grow"><div>Account</div>'
+            '<div class="s" style="font-weight: 400;">%s</div></div>' % second)
 
 
 def _split(bar, rail, detail):
@@ -855,28 +875,31 @@ _MEMBERS_DETAIL = '''
             <div class="note note-plain"><i class="ti ti-info-circle"></i><span>Members see the rosters in this account&rsquo;s plans, phone numbers included. Only the public catalog is stripped (ADR-0072).</span></div>'''
 
 acct_owner = _split(
-    '<i class="ti ti-arrow-left"></i><span class="grow">Account &middot; Red Cross Bergen</span>',
-    _rail([("user", "Profile", False, "Kari Gulbrandsen"),
-           ("id-badge-2", "Details", False, "red-cross-bergen"),
+    '<i class="ti ti-arrow-left"></i>' + _title('Red Cross Bergen (red-cross-bergen)'),
+    _rail([("id-badge-2", "Details", False, "red-cross-bergen"),
            ("users-group", "Members", True, "4 members &middot; 1 invited"),
            ("share", "Sharing", False, "7 published &middot; 2 shared"),
+           None,
+           ("user", "Profile", False, "Kari Gulbrandsen"),
            ("devices", "Devices", False, "3 signed in")]),
     _MEMBERS_DETAIL)
 
 acct_member = _split(
-    '<i class="ti ti-arrow-left"></i><span class="grow">Account &middot; Search Dogs West</span><div class="btn" style="height: 32px; padding: 0 16px;">Save</div>',
-    _rail([("user", "Profile", True, "Kari Gulbrandsen"),
-           ("id-badge-2", "Details", False, "search-dogs-west"),
+    '<i class="ti ti-arrow-left"></i>' + _title('Search Dogs West (search-dogs-west)') + '<div class="btn" style="height: 32px; padding: 0 16px;">Save</div>',
+    _rail([("id-badge-2", "Details", False, "search-dogs-west"),
            ("share", "Sharing", False, "12 published &middot; 1 shared"),
+           None,
+           ("user", "Profile", True, "Kari Gulbrandsen"),
            ("devices", "Devices", False, "3 signed in")]),
     _PROFILE_DETAIL + '''
             <div class="note note-plain"><i class="ti ti-eye-off"></i><span><b>Members</b> is absent, not disabled &mdash; you are a member here, not an owner. <b>Details</b> stays: the account&rsquo;s name and handle are what you tell somebody in order to be shared with, so it is read-only rather than hidden.</span></div>''')
 
 acct_personal = _split(
-    '<i class="ti ti-arrow-left"></i><span class="grow">Account &middot; Personal</span><div class="btn" style="height: 32px; padding: 0 16px;">Save</div>',
-    _rail([("user", "Profile", False, "Kari Gulbrandsen"),
-           ("id-badge-2", "Details", True, "Not claimed"),
+    '<i class="ti ti-arrow-left"></i>' + _title('Personal') + '<div class="btn" style="height: 32px; padding: 0 16px;">Save</div>',
+    _rail([("id-badge-2", "Details", True, "Not claimed"),
            ("share", "Sharing", False, "3 published"),
+           None,
+           ("user", "Profile", False, "Kari Gulbrandsen"),
            ("devices", "Devices", False, "3 signed in")]),
     '''
             <div style="display: flex; align-items: flex-end; gap: 12px;">
