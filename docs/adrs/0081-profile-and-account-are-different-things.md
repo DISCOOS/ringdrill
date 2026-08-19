@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: rejected
 date: 2026-08-19
 deciders: ["kengu"]
 consulted: []
@@ -7,6 +7,24 @@ informed: []
 ---
 
 # ADR-0081: Separate a person's profile from the accounts they act in
+
+> **Rejected, 2026-08-19, in favour of a design refinement.** The observation
+> below stands — the account page edits two records, and on an organisation
+> they come apart — but the answer is not two screens. It is one form whose
+> *sections* depend on the reader: Profile always, editing the user; Details
+> and Members for an owner, editing the account. That needs no new boundary,
+> no new vocabulary and no new ownership rule, so it is not an architectural
+> decision: it is written up as
+> [DESIGN-015 §5.6](../design/015-accounts-and-iam.md), where §5.4 had already
+> said "everything else is the same page".
+>
+> Keeping the split would also have made the personal→organisation upgrade a
+> journey between two screens, when it is a step inside one — DESIGN-015 §5.3
+> puts it on Invite, which the single form already has.
+>
+> Left in place rather than deleted: the conflation it names is real, and the
+> next person to notice it should find the answer rather than rediscover the
+> question.
 
 ## Context and problem statement
 

@@ -787,6 +787,124 @@ inv_c = '''
 
 
 
+
+
+# --------------------------------------------- DESIGN-015 §5.6: the account form
+#
+# One form, not two. The account page becomes section-navigated (DESIGN-008):
+# Profile is always there and edits the *user*; Details and Members edit the
+# *account* and appear only for an owner. A personal account is therefore the
+# same form with the same sections — which is what makes the upgrade a step
+# inside it (DESIGN-015 §5.3) rather than a different screen.
+
+def _rail(items):
+    """The section rail: (icon, label, selected, sub)."""
+    rows = []
+    for icon, label, sel, sub in items:
+        style = ' style="background: var(--accent-fill);"' if sel else ''
+        tcol = ' style="color: var(--accent-text); font-weight: 500;"' if sel else ''
+        icol = ' style="color: var(--accent-text);"' if sel else ''
+        subline = '<div class="s"%s>%s</div>' % (
+            ' style="color: var(--accent-text); opacity: .85;"' if sel else '', sub) if sub else ''
+        rows.append(
+            '<div class="item"%s><i class="ti ti-%s"%s></i><div class="grow">'
+            '<div class="t"%s>%s</div>%s</div></div>'
+            % (style, icon, icol, tcol, label, subline))
+    return "\n              ".join(rows)
+
+
+def _split(bar, rail, detail):
+    return '''
+      <div class="bar">%s</div>
+      <div class="split">
+        <div class="master">
+          <div class="body" style="padding: 12px 10px; gap: 8px;">
+            <div class="card">
+              %s
+            </div>
+          </div>
+        </div>
+        <div class="detail"><div class="detail-inner">%s</div></div>
+      </div>''' % (bar, rail, detail)
+
+
+_FIELD = ('<div style="flex: %s;"><div class="s">%s</div>'
+          '<div style="font-size: 15px; border-bottom: 0.5px solid var(--color-border-secondary); padding: 4px 0 6px;%s">%s</div></div>')
+
+_PROFILE_DETAIL = '''
+            <div style="display: flex; gap: 16px;">
+              ''' + _FIELD % ("3", "Full name", "", "Kari Gulbrandsen") + _FIELD % ("2", "Nickname", "", "Kari") + '''
+            </div>
+            <div class="s">Your full name identifies you to the people you work with. The nickname is what fits on a roster and a station board.</div>
+            <div style="display: flex; gap: 16px;">
+              ''' + _FIELD % ("1", "Phone", "", "+47 900 12 345") + _FIELD % ("1", "Email", " color: var(--color-text-secondary);", "kari@example.com") + '''
+            </div>
+            <div class="note note-plain"><i class="ti ti-info-circle"></i><span>Your phone number is visible to the members of accounts you belong to (ADR-0072), so a director can reach you without asking for it first.</span></div>'''
+
+_MEMBERS_DETAIL = '''
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="grow" style="font-size: 15px;">4 members</div>
+              <div class="btn" style="height: 32px; padding: 0 14px;"><i class="ti ti-user-plus"></i> Invite</div>
+            </div>
+            <div class="card">
+              <div class="item"><div class="av">KG</div><div class="grow"><div class="t">Kari Gulbrandsen (you)</div><div class="s">+47 900 12 345 &middot; kari@example.com</div></div><span class="pill pill-accent">Owner</span></div>
+              <div class="item"><div class="av">OH</div><div class="grow"><div class="t">Ola Hansen</div><div class="s">+47 991 22 334 &middot; ola@example.com</div></div><span class="pill">Member</span></div>
+              <div class="item"><div class="av">MS</div><div class="grow"><div class="t">Mari Sund</div><div class="s">mari@example.com</div></div><span class="pill">Guest</span></div>
+              <div class="item"><div class="av"><i class="ti ti-mail" style="font-size: 15px;"></i></div><div class="grow"><div class="t">per@example.com</div><div class="s">Invited 14 August</div></div><span class="pill pill-warn">Invited</span></div>
+            </div>
+            <div class="note note-plain"><i class="ti ti-info-circle"></i><span>Members see the rosters in this account&rsquo;s plans, phone numbers included. Only the public catalog is stripped (ADR-0072).</span></div>'''
+
+acct_owner = _split(
+    '<i class="ti ti-arrow-left"></i><span class="grow">Account &middot; Red Cross Bergen</span>',
+    _rail([("user", "Profile", False, "Kari Gulbrandsen"),
+           ("id-badge-2", "Details", False, "red-cross-bergen"),
+           ("users-group", "Members", True, "4 members &middot; 1 invited"),
+           ("file-description", "Plans", False, "7 plans"),
+           ("devices", "Devices", False, "3 signed in")]),
+    _MEMBERS_DETAIL)
+
+acct_member = _split(
+    '<i class="ti ti-arrow-left"></i><span class="grow">Account &middot; Search Dogs West</span><div class="btn" style="height: 32px; padding: 0 16px;">Save</div>',
+    _rail([("user", "Profile", True, "Kari Gulbrandsen"),
+           ("file-description", "Plans", False, "12 plans"),
+           ("devices", "Devices", False, "3 signed in")]),
+    _PROFILE_DETAIL + '''
+            <div class="note note-plain"><i class="ti ti-eye-off"></i><span>Details and Members are absent, not disabled: you are a member here, not an owner, and a greyed-out section invites a question nobody can answer from this screen.</span></div>''')
+
+acct_personal = _split(
+    '<i class="ti ti-arrow-left"></i><span class="grow">Account &middot; Personal</span><div class="btn" style="height: 32px; padding: 0 16px;">Save</div>',
+    _rail([("user", "Profile", False, "Kari Gulbrandsen"),
+           ("id-badge-2", "Details", True, "Not claimed"),
+           ("file-description", "Plans", False, "3 plans"),
+           ("devices", "Devices", False, "3 signed in")]),
+    '''
+            <div style="display: flex; align-items: flex-end; gap: 12px;">
+              <div class="grow"><div class="s">Account name</div><div style="font-size: 15px; border-bottom: 0.5px solid var(--color-border-secondary); padding: 4px 0 6px; color: var(--color-text-tertiary);">kari-gulbrandsen</div></div>
+              <div class="btn" style="height: 32px; padding: 0 14px;">Claim</div>
+            </div>
+            <div class="s">Suggested from your name, and yours to change. Until you claim one, your plans publish under the account&rsquo;s id &mdash; <code>ringdrill.app/d/a_x7k2h9/winter-drill</code> &mdash; which works, but nobody can read it back to you over a radio.</div>
+            <div class="note note-plain"><i class="ti ti-at"></i><span>Claimed first-come and globally unique, like a handle anywhere else. Changing it later keeps the old links working &mdash; the previous name redirects (ADR-0074 &sect;2).</span></div>
+            <div class="card">
+              <div class="item"><i class="ti ti-users-group"></i><div class="grow"><div class="t">Make this an organisation</div><div class="s">To share these plans with colleagues who can publish updates</div></div><i class="ti ti-chevron-right"></i></div>
+            </div>
+            <div class="note note-plain"><i class="ti ti-info-circle"></i><span><b>No Members section yet.</b> There is nobody to list, and showing one would say this account is already something it is not.</span></div>''')
+
+upgrade_sheet = '''
+      <div class="bar"><i class="ti ti-x"></i><span>Make this an organisation</span></div>
+      <div class="body">
+        <div class="note note-warn"><i class="ti ti-alert-triangle"></i><span><b>This turns your personal account into an organisation.</b> It cannot be undone by removing the member &mdash; the account stays an organisation.</span></div>
+        <div class="card">
+          <div class="item"><i class="ti ti-check"></i><div class="grow"><div class="t">Your plans stay where they are</div><div class="s">Nothing moves and nothing republishes</div></div></div>
+          <div class="item"><i class="ti ti-check"></i><div class="grow"><div class="t">The account gets a name of its own</div><div class="s">Defaults to yours, editable under Details</div></div></div>
+          <div class="item"><i class="ti ti-check"></i><div class="grow"><div class="t">They can publish updates to those plans</div><div class="s">Choose Guest instead if they should only read</div></div></div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <div class="btn grow">Name it and invite somebody</div>
+        </div>
+        <div class="s" style="text-align: center;">or <u>create a new organisation instead</u>, leaving this account alone</div>
+      </div>'''
+
+
 def main():
     page("auth-signin.html", "Sign-in",
          "DESIGN-015 &sect;3. Signing in is optional and never blocks planning. Provider order follows the platform (iOS here). The code field in the middle solves the hardest problem with magic links — that the link opens somewhere other than where you started. On the right, provider linking is announced once: someone who signs in with a different button and lands in the same account should be told why.",
@@ -842,6 +960,16 @@ def main():
           ("2 &middot; Browser consent", cli_b),
           ("3 &middot; Authorised", cli_c)])
 
+
+    page("account-sections.html", "The account form, one shape for every account",
+         "DESIGN-015 &sect;5.6. One form, not two. <b>Profile</b> is always present and edits the <i>user</i> &mdash; name, nickname, phone; <b>Details</b> and <b>Members</b> edit the <i>account</i> and appear only for an owner. The two panels are the same screen seen from the two sides of that rule: an owner of an organisation, and a member of one. Sections a role cannot use are absent rather than disabled &mdash; a greyed-out row invites a question the screen cannot answer.",
+         [("Owner &middot; Members", acct_owner),
+          ("Member, not owner &middot; Profile", acct_member)], wide=True)
+
+    page("account-personal-upgrade.html", "A personal account, and the way out of it",
+         "DESIGN-015 &sect;5.3 and &sect;5.6. A personal account is the same form, minus the one section it has nothing to put in: <b>Members</b> arrives with the organisation, not before it. The handle does not wait &mdash; every account that publishes wants a readable URL, so Details offers one suggested from the name and claimed explicitly, first-come and globally unique. The upgrade sheet states the part users get wrong before the action: it cannot be undone by removing the member.",
+         [("1 &middot; Personal account &middot; Details", acct_personal),
+          ("2 &middot; Becoming an organisation", upgrade_sheet)], wide=False)
 
     page("invite-accept.html", "Accepting an invitation",
          "DESIGN-015 &sect;6.4. Inviting someone with no account has to work, and &ldquo;the membership binds when they sign in&rdquo; leaves four questions whose default answers are all wrong. The link is not a credential; the invited address is what binds; a first-run invitee is the one case where sign-in precedes onboarding; and the wrong-address case needs a real answer rather than a failure.",

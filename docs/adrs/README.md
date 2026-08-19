@@ -88,7 +88,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0078 | [Put the expiry in the key, and let the sweep catch itself up](./0078-expiry-index-for-the-invitation-sweep.md) | Proposed |
 | ADR-0079 | [Bound the open mail endpoint with a per-recipient rate limit](./0079-start-email-rate-limit.md) | Proposed |
 | ADR-0080 | [Emailed links open the app, and never act on load](./0080-emailed-links-open-the-app.md) | Accepted |
-| ADR-0081 | [Separate a person's profile from the accounts they act in](./0081-profile-and-account-are-different-things.md) | Proposed |
+| ADR-0081 | [Separate a person's profile from the accounts they act in](./0081-profile-and-account-are-different-things.md) | Rejected — see [DESIGN-015 §5.6](../design/015-accounts-and-iam.md) |
 
 ## When to write an ADR
 
