@@ -21,6 +21,7 @@ A debt entry is not an ADR. ADRs record decisions and their consequences. Debt e
 | DEBT-0011 | [ADR-0039 post-cutover cleanup](./0011-adr-0039-post-cutover-cleanup.md) | Medium | Resolved | 2026-07-02 |
 | DEBT-0012 | [Tap-to-edit leaks past the ADR-0026/0031 gesture vocabulary](./0012-gesture-vocabulary-tap-to-edit-leak.md) | Medium | Open | 2026-07-18 |
 | DEBT-0013 | [An exercise has a time of day but no day](./0013-exercises-have-no-day.md) | Medium | Open | 2026-07-29 |
+| DEBT-0014 | [A handle can only be claimed while creating an organisation](./0014-handles-cannot-be-claimed-after-creation.md) | Medium | Open | 2026-08-19 |
 
 ## When to write a debt entry
 

@@ -720,6 +720,31 @@ action on the field row itself, and **only its label changes with the state**:
 next thing anybody does with it is paste it into a message — and *Claim* while
 there is none. One row, one place to look, whichever state the account is in.
 
+**Claiming one is the same act on both kinds of account**, and optional on
+both: one field, first-come, globally unique, changeable with the old name
+tombstoned so shared links keep resolving (ADR-0074 §2). A personal account is
+not a lesser case here — it is the case that most needs a handle, because
+claiming one is what lets a colleague name it when sharing a plan.
+
+**Optional for publishing, required for being shared with.** `resolveNamespace`
+falls back to the account id, so an account with no handle publishes perfectly
+well at `/d/a_x7k2h9/winter-drill`. But the publish dialog names a grantee by
+handle and resolves it through `lookupHandle`, which resolves handles and not
+ids — so a handle-less account can publish and cannot be named as the account
+to share *with*. That asymmetry, not tidiness, is the reason to claim one, and
+it is what the section's explanation should say.
+
+**Unclaimed, the row offers Claim and copies nothing.** Copying the account id
+would hand somebody an opaque internal identifier to paste into a message as if
+it were a name — the unreadable outcome a handle exists to remove — and it would
+not even serve the purpose they copied it for, since a grantee cannot be named
+by id.
+
+> **Not yet buildable.** A handle can currently only be claimed while an
+> organisation is created or upgraded; there is no route for an existing
+> account, so neither Claim nor a rename can be implemented as drawn. See
+> [DEBT-0014](../debts/0014-handles-cannot-be-claimed-after-creation.md).
+
 **The handle does not wait for the upgrade.** A personal account is created
 with `handle: null` and publishes perfectly well without one — `resolveNamespace`
 falls back to the account id, so a plan lands at `/d/a_x7k2h9/winter-drill`.
