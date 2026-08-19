@@ -748,9 +748,9 @@ by id.
 **The handle does not wait for the upgrade.** A personal account is created
 with `handle: null` and publishes perfectly well without one — `resolveNamespace`
 falls back to the account id, so a plan lands at `/d/a_x7k2h9/winter-drill`.
-That works and is unreadable, and the handle is also the name somebody else
-types to share a plan *with* this account (§5.8), so every account that
-publishes wants one. Details offers it suggested from the name and claimed
+That works, and it is not a name anybody can pass on — and the handle is also
+what somebody else types to share a plan *with* this account (§5.8), so every
+account that publishes wants one. Details offers it suggested from the name and claimed
 explicitly.
 
 It cannot be *derived* from the nickname. A nickname is display text and two
