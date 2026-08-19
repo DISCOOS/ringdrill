@@ -15,7 +15,7 @@ informed: []
 > and Members for an owner, editing the account. That needs no new boundary,
 > no new vocabulary and no new ownership rule, so it is not an architectural
 > decision: it is written up as
-> [DESIGN-015 §5.6](../design/015-accounts-and-iam.md), where §5.4 had already
+> [DESIGN-015 §5.9](../design/015-accounts-and-iam.md), where §5.4 had already
 > said "everything else is the same page".
 >
 > Keeping the split would also have made the personal→organisation upgrade a

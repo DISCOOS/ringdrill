@@ -482,60 +482,6 @@ account).
 The page states what the account holds (§8), because that sentence has to exist
 somewhere and this is where a user looks for it.
 
-### 5.6 One form, sections by role
-
-§5.2 and §5.4 describe two pages that are mostly the same page — "everything
-else is the same page", as §5.4 puts it. Building them that way produced one
-screen editing two different records at once: **the user** (full name, nickname,
-phone, devices) and **the account** (name, handle, members, plans). On a
-personal account those coincide, so the screen can pretend to be one thing; on
-an organisation they do not, and the page ends up branching on account type in a
-dozen places.
-
-The form is therefore **section-navigated** ([DESIGN-008](./008-plan-variables-and-section-navigated-editor.md)),
-like the five entity editors — a rail of sections on medium and expanded, the
-same sections as a navigated list on compact (ADR-0030) — and the section list
-depends on the reader:
-
-| Section | Edits | Shown to |
-|---|---|---|
-| Profile | the user | everybody, in every account |
-| Details | the account | owners |
-| Members | the account | owners **of an organisation** |
-| Plans | the account | everybody |
-| Devices | the user | everybody |
-
-**Members arrives with the organisation, not before it.** A personal account
-has nobody to list, and a section holding one person with an Invite button
-would say the account is already something it is not. The upgrade is therefore
-an action in **Details** — "Make this an organisation" — which opens §5.3's
-sheet.
-
-**Sections a role cannot use are absent, not disabled.** A greyed-out "Members"
-invites the question "why can I not?", which is a support conversation about
-somebody else's role — and the screen cannot answer it.
-
-**Profile is the same record wherever it is reached from.** Somebody in three
-accounts sees their profile in three places, editing one thing. That is the
-cost of a single form, and it is the right way round: the alternative is a
-separate profile screen, which makes "change my phone number" a different
-journey depending on which account happens to be active.
-
-**The handle does not wait for the upgrade.** A personal account is created
-with `handle: null` and publishes perfectly well without one — `resolveNamespace`
-falls back to the account id, so a plan lands at `/d/a_x7k2h9/winter-drill`.
-That works and is unreadable, and the handle is also the name somebody else
-types to share a plan *with* this account (§5.8), so every account that
-publishes wants one. Details offers it suggested from the name and claimed
-explicitly.
-
-It cannot be *derived* from the nickname. A nickname is display text and two
-people may share one; a handle is a globally unique claim, taken first-come and
-atomically, changeable, with the old one tombstoned so links already shared keep
-resolving (ADR-0074 §2) — the same model as a handle on any social network.
-Deriving one silently would fail for the second Kari and hand the first a name
-she never chose.
-
 ### 5.3 Upgrading to an organisation
 
 ADR-0024 says inviting a second person upgrades a personal account to an
@@ -655,6 +601,92 @@ where answering costs nothing. In an organisation it extends to the half people
 get wrong — *the roster stays inside the organisation; a shared account gets the
 plan, not the people*
 ([ADR-0072](../adrs/0072-staff-pii-and-account-sync.md)).
+
+### 5.9 One form, sections by role
+
+§5.2 and §5.4 describe two pages that are mostly the same page — "everything
+else is the same page", as §5.4 puts it. Building them that way produced one
+screen editing two different records at once: **the user** (full name, nickname,
+phone, devices) and **the account** (name, handle, members, plans). On a
+personal account those coincide, so the screen can pretend to be one thing; on
+an organisation they do not, and the page ends up branching on account type in a
+dozen places.
+
+The form is therefore **section-navigated** ([DESIGN-008](./008-plan-variables-and-section-navigated-editor.md)),
+like the five entity editors — a rail of sections on medium and expanded, the
+same sections as a navigated list on compact (ADR-0030) — and the section list
+depends on the reader:
+
+| Section | Edits | Shown to | Editable by |
+|---|---|---|---|
+| Profile | the user | everybody, in every account | the user |
+| Details | the account | everybody in the account | owners |
+| Members | the account | **an organisation's** members | owners |
+| Sharing | the account's published plans | everybody in the account | anyone who may publish |
+| Devices | the user | everybody | the user |
+
+**Details is never hidden from a member.** The account's name and handle are
+what a member tells somebody else in order to be shared with (§5.8) — read-only
+for them, editable by an owner. Only the *editing* is a role question; the fact
+of the account is not.
+
+**Members arrives with the organisation, not before it.** A personal account
+has nobody to list, and a section holding one person with an Invite button
+would say the account is already something it is not. The upgrade is therefore
+an action in **Details** — "Make this an organisation" — which opens §5.3's
+sheet.
+
+### 5.10 Sharing, which is not membership
+
+**Sharing a plan with another account does not make anybody a member, and does
+not convert a personal account into an organisation.** The two mechanisms are
+unrelated and always were: membership is who is *in* an account, and
+`accessPolicy: shared` is a grant on *one plan* to named accounts. Nothing in
+`drills-policy.js` or `authorize.js` checks account type, so any account can
+grant any other account access to a plan.
+
+**Every account shares.** Two organisations running a joint exercise is the
+case that will certainly happen — a hjelpekorps and the local rescue dogs
+staffing the same day — and two personal accounts cooperating 1:1 is the
+smallest version of the same thing. The mechanism is identical and neither
+side's account type changes, so the section belongs on every account rather
+than being an organisation feature or a personal-account consolation.
+
+That is the section's job. Publishing is the only place a grant can currently
+be made, and `setAccessPolicy` has exactly one caller in the app, so once a plan
+is out there is no way to see who it was shared with, revoke one, or narrow a
+plan back from public. Sharing lists the account's published plans with their
+policy and grantees, and changes them in place.
+
+Deliberately not a second plan browser: the library's account tab already lists
+and opens an account's plans (§5.7). This section answers "how open is each of
+these, and who did we grant it to", which nothing answers today.
+
+**Sections a role cannot use are absent, not disabled.** A greyed-out "Members"
+invites the question "why can I not?", which is a support conversation about
+somebody else's role — and the screen cannot answer it.
+
+**Profile is the same record wherever it is reached from.** Somebody in three
+accounts sees their profile in three places, editing one thing. That is the
+cost of a single form, and it is the right way round: the alternative is a
+separate profile screen, which makes "change my phone number" a different
+journey depending on which account happens to be active.
+
+**The handle does not wait for the upgrade.** A personal account is created
+with `handle: null` and publishes perfectly well without one — `resolveNamespace`
+falls back to the account id, so a plan lands at `/d/a_x7k2h9/winter-drill`.
+That works and is unreadable, and the handle is also the name somebody else
+types to share a plan *with* this account (§5.8), so every account that
+publishes wants one. Details offers it suggested from the name and claimed
+explicitly.
+
+It cannot be *derived* from the nickname. A nickname is display text and two
+people may share one; a handle is a globally unique claim, taken first-come and
+atomically, changeable, with the old one tombstoned so links already shared keep
+resolving (ADR-0074 §2) — the same model as a handle on any social network.
+Deriving one silently would fail for the second Kari and hand the first a name
+she never chose.
+
 
 ## 6. Member management
 
@@ -914,8 +946,8 @@ Generated by [`tools/generate_design_mockups.py`](../../tools/generate_design_mo
 | [`mockups/account-personal.html`](./mockups/account-personal.html) | Drawer signed-in state, personal account page, upgrade-to-organisation sheet |
 | [`mockups/account-organisation.html`](./mockups/account-organisation.html) | Members list with pending invite, role picker, remove confirm, invite form |
 | [`mockups/account-wide.html`](./mockups/account-wide.html) | Wide-screen and web master/detail layout for Settings → Account |
-| [`mockups/account-sections.html`](./mockups/account-sections.html) | §5.6 — the sectioned account form seen by an owner and by a member who is not one |
-| [`mockups/account-personal-upgrade.html`](./mockups/account-personal-upgrade.html) | §5.6 with §5.3 — a personal account's Members section, and Invite as the upgrade |
+| [`mockups/account-sections.html`](./mockups/account-sections.html) | §5.9 — the sectioned account form seen by an owner and by a member who is not one |
+| [`mockups/account-personal-upgrade.html`](./mockups/account-personal-upgrade.html) | §5.9 with §5.3 — a personal account's Members section, and Invite as the upgrade |
 | [`mockups/library-tabs.html`](./mockups/library-tabs.html) | The plan selector without an account (three tabs, as today) and with one (four tabs, `Account` added, `Online` → `Public`) |
 | [`mockups/publish-dialog.html`](./mockups/publish-dialog.html) | Publish dialog signed out (not a gate), on a personal account, and republishing from an organisation |
 | [`mockups/invite-accept.html`](./mockups/invite-accept.html) | The invitation email, the landing page for someone with no account, and the wrong-address case |

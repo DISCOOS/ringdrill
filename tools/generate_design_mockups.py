@@ -789,7 +789,7 @@ inv_c = '''
 
 
 
-# --------------------------------------------- DESIGN-015 §5.6: the account form
+# --------------------------------------------- DESIGN-015 §5.9: the account form
 #
 # One form, not two. The account page becomes section-navigated (DESIGN-008):
 # Profile is always there and edits the *user*; Details and Members edit the
@@ -859,23 +859,24 @@ acct_owner = _split(
     _rail([("user", "Profile", False, "Kari Gulbrandsen"),
            ("id-badge-2", "Details", False, "red-cross-bergen"),
            ("users-group", "Members", True, "4 members &middot; 1 invited"),
-           ("file-description", "Plans", False, "7 plans"),
+           ("share", "Sharing", False, "7 published &middot; 2 shared"),
            ("devices", "Devices", False, "3 signed in")]),
     _MEMBERS_DETAIL)
 
 acct_member = _split(
     '<i class="ti ti-arrow-left"></i><span class="grow">Account &middot; Search Dogs West</span><div class="btn" style="height: 32px; padding: 0 16px;">Save</div>',
     _rail([("user", "Profile", True, "Kari Gulbrandsen"),
-           ("file-description", "Plans", False, "12 plans"),
+           ("id-badge-2", "Details", False, "search-dogs-west"),
+           ("share", "Sharing", False, "12 published &middot; 1 shared"),
            ("devices", "Devices", False, "3 signed in")]),
     _PROFILE_DETAIL + '''
-            <div class="note note-plain"><i class="ti ti-eye-off"></i><span>Details and Members are absent, not disabled: you are a member here, not an owner, and a greyed-out section invites a question nobody can answer from this screen.</span></div>''')
+            <div class="note note-plain"><i class="ti ti-eye-off"></i><span><b>Members</b> is absent, not disabled &mdash; you are a member here, not an owner. <b>Details</b> stays: the account&rsquo;s name and handle are what you tell somebody in order to be shared with, so it is read-only rather than hidden.</span></div>''')
 
 acct_personal = _split(
     '<i class="ti ti-arrow-left"></i><span class="grow">Account &middot; Personal</span><div class="btn" style="height: 32px; padding: 0 16px;">Save</div>',
     _rail([("user", "Profile", False, "Kari Gulbrandsen"),
            ("id-badge-2", "Details", True, "Not claimed"),
-           ("file-description", "Plans", False, "3 plans"),
+           ("share", "Sharing", False, "3 published"),
            ("devices", "Devices", False, "3 signed in")]),
     '''
             <div style="display: flex; align-items: flex-end; gap: 12px;">
@@ -939,7 +940,7 @@ def main():
           ("4 &middot; Invite", org_d)])
 
     page("account-wide.html", "Account on wide screen and web",
-         "DESIGN-015 &sect;5.6. On wide screens and on the web the account page follows the master/detail model from ADR-0030: the member list is master and the selected member is detail, not a bottom sheet. The account switcher sits in the top bar, and must also appear in the publish dialog so nobody publishes to the wrong account without seeing it.",
+         "DESIGN-015 &sect;5.9. On wide screens and on the web the account page follows the master/detail model from ADR-0030: the member list is master and the selected member is detail, not a bottom sheet. The account switcher sits in the top bar, and must also appear in the publish dialog so nobody publishes to the wrong account without seeing it.",
          [("Settings &rarr; Members &middot; 1280&times;800", wide)], wide=True)
 
     page("library-tabs.html", "Plan selector with an account",
@@ -962,12 +963,12 @@ def main():
 
 
     page("account-sections.html", "The account form, one shape for every account",
-         "DESIGN-015 &sect;5.6. One form, not two. <b>Profile</b> is always present and edits the <i>user</i> &mdash; name, nickname, phone; <b>Details</b> and <b>Members</b> edit the <i>account</i> and appear only for an owner. The two panels are the same screen seen from the two sides of that rule: an owner of an organisation, and a member of one. Sections a role cannot use are absent rather than disabled &mdash; a greyed-out row invites a question the screen cannot answer.",
+         "DESIGN-015 &sect;5.9. One form, not two. <b>Profile</b> is always present and edits the <i>user</i> &mdash; name, nickname, phone; <b>Details</b> and <b>Members</b> edit the <i>account</i> and appear only for an owner. The two panels are the same screen seen from the two sides of that rule: an owner of an organisation, and a member of one. Sections a role cannot use are absent rather than disabled &mdash; a greyed-out row invites a question the screen cannot answer.",
          [("Owner &middot; Members", acct_owner),
           ("Member, not owner &middot; Profile", acct_member)], wide=True)
 
     page("account-personal-upgrade.html", "A personal account, and the way out of it",
-         "DESIGN-015 &sect;5.3 and &sect;5.6. A personal account is the same form, minus the one section it has nothing to put in: <b>Members</b> arrives with the organisation, not before it. The handle does not wait &mdash; every account that publishes wants a readable URL, so Details offers one suggested from the name and claimed explicitly, first-come and globally unique. The upgrade sheet states the part users get wrong before the action: it cannot be undone by removing the member.",
+         "DESIGN-015 &sect;5.3 and &sect;5.9. A personal account is the same form, minus the one section it has nothing to put in: <b>Members</b> arrives with the organisation, not before it. The handle does not wait &mdash; every account that publishes wants a readable URL, so Details offers one suggested from the name and claimed explicitly, first-come and globally unique. The upgrade sheet states the part users get wrong before the action: it cannot be undone by removing the member.",
          [("1 &middot; Personal account &middot; Details", acct_personal),
           ("2 &middot; Becoming an organisation", upgrade_sheet)], wide=False)
 

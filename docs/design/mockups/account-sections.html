@@ -195,7 +195,7 @@
 </head>
 <body>
 
-<p class="caption">DESIGN-015 &sect;5.6. One form, not two. <b>Profile</b> is always present and edits the <i>user</i> &mdash; name, nickname, phone; <b>Details</b> and <b>Members</b> edit the <i>account</i> and appear only for an owner. The two panels are the same screen seen from the two sides of that rule: an owner of an organisation, and a member of one. Sections a role cannot use are absent rather than disabled &mdash; a greyed-out row invites a question the screen cannot answer.</p>
+<p class="caption">DESIGN-015 &sect;5.9. One form, not two. <b>Profile</b> is always present and edits the <i>user</i> &mdash; name, nickname, phone; <b>Details</b> and <b>Members</b> edit the <i>account</i> and appear only for an owner. The two panels are the same screen seen from the two sides of that rule: an owner of an organisation, and a member of one. Sections a role cannot use are absent rather than disabled &mdash; a greyed-out row invites a question the screen cannot answer.</p>
 
 <p class="caption" style="max-width: 760px; font-size: 12px; opacity: .8;">Copy is shown in <b>en</b>. The app ships <b>nb</b> as well; where the exact Norwegian wording is part of the decision, DESIGN-015 quotes it inline.</p>
 
@@ -211,7 +211,7 @@
               <div class="item"><i class="ti ti-user"></i><div class="grow"><div class="t">Profile</div><div class="s">Kari Gulbrandsen</div></div></div>
               <div class="item"><i class="ti ti-id-badge-2"></i><div class="grow"><div class="t">Details</div><div class="s">red-cross-bergen</div></div></div>
               <div class="item" style="background: var(--accent-fill);"><i class="ti ti-users-group" style="color: var(--accent-text);"></i><div class="grow"><div class="t" style="color: var(--accent-text); font-weight: 500;">Members</div><div class="s" style="color: var(--accent-text); opacity: .85;">4 members &middot; 1 invited</div></div></div>
-              <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">Plans</div><div class="s">7 plans</div></div></div>
+              <div class="item"><i class="ti ti-share"></i><div class="grow"><div class="t">Sharing</div><div class="s">7 published &middot; 2 shared</div></div></div>
               <div class="item"><i class="ti ti-devices"></i><div class="grow"><div class="t">Devices</div><div class="s">3 signed in</div></div></div>
             </div>
           </div>
@@ -240,7 +240,8 @@
           <div class="body" style="padding: 12px 10px; gap: 8px;">
             <div class="card">
               <div class="item" style="background: var(--accent-fill);"><i class="ti ti-user" style="color: var(--accent-text);"></i><div class="grow"><div class="t" style="color: var(--accent-text); font-weight: 500;">Profile</div><div class="s" style="color: var(--accent-text); opacity: .85;">Kari Gulbrandsen</div></div></div>
-              <div class="item"><i class="ti ti-file-description"></i><div class="grow"><div class="t">Plans</div><div class="s">12 plans</div></div></div>
+              <div class="item"><i class="ti ti-id-badge-2"></i><div class="grow"><div class="t">Details</div><div class="s">search-dogs-west</div></div></div>
+              <div class="item"><i class="ti ti-share"></i><div class="grow"><div class="t">Sharing</div><div class="s">12 published &middot; 1 shared</div></div></div>
               <div class="item"><i class="ti ti-devices"></i><div class="grow"><div class="t">Devices</div><div class="s">3 signed in</div></div></div>
             </div>
           </div>
@@ -254,7 +255,7 @@
               <div style="flex: 1;"><div class="s">Phone</div><div style="font-size: 15px; border-bottom: 0.5px solid var(--color-border-secondary); padding: 4px 0 6px;">+47 900 12 345</div></div><div style="flex: 1;"><div class="s">Email</div><div style="font-size: 15px; border-bottom: 0.5px solid var(--color-border-secondary); padding: 4px 0 6px; color: var(--color-text-secondary);">kari@example.com</div></div>
             </div>
             <div class="note note-plain"><i class="ti ti-info-circle"></i><span>Your phone number is visible to the members of accounts you belong to (ADR-0072), so a director can reach you without asking for it first.</span></div>
-            <div class="note note-plain"><i class="ti ti-eye-off"></i><span>Details and Members are absent, not disabled: you are a member here, not an owner, and a greyed-out section invites a question nobody can answer from this screen.</span></div></div></div>
+            <div class="note note-plain"><i class="ti ti-eye-off"></i><span><b>Members</b> is absent, not disabled &mdash; you are a member here, not an owner. <b>Details</b> stays: the account&rsquo;s name and handle are what you tell somebody in order to be shared with, so it is read-only rather than hidden.</span></div></div></div>
       </div>
     </div></div>
   </div>
