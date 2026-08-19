@@ -647,11 +647,18 @@ disagree, this text is the record.
 
 #### Deleting, which is two different actions
 
-**Delete lives at the bottom of Details**, below everything else and visibly
-apart from it — the account's own section, which both kinds of account have.
-Not its own rail entry: a section whose only content is a destructive button is
-a trap in a list people scan, and it would sit next to Profile where a mis-tap
-is expensive.
+**Delete lives at the bottom of Details**, under a **Danger section** heading —
+the account's own section, which both kinds of account have. Not its own rail
+entry: a section whose only content is a destructive button is a trap in a list
+people scan, and it would sit next to Profile where a mis-tap is expensive.
+
+**Actions are buttons, and descriptions are text.** Both destructive delete and
+"Make this an organisation" are `OutlinedButton.icon` with the icon *inside*,
+which is what the account page already does for delete (`colorScheme.error`,
+after a `Divider(height: 32)`). Drawn as list rows with a leading icon and a
+subtitle they read as description, and the one thing a person needs to tell
+apart on this screen is what is a statement and what will happen if they touch
+it.
 
 What it destroys depends on the account, and the label has to say so rather
 than leaving one word to mean both:

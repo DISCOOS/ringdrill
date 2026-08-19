@@ -224,13 +224,15 @@
             </div>
             <div class="s"><b>The handle is the short name in your plans&rsquo; web addresses</b> &mdash; <code>ringdrill.app/d/kari-gulbrandsen/winter-drill</code> &mdash; and the name you give somebody so they can share a plan <i>with</i> you. Until one is claimed your plans publish under the account&rsquo;s id, which works, but is not a name anybody can pass on.</div>
             <div class="note note-plain"><i class="ti ti-at"></i><span>Claimed first-come and globally unique, like a handle anywhere else. Changing it later keeps the old links working &mdash; the previous name redirects (ADR-0074 &sect;2).</span></div>
-            <div class="card">
-              <div class="item"><i class="ti ti-users-group"></i><div class="grow"><div class="t">Make this an organisation</div><div class="s">To share these plans with colleagues who can publish updates</div></div></div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex;"><div class="btn" style="padding: 0 16px;"><i class="ti ti-users-group"></i> Make this an organisation</div></div>
+              <div class="s">To share these plans with colleagues who can publish updates. It cannot be undone by removing them again.</div>
             </div>
             <div class="note note-plain"><i class="ti ti-info-circle"></i><span><b>No Members section yet.</b> There is nobody to list, and showing one would say this account is already something it is not.</span></div>
-            <div style="border-top: 0.5px solid var(--color-border-tertiary); padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-              <div class="s" style="color: var(--danger-text);">Delete</div>
-              <div class="item" style="padding-left: 0;"><i class="ti ti-trash" style="color: var(--danger-text);"></i><div class="grow"><div class="t" style="color: var(--danger-text);">Delete account and profile</div><div class="s">Deletes you as well: profile, sessions and memberships. Plans you published stay where they are &mdash; other people have installed them.</div></div></div>
+            <div style="border-top: 0.5px solid var(--color-border-tertiary); padding-top: 14px; display: flex; flex-direction: column; gap: 10px;">
+              <div class="sect" style="color: var(--danger-text); margin: 0;">Danger section</div>
+              <div style="display: flex;"><div class="btn btn-danger" style="padding: 0 16px;"><i class="ti ti-trash"></i> Delete account and profile</div></div>
+              <div class="s">Deletes you as well: profile, sessions and memberships. Plans you published stay where they are &mdash; other people have installed them, so they lose their owner rather than disappearing.</div>
             </div></div></div>
       </div>
     </div></div>
