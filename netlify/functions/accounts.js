@@ -8,7 +8,7 @@ import { authenticate } from "./lib/auth/index.js";
 import {
     acceptedOwners, claimHandle, defaultStores, deleteAccount, getAccount, getUser, membersOf,
     membershipsOf, newId, normalizeEmail, putMember, removeMember, resolveHandle,
-    expiryIndexKey, soleOwnerships, sweepExpired, upgradeToOrganisation, validateHandle,
+    expiryIndexKey, renameHandle, soleOwnerships, sweepExpired, upgradeToOrganisation, validateHandle,
 } from "./lib/identity.js";
 import { dropAccountOwnership, keysForEntryOrNull } from "./lib/catalog.js";
 import { createMailer, sendTemplate } from "./lib/mail/index.js";
@@ -88,6 +88,12 @@ export function createHandler({
                 if (request.method === "POST" && !memberUserId) return withCors(request, await invite(request, accountId, principal));
                 if (request.method === "PATCH" && memberUserId) return withCors(request, await changeRole(request, accountId, memberUserId, principal));
                 if (request.method === "DELETE" && memberUserId) return withCors(request, await remove(accountId, memberUserId, principal));
+            }
+
+            // PATCH /api/accounts/:id — claim or change the handle
+            // (DESIGN-015 §5.9, DEBT-0014).
+            if (!section && request.method === "PATCH") {
+                return withCors(request, await updateAccount(request, accountId, principal));
             }
 
             // GET /api/accounts/:id/plans — the Library's fourth tab
@@ -196,6 +202,107 @@ export function createHandler({
         return json({ account, upgraded: false }, 201);
     }
 
+    /**
+     * Claim a handle for an account, or change the one it has.
+     *
+     * **The one thing this route exists for.** Until it did, a handle could
+     * only be set while an organisation was created or a personal account was
+     * upgraded — so a personal account could never have one, and an
+     * organisation could never rename. `claimHandle` had implemented the
+     * retire-and-redirect ADR-0074 §2 designed for a rename since the
+     * beginning; nothing could reach it.
+     *
+     * **Owner-only**, like every other write to the account itself. A member
+     * publishes plans under the handle and does not get to change what it is:
+     * a rename retires the old name for everybody who was given it.
+     *
+     * **Personal accounts included.** A handle is optional for publishing —
+     * `resolveNamespace` falls back to the account id — and effectively
+     * required for being shared *with*, because a grantee is named by handle
+     * and `lookupHandle` does not resolve ids. That is the same for both kinds
+     * of account, so this route does not care which it is given.
+     */
+    async function updateAccount(request, accountId, principal) {
+        if (!isOwner(principal, accountId)) return json({ error: "owner_role_required" }, 403);
+
+        const account = await getAccount(accountId, stores);
+        if (!account) return json({ error: "no_such_account" }, 404);
+
+        const body = await request.json().catch(() => ({}));
+        if (typeof body.handle !== "string") return json({ error: "nothing_to_update" }, 400);
+
+        const v = validateHandle(body.handle);
+        if (!v.ok) return json({ error: `handle_${v.reason}` }, 400);
+
+        // Re-claiming the handle it already has is a no-op rather than a
+        // conflict — a form that saves every field would otherwise fail on the
+        // one that did not change.
+        if (account.handle === v.handle) return json({ account });
+
+        // `renameHandle` rather than `claimHandle`: it retires the previous
+        // handle as a tombstone pointing here, so every link already shared
+        // keeps resolving (ADR-0074 §2). With no previous handle it is a plain
+        // claim, which is what makes one route serve both.
+        const claimed = await renameHandle(account.handle ?? null, v.handle, accountId, stores);
+        if (!claimed.ok) return json({ error: `handle_${claimed.reason}` }, claimed.reason === "taken" ? 409 : 400);
+
+        account.handle = claimed.handle;
+        await stores.accounts().set(accountId, JSON.stringify(account));
+        return json({ account });
+    }
+
+    /**
+     * Name the accounts a plan is shared with, rather than listing their ids.
+     *
+     * **Resolved here, not in the client.** A grantee id means nothing on
+     * screen, and a client cannot turn one into a name: `lookupHandle` resolves
+     * handles, and an account somebody was granted access to is usually one the
+     * reader does not belong to, so there is nothing local to look it up in.
+     * Resolving in the client would also be one request per grantee to draw one
+     * row.
+     *
+     * **A personal account is named by its owner.** Its `displayName` is
+     * created carrying the owner's name and follows it on change
+     * (`updateUserNames`), so this is normally the same string — the owner
+     * lookup is the fallback for an account whose name was never set, where
+     * showing an empty grantee would be worse than one extra read.
+     *
+     * `cache` is per request: the same organisation is commonly a grantee on
+     * several plans in one list, and reading it once per row would be the same
+     * N+1 this function exists to avoid.
+     */
+    async function describeGrantees(ids, cache) {
+        if (!Array.isArray(ids) || ids.length === 0) return [];
+        const out = [];
+        for (const id of ids) {
+            if (typeof id !== "string" || !id) continue;
+            if (!cache.has(id)) cache.set(id, await nameOfAccount(id));
+            const named = cache.get(id);
+            if (named) out.push(named);
+        }
+        return out;
+    }
+
+    async function nameOfAccount(accountId) {
+        const account = await getAccount(accountId, stores);
+        // A grantee whose account is gone: named by id rather than dropped, so
+        // a stale grant is visible and can be revoked instead of silently
+        // shortening the list.
+        if (!account) return { accountId, displayName: accountId, handle: null, missing: true };
+
+        let displayName = account.displayName?.trim();
+        if (!displayName && account.type !== "organization") {
+            const owners = acceptedOwners(await membersOf(accountId, stores));
+            const owner = owners[0] ? await getUser(owners[0].userId, stores) : null;
+            displayName = owner?.displayName?.trim() || null;
+        }
+        return {
+            accountId,
+            displayName: displayName || accountId,
+            handle: account.handle ?? null,
+        };
+    }
+
     async function listMembers(accountId, principal) {
         if (!isMember(principal, accountId)) return json({ error: "not_a_member" }, 403);
         const members = await membersOf(accountId, stores);
@@ -256,6 +363,10 @@ export function createHandler({
         const drills = getDrillsStore();
         const prefix = `${accountId}/`;
 
+        // One lookup per grantee account per request, not per row: the same
+        // organisation is commonly named on several plans in one list.
+        const granteeNames = new Map();
+
         const items = [];
         let cursor = url.searchParams.get("cursor") || undefined;
         let nextCursor;
@@ -280,6 +391,12 @@ export function createHandler({
                     // says so per item rather than leaving the client to guess
                     // from a missing field.
                     published: meta.published === true,
+                    // How open each plan is, and who was named on it
+                    // (DESIGN-015 §5.10). Absent on a plan stored before the
+                    // policy existed, which reads as the protective default
+                    // rather than as public.
+                    accessPolicy: meta.accessPolicy ?? "account",
+                    sharedWith: await describeGrantees(meta.sharedAccountIds, granteeNames),
                 });
                 if (items.length >= limit) break;
             }

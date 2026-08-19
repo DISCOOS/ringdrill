@@ -248,6 +248,40 @@ const SPEC = {
                 },
             },
         },
+        "/api/accounts/{id}": {
+            patch: {
+                tags: ["accounts"],
+                summary: "Claim or change an account's handle",
+                description:
+                    "Owner-only. The handle is the short name in a plan's URL (`/d/<handle>/<slug>`) and "
+                    + "the name another account is given in order to share a plan *with* this one "
+                    + "(DESIGN-015 §5.9).\n\n"
+                    + "Optional for publishing — `resolveNamespace` falls back to the account id — and "
+                    + "effectively required for being shared with, since a grantee is named by handle. "
+                    + "The same for a personal account as for an organisation.\n\n"
+                    + "A rename retires the previous handle as a tombstone that redirects, so links "
+                    + "already shared keep resolving (ADR-0074 §2); a retired handle is never returned "
+                    + "to the pool. Re-sending the handle the account already has is a no-op.",
+                security: [{ bearerAuth: [] }],
+                parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+                requestBody: {
+                    required: true,
+                    content: { "application/json": { schema: {
+                        type: "object",
+                        required: ["handle"],
+                        properties: { handle: { type: "string", example: "red-cross-bergen" } },
+                    } } },
+                },
+                responses: {
+                    200: { description: "`{ account }`" },
+                    400: { description: "`handle_invalid_format`, `handle_reserved`, or nothing to update" },
+                    401: { description: "Not signed in" },
+                    403: { description: "Not an owner of this account" },
+                    404: { description: "No such account" },
+                    409: { description: "`handle_taken`" },
+                },
+            },
+        },
         "/api/accounts/{id}/plans": {
             get: {
                 tags: ["accounts"],
@@ -258,7 +292,13 @@ const SPEC = {
                     + "plan (ADR-0072), not the plan's existence.\n\n"
                     + "Unlike the public feed this includes **unpublished** plans, and each item says which "
                     + "it is — an account library showing only what had been published would omit exactly "
-                    + "the drafts the tab exists for.",
+                    + "the drafts the tab exists for.\n\n"
+                    + "Each item also carries `accessPolicy` and `sharedWith`, which the Sharing section "
+                    + "reads (DESIGN-015 §5.10). `sharedWith` names the grantee accounts rather than "
+                    + "listing their ids: a client cannot resolve one, because an account somebody was "
+                    + "granted access to is usually one the reader does not belong to and `lookup` "
+                    + "resolves handles rather than ids. A grantee whose account has been deleted is "
+                    + "still listed, flagged `missing`, so a stale grant can be seen and revoked.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
                     { name: "id", in: "path", required: true, schema: { type: "string" } },

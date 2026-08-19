@@ -1,12 +1,17 @@
 ---
-status: open
+status: resolved
 severity: medium
 discovered: 2026-08-19
-resolved: null
+resolved: 2026-08-19
 related_adrs: ["ADR-0074", "ADR-0024"]
 ---
 
 # DEBT-0014: A handle can only be claimed while creating an organisation
+
+> **Resolved 2026-08-19.** `PATCH /api/accounts/:id` claims or changes a
+> handle, owner-only, through `renameHandle` — which claims when there is none
+> and retires the old one as a redirecting tombstone when there is. The
+> description below is what was wrong.
 
 ## What
 
@@ -19,7 +24,7 @@ Two consequences follow, and neither is intended:
 
 * **A personal account can never have a handle.** It is created with
   `handle: null`, and the only path to one is ceasing to be a personal account.
-* **An organisation can never rename its handle**, although `claimHandle`
+* **An organisation can never rename its handle**, although `renameHandle`
   already retires the previous one as a tombstone that redirects — the exact
   behaviour [ADR-0074 §2](../adrs/0074-catalog-entry-as-distinct-object.md) designed for a
   rename. The machinery is built and unreachable.
@@ -30,8 +35,8 @@ Two consequences follow, and neither is intended:
   `createOrganisation` reads `body.handle`; the only `PATCH` under `/accounts`
   is `members/:userId` for a role change.
 * [`netlify/functions/lib/identity.js`](../../netlify/functions/lib/identity.js) —
-  `claimHandle` is atomic (`onlyIfNew`) and already handles the retire-and-redirect
-  case through its `from` argument. Called only by `upgradeToOrganisation`.
+  `claimHandle` is atomic (`onlyIfNew`); `renameHandle` wraps it and writes the
+  redirecting tombstone. Only `upgradeToOrganisation` reaches either.
 * [`netlify/functions/lib/catalog.js`](../../netlify/functions/lib/catalog.js) —
   `resolveNamespace` falls back to the account id, which is why a handle-less
   account can publish at all.
@@ -57,8 +62,9 @@ that would make that safe is already written and tested.
 ## Suggested fix
 
 `PATCH /api/accounts/:accountId` taking `{handle}`, owner-only, calling
-`claimHandle(handle, accountId, stores, {from: account.handle})` — the argument
-that retires the old one. `validateHandle` and the `taken`/`reserved`/
+`renameHandle(account.handle, handle, accountId, stores)` — which claims when
+there is no previous handle and retires the old one as a redirecting tombstone
+when there is, so one route serves both. `validateHandle` and the `taken`/`reserved`/
 `invalid_format` reasons already exist and map onto the 409/400 the create route
 uses.
 

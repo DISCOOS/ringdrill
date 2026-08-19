@@ -282,6 +282,8 @@ test("removing somebody who is not a member is 404", async () => {
 const planMeta = (o) => ({
     programId: o.id, slug: o.slug, name: o.name, description: "",
     published: o.published ?? true, exerciseCount: 1,
+    ...(o.accessPolicy ? { accessPolicy: o.accessPolicy } : {}),
+    ...(o.sharedAccountIds ? { sharedAccountIds: o.sharedAccountIds } : {}),
     versions: [{ v: "1", etag: '"e1"', size: 9, updatedAt: o.updatedAt ?? "2026-06-01T00:00:00.000Z" }],
 });
 
@@ -303,6 +305,177 @@ function catalog() {
         },
     };
 }
+
+/// What the Sharing section reads (DESIGN-015 §5.10).
+///
+/// The grantee ids are resolved to names *here* because a client cannot: an
+/// account somebody was granted access to is usually one the reader does not
+/// belong to, and `lookupHandle` resolves handles rather than ids — so there
+/// would be nothing local to look it up in, and one request per grantee to
+/// draw one row.
+test("each plan says how open it is, and names who it was shared with", async () => {
+    const h = harness({
+        index: { "a_bergen/vinter": { entryId: "e_1", planId: "p_1", ownerAccountId: "a_bergen" } },
+        drills: {
+            "catalog/e_1/meta.json": planMeta({
+                id: "p_1", slug: "vinter", name: "Vinter",
+                accessPolicy: "shared", sharedAccountIds: ["a_dogs"],
+            }),
+        },
+    });
+    await orgWith(h, { u_1: "owner" });
+    await h.stores.accounts().set("a_dogs", JSON.stringify({
+        id: "a_dogs", displayName: "Search Dogs West", type: "organization", handle: "search-dogs-west",
+    }));
+
+    const { items } = await (await call(h, "GET", "/a_bergen/plans", { as: token("u_1", { a_bergen: "owner" }) })).json();
+    const vinter = items.find((i) => i.slug === "vinter");
+
+    assert.equal(vinter.accessPolicy, "shared");
+    assert.deepEqual(vinter.sharedWith, [
+        { accountId: "a_dogs", displayName: "Search Dogs West", handle: "search-dogs-west" },
+    ]);
+});
+
+test("a personal grantee is named by its owner when the account has no name", async () => {
+    // A personal account is created carrying the owner's name and follows it on
+    // change, so this is the fallback for one whose name was never set —
+    // showing an empty grantee would be worse than one extra read.
+    const h = harness({
+        index: { "a_bergen/vinter": { entryId: "e_1", planId: "p_1", ownerAccountId: "a_bergen" } },
+        drills: {
+            "catalog/e_1/meta.json": planMeta({
+                id: "p_1", slug: "vinter", name: "Vinter",
+                accessPolicy: "shared", sharedAccountIds: ["a_kari"],
+            }),
+        },
+    });
+    await orgWith(h, { u_1: "owner" });
+    await h.stores.accounts().set("a_kari", JSON.stringify({ id: "a_kari", displayName: "", type: "personal" }));
+    await h.stores.users().set("u_kari", JSON.stringify({ id: "u_kari", displayName: "Kari Gulbrandsen" }));
+    await putMember("a_kari", "u_kari", "owner", { acceptedAt: "2026-08-01" }, h.stores);
+
+    const { items } = await (await call(h, "GET", "/a_bergen/plans", { as: token("u_1", { a_bergen: "owner" }) })).json();
+    assert.equal(items[0].sharedWith[0].displayName, "Kari Gulbrandsen");
+});
+
+test("a grantee whose account is gone is still listed, so it can be revoked", async () => {
+    // Dropping it would silently shorten the list and leave a stale grant with
+    // no way to see or remove it.
+    const h = harness({
+        index: { "a_bergen/vinter": { entryId: "e_1", planId: "p_1", ownerAccountId: "a_bergen" } },
+        drills: {
+            "catalog/e_1/meta.json": planMeta({
+                id: "p_1", slug: "vinter", name: "Vinter",
+                accessPolicy: "shared", sharedAccountIds: ["a_gone"],
+            }),
+        },
+    });
+    await orgWith(h, { u_1: "owner" });
+
+    const { items } = await (await call(h, "GET", "/a_bergen/plans", { as: token("u_1", { a_bergen: "owner" }) })).json();
+    assert.equal(items[0].sharedWith[0].missing, true);
+});
+
+test("a plan stored before the policy existed reads as account, not public", async () => {
+    const h = harness(catalog());
+    await orgWith(h, { u_1: "owner" });
+
+    const { items } = await (await call(h, "GET", "/a_bergen/plans", { as: token("u_1", { a_bergen: "owner" }) })).json();
+    assert.equal(items[0].accessPolicy, "account");
+    assert.deepEqual(items[0].sharedWith, []);
+});
+
+/// Claiming and renaming a handle (DEBT-0014, DESIGN-015 §5.9).
+///
+/// Until this route existed a handle could only be set while an organisation
+/// was created or a personal account upgraded — so a personal account could
+/// never have one, and an organisation could never rename, although the
+/// retire-and-redirect ADR-0074 §2 designed for a rename was already written.
+test("an account with no handle can claim one", async () => {
+    const h = harness();
+    await orgWith(h, { u_1: "owner" });
+
+    const res = await call(h, "PATCH", "/a_bergen", {
+        as: token("u_1", { a_bergen: "owner" }),
+        body: { handle: "red-cross-bergen" },
+    });
+
+    assert.equal(res.status, 200);
+    assert.equal((await res.json()).account.handle, "red-cross-bergen");
+    assert.equal(
+        JSON.parse(await h.stores.handles().get("red-cross-bergen")).accountId,
+        "a_bergen",
+    );
+});
+
+test("a personal account can claim one too", async () => {
+    // The framing is the same for both: optional for publishing, and what a
+    // colleague needs in order to name this account when sharing a plan.
+    const h = harness();
+    await h.stores.accounts().set("a_kari", JSON.stringify({ id: "a_kari", displayName: "Kari", type: "personal" }));
+    await h.stores.users().set("u_k", JSON.stringify({ id: "u_k", displayName: "Kari" }));
+    await putMember("a_kari", "u_k", "owner", { acceptedAt: "2026-08-01" }, h.stores);
+
+    const res = await call(h, "PATCH", "/a_kari", {
+        as: token("u_k", { a_kari: "owner" }),
+        body: { handle: "kari-gulbrandsen" },
+    });
+    assert.equal(res.status, 200);
+    assert.equal((await res.json()).account.handle, "kari-gulbrandsen");
+});
+
+test("a rename leaves the old handle redirecting", async () => {
+    // The whole reason a rename is safe: links already shared keep resolving.
+    const h = harness();
+    await orgWith(h, { u_1: "owner" });
+    const as = token("u_1", { a_bergen: "owner" });
+    await call(h, "PATCH", "/a_bergen", { as, body: { handle: "rode-kors-bergen" } });
+
+    const res = await call(h, "PATCH", "/a_bergen", { as, body: { handle: "red-cross-bergen" } });
+    assert.equal(res.status, 200);
+
+    const retired = JSON.parse(await h.stores.handles().get("rode-kors-bergen"));
+    assert.equal(retired.tombstone, true);
+    assert.equal(retired.redirectsTo, "red-cross-bergen");
+});
+
+test("a handle somebody else holds is refused", async () => {
+    const h = harness();
+    await orgWith(h, { u_1: "owner" });
+    await h.stores.handles().set("taken-name", JSON.stringify({ accountId: "a_other" }));
+
+    const res = await call(h, "PATCH", "/a_bergen", {
+        as: token("u_1", { a_bergen: "owner" }),
+        body: { handle: "taken-name" },
+    });
+    assert.equal(res.status, 409);
+    assert.equal((await res.json()).error, "handle_taken");
+});
+
+test("re-claiming the handle it already has is a no-op, not a conflict", async () => {
+    // A form that saves every field would otherwise fail on the one that did
+    // not change.
+    const h = harness();
+    await orgWith(h, { u_1: "owner" });
+    const as = token("u_1", { a_bergen: "owner" });
+    await call(h, "PATCH", "/a_bergen", { as, body: { handle: "red-cross-bergen" } });
+
+    const res = await call(h, "PATCH", "/a_bergen", { as, body: { handle: "red-cross-bergen" } });
+    assert.equal(res.status, 200);
+});
+
+test("a member cannot change the handle", async () => {
+    // A rename retires the old name for everybody who was given it.
+    const h = harness();
+    await orgWith(h, { u_1: "owner", u_2: "member" });
+
+    const res = await call(h, "PATCH", "/a_bergen", {
+        as: token("u_2", { a_bergen: "member" }),
+        body: { handle: "hijacked" },
+    });
+    assert.equal(res.status, 403);
+});
 
 test("an account's plans list only that account's plans", async () => {
     const h = harness(catalog());
