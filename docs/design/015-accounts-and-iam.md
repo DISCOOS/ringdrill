@@ -714,10 +714,11 @@ so that is the term.
 The handle carries an explanation, because nothing about the field says what it
 is for: it is the short name in the plans' web addresses
 (`ringdrill.app/d/red-cross-bergen/lsor-eidene-2026`) and the name you give
-another account so they can share a plan *with* you (§5.10). It also carries a
-**copy button** — handing it over is what it is for, and the next thing anybody
-does with it is paste it into a message. Unclaimed, the same row offers *Claim*
-instead.
+another account so they can share a plan *with* you (§5.10). It also carries an
+action on the field row itself, and **only its label changes with the state**:
+*Copy* once a handle is claimed — handing it over is what it is for, and the
+next thing anybody does with it is paste it into a message — and *Claim* while
+there is none. One row, one place to look, whichever state the account is in.
 
 **The handle does not wait for the upgrade.** A personal account is created
 with `handle: null` and publishes perfectly well without one — `resolveNamespace`
