@@ -1084,6 +1084,16 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryCatalog => 'Katalog';
 
   @override
+  String get publishSharedPickAccount => 'Velg konto';
+
+  @override
+  String get publishSharedByHandle => 'Med kontonavn';
+
+  @override
+  String get publishSharedNoOtherAccounts =>
+      'Du tilhører bare denne kontoen. Bruk «Med kontonavn» for å dele med en annen.';
+
+  @override
   String get publishSharedHandleLabel => 'Kontonavn';
 
   @override
@@ -1095,14 +1105,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get publishSharedNotFound => 'Ingen konto med det navnet.';
-
-  @override
-  String publishSharedRenamed(String handle) {
-    return 'Den kontoen heter nå $handle.';
-  }
-
-  @override
-  String get publishSharedNone => 'Ingen kontoer lagt til ennå.';
 
   @override
   String get publishSharingApplied => 'Deling oppdatert';
@@ -1218,6 +1220,16 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get phoneInvalid => 'Dette ser ikke ut som et nummer noen kan ringe.';
+
+  @override
+  String get accountHandleHint =>
+      'Andre bruker dette navnet for å dele en plan med denne kontoen';
+
+  @override
+  String get accountHandleCopied => 'Kontonavnet er kopiert';
+
+  @override
+  String get copy => 'Kopier';
 
   @override
   String get accountPhoneLabel => 'Telefon';

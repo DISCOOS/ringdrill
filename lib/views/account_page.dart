@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ringdrill/data/auth_client.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/auth_service.dart';
@@ -866,6 +867,30 @@ class _OwnerSection extends StatelessWidget {
                   : (owner!.email ?? ''),
             ),
             subtitle: Text(roleLabel(l, owner!.role)),
+          ),
+        // **The handle, where somebody can find it.** It is how another
+        // account names this one when sharing a plan with it, and until now it
+        // appeared nowhere in the app — leaving "share with my organisation"
+        // as a request to type something the person had never seen. Copyable
+        // rather than merely shown, because the next thing anyone does with it
+        // is paste it into a message.
+        if (account.handle != null && account.handle!.isNotEmpty)
+          ListTile(
+            leading: const Icon(Icons.alternate_email),
+            title: Text(account.handle!),
+            subtitle: Text(l.accountHandleHint),
+            trailing: IconButton(
+              icon: const Icon(Icons.copy),
+              tooltip: l.copy,
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: account.handle!));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l.accountHandleCopied)),
+                  );
+                }
+              },
+            ),
           ),
         if (editable) ...[
           // One row, and no explicit border: the form screens elsewhere

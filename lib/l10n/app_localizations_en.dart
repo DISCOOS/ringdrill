@@ -1088,6 +1088,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryCatalog => 'Catalog';
 
   @override
+  String get publishSharedPickAccount => 'Choose account';
+
+  @override
+  String get publishSharedByHandle => 'By account name';
+
+  @override
+  String get publishSharedNoOtherAccounts =>
+      'You belong to only this account. Use \"By account name\" to share with another.';
+
+  @override
   String get publishSharedHandleLabel => 'Account handle';
 
   @override
@@ -1099,14 +1109,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get publishSharedNotFound => 'No account with that handle.';
-
-  @override
-  String publishSharedRenamed(String handle) {
-    return 'That account is now called $handle.';
-  }
-
-  @override
-  String get publishSharedNone => 'No accounts added yet.';
 
   @override
   String get publishSharingApplied => 'Sharing updated';
@@ -1222,6 +1224,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get phoneInvalid =>
       'That does not look like a number anyone could dial.';
+
+  @override
+  String get accountHandleHint =>
+      'Others use this name to share a plan with this account';
+
+  @override
+  String get accountHandleCopied => 'Account name copied';
+
+  @override
+  String get copy => 'Copy';
 
   @override
   String get accountPhoneLabel => 'Phone';

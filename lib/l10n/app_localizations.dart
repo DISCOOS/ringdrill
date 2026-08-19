@@ -1802,6 +1802,24 @@ abstract class AppLocalizations {
   /// **'Catalog'**
   String get libraryCatalog;
 
+  /// Adds one of the accounts you belong to as a grantee of a shared plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose account'**
+  String get publishSharedPickAccount;
+
+  /// Adds a grantee that cannot be listed — an account you are not a member of. A picker can only show accounts you belong to, so sharing outward has to go through a name the other side gives you.
+  ///
+  /// In en, this message translates to:
+  /// **'By account name'**
+  String get publishSharedByHandle;
+
+  /// Instead of opening an empty picker: nothing to list means the answer is a handle, so say that.
+  ///
+  /// In en, this message translates to:
+  /// **'You belong to only this account. Use \"By account name\" to share with another.'**
+  String get publishSharedNoOtherAccounts;
+
   /// Replaces asking for a raw account id, which nobody knows. The handle is the name already in that account's plan URLs, so it is something a person can actually be told over the phone.
   ///
   /// In en, this message translates to:
@@ -1825,18 +1843,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No account with that handle.'**
   String get publishSharedNotFound;
-
-  /// Shown when a retired handle was used. Accepting it silently would leave the user sharing with something they cannot find again under the name they typed.
-  ///
-  /// In en, this message translates to:
-  /// **'That account is now called {handle}.'**
-  String publishSharedRenamed(String handle);
-
-  /// No description provided for @publishSharedNone.
-  ///
-  /// In en, this message translates to:
-  /// **'No accounts added yet.'**
-  String get publishSharedNone;
 
   /// No description provided for @publishSharingApplied.
   ///
@@ -2035,6 +2041,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That does not look like a number anyone could dial.'**
   String get phoneInvalid;
+
+  /// Under the account handle on the account page. The handle is how another account names this one when granting access to a plan, and it appeared nowhere in the app before — which left "share with my organisation" as a request to type something the person had never seen.
+  ///
+  /// In en, this message translates to:
+  /// **'Others use this name to share a plan with this account'**
+  String get accountHandleHint;
+
+  /// Confirmation after copying the handle, since the next thing anybody does with it is paste it into a message.
+  ///
+  /// In en, this message translates to:
+  /// **'Account name copied'**
+  String get accountHandleCopied;
+
+  /// Generic copy-to-clipboard action.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
 
   /// On the account page, beside your names. Shared with the members of accounts you belong to, so a coordinator building a roster can reach you without asking for it again — the same reason your address is already visible there.
   ///

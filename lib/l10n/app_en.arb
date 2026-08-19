@@ -1250,6 +1250,18 @@
   "library": "Library",
   "libraryMyPlans": "My plans",
   "libraryCatalog": "Catalog",
+  "publishSharedPickAccount": "Choose account",
+  "@publishSharedPickAccount": {
+    "description": "Adds one of the accounts you belong to as a grantee of a shared plan."
+  },
+  "publishSharedByHandle": "By account name",
+  "@publishSharedByHandle": {
+    "description": "Adds a grantee that cannot be listed \u2014 an account you are not a member of. A picker can only show accounts you belong to, so sharing outward has to go through a name the other side gives you."
+  },
+  "publishSharedNoOtherAccounts": "You belong to only this account. Use \"By account name\" to share with another.",
+  "@publishSharedNoOtherAccounts": {
+    "description": "Instead of opening an empty picker: nothing to list means the answer is a handle, so say that."
+  },
   "publishSharedHandleLabel": "Account handle",
   "@publishSharedHandleLabel": {
     "description": "Replaces asking for a raw account id, which nobody knows. The handle is the name already in that account's plan URLs, so it is something a person can actually be told over the phone."
@@ -1257,12 +1269,10 @@
   "publishSharedHandleHelper": "The name in their plan links, e.g. redcross-bergen.",
   "publishSharedAdd": "Add",
   "publishSharedNotFound": "No account with that handle.",
-  "publishSharedRenamed": "That account is now called {handle}.",
   "@publishSharedRenamed": {
     "description": "Shown when a retired handle was used. Accepting it silently would leave the user sharing with something they cannot find again under the name they typed.",
     "placeholders": { "handle": { "type": "String" } }
   },
-  "publishSharedNone": "No accounts added yet.",
   "publishSharingApplied": "Sharing updated",
   "publishSharingFailed": "Could not update sharing. The plan is published to your account only.",
   "@publishSharingFailed": {
@@ -1348,6 +1358,18 @@
   "phoneInvalid": "That does not look like a number anyone could dial.",
   "@phoneInvalid": {
     "description": "Validation on a phone field. Lenient on purpose \u2014 a switchboard with an extension and a duty number spaced for reading are both valid \u2014 so this fires only on letters or on too few digits."
+  },
+  "accountHandleHint": "Others use this name to share a plan with this account",
+  "@accountHandleHint": {
+    "description": "Under the account handle on the account page. The handle is how another account names this one when granting access to a plan, and it appeared nowhere in the app before \u2014 which left \"share with my organisation\" as a request to type something the person had never seen."
+  },
+  "accountHandleCopied": "Account name copied",
+  "@accountHandleCopied": {
+    "description": "Confirmation after copying the handle, since the next thing anybody does with it is paste it into a message."
+  },
+  "copy": "Copy",
+  "@copy": {
+    "description": "Generic copy-to-clipboard action."
   },
   "accountPhoneLabel": "Phone",
   "@accountPhoneLabel": {
