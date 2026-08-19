@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/data/auth_client.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/auth_service.dart';
+import 'package:ringdrill/utils/phone_format.dart';
+import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/utils/app_config.dart';
 
 /// Managing an account's members (DESIGN-015 §6).
@@ -60,7 +62,12 @@ class _AccountPageState extends State<AccountPage> {
   bool _showNameFields = false;
 
   bool get _canSaveNames =>
-      _namesDirty && !_savingNames && _fullName.text.trim().isNotEmpty;
+      _namesDirty &&
+      !_savingNames &&
+      _fullName.text.trim().isNotEmpty &&
+      // A number nobody can dial is worse than none: it is on the roster, it
+      // looks answered, and it fails on the day somebody needs it.
+      isDialablePhone(_phone.text);
 
   Future<void> _saveNames() async {
     final l = AppLocalizations.of(context)!;
@@ -200,85 +207,129 @@ class _AccountPageState extends State<AccountPage> {
               if (mounted) setState(() => _showNameFields = editable);
             });
           }
+          // **Two columns where there is room.** The page is two unrelated
+          // subjects — who you are, and who else is here — and stacking them
+          // put the members list below a fold on a desktop browser while the
+          // space beside the name fields sat empty. The narrower column also
+          // fixes the fields: three inputs across a 1400px dialog read as a
+          // form somebody forgot to lay out.
+          //
+          // Devices and Delete stay full width below both: they belong to the
+          // page rather than to either column.
+          final wide = WindowSizeClass.of(context).hasMasterDetail;
+          final me = <Widget>[
+            // Prevention, not recovery: an organisation whose sole owner
+            // cannot sign in is unrecoverable without support intervention
+            // (§4.4). Low-key and non-blocking on purpose — a modal here
+            // would punish the normal case of a new organisation.
+            if (roster.singleOwner && widget.account.isOrganisation)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.info_outline, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l.accountSingleOwnerAdvisory,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            // **The owner is not a row in the members list.** There is
+            // exactly one today, and it is almost always the person reading
+            // the screen — putting them in a list of one, above a second
+            // list, made the page read as though the owner were simply the
+            // first member. This is also where the names live, because "who
+            // am I here" and "what am I called" are the same question.
+            _OwnerSection(
+              account: widget.account,
+              owner: _owner(roster),
+              editable: _showNameFields,
+              fullName: _fullName,
+              nickname: _nickname,
+              phone: _phone,
+              busy: _savingNames,
+              onChanged: () => setState(() => _namesDirty = true),
+            ),
+          ];
+
+          // **The section renders even with nobody in it**, because it is
+          // where inviting lives. Hiding it when empty left an owner with no
+          // way to add the first person, and left the page showing two
+          // adjacent dividers with nothing between them.
+          final members = <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l.accountMembersTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  // In the section it belongs to, rather than a floating
+                  // button over the page: it acts on this list and on
+                  // nothing else, and as a FAB it also sat on top of
+                  // "Delete account".
+                  if (_isOwner)
+                    TextButton.icon(
+                      onPressed: _invite,
+                      icon: const Icon(Icons.person_add_alt, size: 20),
+                      label: Text(l.accountInviteAction),
+                    ),
+                ],
+              ),
+            ),
+            if (_others(roster).isEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Text(
+                  l.accountMembersEmpty,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              )
+            else
+              ..._others(roster).map((m) => _memberTile(context, l, m)),
+          ];
+
           return ListView(
             children: [
-              // Prevention, not recovery: an organisation whose sole owner
-              // cannot sign in is unrecoverable without support intervention
-              // (§4.4). Low-key and non-blocking on purpose — a modal here
-              // would punish the normal case of a new organisation.
-              if (roster.singleOwner && widget.account.isOrganisation)
+              if (wide)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  padding: const EdgeInsets.only(top: 8),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.info_outline, size: 18),
-                      const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          l.accountSingleOwnerAdvisory,
-                          style: Theme.of(context).textTheme.bodySmall,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: me,
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: members,
                         ),
                       ),
                     ],
                   ),
-                ),
-              // **The owner is not a row in the members list.** There is
-              // exactly one today, and it is almost always the person reading
-              // the screen — putting them in a list of one, above a second
-              // list, made the page read as though the owner were simply the
-              // first member. This is also where the names live, because "who
-              // am I here" and "what am I called" are the same question.
-              _OwnerSection(
-                account: widget.account,
-                owner: _owner(roster),
-                editable: _showNameFields,
-                fullName: _fullName,
-                nickname: _nickname,
-                phone: _phone,
-                busy: _savingNames,
-                onChanged: () => setState(() => _namesDirty = true),
-              ),
-              // **The section renders even with nobody in it**, because it is
-              // where inviting lives. Hiding it when empty left an owner with
-              // no way to add the first person, and left the page showing two
-              // adjacent dividers with nothing between them.
-              const Divider(height: 32),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        l.accountMembersTitle,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                    // In the section it belongs to, rather than a floating
-                    // button over the page: it acts on this list and on
-                    // nothing else, and as a FAB it also sat on top of
-                    // "Delete account".
-                    if (_isOwner)
-                      TextButton.icon(
-                        onPressed: _invite,
-                        icon: const Icon(Icons.person_add_alt, size: 20),
-                        label: Text(l.accountInviteAction),
-                      ),
-                  ],
-                ),
-              ),
-              if (_others(roster).isEmpty)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  child: Text(
-                    l.accountMembersEmpty,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
                 )
-              else
-                ..._others(roster).map((m) => _memberTile(context, l, m)),
+              else ...[
+                ...me,
+                const Divider(height: 32),
+                ...members,
+              ],
               // Devices belong to the *user*, not to an account, so they
               // appear once — on the personal account, which is the "your
               // account" page. Every user has one (ADR-0024 creates it at
@@ -860,7 +911,13 @@ class _OwnerSection extends StatelessWidget {
               controller: phone,
               enabled: !busy,
               keyboardType: TextInputType.phone,
-              decoration: InputDecoration(labelText: l.accountPhoneLabel),
+              decoration: InputDecoration(
+                labelText: l.accountPhoneLabel,
+                // Shown as it is typed rather than on submit: Save is an
+                // AppBar action here, so there is no submit to attach an
+                // error to, and a disabled Save with no reason is a puzzle.
+                errorText: isDialablePhone(phone.text) ? null : l.phoneInvalid,
+              ),
               onChanged: (_) => onChanged(),
             ),
           ),

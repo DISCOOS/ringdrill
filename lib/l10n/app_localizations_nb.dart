@@ -1217,6 +1217,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get accountFullNameLabel => 'Fullt navn';
 
   @override
+  String get phoneInvalid => 'Dette ser ikke ut som et nummer noen kan ringe.';
+
+  @override
   String get accountPhoneLabel => 'Telefon';
 
   @override

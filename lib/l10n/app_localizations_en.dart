@@ -1220,6 +1220,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountFullNameLabel => 'Full name';
 
   @override
+  String get phoneInvalid =>
+      'That does not look like a number anyone could dial.';
+
+  @override
   String get accountPhoneLabel => 'Phone';
 
   @override

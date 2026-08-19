@@ -342,6 +342,7 @@
   "profileCompleteLater": "Ikke nå",
   "accountNamesHint": "Fullt navn identifiserer deg for dem du jobber med. Kallenavnet er det som får plass på en mannskapsliste og en posttavle.",
   "accountFullNameLabel": "Fullt navn",
+  "phoneInvalid": "Dette ser ikke ut som et nummer noen kan ringe.",
   "accountPhoneLabel": "Telefon",
   "accountNicknameLabel": "Kallenavn",
   "accountNicknameHelp": "Det folk kaller deg på øvelsen",

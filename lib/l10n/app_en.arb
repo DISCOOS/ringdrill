@@ -1345,6 +1345,10 @@
     "description": "Explains why two names are asked for, so the second does not read as a duplicate of the first."
   },
   "accountFullNameLabel": "Full name",
+  "phoneInvalid": "That does not look like a number anyone could dial.",
+  "@phoneInvalid": {
+    "description": "Validation on a phone field. Lenient on purpose \u2014 a switchboard with an extension and a duty number spaced for reading are both valid \u2014 so this fires only on letters or on too few digits."
+  },
   "accountPhoneLabel": "Phone",
   "@accountPhoneLabel": {
     "description": "On the account page, beside your names. Shared with the members of accounts you belong to, so a coordinator building a roster can reach you without asking for it again \u2014 the same reason your address is already visible there."

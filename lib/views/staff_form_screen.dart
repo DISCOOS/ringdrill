@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:ringdrill/models/staff.dart';
 import 'package:ringdrill/services/auth_service.dart';
+import 'package:ringdrill/utils/phone_format.dart';
 import 'package:ringdrill/views/widgets/inline_message.dart';
 import 'package:ringdrill/views/widgets/staff_from_account_picker.dart';
 import 'package:ringdrill/models/station.dart';
@@ -184,6 +185,9 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
 
                   // Phone (optional)
                   TextFormField(
+                    validator: (value) => isDialablePhone(value ?? '')
+                        ? null
+                        : localizations.phoneInvalid,
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
                     decoration: InputDecoration(

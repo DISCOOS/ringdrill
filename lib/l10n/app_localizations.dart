@@ -2030,6 +2030,12 @@ abstract class AppLocalizations {
   /// **'Full name'**
   String get accountFullNameLabel;
 
+  /// Validation on a phone field. Lenient on purpose — a switchboard with an extension and a duty number spaced for reading are both valid — so this fires only on letters or on too few digits.
+  ///
+  /// In en, this message translates to:
+  /// **'That does not look like a number anyone could dial.'**
+  String get phoneInvalid;
+
   /// On the account page, beside your names. Shared with the members of accounts you belong to, so a coordinator building a roster can reach you without asking for it again — the same reason your address is already visible there.
   ///
   /// In en, this message translates to:
