@@ -2612,6 +2612,18 @@ abstract class AppLocalizations {
   /// **'Your plans stay on this device and your account is not deleted. You can sign in again at any time.'**
   String get signOutConfirmBody;
 
+  /// Title of the picker that chooses which account this device acts in — which account a publish lands in, and whose plans the library's account tab lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch account'**
+  String get accountSwitchTitle;
+
+  /// Title of the account page for an organisation. Names the kind and the handle rather than the display name, so this page, the drawer row and the publish dialog all identify an account the same way — and the handle is what tells two organisations with similar names apart.
+  ///
+  /// In en, this message translates to:
+  /// **'Organisation account ({handle})'**
+  String accountTitleOrganisation(String handle);
+
   /// Drawer subtitle under the signed-in identity, used when naming the account would only repeat the line above — a personal account carries the user's own display name. Says which account a publish lands in, which is the part not otherwise visible there.
   ///
   /// In en, this message translates to:

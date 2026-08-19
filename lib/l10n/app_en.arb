@@ -1615,6 +1615,15 @@
   "@signOutConfirmBody": {
     "description": "DESIGN-015 §5.1 separates sign-out from account deletion. Signing out must never look like losing work, so the confirm says exactly what stays."
   },
+  "accountSwitchTitle": "Switch account",
+  "@accountSwitchTitle": {
+    "description": "Title of the picker that chooses which account this device acts in \u2014 which account a publish lands in, and whose plans the library's account tab lists."
+  },
+  "accountTitleOrganisation": "Organisation account ({handle})",
+  "@accountTitleOrganisation": {
+    "description": "Title of the account page for an organisation. Names the kind and the handle rather than the display name, so this page, the drawer row and the publish dialog all identify an account the same way \u2014 and the handle is what tells two organisations with similar names apart.",
+    "placeholders": { "handle": { "type": "String" } }
+  },
   "accountKindPersonal": "Personal account",
   "@accountKindPersonal": {
     "description": "Drawer subtitle under the signed-in identity, used when naming the account would only repeat the line above — a personal account carries the user's own display name. Says which account a publish lands in, which is the part not otherwise visible there."

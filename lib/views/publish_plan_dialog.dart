@@ -11,6 +11,7 @@ import 'package:ringdrill/services/plan_service.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/sign_in_page.dart';
+import 'package:ringdrill/views/widgets/account_switcher.dart';
 import 'package:ringdrill/views/widgets/handle_lookup_dialog.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -351,16 +352,19 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
     // the wrong one of two accounts would not question. A name is the whole
     // safeguard here, and a person who belongs to one account loses nothing by
     // seeing their own.
-    PublishSharing.accountOnly => account.displayName.trim().isEmpty
-        ? localizations.publishSharingAccountOnly
-        : localizations.publishSharingOrgOnly(account.displayName),
+    PublishSharing.accountOnly =>
+      account.displayName.trim().isEmpty
+          ? localizations.publishSharingAccountOnly
+          : localizations.publishSharingOrgOnly(account.displayName),
     PublishSharing.shared => localizations.publishSharingShared,
     PublishSharing.public => localizations.publishSharingPublic,
   };
 
   /// What the `shared` option says beneath itself: who, or that nobody yet.
   Widget _granteeSummary(AppLocalizations l, TextStyle? subtle) {
-    if (_grantees.isEmpty) return Text(l.publishSharingSharedHint, style: subtle);
+    if (_grantees.isEmpty) {
+      return Text(l.publishSharingSharedHint, style: subtle);
+    }
     return Text(_grantees.map((a) => a.displayName).join(', '), style: subtle);
   }
 
@@ -452,36 +456,11 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
   }
 
   Future<void> _pickAccount(BuildContext context) async {
-    final l = AppLocalizations.of(context)!;
-    final accounts = AuthService.instance.state.accounts;
-    // A `SimpleDialog` was the last ad-hoc selector left in this flow — a
-    // dialog at every window size, with none of the chrome the rest of the app
-    // uses for picking one of a list (ADR-0049).
-    final chosen = await showRingdrillPicker<String>(
-      context: context,
-      title: l.publishPublishesTo,
-      items: accounts.map((a) => a.accountId).toList(),
-      itemBuilder: (context, id, onTap) {
-        final a = accounts.firstWhere((m) => m.accountId == id);
-        final selected = id == _account?.accountId;
-        return ListTile(
-          selected: selected,
-          leading: Icon(
-            selected
-                ? Icons.check
-                : (a.isOrganisation ? Icons.groups : Icons.person),
-          ),
-          title: Text(a.displayName),
-          // The handle, because two accounts can carry the same display name
-          // and this is the name that is unique.
-          subtitle: a.handle == null ? null : Text(a.handle!),
-          onTap: onTap,
-        );
-      },
-    );
-    if (chosen == null) return;
-    await AuthService.instance.setActiveAccount(chosen);
-    if (mounted) {
+    // The same switcher the drawer opens. Two of them would be two answers to
+    // one question, and this one had drifted already — a SimpleDialog at every
+    // window size, listing names without the handle that tells two alike
+    // accounts apart.
+    if (await showAccountSwitcher(context) && mounted) {
       // The label for accountOnly names the account, so a switch between a
       // personal account and an organisation changes what the selected option
       // says. Re-read rather than leaving a stale label next to a live radio.

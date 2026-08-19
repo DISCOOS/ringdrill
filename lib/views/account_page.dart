@@ -6,6 +6,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/auth_service.dart';
 import 'package:ringdrill/utils/phone_format.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
+import 'package:ringdrill/views/widgets/account_switcher.dart';
 import 'package:ringdrill/utils/app_config.dart';
 
 /// Managing an account's members (DESIGN-015 §6).
@@ -160,11 +161,7 @@ class _AccountPageState extends State<AccountPage> {
       // the title bar tells the reader nothing about where they are, and this
       // page is the only "your account" screen there is.
       appBar: AppBar(
-        title: Text(
-          widget.account.isOrganisation
-              ? widget.account.displayName
-              : l.accountTitleMine,
-        ),
+        title: Text(accountTitle(l, widget.account)),
         // Saving is an AppBar action here as it is on every other form in the
         // app (see person_form_screen), rather than a button buried in the
         // middle of a scrolling list where it can be scrolled out of sight.

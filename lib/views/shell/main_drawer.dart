@@ -12,6 +12,7 @@ import 'package:ringdrill/views/migration_page.dart';
 import 'package:ringdrill/views/plan_view.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/sign_in_page.dart';
+import 'package:ringdrill/views/widgets/account_switcher.dart';
 import 'package:ringdrill/views/widgets/app_user_role_selector.dart';
 import 'package:ringdrill/web/install_actions.dart'
     if (dart.library.io) 'package:ringdrill/views/install_actions_io.dart';
@@ -281,18 +282,18 @@ class MainDrawer extends StatelessWidget {
               // which read as a stutter for most people: a personal account is
               // created with the user's own display name, and that display name
               // is the email address when the provider gave no better one. So
-              // the row said the same address twice. It now falls back to
-              // naming the *kind* of account when repeating the name would add
-              // nothing — which is also the more useful line, because what a
-              // person cannot otherwise see here is which account a publish
-              // would land in.
+              // the row said the same address twice.
+              //
+              // It now always says the thing the name cannot: "Personal
+              // account", or the organisation's handle. See [accountSubtitle]
+              // for why the handle is the useful line for an organisation. A
+              // conditional fallback was not enough — two organisations whose
+              // display names read alike left this row unable to say which one
+              // a publish would land in, which is the only question it is here
+              // to answer.
               final subtitle = account == null
                   ? localizations.accountTitle
-                  : (account.displayName == user.displayName
-                        ? (account.isOrganisation
-                              ? localizations.accountKindOrganisation
-                              : localizations.accountKindPersonal)
-                        : account.displayName);
+                  : accountSubtitle(localizations, account);
               return ListTile(
                 leading: const Icon(Icons.account_circle),
                 // Two lines, not one: an email address is the display name
@@ -334,6 +335,31 @@ class MainDrawer extends StatelessWidget {
                     navigator.maybePop();
                   },
                 ),
+              );
+            },
+          ),
+        // **A row of its own, and only when there is a choice.** Switching
+        // account changes where a publish lands and whose plans the library
+        // lists, so it is a navigation-weight decision rather than a detail on
+        // somebody's name. Crowding it into the account row as a second
+        // trailing icon would put it beside sign-out, where a mis-tap is
+        // expensive.
+        if (AuthService.isInstalled)
+          ListenableBuilder(
+            listenable: AuthService.instance,
+            builder: (context, _) {
+              if (AuthService.instance.state.accounts.length < 2) {
+                return const SizedBox.shrink();
+              }
+              return _DrawerTile(
+                icon: Icons.swap_horiz,
+                title: localizations.accountSwitchTitle,
+                onTap: () async {
+                  // The drawer stays open: switching is often followed by
+                  // going somewhere with the new account, and closing it would
+                  // make that two gestures.
+                  await showAccountSwitcher(context);
+                },
               );
             },
           ),
