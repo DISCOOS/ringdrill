@@ -915,9 +915,11 @@ acct_personal = _split(
             </div>
             <div class="note note-plain"><i class="ti ti-info-circle"></i><span><b>No Members section yet.</b> There is nobody to list, and showing one would say this account is already something it is not.</span></div>
             <div style="border-top: 0.5px solid var(--color-border-tertiary); padding-top: 14px; display: flex; flex-direction: column; gap: 10px;">
-              <div class="sect" style="color: var(--danger-text); margin: 0;">Danger section</div>
-              <div style="display: flex;"><div class="btn btn-danger" style="padding: 0 16px;"><i class="ti ti-trash"></i> Delete account and profile</div></div>
+              <div class="sect" style="color: var(--danger-text); margin: 0;">Danger zone</div>
+              <div class="t">Delete account and profile</div>
               <div class="s">Deletes you as well: profile, sessions and memberships. Plans you published stay where they are &mdash; other people have installed them, so they lose their owner rather than disappearing.</div>
+              <div><div class="s" style="color: var(--danger-text);">Type DELETE to confirm</div><div style="border-bottom: 0.5px solid var(--danger-text); height: 22px;"></div></div>
+              <div style="display: flex;"><div class="btn btn-danger" style="padding: 0 16px; opacity: .45;"><i class="ti ti-trash"></i> Delete account and profile</div></div>
             </div>''')
 
 upgrade_sheet = '''

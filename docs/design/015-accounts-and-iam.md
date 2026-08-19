@@ -647,7 +647,7 @@ disagree, this text is the record.
 
 #### Deleting, which is two different actions
 
-**Delete lives at the bottom of Details**, under a **Danger section** heading —
+**Delete lives at the bottom of Details**, under a **Danger zone** heading —
 the account's own section, which both kinds of account have. Not its own rail
 entry: a section whose only content is a destructive button is a trap in a list
 people scan, and it would sit next to Profile where a mis-tap is expensive.
@@ -668,10 +668,27 @@ than leaving one word to mean both:
 | Personal | **Delete account and profile** | the account *and the user behind it* — profile, sessions, memberships | published plans, which other people have installed; they lose their owner reference (§5.1) |
 | Organisation | **Delete organisation** | the organisation and its memberships | every member's own profile and account; published plans, orphaned as above |
 
+**The confirmation is a typed name, and the button sits below it, disabled
+until it matches.** The app already asks for a word — `accountDeleteConfirmWord`
+is `DELETE`/`SLETT`, checked case-insensitively — and that stays for a personal
+account, where the only thing at risk is the person doing the typing.
+
+**An organisation asks for its handle instead.** A generic word proves you meant
+to delete *something*; the handle proves you know *which*, which is the part
+that matters when the thing being deleted is shared and somebody else's plans
+are published under it. An organisation with no handle claimed falls back to the
+word — there is no name to type.
+
 `deleteAccount` already implements both halves — "delete an account, and, for a
 personal one, the user behind it". The interface's job is to say which one is
 about to happen, because "Delete account" on a personal account is an
 understatement: it deletes *you*.
+
+> **Open:** the existing delete dialog carries a second decision — what happens
+> to unpublished drafts, defaulting to deleting them. Moving the confirmation
+> inline leaves that question without a home: either it moves into this section
+> too, or the dialog stays and the inline field duplicates it. Worth settling
+> before this is built.
 
 **An organisation with one owner is refused, not warned.** §4.4's advisory is
 the prevention; the delete path already returns the organisations that would be
