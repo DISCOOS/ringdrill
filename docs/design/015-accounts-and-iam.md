@@ -712,6 +712,20 @@ that only work at twice the width they get.
 questions: what this form is, and which account it is pointed at. Only the
 second changes.
 
+**What the upgrade is offered *for* matters, because the obvious answer is
+wrong.** "Share these plans with colleagues" is not it: a personal account can
+already grant another account access to a plan, and nothing about that requires
+an organisation or a membership (§5.10). Offering the upgrade as the way to
+share would push somebody into an irreversible conversion to get something they
+already have.
+
+An organisation is for working together *continuously*: members publish updates
+to **every** plan the account owns rather than to one granted plan, they appear
+as staff candidates when a roster is built (ADR-0072), and the account carries a
+name of its own so plans are published as the organisation rather than as a
+person. The copy says that, and says plainly that sharing one plan needs none of
+it.
+
 **Details is on every account, personal included.** It is where the handle is
 claimed (below), and it is where a personal account becomes an organisation —
 an explicit action on the section that already describes the account, rather
