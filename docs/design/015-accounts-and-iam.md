@@ -626,6 +626,12 @@ depends on the reader:
 | Profile | the user | everybody, in every account | the user |
 | Devices | the user | everybody | the user |
 
+**No trailing chevron on a section row.** The compact list is `ListTile`s with
+a leading icon, a title and a subtitle; the current section carries
+`Icons.check` and nothing else is decorated. The five chevrons in the app are
+navigation *buttons* — the section-form's own next control, a field's picker —
+not a mark meaning "this row is tappable", which every row in a list already is.
+
 **The rail is grouped, and the divider is load-bearing.** The account's
 sections come first, then a rule, then the user's. Without it "Profile" sits in
 a list headed by an organisation's name and reads as something that
