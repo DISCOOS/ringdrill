@@ -639,12 +639,36 @@ organisation owns — which is exactly the confusion that made this form look
 like two screens in the first place. The order follows the header: this is the
 account, and you are also here.
 
-An interactive canvas of these screens — the same design at the app's real
-palette and dialog size, wide and narrow —
-[is published here](https://claude.ai/code/artifact/1fb00519-1d72-4b07-a195-6b21cb75b976).
-It is a review surface rather than the record: the mockups under `mockups/` are
-what this repository keeps, because they open in a browser with no build step,
-and this section is what settles anything the two disagree about.
+The mockups for this section are
+[`mockups/account-sections.html`](./mockups/account-sections.html) and
+[`mockups/account-personal-upgrade.html`](./mockups/account-personal-upgrade.html),
+generated like the rest of the DESIGN-015 family. Where a drawing and this text
+disagree, this text is the record.
+
+#### Deleting, which is two different actions
+
+**Delete lives at the bottom of Details**, below everything else and visibly
+apart from it — the account's own section, which both kinds of account have.
+Not its own rail entry: a section whose only content is a destructive button is
+a trap in a list people scan, and it would sit next to Profile where a mis-tap
+is expensive.
+
+What it destroys depends on the account, and the label has to say so rather
+than leaving one word to mean both:
+
+| | Label | What goes | What survives |
+|---|---|---|---|
+| Personal | **Delete account and profile** | the account *and the user behind it* — profile, sessions, memberships | published plans, which other people have installed; they lose their owner reference (§5.1) |
+| Organisation | **Delete organisation** | the organisation and its memberships | every member's own profile and account; published plans, orphaned as above |
+
+`deleteAccount` already implements both halves — "delete an account, and, for a
+personal one, the user behind it". The interface's job is to say which one is
+about to happen, because "Delete account" on a personal account is an
+understatement: it deletes *you*.
+
+**An organisation with one owner is refused, not warned.** §4.4's advisory is
+the prevention; the delete path already returns the organisations that would be
+stranded so they can be named rather than counted.
 
 **On medium and expanded it is a dialog, not a page.** `openFormSurface` routes
 the form through `showRingdrillFormDialog`, which caps it at **720 wide and 88%
